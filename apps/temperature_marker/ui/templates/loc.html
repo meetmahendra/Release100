@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CaneBot 1-Click Location Verification</title>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --border-color: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo-badge {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-weight: 700;
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+        }
+
+        .status-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1.5rem auto;
+            font-size: 2rem;
+        }
+
+        .status-loading { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); animation: pulse 1.5s infinite; }
+        .status-success { background: rgba(16, 185, 129, 0.1); color: var(--accent-green); }
+        .status-error { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--accent-green);
+            color: white;
+            cursor: pointer;
+            margin-top: 1.5rem;
+        }
+
+        .kiosk-select-container {
+            margin: 1.25rem 0 1rem 0;
+            text-align: left;
+            background: #0f172a;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .kiosk-select-container label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+        }
+
+        .kiosk-select-container select {
+            width: 100%;
+            padding: 0.5rem;
+            background: #1e293b;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-badge">CANECTAR CANEBOT</div>
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Kiosk Geolocation Check</h2>
+        <p id="subtext" style="color: var(--text-secondary); font-size: 0.9rem;">
+            Verifying your physical proximity to CaneBot Station <span id="kioskLabel" style="color: var(--text-primary); font-weight: 600;">{{ kiosk_name or kiosk_id }}</span>.
+        </p>
+
+        <div class="kiosk-select-container">
+            <label for="kioskSelect">Selected Kiosk Station:</label>
+            <select id="kioskSelect" onchange="onKioskChanged()">
+                {% if all_kiosks %}
+                    {% for k in all_kiosks %}
+                    <option value="{{ k.kiosk_id }}" {% if k.kiosk_id == kiosk_id %}selected{% endif %}>
+                        {{ k.name }} ({{ k.kiosk_id }})
+                    </option>
+                    {% endfor %}
+                {% else %}
+                    <option value="{{ kiosk_id }}" selected>{{ kiosk_name or kiosk_id }}</option>
+                {% endif %}
+            </select>
+        </div>
+
+        <div id="statusIcon" class="status-icon status-loading">📍</div>
+        <div id="statusMessage" style="font-weight: 600; font-size: 1.05rem; margin-bottom: 0.5rem;">Acquiring GPS location...</div>
+        <div id="distanceDetail" style="color: var(--text-secondary); font-size: 0.85rem;">Please allow location access when prompted.</div>
+
+        <button id="retryBtn" class="btn" style="display: none;" onclick="requestLocation()">Retry Location Check</button>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        let kioskId = urlParams.get('kiosk_id') || document.getElementById('kioskSelect')?.value || '{{ kiosk_id }}';
+        const sessionId = urlParams.get('session') || '{{ session_id }}';
+
+        if (kioskId) {
+            const sel = document.getElementById('kioskSelect');
+            if (sel) {
+                sel.value = kioskId;
+                const label = document.getElementById('kioskLabel');
+                if (label && sel.selectedIndex >= 0) {
+                    label.innerText = sel.options[sel.selectedIndex].text;
+                }
+            }
+        }
+
+        function onKioskChanged() {
+            const sel = document.getElementById('kioskSelect');
+            kioskId = sel.value;
+            const selText = sel.options[sel.selectedIndex].text;
+            document.getElementById('kioskLabel').innerText = selText;
+
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('kiosk_id', kioskId);
+            window.history.replaceState({}, '', newUrl);
+
+            requestLocation();
+        }
+
+        function requestLocation() {
+            const icon = document.getElementById('statusIcon');
+            const msg = document.getElementById('statusMessage');
+            const detail = document.getElementById('distanceDetail');
+            const retry = document.getElementById('retryBtn');
+
+            icon.className = 'status-icon status-loading';
+            icon.innerText = '📍';
+            msg.innerText = 'Acquiring GPS coordinates...';
+            detail.innerText = 'Communicating with smartphone GPS sensor...';
+            retry.style.display = 'none';
+
+            if (!navigator.geolocation) {
+                showError('Geolocation is not supported by your mobile browser.');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    msg.innerText = 'Verifying kiosk geofence perimeter...';
+                    try {
+                        const resp = await fetch('/admin/apps/temperature-marker/api/verify-location', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                kiosk_id: kioskId,
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude,
+                                accuracy: position.coords.accuracy,
+                                session_id: sessionId
+                            })
+                        });
+                        const data = await resp.json();
+
+                        if (data.within_geofence) {
+                            icon.className = 'status-icon status-success';
+                            icon.innerText = '✓';
+                            msg.innerText = 'Location Verified!';
+                            const stationName = data.kiosk_name || kioskId;
+                            detail.innerHTML = `You are <strong>${data.distance_meters}m</strong> from CaneBot Station <strong>${stationName}</strong> (${kioskId}).<br><br>Return to WhatsApp to complete duty check-in.`;
+                        } else {
+                            icon.className = 'status-icon status-error';
+                            icon.innerText = '✕';
+                            msg.innerText = 'Geofence Perimeter Breach';
+                            const stationName = data.kiosk_name || kioskId;
+                            detail.innerHTML = `You appear to be <strong>${data.distance_meters}m</strong> away from <strong>${stationName}</strong> (${kioskId}). Allowed radius is ${data.radius_meters}m.<br><br><small style="color: #94a3b8">If you are at a different kiosk, select it from the dropdown above.</small>`;
+                            retry.style.display = 'block';
+                        }
+                    } catch (err) {
+                        showError('Network error communicating with kiosk server.');
+                    }
+                },
+                (err) => {
+                    showError('Location permission denied or unavailable: ' + err.message);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+
+        function showError(text) {
+            const icon = document.getElementById('statusIcon');
+            const msg = document.getElementById('statusMessage');
+            const detail = document.getElementById('distanceDetail');
+            const retry = document.getElementById('retryBtn');
+
+            icon.className = 'status-icon status-error';
+            icon.innerText = '✕';
+            msg.innerText = 'Location Check Failed';
+            detail.innerText = text;
+            retry.style.display = 'block';
+        }
+
+        window.onload = requestLocation;
+    </script>
+</body>
+</html>

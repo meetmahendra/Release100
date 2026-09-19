@@ -1,0 +1,14 @@
+name = "release100-cloud-relay"
+main = "src/index.ts"
+compatibility_date = "2026-09-14"
+
+[vars]
+WHATSAPP_VERIFY_TOKEN = "canectar_kiosk_verify_token_2026"
+
+[[durable_objects.bindings]]
+name = "RELAY_SESSIONS"
+class_name = "RelaySession"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["RelaySession"]

@@ -1,0 +1,40 @@
+# ============================================================
+# TechGlobal Cloud Solutions — Company Profile & Context
+# ============================================================
+
+company:
+  name: "TechGlobal Cloud Solutions"
+  legal_name: "TechGlobal Solutions Inc."
+  primary_domain: "yourcompany.com"
+  industry: "Enterprise SaaS & Cloud Infrastructure"
+  headquarters: "San Francisco, CA, USA"
+  fiscal_year_end: "December 31"
+
+active_strategic_projects:
+  - code: "PROJECT_APOLLO"
+    name: "Project Apollo"
+    description: "Core Payments Gateway v2 & Stripe Multi-Region Integration (P0 Priority)"
+    lead: "arjun.mehta@yourcompany.com"
+    executive_sponsor: "marcus.vance@yourcompany.com"
+    status: "Active / Launch Q3"
+
+  - code: "PROJECT_SENTINEL"
+    name: "Project Sentinel"
+    description: "SOC 2 Type II Compliance & Zero-Trust Security Hardening"
+    lead: "sarah.jenkins@yourcompany.com"
+    executive_sponsor: "rachel.adams@yourcompany.com"
+    status: "Active / Audit in Progress"
+
+  - code: "PROJECT_TITAN"
+    name: "Project Titan"
+    description: "Multi-Region Cloud Infrastructure Migration (AWS & GCP Hybrid)"
+    lead: "sarah.jenkins@yourcompany.com"
+    executive_sponsor: "marcus.vance@yourcompany.com"
+    status: "Planning / Execution"
+
+  - code: "PROJECT_NEXUS"
+    name: "Project Nexus"
+    description: "Enterprise Data Analytics & Customer Intelligence Platform"
+    lead: "priya.patel@yourcompany.com"
+    executive_sponsor: "victoria.sterling@yourcompany.com"
+    status: "Active"

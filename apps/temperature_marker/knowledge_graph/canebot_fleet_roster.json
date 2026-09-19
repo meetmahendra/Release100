@@ -1,0 +1,102 @@
+{
+  "organization_name": "Canectar Foods Pvt Ltd",
+  "default_haccp_rule": {
+    "min_safe_temp": 2.0,
+    "max_safe_temp": 4.0,
+    "critical_alert_temp": 7.0,
+    "unit": "C"
+  },
+  "locations": {
+    "SITE-PUNE-PHOENIX": {
+      "site_id": "SITE-PUNE-PHOENIX",
+      "site_name": "Phoenix Marketcity Food Court",
+      "city": "Pune",
+      "latitude": 18.5621,
+      "longitude": 73.9168,
+      "geofence_radius_meters": 300.0
+    },
+    "SITE-MUMBAI-SEAWOODS": {
+      "site_id": "SITE-MUMBAI-SEAWOODS",
+      "site_name": "Seawoods Grand Central Mall",
+      "city": "Navi Mumbai",
+      "latitude": 19.0215,
+      "longitude": 73.0182,
+      "geofence_radius_meters": 100.0
+    },
+    "SITE-BLR-INDIRANAGAR": {
+      "site_id": "SITE-BLR-INDIRANAGAR",
+      "site_name": "Indiranagar Metro Station Concourse",
+      "city": "Bangalore",
+      "latitude": 12.9784,
+      "longitude": 77.6408,
+      "geofence_radius_meters": 75.0
+    },
+    "SITE-PUNE-DASSAULT-SKY": {
+      "site_id": "SITE-PUNE-DASSAULT-SKY",
+      "site_name": "Dassault Systemes Sky Tower",
+      "city": "Pune",
+      "latitude": 18.5919,
+      "longitude": 73.7335,
+      "geofence_radius_meters": 250.0
+    },
+    "SITE-PUNE-EKA-ELITAS": {
+      "site_id": "SITE-PUNE-EKA-ELITAS",
+      "site_name": "Eka Elitas Paud Road Kothrud",
+      "city": "Pune",
+      "latitude": 18.5077,
+      "longitude": 73.7913,
+      "geofence_radius_meters": 100.0
+    }
+  },
+  "kiosks": {
+    "CANEBOT-PUNE-04": {
+      "kiosk_id": "CANEBOT-PUNE-04",
+      "machine_model": "CaneBot-Pro-Chilled",
+      "display_type": "7_segment_led",
+      "site_id": "SITE-PUNE-PHOENIX",
+      "primary_operator_phones": [
+        "+919800011122",
+        "+919800011123"
+      ],
+      "is_active": true
+    },
+    "CANEBOT-PUNE-05": {
+      "kiosk_id": "CANEBOT-PUNE-05",
+      "machine_model": "CaneBot-Pro-Chilled",
+      "display_type": "7_segment_led",
+      "site_id": "SITE-PUNE-DASSAULT-SKY",
+      "primary_operator_phones": [
+        "+918087545430"
+      ],
+      "is_active": true
+    },
+    "CANEBOT-PUNE-06": {
+      "kiosk_id": "CANEBOT-PUNE-06",
+      "machine_model": "CaneBot-Pro-Chilled",
+      "display_type": "7_segment_led",
+      "site_id": "SITE-PUNE-EKA-ELITAS",
+      "primary_operator_phones": [],
+      "is_active": true
+    },
+    "CANEBOT-MUMBAI-08": {
+      "kiosk_id": "CANEBOT-MUMBAI-08",
+      "machine_model": "CaneBot-Pro-Chilled",
+      "display_type": "7_segment_led",
+      "site_id": "SITE-MUMBAI-SEAWOODS",
+      "primary_operator_phones": [
+        "+919800022233"
+      ],
+      "is_active": true
+    },
+    "CANEBOT-BLR-02": {
+      "kiosk_id": "CANEBOT-BLR-02",
+      "machine_model": "CaneBot-Lite-Compact",
+      "display_type": "lcd_screen",
+      "site_id": "SITE-BLR-INDIRANAGAR",
+      "primary_operator_phones": [
+        "+919800033344"
+      ],
+      "is_active": true
+    }
+  }
+}

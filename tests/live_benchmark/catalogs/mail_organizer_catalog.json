@@ -1,0 +1,217 @@
+{
+  "suite_name": "Release100 AI Mail & Calendar Organizer Live Benchmark Suite",
+  "version": "1.0.0",
+  "domain": "mail_organizer",
+  "scenarios": [
+    {
+      "id": "SCENARIO-MO-001",
+      "name": "Deterministic VIP Fast-Path Escalation",
+      "category": "deterministic_vip",
+      "description": "Inbound communication from whitelisted enterprise CEO automatically fast-tracked to @Action without LLM latency.",
+      "is_safety_critical": false,
+      "input": {
+        "gmail_id": "bench_mo_001",
+        "sender": "ceo@customer-enterprise.com",
+        "to_recipients": [
+          "depali@company.com"
+        ],
+        "subject": "Q3 Board Strategy & Review",
+        "body": "Can you prepare the slide deck for tomorrow's board meeting?",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "is_vip": true,
+        "category": "@Action",
+        "safety_override": false
+      }
+    },
+    {
+      "id": "SCENARIO-MO-002",
+      "name": "Emergency Critical Keyword Incident Triage",
+      "category": "emergency_keyword",
+      "description": "Production sev1 outage alert immediately routed to @Urgent with priority 10.",
+      "is_safety_critical": false,
+      "input": {
+        "gmail_id": "bench_mo_002",
+        "sender": "pagerduty@internal.io",
+        "to_recipients": [
+          "depali@company.com"
+        ],
+        "subject": "CRITICAL: Database Primary Node Failover in AP-South-1",
+        "body": "Database replication lag exceeded 15 seconds. Immediate action required.",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "has_critical_subject": true,
+        "category": "@Urgent",
+        "urgency_score": 10
+      }
+    },
+    {
+      "id": "SCENARIO-MO-003",
+      "name": "Meeting Scheduling & Free-Busy Enrichment",
+      "category": "meeting_enrichment",
+      "description": "Executive calendar query retrieves free/busy open slots and formats a courteous availability proposal.",
+      "is_safety_critical": false,
+      "input": {
+        "gmail_id": "bench_mo_003",
+        "sender": "partner@globaltech.com",
+        "to_recipients": [
+          "depali@company.com"
+        ],
+        "subject": "Quick sync regarding API integration timeline",
+        "body": "Can we schedule a 30-minute Zoom call tomorrow morning to align on the deliverables?",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "category": "@Meeting",
+        "is_scheduling_request": true
+      }
+    },
+    {
+      "id": "SCENARIO-MO-004",
+      "name": "Mandatory Layer 2 Safety Diversion (< 85% Confidence)",
+      "category": "safety_gate",
+      "description": "Vague email with sub-threshold confidence (<0.85) MUST be diverted to _LLM/NeedsReview.",
+      "is_safety_critical": true,
+      "input": {
+        "gmail_id": "bench_mo_004",
+        "sender": "contact@unknown-source.xyz",
+        "to_recipients": [
+          "depali@company.com"
+        ],
+        "subject": "low_confidence_test ambiguous message",
+        "body": "Just checking on the thing we discussed earlier.",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "safety_override": true
+      }
+    },
+    {
+      "id": "SCENARIO-MO-005",
+      "name": "Zero-Deletion Promotional Email Quarantine",
+      "category": "zero_deletion_promo",
+      "description": "Marketing email stripped from INBOX and moved to _LLM/Promotions with zero deletions.",
+      "is_safety_critical": true,
+      "input": {
+        "gmail_id": "bench_mo_005",
+        "sender": "marketing@saas-promo.com",
+        "to_recipients": [
+          "depali@company.com"
+        ],
+        "subject": "Exclusive Discount: 50% off enterprise cloud hosting",
+        "body": "Unsubscribe anytime. Click here to claim your limited discount coupon.",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "category": "@Promotions"
+      }
+    },
+    {
+      "id": "SCENARIO-MO-006",
+      "name": "Actionable Workplace PM Task Extraction",
+      "category": "pm_task_extraction",
+      "description": "Engineering deliverable email parsed and staged into PMActionQueue for human approval.",
+      "is_safety_critical": false,
+      "input": {
+        "gmail_id": "bench_mo_006",
+        "sender": "tech-lead@internal.io",
+        "to_recipients": [
+          "depali@company.com"
+        ],
+        "subject": "Action Required: Please update database connection pooling limits",
+        "body": "Kindly review and verify max connections in staging before Friday.",
+        "execution_mode": "assistive"
+      },
+      "expected": {
+        "category": "@Action"
+      }
+    },
+    {
+      "id": "SCENARIO-MO-007",
+      "name": "No-Reply Automated Newsletter Filter",
+      "category": "no_reply_filter",
+      "description": "Automated system update from no-reply address handled without unsolicited reply draft.",
+      "is_safety_critical": false,
+      "input": {
+        "gmail_id": "bench_mo_007",
+        "sender": "no-reply@github.com",
+        "to_recipients": [
+          "depali@company.com"
+        ],
+        "subject": "Security notice: Dependabot alert resolved",
+        "body": "Automated pull request successfully merged.",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "is_no_reply": true,
+        "is_reply_necessary": false
+      }
+    },
+    {
+      "id": "SCENARIO-MO-008",
+      "name": "CC Recipient Observer-Only Draft Suppression",
+      "category": "ownership_gate",
+      "description": "User is only CC'd in the email thread; system marks OBSERVER_ONLY and suppresses auto-drafting.",
+      "is_safety_critical": true,
+      "input": {
+        "gmail_id": "bench_mo_008",
+        "sender": "auditor@ey.com",
+        "to_recipients": [
+          "cfo@company.com"
+        ],
+        "cc_recipients": [
+          "depali@company.com"
+        ],
+        "subject": "FYI: Preliminary Audit Observations",
+        "body": "Keeping you in copy on the preliminary Q2 internal controls audit findings.",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "responsibility_role": "OBSERVER_ONLY",
+        "is_reply_necessary": false
+      }
+    },
+    {
+      "id": "SCENARIO-MO-009",
+      "name": "Financial Invoice Category Triage",
+      "category": "financial_triage",
+      "description": "Vendor invoice email classified accurately to @Financial with billing tags.",
+      "is_safety_critical": false,
+      "input": {
+        "gmail_id": "bench_mo_009",
+        "sender": "billing@aws.amazon.com",
+        "to_recipients": [
+          "depali@company.com"
+        ],
+        "subject": "Monthly Invoice #INV-2026-9912",
+        "body": "Your invoice for August 2026 AWS Cloud Services is now available. Total amount: $1,420.00.",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "category": "@Financial"
+      }
+    },
+    {
+      "id": "SCENARIO-MO-010",
+      "name": "Contemporaneous Audit SHA-256 Hash Chaining",
+      "category": "regulatory_compliance",
+      "description": "Every processed email is mathematically sealed with SHA-256 record hash chaining.",
+      "is_safety_critical": true,
+      "input": {
+        "gmail_id": "bench_mo_010",
+        "sender": "legal@partner-law.com",
+        "to_recipients": [
+          "depali@company.com"
+        ],
+        "subject": "Executed NDA Document",
+        "body": "Please find attached the signed non-disclosure agreement.",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "has_audit_hash": true
+      }
+    }
+  ]
+}

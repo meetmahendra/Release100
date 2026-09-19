@@ -1,0 +1,288 @@
+{
+  "suite_name": "Canectar CaneBot Cold-Chain HACCP & Attendance Live Benchmark Suite",
+  "version": "1.0.0",
+  "domain": "temperature_marker",
+  "scenarios": [
+    {
+      "id": "SCENARIO-001",
+      "name": "Standard Compliant Duty Check-in (Pune Phoenix Mall)",
+      "category": "standard_happy_path",
+      "description": "Active operator checks in 15m from Phoenix Mall CaneBot with compliant 3.2°C chiller reading.",
+      "is_safety_critical": false,
+      "input": {
+        "correlation_id": "bench-001",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.5622, 73.9169],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.2C"
+      },
+      "expected": {
+        "operator_status": "ACTIVE",
+        "geofence_verified": true,
+        "chiller_temp_c": 3.2,
+        "haccp_compliant": true,
+        "haccp_status": "SAFE_RANGE",
+        "layer_0_passed": true,
+        "outbox_queued": true,
+        "must_contain_reply": "Duty Marked & Chiller Verified"
+      }
+    },
+    {
+      "id": "SCENARIO-002",
+      "name": "Standard Compliant Check-in (Mumbai Seawoods Mall)",
+      "category": "standard_happy_path",
+      "description": "Active operator checks in 25m from Seawoods Mall CaneBot with 2.8°C chiller reading.",
+      "is_safety_critical": false,
+      "input": {
+        "correlation_id": "bench-002",
+        "sender_phone": "+919800022233",
+        "kiosk_id": "CANEBOT-MUMBAI-08",
+        "user_coords": [19.0217, 73.0183],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_2.8C"
+      },
+      "expected": {
+        "operator_status": "ACTIVE",
+        "geofence_verified": true,
+        "chiller_temp_c": 2.8,
+        "haccp_compliant": true,
+        "haccp_status": "SAFE_RANGE",
+        "layer_0_passed": true,
+        "outbox_queued": true
+      }
+    },
+    {
+      "id": "SCENARIO-003",
+      "name": "Standard Compliant Check-in (Bangalore Metro Kiosk)",
+      "category": "standard_happy_path",
+      "description": "Active operator checks in 10m from Indiranagar Metro with 3.5°C chiller reading.",
+      "is_safety_critical": false,
+      "input": {
+        "correlation_id": "bench-003",
+        "sender_phone": "+919800033344",
+        "kiosk_id": "CANEBOT-BLR-02",
+        "user_coords": [12.9785, 77.6409],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.5C"
+      },
+      "expected": {
+        "operator_status": "ACTIVE",
+        "geofence_verified": true,
+        "chiller_temp_c": 3.5,
+        "haccp_compliant": true,
+        "haccp_status": "SAFE_RANGE",
+        "layer_0_passed": true,
+        "outbox_queued": true
+      }
+    },
+    {
+      "id": "SCENARIO-004",
+      "name": "Hard Safety: Unauthorized Phone Number Rejection",
+      "category": "hard_safety",
+      "description": "Unregistered phone number must be rejected at Layer 0 Auth Guard without mutating records.",
+      "is_safety_critical": true,
+      "input": {
+        "correlation_id": "bench-004",
+        "sender_phone": "+910000099999",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.5622, 73.9169]
+      },
+      "expected": {
+        "operator_status": "UNREGISTERED",
+        "layer_0_passed": false,
+        "error_code": "E-SAFE-005",
+        "must_contain_reply": "Unauthorized"
+      }
+    },
+    {
+      "id": "SCENARIO-005",
+      "name": "Hard Safety: Pending Operator Approval Gate",
+      "category": "hard_safety",
+      "description": "Operator with PENDING_APPROVAL status must be blocked from marking official duty.",
+      "is_safety_critical": true,
+      "input": {
+        "correlation_id": "bench-005",
+        "sender_phone": "+919800044455",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.5622, 73.9169]
+      },
+      "expected": {
+        "operator_status": "PENDING_APPROVAL",
+        "layer_0_passed": false,
+        "error_code": "E-SAFE-005",
+        "must_contain_reply": "Awaiting Admin Approval"
+      }
+    },
+    {
+      "id": "SCENARIO-006",
+      "name": "Hard Safety: Geofence Breach Rejection (Far Distance)",
+      "category": "hard_safety",
+      "description": "Operator located 5km away from kiosk must be rejected at Layer 0 Location Gate.",
+      "is_safety_critical": true,
+      "input": {
+        "correlation_id": "bench-006",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.6000, 73.9800],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.2C"
+      },
+      "expected": {
+        "geofence_verified": false,
+        "layer_0_passed": false,
+        "error_code": "E-SAFE-002",
+        "must_contain_reply": "Location Mismatch"
+      }
+    },
+    {
+      "id": "SCENARIO-007",
+      "name": "Hard Safety: Physical Sensor Low Bound Anomaly (-35°C)",
+      "category": "hard_safety",
+      "description": "Extracted temperature of -35°C on ambient retail chiller must be rejected as sensor corruption.",
+      "is_safety_critical": true,
+      "input": {
+        "correlation_id": "bench-007",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.5622, 73.9169],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_-35.0C"
+      },
+      "expected": {
+        "layer_0_passed": false,
+        "error_code": "E-SAFE-001",
+        "must_contain_reply": "Sensor Reading Corrupted"
+      }
+    },
+    {
+      "id": "SCENARIO-008",
+      "name": "Hard Safety: Physical Sensor High Bound Anomaly (145°C)",
+      "category": "hard_safety",
+      "description": "Extracted temperature of 145°C on juice dispenser must be rejected as impossible reading.",
+      "is_safety_critical": true,
+      "input": {
+        "correlation_id": "bench-008",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.5622, 73.9169],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_145.0C"
+      },
+      "expected": {
+        "layer_0_passed": false,
+        "error_code": "E-SAFE-001",
+        "must_contain_reply": "Sensor Reading Corrupted"
+      }
+    },
+    {
+      "id": "SCENARIO-009",
+      "name": "Hard Safety: Critical Chiller Temperature Hazard (> 7.0°C)",
+      "category": "hard_safety",
+      "description": "Chiller at 8.7°C creates food safety / fermentation hazard. Must flag CRITICAL_HAZARD and alert supervisor.",
+      "is_safety_critical": true,
+      "input": {
+        "correlation_id": "bench-009",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.5622, 73.9169],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_8.7C"
+      },
+      "expected": {
+        "chiller_temp_c": 8.7,
+        "haccp_compliant": false,
+        "haccp_status": "CRITICAL_HAZARD",
+        "must_contain_reply": "CRITICAL CHILLER WARNING"
+      }
+    },
+    {
+      "id": "SCENARIO-010",
+      "name": "Hard Safety: Sub-Threshold Face Match Diversion (< 82%)",
+      "category": "hard_safety",
+      "description": "Blurry or unverified face match (< 82%) must divert to Admin Approval Queue.",
+      "is_safety_critical": true,
+      "input": {
+        "correlation_id": "bench-010",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.5622, 73.9169],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.2C",
+        "force_low_face_conf": 0.65
+      },
+      "expected": {
+        "layer_2_disposition": "diverted_to_review",
+        "error_code": "E-CONF-001",
+        "must_contain_reply": "Biometric Face Match Low"
+      }
+    },
+    {
+      "id": "SCENARIO-011",
+      "name": "Operational Boundary: Borderline Safe Chiller Temp (4.0°C)",
+      "category": "edge_cases",
+      "description": "Chiller operating right at upper compliant limit (4.0°C) must remain marked SAFE_RANGE.",
+      "is_safety_critical": false,
+      "input": {
+        "correlation_id": "bench-011",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.5622, 73.9169],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_4.0C"
+      },
+      "expected": {
+        "chiller_temp_c": 4.0,
+        "haccp_compliant": true,
+        "haccp_status": "SAFE_RANGE"
+      }
+    },
+    {
+      "id": "SCENARIO-012",
+      "name": "Operational Boundary: Slightly Elevated Chiller Temp (5.2°C)",
+      "category": "edge_cases",
+      "description": "Chiller between 4.1°C and 7.0°C must be recorded as ACCEPTABLE_RANGE before critical threshold.",
+      "is_safety_critical": false,
+      "input": {
+        "correlation_id": "bench-012",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.5622, 73.9169],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_5.2C"
+      },
+      "expected": {
+        "chiller_temp_c": 5.2,
+        "haccp_compliant": true,
+        "haccp_status": "ACCEPTABLE_RANGE"
+      }
+    },
+    {
+      "id": "SCENARIO-013",
+      "name": "Missing Geolocation: 1-Click Link Generation Prompt",
+      "category": "edge_cases",
+      "description": "Operator sending photo without GPS must receive 1-click web geolocation link.",
+      "is_safety_critical": false,
+      "input": {
+        "correlation_id": "bench-013",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": null,
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.2C"
+      },
+      "expected": {
+        "geofence_verified": false,
+        "must_contain_reply": "Please verify CaneBot location (1-click)"
+      }
+    },
+    {
+      "id": "SCENARIO-014",
+      "name": "Cryptographic Audit Non-Repudiation Verification",
+      "category": "compliance_audit",
+      "description": "Verified check-in must generate unbroken SHA-256 chained audit record.",
+      "is_safety_critical": false,
+      "input": {
+        "correlation_id": "bench-014",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": [18.5622, 73.9169],
+        "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.1C"
+      },
+      "expected": {
+        "has_audit_hash": true,
+        "has_sequence_number": true,
+        "outbox_queued": true
+      }
+    }
+  ]
+}

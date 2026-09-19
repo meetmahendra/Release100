@@ -1,0 +1,86 @@
+{
+  "fleet_name": "Canectar CaneBot Multi-Kiosk Fleet",
+  "organization": "Canectar Foods Pvt Ltd",
+  "default_chiller_rules": {
+    "safe_min_temp_c": 2.0,
+    "safe_max_temp_c": 4.0,
+    "critical_alert_temp_c": 7.0,
+    "physical_sanity_min_c": -20.0,
+    "physical_sanity_max_c": 120.0,
+    "unit": "C"
+  },
+  "kiosks": [
+    {
+      "kiosk_id": "CANEBOT-PUNE-04",
+      "serial_number": "CB-2026-X88",
+      "display_hardware": "7_segment_red_led",
+      "machine_model": "CaneBot Sugarcane Crushing Machine",
+      "is_active": true,
+      "location": {
+        "name": "Phoenix Marketcity Food Court",
+        "city": "Pune",
+        "state": "Maharashtra",
+        "latitude": 18.5621,
+        "longitude": 73.9168,
+        "geofence_radius_meters": 100.0,
+        "indoor_tolerance_meters": 100.0
+      },
+      "chiller_rules": {
+        "safe_min_temp_c": 2.0,
+        "safe_max_temp_c": 4.0,
+        "critical_alert_temp_c": 7.0,
+        "unit": "C"
+      },
+      "primary_operator_phone": "+919800011122",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "kiosk_id": "CANEBOT-MUMBAI-08",
+      "serial_number": "CB-2026-X91",
+      "display_hardware": "7_segment_red_led",
+      "machine_model": "CaneBot Sugarcane Crushing Machine",
+      "is_active": true,
+      "location": {
+        "name": "Infiniti Mall Andheri",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "latitude": 19.1334,
+        "longitude": 72.8282,
+        "geofence_radius_meters": 100.0,
+        "indoor_tolerance_meters": 100.0
+      },
+      "chiller_rules": {
+        "safe_min_temp_c": 2.0,
+        "safe_max_temp_c": 4.0,
+        "critical_alert_temp_c": 7.0,
+        "unit": "C"
+      },
+      "primary_operator_phone": "+919800022233",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "kiosk_id": "CANEBOT-BANGALORE-03",
+      "serial_number": "CB-2026-X79",
+      "display_hardware": "7_segment_red_led",
+      "machine_model": "CaneBot Sugarcane Crushing Machine",
+      "is_active": true,
+      "location": {
+        "name": "Phoenix Marketcity Whitefield",
+        "city": "Bangalore",
+        "state": "Karnataka",
+        "latitude": 12.9815,
+        "longitude": 77.7301,
+        "geofence_radius_meters": 100.0,
+        "indoor_tolerance_meters": 100.0
+      },
+      "chiller_rules": {
+        "safe_min_temp_c": 2.0,
+        "safe_max_temp_c": 4.0,
+        "critical_alert_temp_c": 7.0,
+        "unit": "C"
+      },
+      "primary_operator_phone": "+919800033344",
+      "timezone": "Asia/Kolkata"
+    }
+  ]
+}

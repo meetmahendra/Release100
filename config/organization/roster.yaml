@@ -1,0 +1,124 @@
+# ============================================================
+# TechGlobal Cloud Solutions — Comprehensive Employee Roster
+# ============================================================
+
+employees:
+
+  # ── C-Suite & Executive Leadership ──────────────────────────────────────────
+  - email: "victoria.sterling@yourcompany.com"
+    name: "Victoria Sterling"
+    title: "Chief Executive Officer"
+    department: "Executive"
+    hierarchy_level: "C_LEVEL"
+    manager_email: null
+    approval_limit_usd: 1000000
+    is_vip: true
+    assistant_email: "chloe.harper@yourcompany.com"
+
+  - email: "marcus.vance@yourcompany.com"
+    name: "Marcus Vance"
+    title: "Chief Technology Officer"
+    department: "Executive"
+    hierarchy_level: "C_LEVEL"
+    manager_email: "victoria.sterling@yourcompany.com"
+    approval_limit_usd: 500000
+    is_vip: true
+    assistant_email: "chloe.harper@yourcompany.com"
+
+  - email: "eleanor.bennett@yourcompany.com"
+    name: "Eleanor Bennett"
+    title: "Chief Financial Officer"
+    department: "Executive"
+    hierarchy_level: "C_LEVEL"
+    manager_email: "victoria.sterling@yourcompany.com"
+    approval_limit_usd: 1000000
+    is_vip: true
+
+  - email: "rachel.adams@yourcompany.com"
+    name: "Rachel Adams"
+    title: "General Counsel & VP of Legal"
+    department: "Legal"
+    hierarchy_level: "VP_DIRECTOR"
+    manager_email: "victoria.sterling@yourcompany.com"
+    approval_limit_usd: 250000
+    is_vip: true
+
+  # ── Engineering & DevOps / SRE ──────────────────────────────────────────────
+  - email: "arjun.mehta@yourcompany.com"
+    name: "Arjun Mehta"
+    title: "Principal Tech Lead — Core Payments"
+    department: "Engineering"
+    hierarchy_level: "LEAD_MANAGER"
+    manager_email: "marcus.vance@yourcompany.com"
+    approval_limit_usd: 50000
+    is_vip: false
+    assigned_projects: ["PROJECT_APOLLO"]
+
+  - email: "sarah.jenkins@yourcompany.com"
+    name: "Sarah Jenkins"
+    title: "Head of Site Reliability Engineering"
+    department: "DevOps_SRE"
+    hierarchy_level: "LEAD_MANAGER"
+    manager_email: "marcus.vance@yourcompany.com"
+    approval_limit_usd: 75000
+    is_vip: false
+    assigned_projects: ["PROJECT_SENTINEL", "PROJECT_TITAN"]
+
+  - email: "lucas.silva@yourcompany.com"
+    name: "Lucas Silva"
+    title: "Senior Backend Engineer — Billing"
+    department: "Engineering"
+    hierarchy_level: "INDIVIDUAL_CONTRIBUTOR"
+    manager_email: "arjun.mehta@yourcompany.com"
+    approval_limit_usd: 5000
+    is_vip: false
+    assigned_projects: ["PROJECT_APOLLO"]
+
+  - email: "devops-lead@yourcompany.com"
+    name: "DevOps On-Call Lead"
+    title: "Lead Infrastructure On-Call"
+    department: "DevOps_SRE"
+    hierarchy_level: "LEAD_MANAGER"
+    manager_email: "sarah.jenkins@yourcompany.com"
+    approval_limit_usd: 25000
+    is_vip: false
+
+  # ── Product & Design ────────────────────────────────────────────────────────
+  - email: "priya.patel@yourcompany.com"
+    name: "Priya Patel"
+    title: "VP of Product Management"
+    department: "Product"
+    hierarchy_level: "VP_DIRECTOR"
+    manager_email: "victoria.sterling@yourcompany.com"
+    approval_limit_usd: 100000
+    is_vip: false
+    assigned_projects: ["PROJECT_NEXUS"]
+
+  # ── People Ops & Administration ─────────────────────────────────────────────
+  - email: "olivia.martinez@yourcompany.com"
+    name: "Olivia Martinez"
+    title: "VP of People & Talent"
+    department: "HR"
+    hierarchy_level: "VP_DIRECTOR"
+    manager_email: "victoria.sterling@yourcompany.com"
+    approval_limit_usd: 50000
+    is_vip: false
+
+  - email: "chloe.harper@yourcompany.com"
+    name: "Chloe Harper"
+    title: "Executive Assistant to C-Suite"
+    department: "Executive"
+    hierarchy_level: "INDIVIDUAL_CONTRIBUTOR"
+    manager_email: "victoria.sterling@yourcompany.com"
+    approval_limit_usd: 15000
+    is_vip: true
+
+  # ── Sales & Customer Success ────────────────────────────────────────────────
+  - email: "daniel.cross@yourcompany.com"
+    name: "Daniel Cross"
+    title: "VP of Enterprise Sales & CSM"
+    department: "Sales_CS"
+    hierarchy_level: "VP_DIRECTOR"
+    manager_email: "victoria.sterling@yourcompany.com"
+    approval_limit_usd: 150000
+    is_vip: false

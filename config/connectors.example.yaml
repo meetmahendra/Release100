@@ -1,0 +1,117 @@
+# ==============================================================================
+# Enterprise External Knowledge Connectors & Tools Configuration (Template)
+# ==============================================================================
+# File: config/connectors.yaml (copy from connectors.example.yaml)
+#
+# MailOrganizer acts as a federated consumer of pre-existing enterprise systems.
+# It does NOT maintain an internal vector database. Instead, it queries your
+# existing authoritative endpoints (RAG systems, MCP tools, Calendar, Mail history)
+# in parallel using ThreadPoolExecutor with strict per-connector timeouts.
+#
+# Key Features:
+#   1. Automatic ${ENV_VAR} interpolation across all string fields.
+#   2. Deterministic tag-based routing: zero added LLM cost to choose connectors.
+#   3. Strict timeout enforcement: slow services never block email triage.
+#   4. Fails fast on startup if schema is invalid.
+# ==============================================================================
+
+# ── 1. External Pre-Existing Enterprise RAG Services ──────────────────────────
+# Declare REST API endpoints for your internal documentation or search gateways.
+# Each service will be registered as "<key>_rag" (e.g., "hr_policies_rag").
+external_rag_services:
+  hr_policies:
+    # HTTP POST endpoint returning JSON search results
+    endpoint: "https://rag-hr.internal.company.com/v1/query"
+    # Optional feedback/audit endpoint for recording answer quality or corrections
+    modify_endpoint: "https://rag-hr.internal.company.com/v1/feedback"
+    # Authorization header supporting environment variables (${VAR_NAME})
+    auth_header: "Bearer ${HR_RAG_TOKEN}"
+    # Semantic description of knowledge indexed in this knowledge base
+    description: "Employee benefits, PTO rules, travel expense reimbursement caps, healthcare"
+    # Hard query timeout in seconds (Default: 2.0s, Min: 0.5s, Max: 10.0s)
+    timeout_seconds: 2.0
+
+  engineering_docs:
+    endpoint: "https://rag-eng.internal.company.com/v1/query"
+    modify_endpoint: null
+    auth_header: "Bearer ${ENG_RAG_TOKEN}"
+    description: "Core infrastructure architecture, SLAs, runbooks, API deprecation timelines"
+    timeout_seconds: 2.0
+
+  legal_contracts:
+    endpoint: "https://rag-legal.internal.company.com/v1/query"
+    modify_endpoint: null
+    auth_header: "Bearer ${LEGAL_RAG_TOKEN}"
+    description: "Master Service Agreements (MSA), standard NDAs, indemnity terms, GDPR guidelines"
+    timeout_seconds: 2.5
+
+
+# ── 2. Outbound Model Context Protocol (MCP) Servers ──────────────────────────
+# Connect MailOrganizer to remote or local MCP servers to inspect live tools.
+# Registered as "<key>_mcp" (e.g., "jira_mcp", "postgres_erp_mcp").
+mcp_servers:
+  # Stdio transport: Spawns local process and communicates via stdin/stdout
+  jira:
+    transport: "stdio"
+    command: "npx"
+    args: ["-y", "@modelcontextprotocol/server-jira"]
+    env:
+      JIRA_URL: "${JIRA_URL}"
+      JIRA_API_TOKEN: "${JIRA_API_TOKEN}"
+
+  # SSE transport: Connects to a remote daemon over HTTP Server-Sent Events
+  postgres_erp:
+    transport: "sse"
+    url: "http://internal-erp.corp.local/mcp"
+
+
+# ── 3. Gmail Historical Thread Search ─────────────────────────────────────────
+# Enables searching the mailbox for previous discussions with the same sender
+# or regarding related invoices, agreements, or project keywords.
+gmail_search:
+  enabled: true
+  max_past_threads: 3          # Max past threads to summarize into context
+  search_scope_months: 6       # How far back in time to search
+
+
+# ── 4. Calendar Integration ───────────────────────────────────────────────────
+# Enables free/busy checking and upcoming meeting retrieval for scheduling emails.
+calendar:
+  enabled: true
+  provider: "google"           # Options: "google", "outlook", "mock"
+  timezone: "America/New_York" # Mailbox owner's primary working timezone
+  buffer_minutes: 15           # Minimum buffer time between scheduled events
+
+
+# ── 5. ERP & Financial Ledgers (Optional) ─────────────────────────────────────
+# Allows checking invoice payment status, subscription tiers, or wire transfer holds.
+erp_financial:
+  enabled: false
+  provider: "mock"             # Options: "stripe", "quickbooks", "netsuite", "mock"
+  endpoint: "https://billing.internal.company.com/api/v1"
+
+
+# ── 6. Deterministic Tag-Based Routing Rules ──────────────────────────────────
+# Matches context tags produced during email classification against connector IDs.
+# If any tag in the rule matches the email's tags, the listed connectors are queried.
+# ZERO additional LLM latency or token cost.
+routing_rules:
+  # Calendar / Scheduling
+  - tags: ["meeting", "schedule", "calendar", "reschedule", "appointment", "call"]
+    connectors: ["calendar"]
+
+  # Financial / Invoices / Accounting
+  - tags: ["invoice", "payment", "wire-transfer", "receipt", "chargeback", "financial", "pricing"]
+    connectors: ["erp_financial", "gmail_search"]
+
+  # Legal / Contracts / Compliance
+  - tags: ["contract", "legal", "compliance", "audit", "nda", "gdpr", "soc2"]
+    connectors: ["legal_contracts_rag"]
+
+  # Engineering / SRE / Outages
+  - tags: ["incident", "outage", "infrastructure", "deployment", "sre", "database", "latency", "alert"]
+    connectors: ["engineering_docs_rag", "jira_mcp"]
+
+  # People Ops / HR / Benefits
+  - tags: ["benefits", "onboarding", "pto", "hr", "payroll", "expense"]
+    connectors: ["hr_policies_rag"]

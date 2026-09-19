@@ -1,0 +1,102 @@
+# ============================================================
+# LLM Model Configuration
+# Map each pipeline action to a specific provider + model.
+# Change providers and models here without touching application code.
+#
+# Supported providers:
+#   google    — Google Gemini (requires GEMINI_API_KEY)
+#   openai    — OpenAI GPT (requires OPENAI_API_KEY)
+#   anthropic — Anthropic Claude (requires ANTHROPIC_API_KEY)
+#   mistral   — Mistral AI (requires MISTRAL_API_KEY)
+#   qwen      — Alibaba Qwen via DashScope (requires DASHSCOPE_API_KEY)
+#
+# Optional fields per action:
+#   api_key_env — override which .env variable holds the API key
+#   base_url    — custom endpoint (useful for self-hosted / proxy setups)
+#
+# Install provider packages as needed:
+#   pip install langchain-openai
+#   pip install langchain-anthropic
+#   pip install langchain-mistralai
+#   pip install langchain-community dashscope   # for qwen
+# ============================================================
+
+classification:
+  provider: google
+  model: gemini-3.6-flash
+  temperature: 0.1
+  max_tokens: 1024
+  description: "Email category + urgency + tags + reply necessity"
+
+reply_necessity_check:
+  provider: google
+  model: gemini-3.6-flash
+  temperature: 0.0
+  max_tokens: 256
+  description: "Semantic analysis: does this email require a reply?"
+
+draft_reply:
+  provider: google
+  model: gemini-3.6-flash
+  temperature: 0.3
+  max_tokens: 1024
+  description: "Generate polished draft reply"
+
+pm_extraction:
+  provider: google
+  model: gemini-3.6-flash
+  temperature: 0.2
+  max_tokens: 512
+  description: "Extract PM task details from email context"
+
+query_translation:
+  provider: google
+  model: gemini-3.5-flash-lite
+  temperature: 0.0
+  max_tokens: 256
+  description: "Convert natural language search to Gmail query"
+
+# ============================================================
+# Example: switch draft_reply to Qwen
+# ============================================================
+# draft_reply:
+#   provider: qwen
+#   model: qwen-max          # qwen-turbo | qwen-plus | qwen-max | qwen-long
+#   temperature: 0.3
+#   api_key_env: DASHSCOPE_API_KEY
+
+# ============================================================
+# Example: switch classification to OpenAI
+# ============================================================
+# classification:
+#   provider: openai
+#   model: gpt-4o-mini
+#   temperature: 0.1
+#   api_key_env: OPENAI_API_KEY
+
+# ============================================================
+# Example: switch draft_reply to Claude
+# ============================================================
+# draft_reply:
+#   provider: anthropic
+#   model: claude-3-5-haiku-20241022
+#   temperature: 0.3
+#   api_key_env: ANTHROPIC_API_KEY
+
+# ============================================================
+# Example: switch to Mistral
+# ============================================================
+# draft_reply:
+#   provider: mistral
+#   model: mistral-small-latest
+#   temperature: 0.3
+#   api_key_env: MISTRAL_API_KEY
+
+# ============================================================
+# Example: Qwen via OpenAI-compatible endpoint (alternative)
+# ============================================================
+# draft_reply:
+#   provider: openai
+#   model: qwen-plus
+#   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+#   api_key_env: DASHSCOPE_API_KEY

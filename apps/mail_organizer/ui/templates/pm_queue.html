@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}PM Action Queue{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 1.25rem; font-weight: 700;">Human-in-the-Loop PM Action Queue</h2>
+        <span class="badge badge-action">Staged Before Execution</span>
+    </div>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
+        Tasks extracted from emails are held in this queue. Zero unsolicited external sync occurs until explicit user confirmation.
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Priority</th>
+                <th>Target Tool</th>
+                <th>Due Date</th>
+                <th>Email Ref</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in tasks %}
+            <tr id="row-{{ t.id }}">
+                <td>#{{ t.id }}</td>
+                <td style="font-weight: 600;">{{ t.summary }}</td>
+                <td><span class="badge badge-urgent">{{ t.priority }}</span></td>
+                <td><span class="badge badge-meeting">{{ t.destination|upper }}</span></td>
+                <td>{{ t.due_date or 'None' }}</td>
+                <td style="font-size: 0.8rem; color: var(--text-secondary);">{{ t.gmail_id or 'Extracted' }}</td>
+                <td style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="approveTask({{ t.id }}, 'jira')">Sync Jira</button>
+                    <button class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="approveTask({{ t.id }}, 'linear')">Sync Linear</button>
+                    <button class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="rejectTask({{ t.id }})">Dismiss</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 2rem;">No pending PM tasks. All tickets are synced.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+async function approveTask(taskId, tool) {
+    try {
+        const resp = await fetch(`/admin/apps/mail-organizer/api/pm-tasks/${taskId}/approve`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sync_to: tool})
+        });
+        const data = await resp.json();
+        if (data.success) {
+            alert(`Task synced successfully to ${tool.toUpperCase()}! Key: ${data.issue_key}`);
+            document.getElementById(`row-${taskId}`).remove();
+        } else {
+            alert('Error: ' + (data.error || 'Failed'));
+        }
+    } catch (err) {
+        alert('Request failed: ' + err.message);
+    }
+}
+
+async function rejectTask(taskId) {
+    try {
+        const resp = await fetch(`/admin/apps/mail-organizer/api/pm-tasks/${taskId}/reject`, {
+            method: 'POST'
+        });
+        const data = await resp.json();
+        if (data.success) {
+            document.getElementById(`row-${taskId}`).remove();
+        }
+    } catch (err) {
+        alert('Failed to dismiss task');
+    }
+}
+</script>
+{% endblock %}

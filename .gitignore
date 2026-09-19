@@ -1,0 +1,58 @@
+# Zero-Trust Security & Credential Isolation (GEES v1.0 Section 5.1)
+# Environment variables, backups, and secrets
+.env
+.env.*
+*.pem
+*.key
+*.cert
+*.enc
+credentials.json
+token.json
+client_secrets.json
+secure_tokens/
+config_backups/
+*.bak
+
+# Runtime logs, telemetry, and local databases
+logs/
+*.log
+*.jsonl
+*.db
+*.sqlite
+*.sqlite3
+
+# Python bytecode and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# Distribution, packaging, and build artifacts
+dist/
+build/
+output/
+*.spec
+!Release100.spec
+*.egg-info/
+.eggs/
+
+# Testing, benchmark outputs, and coverage
+reports/*
+!reports/.gitkeep
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# IDE and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+Desktop.ini
+.DS_Store

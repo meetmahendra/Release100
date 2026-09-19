@@ -1,0 +1,38 @@
+# ============================================================
+# Jira Adapter — Organisation Context
+# Populate this file after initial shipping.
+# This file is read by the LLM to determine:
+#   - Who to assign tasks to
+#   - Which project to create tickets in
+#   - Who to notify for specific topics
+#
+# NOTE: This file is loaded at pipeline startup.
+#       Restart the application after making changes.
+# ============================================================
+
+organisation_name: "Your Organisation"
+
+# Leadership hierarchy (top-down)
+leadership:
+  - name: "CEO Name"
+    email: "ceo@example.com"
+    jira_username: "ceo.name"
+  # Add more leaders as needed
+
+# Team members and their areas of responsibility
+team_members:
+  - name: "Team Member Name"
+    email: "member@example.com"
+    jira_username: "member.name"
+    role: "Developer"
+    department: "Engineering"
+    responsibilities:
+      - "Backend API"
+      - "Database"
+  # Add more members as needed
+
+# Default assignee rules by email category
+assignee_rules:
+  "Action Required (High)": null    # null = assign to email account owner
+  "Receipts/Financial": null        # e.g. "accounts.team.jira.username"
+  "Calendar/Scheduling": null

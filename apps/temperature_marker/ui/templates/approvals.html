@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Operator Approvals{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <h1 style="font-size: 1.75rem; font-weight: 700;">Operator Onboarding Approvals</h1>
+        <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+            Review and approve pending CaneBot operators before biometric check-in authorization.
+        </p>
+    </div>
+    <span class="badge badge-yellow" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
+        {{ pending_operators|length }} Pending Review
+    </span>
+</div>
+
+<div class="card">
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.85rem;">
+                    <th style="padding: 0.75rem 1rem;">Employee ID</th>
+                    <th style="padding: 0.75rem 1rem;">Full Name</th>
+                    <th style="padding: 0.75rem 1rem;">Phone Number</th>
+                    <th style="padding: 0.75rem 1rem;">Role</th>
+                    <th style="padding: 0.75rem 1rem;">Assigned Kiosk</th>
+                    <th style="padding: 0.75rem 1rem;">Registered At</th>
+                    <th style="padding: 0.75rem 1rem; text-align: right;">Approval Action</th>
+                </tr>
+            </thead>
+            <tbody id="approvalsTableBody">
+                {% if pending_operators %}
+                    {% for op in pending_operators %}
+                    <tr id="row-{{ op.emp_code }}" style="border-bottom: 1px solid var(--border-color); font-size: 0.9rem;">
+                        <td style="padding: 1rem; font-family: monospace; font-weight: 600; color: var(--accent-blue);">
+                            {{ op.emp_code }}
+                        </td>
+                        <td style="padding: 1rem; font-weight: 600;">
+                            {{ op.full_name }}
+                        </td>
+                        <td style="padding: 1rem; font-family: monospace;">
+                            {{ op.phone_number }}
+                        </td>
+                        <td style="padding: 1rem;">
+                            <span class="badge badge-blue">Operator</span>
+                        </td>
+                        <td style="padding: 1rem; color: var(--text-secondary);">
+                            {{ op.assigned_kiosk_id or 'Unassigned' }}
+                        </td>
+                        <td style="padding: 1rem; color: var(--text-secondary); font-size: 0.85rem;">
+                            {{ op.created_at_utc.strftime('%Y-%m-%d %H:%M UTC') if op.created_at_utc else 'Recent' }}
+                        </td>
+                        <td style="padding: 1rem; text-align: right;">
+                            <button onclick="handleApproval('{{ op.emp_code }}', 'approve')" class="btn btn-success" style="padding: 0.3rem 0.8rem; font-size: 0.85rem; margin-right: 0.5rem;">
+                                Approve
+                            </button>
+                            <button onclick="handleApproval('{{ op.emp_code }}', 'reject')" class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.85rem;">
+                                Reject
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                            No pending operator onboarding requests found. All staff authorized!
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+async function handleApproval(empId, action) {
+    if (!confirm(`Are you sure you want to ${action} operator ${empId}?`)) return;
+
+    try {
+        const resp = await fetch(`/admin/apps/temperature-marker/api/approvals/${empId}/${action}`, {
+            method: 'POST'
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            const row = document.getElementById(`row-${empId}`);
+            if (row) {
+                row.style.opacity = '0.5';
+                row.innerHTML = `<td colspan="7" style="padding: 1rem; text-align: center; color: var(--accent-green);">Operator ${empId} successfully ${action}d.</td>`;
+            }
+        } else {
+            alert('Error: ' + data.detail);
+        }
+    } catch (err) {
+        alert('Action failed: ' + err);
+    }
+}
+</script>
+{% endblock %}

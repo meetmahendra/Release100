@@ -1,0 +1,18 @@
+# ============================================================
+# Project Management Integration Configuration
+# Set 'active_adapter' to the PM tool your organisation uses.
+# The adapter must be implemented in:
+#   app/services/pm_adapters/<adapter_name>_adapter.py
+#
+# Set enabled: false to disable PM integration entirely.
+# ============================================================
+
+enabled: false
+active_adapter: jira   # Options: jira, github_issues, trello (future)
+
+# How many PM tasks can be auto-queued per email (max)
+max_tasks_per_email: 3
+
+# If true, PM tasks appear in the daily digest for approval.
+# If false, tasks are discarded unless approved via API.
+require_approval: true

@@ -1,0 +1,97 @@
+# ==============================================================================
+# Enterprise External Knowledge Connectors & Tools Configuration
+# ==============================================================================
+# This configuration registers external enterprise systems (Pre-existing RAGs,
+# Outbound MCP servers, Historical Mailbox Search, Calendar, and ERP Ledgers).
+#
+# Connectors are invoked deterministically by matching the email's context tags
+# against the 'routing_rules' defined below (Zero additional LLM overhead).
+#
+# Environment variables like ${HR_RAG_TOKEN} are automatically interpolated.
+# ==============================================================================
+
+# ── 1. Pre-existing Enterprise RAG Services ──────────────────────────────────
+# Register your external RAG endpoints (Vertex AI Search, LangChain, LlamaIndex,
+# or custom internal microservices).
+external_rag_services:
+  hr_policies:
+    endpoint: "http://127.0.0.1:8005/hr/v1/query"
+    modify_endpoint: "http://127.0.0.1:8005/hr/v1/feedback"
+    auth_header: "Bearer ${HR_RAG_TOKEN}"
+    description: "Employee benefits, PTO rules, travel expense reimbursement caps, healthcare"
+    timeout_seconds: 2.0
+
+  engineering_docs:
+    endpoint: "http://127.0.0.1:8005/eng/v1/query"
+    modify_endpoint: null
+    auth_header: "Bearer ${ENG_RAG_TOKEN}"
+    description: "Core infrastructure architecture, SLAs, runbooks, API deprecation timelines"
+    timeout_seconds: 2.0
+
+  legal_contracts:
+    endpoint: "http://127.0.0.1:8005/legal/v1/query"
+    modify_endpoint: null
+    auth_header: "Bearer ${LEGAL_RAG_TOKEN}"
+    description: "Master Service Agreements, standard NDA templates, indemnity terms, GDPR policies"
+    timeout_seconds: 2.0
+
+# ── 2. Outbound MCP (Model Context Protocol) Servers ─────────────────────────
+# Outbound MCP servers provide live external tools (Jira, Linear, SAP, Salesforce).
+# (Note: MailOrganizer also exposes an Inbound MCP server on port 8001).
+mcp_servers:
+  jira:
+    transport: "stdio"
+    command: "npx"
+    args: ["-y", "@modelcontextprotocol/server-jira"]
+    env:
+      JIRA_URL: "${JIRA_URL}"
+      JIRA_API_TOKEN: "${JIRA_API_TOKEN}"
+
+  postgres_erp:
+    transport: "sse"
+    url: "http://internal-erp.corp.local/mcp"
+
+# ── 3. Gmail Historical Search Connector ─────────────────────────────────────
+# Searches past threads with the sender or topic keywords for prior agreements,
+# quotes, and historic decisions. Wraps existing gmail_service.py.
+gmail_search:
+  enabled: true
+  max_past_threads: 3
+  search_scope_months: 6
+
+# ── 4. Calendar Connector ────────────────────────────────────────────────────
+# Queries Google Calendar or Outlook for free/busy slots around requested dates.
+calendar:
+  enabled: true
+  provider: "google"          # google | outlook | mock
+  timezone: "America/New_York"
+  buffer_minutes: 15
+
+# ── 5. ERP / Financial Ledger Connector ──────────────────────────────────────
+# Queries accounting transaction status, invoice payment records, or wire refs.
+erp_financial:
+  enabled: false
+  provider: "mock"            # stripe | quickbooks | netsuite | mock
+  endpoint: "https://billing.internal.company.com/api/v1"
+
+# ── 6. Deterministic Tag-to-Connector Routing Rules ──────────────────────────
+# The classifier emits 8-15 context tags. When any tag matches, the connector
+# is dispatched in parallel (max 2.0s timeout per connector).
+routing_rules:
+  - tags: ["meeting", "schedule", "calendar", "reschedule", "appointment", "call"]
+    connectors: ["calendar"]
+
+  - tags: ["invoice", "payment", "wire-transfer", "receipt", "chargeback", "financial", "pricing"]
+    connectors: ["erp_financial", "gmail_search"]
+
+  - tags: ["reply-needed", "action-required", "follow-up", "question", "request", "review-needed", "inquiry", "client", "vendor"]
+    connectors: ["gmail_search"]
+
+  - tags: ["contract", "legal", "compliance", "audit", "nda", "gdpr", "soc2"]
+    connectors: ["legal_contracts_rag"]
+
+  - tags: ["incident", "outage", "infrastructure", "deployment", "sre", "database", "latency", "alert"]
+    connectors: ["engineering_docs_rag", "jira_mcp"]
+
+  - tags: ["benefits", "onboarding", "pto", "hr", "payroll", "expense"]
+    connectors: ["hr_policies_rag"]

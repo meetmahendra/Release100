@@ -1,0 +1,17 @@
+# ============================================================
+# User Override Rules
+# Any category defined here will REPLACE the default rules
+# for that category. Partial overrides are not supported —
+# define the full action list if you override a category.
+#
+# Example: uncomment and edit below to override a category.
+# ============================================================
+
+# categories:
+#   "Promotions/Marketing":
+#     - action: remove_inbox
+#     - action: safe_archive
+#       label: "_LLM/Promotions"
+#     - action: mark_as_read
+#     # Example: also star promotions from a favourite brand
+#     - action: star_thread

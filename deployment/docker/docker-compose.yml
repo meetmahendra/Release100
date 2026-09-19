@@ -1,0 +1,63 @@
+# =============================================================================
+# Release100 Docker Compose
+# Copyright 2026 Mahendra GURAV | Apache License 2.0
+#
+# Services:
+#   release100  — Core Platform (FastAPI + LangGraph)
+#   cloudflared — Optional Cloudflare tunnel for zero-inbound relay
+# =============================================================================
+
+services:
+  release100:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile
+    container_name: release100
+    restart: unless-stopped
+    ports:
+      - "${ORCHESTRATOR_PORT:-8002}:8002"
+      - "${MCP_SERVER_PORT:-8001}:8001"
+    env_file:
+      - ../../.env
+    volumes:
+      # Persist audit logs, SQLite DBs, and OAuth credentials outside the container
+      - release100_logs:/opt/release100/logs
+      - release100_creds:/opt/release100/.local_credentials
+      # Optionally mount local model files (ONNX face model, OCR model)
+      # - ./models:/opt/release100/core_platform/app/skills/models:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "2"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ── Optional: Cloudflare Tunnel (zero-inbound reverse proxy) ─────────────
+  # Enables the RELAY_WS_URL edge kiosk connectivity without opening inbound ports.
+  # Uncomment and configure your CLOUDFLARE_TUNNEL_TOKEN to activate.
+  #
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run
+  #   environment:
+  #     - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+  #   depends_on:
+  #     release100:
+  #       condition: service_healthy
+
+volumes:
+  release100_logs:
+    driver: local
+  release100_creds:
+    driver: local

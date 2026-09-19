@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card" style="margin-bottom: 0;">
+        <div style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;">Total Emails Triaged</div>
+        <div style="font-size: 2.25rem; font-weight: 700; color: var(--text-primary); margin-top: 0.5rem;">{{ metrics.total_processed }}</div>
+        <div style="color: var(--accent-green); font-size: 0.8rem; margin-top: 0.25rem;">Deterministic + Stochastic</div>
+    </div>
+    <div class="card" style="margin-bottom: 0;">
+        <div style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;">Pending PM Tasks</div>
+        <div style="font-size: 2.25rem; font-weight: 700; color: var(--accent-amber); margin-top: 0.5rem;">{{ metrics.pending_pm_tasks }}</div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">Awaiting Human Review</div>
+    </div>
+    <div class="card" style="margin-bottom: 0;">
+        <div style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;">Needs Review Gate</div>
+        <div style="font-size: 2.25rem; font-weight: 700; color: #f43f5e; margin-top: 0.5rem;">{{ metrics.needs_review }}</div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">Confidence &lt; 85% Diverted</div>
+    </div>
+    <div class="card" style="margin-bottom: 0;">
+        <div style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;">Staged Drafts</div>
+        <div style="font-size: 2.25rem; font-weight: 700; color: var(--accent-primary); margin-top: 0.5rem;">{{ metrics.drafts_staged }}</div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">Context-Aware & Non-Destructive</div>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 1.25rem; font-weight: 700;">Category Breakdown</h2>
+        <span class="badge badge-success">Zero-Deletion Standard</span>
+    </div>
+    <div style="display: flex; gap: 1rem; margin-top: 1.25rem; flex-wrap: wrap;">
+        {% for cat, count in metrics.category_breakdown.items() %}
+        <div style="background: var(--bg-card-hover); padding: 0.75rem 1.25rem; border-radius: 6px; border: 1px solid var(--border-color);">
+            <span style="font-weight: 600; color: var(--text-secondary);">{{ cat }}:</span>
+            <span style="font-weight: 700; color: var(--text-primary); margin-left: 0.5rem;">{{ count }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Recent Triaged Messages</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Sender</th>
+                <th>Subject</th>
+                <th>Category</th>
+                <th>Confidence</th>
+                <th>Role</th>
+                <th>Safety Gate</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for em in recent_emails %}
+            <tr>
+                <td style="font-weight: 500;">{{ em.sender }}</td>
+                <td>{{ em.subject }}</td>
+                <td><span class="badge badge-action">{{ em.category }}</span></td>
+                <td>{{ (em.confidence * 100)|round(1) }}%</td>
+                <td><span style="font-size: 0.85rem; color: var(--text-secondary);">{{ em.recipient_role }}</span></td>
+                <td>
+                    {% if em.safety_override %}
+                    <span class="badge badge-needs-review">Diverted</span>
+                    {% else %}
+                    <span class="badge badge-success">Safe</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 2rem;">No email records processed yet. Use the Triage Simulator to ingest a thread.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

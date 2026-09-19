@@ -1,0 +1,77 @@
+# ==============================================================================
+# Enterprise Dynamic Ownership, Responsibility & Delegation Policies (Template)
+# ==============================================================================
+# File: config/delegation_policies.yaml (copy from delegation_policies.example.yaml)
+#
+# ZERO HARDCODED NAMES OR EMAILS:
+# Resolvers query registered systems (Jira component leads, GitHub CODEOWNERS,
+# live SRE on-call schedules, and Organization Directory) in real time.
+# If team members rotate, change roles, or take leave, the delegation engine
+# adapts dynamically without code changes.
+# ==============================================================================
+
+# ── 1. Multi-Recipient & CC Disambiguation Policy ─────────────────────────────
+multi_recipient_to:
+  # When multiple recipients are in To:, semantic mention in body takes precedence.
+  # If someone else on To: is explicitly named, current user is marked OBSERVER_ONLY.
+  # Options: "semantic_mention_priority", "first_recipient", "all_active"
+  strategy: "semantic_mention_priority"
+
+  # If To: recipient count exceeds this threshold and user is not specifically
+  # called out by name, the email is treated as a broadcast announcement (no draft).
+  broadcast_threshold: 4
+
+
+# ── 2. Active Teammate Handling Tracker ───────────────────────────────────────
+teammate_handling:
+  # If an internal colleague (@yourcompany.com) has already replied to this thread
+  # with an explicit commitment ("I am looking into this", "Handling now"), suppress drafts.
+  suppress_draft_if_internal_reply: true
+
+  # Re-escalate back to user only if the external sender sends N unanswered follow-ups.
+  reopen_on_unanswered_followups: 2
+
+
+# ── 3. Dynamic Capability-Based Delegation Strategies ────────────────────────
+# Rules mapping topics or project references to dynamic resolvers.
+dynamic_delegation_strategies:
+  # Strategy A: Delegate by Project Ownership (queries PM / Jira)
+  - trigger: "email_references_registered_project"
+    resolver: "pm_service.get_project_lead"
+    params:
+      fallback_department: "Engineering"
+    template: "Looping in {name} ({email}), the project lead for {project_name}. {first_name}, could you please assist with this?"
+
+  # Strategy B: Delegate by Live Infrastructure On-Call (queries SRE schedule)
+  - trigger: "topic == 'Cloud Infrastructure & SRE' and urgency >= 7"
+    resolver: "oncall_service.get_current_oncall"
+    params:
+      schedule: "sre-primary"
+      fallback_role: "Head of SRE"
+    template: "Looping in {name} ({email}) from our SRE team who is on-call for infrastructure issues."
+
+  # Strategy C: Delegate by Legal & Regulatory Capability (queries Org Directory)
+  - trigger: "topic == 'Legal, Risk & Regulatory'"
+    resolver: "directory_service.find_by_capability"
+    params:
+      department: "Legal"
+      specialty: "Contracts & Compliance"
+    template: "Looping in {name} ({email}) from our Legal & Compliance team to review the terms."
+
+  # Strategy D: Delegate by Core Payments / FinTech (queries Org Directory)
+  - trigger: "topic == 'FinTech & Digital Banking' and tags contains 'wire-transfer'"
+    resolver: "directory_service.find_by_capability"
+    params:
+      department: "Finance"
+      role: "Treasurer / Accounting Lead"
+    template: "Adding {name} ({email}) from Corporate Finance to coordinate the compliance verification."
+
+
+# ── 4. Missing Information Policy (Inferred Dependencies) ─────────────────────
+missing_information:
+  # When the email requests information that requires internal consultation
+  # (e.g. engineering delivery dates, bespoke pricing approvals):
+  action: "create_internal_task_and_holding_reply"
+  default_holding_reply: >
+    Thank you for reaching out. I am confirming the details with our engineering and operations
+    leads today and will follow up with confirmation by tomorrow afternoon.

@@ -1,0 +1,47 @@
+# ============================================================
+# VIP Sender Rules
+# Emails matching these rules are NEVER archived or trashed.
+# They are always kept in the Inbox with a @VIP label.
+# LLM still classifies them, but cannot override Inbox placement.
+#
+# no_reply patterns are detected before LLM runs (Layer 1).
+# ============================================================
+
+# VIP email addresses (exact match, case-insensitive)
+vip_addresses:
+  - "boss@yourcompany.com"
+  - "ceo@yourcompany.com"
+  - "board-secretary@yourcompany.com"
+  # Add more VIP addresses
+
+# VIP domains — any email FROM these domains is treated as VIP
+vip_domains:
+  - "yourclient.com"
+  - "bank.com"
+  - "paypal.com"
+  # Add more VIP domains
+
+# Critical subject keywords — any email with these in the subject is forced High Priority
+critical_subject_keywords:
+  - "URGENT"
+  - "P0"
+  - "Production Down"
+  - "Security Alert"
+  - "Wire Transfer"
+  - "Contract"
+  - "Legal"
+
+# No-reply sender patterns (pre-LLM detection)
+# Emails matching these are flagged is_no_reply=True and no draft is created
+no_reply_patterns:
+  - "noreply"
+  - "no-reply"
+  - "donotreply"
+  - "do-not-reply"
+  - "notifications"
+  - "automated"
+  - "mailer-daemon"
+  - "postmaster"
+  - "bounce"
+  - "alerts"
+  - "support-noreply"

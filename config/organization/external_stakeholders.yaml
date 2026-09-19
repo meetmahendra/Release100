@@ -1,0 +1,87 @@
+# ============================================================
+# TechGlobal Cloud Solutions — External Stakeholders & Partners
+# ============================================================
+
+strategic_clients:
+
+  - company_name: "Apex Global Financial"
+    domain: "yourclient.com"
+    tier: "TIER_1_VIP"
+    account_executive: "daniel.cross@yourcompany.com"
+    lead_contacts:
+      - email: "david.chen@yourclient.com"
+        name: "David Chen"
+        title: "VP of Engineering"
+        is_vip: true
+      - email: "laura.wong@yourclient.com"
+        name: "Laura Wong"
+        title: "Head of Procurement"
+        is_vip: true
+    sla_tier: "Platinum (1-Hour Response, 24/7 Support)"
+    default_labels: ["Client/ApexGlobal", "@VIP"]
+
+  - company_name: "Starlight Enterprise Systems"
+    domain: "starlight.io"
+    tier: "TIER_1_VIP"
+    account_executive: "daniel.cross@yourcompany.com"
+    lead_contacts:
+      - email: "michael.scott@starlight.io"
+        name: "Michael Scott"
+        title: "Chief Operating Officer"
+        is_vip: true
+    sla_tier: "Gold (4-Hour Response)"
+    default_labels: ["Client/Starlight", "@VIP"]
+
+  - company_name: "GlobalFin Capital"
+    domain: "globalfin.com"
+    tier: "TIER_1_VIP"
+    account_executive: "daniel.cross@yourcompany.com"
+    lead_contacts:
+      - email: "vp-tech@globalfin.com"
+        name: "VP Tech"
+        is_vip: true
+    sla_tier: "Platinum (1-Hour Response)"
+    default_labels: ["Client/GlobalFin", "@VIP"]
+
+strategic_vendors:
+
+  - vendor_name: "Amazon Web Services"
+    domain: "amazon.com"
+    billing_email: "no-reply-aws@amazon.com"
+    service_type: "Cloud Infrastructure"
+    default_labels: ["Finance/Receipts", "Log/Updates"]
+
+  - vendor_name: "Stripe Payments"
+    domain: "stripe.com"
+    billing_email: "invoices@stripe.com"
+    service_type: "Payment Gateway Partner"
+    default_labels: ["Finance/Receipts"]
+
+  - vendor_name: "Datadog"
+    domain: "datadoghq.com"
+    alert_email: "alerts-noreply@datadoghq.com"
+    service_type: "APM & Infrastructure Monitoring"
+    default_labels: ["@System_Alert"]
+
+  - vendor_name: "Atlassian Jira"
+    domain: "atlassian.net"
+    alert_email: "jira-notifications@atlassian.net"
+    service_type: "Project Management"
+    default_labels: ["Log/Updates"]
+
+banking_partners:
+
+  - bank_name: "ICICI Bank"
+    domain: "icici.bank.in"
+    transaction_email: "credit_cards@icici.bank.in"
+    is_vip: false
+
+  - bank_name: "HDFC Bank"
+    domain: "hdfcbank.net"
+    transaction_email: "alerts@hdfcbank.net"
+    is_vip: false
+
+  - bank_name: "Silicon Valley Bank / First Citizens"
+    domain: "svb.com"
+    wire_email: "wires@svb.com"
+    is_vip: true

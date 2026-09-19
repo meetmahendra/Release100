@@ -1,0 +1,18 @@
+# ============================================================
+# Jira Adapter — Connection Configuration
+# Store sensitive values in environment variables.
+# Reference them here using the ${ENV_VAR_NAME} syntax.
+# ============================================================
+
+base_url: "${JIRA_BASE_URL}"         # e.g. https://yourorg.atlassian.net
+auth_email: "${JIRA_AUTH_EMAIL}"     # Jira account email
+api_token: "${JIRA_API_TOKEN}"       # Jira API token from id.atlassian.com
+
+# Default project key when no project can be inferred from email
+default_project_key: "${JIRA_DEFAULT_PROJECT}"
+
+# Issue type to create by default
+default_issue_type: "Task"           # Task | Bug | Story | Epic
+
+# Default priority when LLM cannot determine
+default_priority: "Medium"           # Highest | High | Medium | Low | Lowest

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }} — Release100</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 flex">
+
+  <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
+  <aside class="w-64 shrink-0 bg-slate-800/90 border-r border-slate-700/60 flex flex-col">
+    <!-- Branding -->
+    <div class="px-6 py-5 border-b border-slate-700/60">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm font-bold text-white leading-tight">Release100</p>
+          <p class="text-xs text-slate-400 truncate max-w-[140px]">{{ organization }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto text-sm">
+      <!-- Dashboard -->
+      <a href="/admin/"
+         class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors
+                {% if not section %}bg-emerald-600/20 text-emerald-300 font-semibold{% else %}text-slate-300 hover:bg-slate-700/50{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Overview Dashboard
+      </a>
+
+      <!-- Settings & Credentials -->
+      <a href="/settings"
+         class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-300 hover:bg-slate-700/50 transition-colors">
+        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Settings & Credentials
+      </a>
+
+      <!-- Section: Temperature Marker -->
+      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Temperature Marker</p>
+      <a href="/admin/apps/temperature-marker/monitoring"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
+        <span>📊</span> Live Monitoring
+      </a>
+      <a href="/admin/apps/temperature-marker/fleet"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
+        <span>🚚</span> Fleet Roster & Map
+      </a>
+      <a href="/admin/apps/temperature-marker/approvals"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
+        <span>👥</span> Operator Approvals
+      </a>
+      <a href="/loc" target="_blank"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
+        <span>📍</span> 1-Click GPS Check-in ↗
+      </a>
+
+      <!-- Section: Mail Organizer -->
+      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Mail & Calendar</p>
+      <a href="/admin/apps/mail-organizer/dashboard"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
+        <span>📥</span> Triage Dashboard
+      </a>
+      <a href="/admin/apps/mail-organizer/accounts"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
+        <span>🔑</span> Accounts & OAuth
+      </a>
+
+      <!-- Admin & Security -->
+      {% if is_admin %}
+      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Security & Keys</p>
+      <a href="/admin/api-keys"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
+                {% if section == 'api_keys' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586
+               a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+        </svg>
+        API Keys
+      </a>
+      {% endif %}
+
+      <!-- Diagnostics -->
+      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Diagnostics</p>
+      <a href="/admin/llm-costs"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
+                {% if section == 'llm_costs' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
+        <span>💰</span> LLM Costs & Tokens
+      </a>
+      <a href="/admin/logs"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
+                {% if section == 'logs' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
+        <span>📑</span> Live System Logs
+      </a>
+      <a href="/settings"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
+        <span>📡</span> Diagnostics Console
+      </a>
+      <a href="/health" target="_blank"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
+        <span>💓</span> Live Health JSON ↗
+      </a>
+    </nav>
+
+    <!-- User & Logout -->
+    <div class="px-4 py-4 border-t border-slate-700/60 bg-slate-800/40">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-bold text-white shrink-0">
+            {{ principal[:1].upper() }}
+          </div>
+          <span class="text-sm font-medium text-slate-200 truncate">{{ principal }}</span>
+        </div>
+        <a href="/admin/logout" class="text-slate-400 hover:text-red-400 transition-colors p-1" title="Logout">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main Content ───────────────────────────────────────────────────── -->
+  <main class="flex-1 overflow-auto p-8 bg-slate-900">
+
+    <!-- Top header bar -->
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-white">{{ title }}</h1>
+        <p class="text-xs text-slate-400 mt-1">
+          Kiosk: <span class="font-mono text-emerald-400">{{ kiosk_id }}</span> ({{ station }}) &bull; Tenant: {{ organization }}
+        </p>
+      </div>
+      <!-- Mode Badges -->
+      <div class="flex items-center gap-2">
+        {% if dry_run %}
+        <span class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold border border-amber-500/30">
+          🔶 SHADOW (DRY RUN)
+        </span>
+        {% else %}
+        <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30">
+          ✅ LIVE PRODUCTION
+        </span>
+        {% endif %}
+        <span class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700">
+          Mode: {{ execution_mode | default("shadow") }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ── Dashboard Section ─────────────────────────────────────────── -->
+    {% if not section %}
+    
+    <!-- 1. Live Services Readiness Grid -->
+    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Service & Credential Readiness</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      
+      <!-- Google Gemini AI -->
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Google Gemini AI</span>
+            {% if gemini_configured %}
+            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">READY</span>
+            {% else %}
+            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold">MISSING KEY</span>
+            {% endif %}
+          </div>
+          <p class="text-lg font-bold text-white">Display OCR & LLM</p>
+          <p class="text-xs text-slate-400 mt-1">Powers chiller screen OCR & intent routing.</p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-700/60">
+          <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Configure / Test Key →</a>
+        </div>
+      </div>
+
+      <!-- WhatsApp Cloud API -->
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">WhatsApp Ingress</span>
+            {% if whatsapp_configured %}
+            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">CONFIGURED</span>
+            {% else %}
+            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold">INCOMPLETE</span>
+            {% endif %}
+          </div>
+          <p class="text-lg font-bold text-white">Field Messaging</p>
+          <p class="text-xs text-slate-400 mt-1">Handles operator selfie check-ins & link generation.</p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-700/60">
+          <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Configure WhatsApp →</a>
+        </div>
+      </div>
+
+      <!-- Cloud Relay Tunnel -->
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Outbound Relay</span>
+            {% if relay_configured %}
+            <span class="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold">WSS TUNNEL</span>
+            {% else %}
+            <span class="px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 text-xs font-bold">LOCAL MODE</span>
+            {% endif %}
+          </div>
+          <p class="text-lg font-bold text-white">Zero Inbound</p>
+          <p class="text-xs text-slate-400 mt-1 truncate">Target: {{ relay_url or "Local Simulator" }}</p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-700/60">
+          <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Cloudflare Tunnel Info →</a>
+        </div>
+      </div>
+
+      <!-- Cryptographic Audit Chain -->
+      <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Audit Ledger</span>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">SHA-256</span>
+          </div>
+          <p class="text-lg font-bold text-white">#{{ last_audit_sequence or 0 }} Events</p>
+          <p class="text-xs text-slate-400 mt-1 font-mono truncate">Hash: {{ last_audit_hash[:16] }}...</p>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-700/60">
+          <a href="/health" target="_blank" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">View Telemetry →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Quick Action Launchpad -->
+    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Action Launchpad</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+      
+      <!-- Action 1: Fleet Roster -->
+      <a href="/admin/apps/temperature-marker/fleet"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">🚚</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Fleet Roster & Map</h3>
+        </div>
+        <p class="text-xs text-slate-400">Inspect registered CaneBot kiosks across Pune, Mumbai, and Bangalore, with geofence radii.</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Open Fleet Dashboard →</p>
+      </a>
+
+      <!-- Action 2: Operator Approvals -->
+      <a href="/admin/apps/temperature-marker/approvals"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">👥</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Operator Approval Gate</h3>
+        </div>
+        <p class="text-xs text-slate-400">Review pending factory floor operators, approve duty credentials, or reject unauthorized submissions.</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Open Approval Queue →</p>
+      </a>
+
+      <!-- Action 3: 1-Click GPS Check-in -->
+      <a href="/loc" target="_blank"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">📍</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">1-Click Geolocation Link</h3>
+        </div>
+        <p class="text-xs text-slate-400">Test the mobile-optimized GPS check-in page sent to field operators via WhatsApp.</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Test Location Check-in ↗</p>
+      </a>
+
+      <!-- Action 4: Mail Organizer Triage -->
+      <a href="/admin/apps/mail-organizer/dashboard"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">📥</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Email & PM Task Triage</h3>
+        </div>
+        <p class="text-xs text-slate-400">View LangGraph email classification breakdown, VIP alerts, and dispatch tasks to Jira and Linear.</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Open Mail Dashboard →</p>
+      </a>
+
+      <!-- Action 5: Live Settings & Disk Sync -->
+      <a href="/settings"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">⚙️</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Settings & Key Manager</h3>
+        </div>
+        <p class="text-xs text-slate-400">Set and test Gemini API keys, WhatsApp access tokens, Cloudflare tunnels, and manage configuration backups.</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Configure System →</p>
+      </a>
+
+      <!-- Action 6: API Keys -->
+      <a href="/admin/api-keys"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">🎟️</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Provision API Keys</h3>
+        </div>
+        <p class="text-xs text-slate-400">Generate scoped, rate-limited SHA-256 API keys for field tablets, MCP agents, and external integrations.</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Manage Keys →</p>
+      </a>
+    </div>
+
+    <!-- 3. Recent Cryptographic Audit Activity -->
+    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Recent Audit Trail Activity (SHA-256 Hash Chain)</h2>
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden mb-8">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-700 bg-slate-800 text-slate-400 text-xs uppercase">
+            <th class="px-4 py-3 text-left">Seq #</th>
+            <th class="px-4 py-3 text-left">Timestamp (UTC)</th>
+            <th class="px-4 py-3 text-left">Action / Event</th>
+            <th class="px-4 py-3 text-left">Actor / User</th>
+            <th class="px-4 py-3 text-left">Cryptographic Hash</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-700/60">
+          {% for rec in recent_audits %}
+          <tr class="hover:bg-slate-750/50">
+            <td class="px-4 py-3 font-mono font-bold text-emerald-400">#{{ rec.sequence_number }}</td>
+            <td class="px-4 py-3 text-slate-300 text-xs">{{ rec.timestamp_utc[:19] }}</td>
+            <td class="px-4 py-3 text-white font-medium">{{ rec.action_type }}</td>
+            <td class="px-4 py-3 text-slate-400 text-xs">{{ rec.actor_id }}</td>
+            <td class="px-4 py-3 font-mono text-xs text-slate-400 truncate max-w-xs" title="{{ rec.record_hash }}">{{ rec.record_hash[:20] }}...</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-400 text-sm">Audit chain is initialized and waiting for live transactions.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% endif %}
+
+    <!-- ── API Keys Section ──────────────────────────────────────────── -->
+    {% if section == 'api_keys' %}
+    <div class="mb-6 bg-slate-800/80 border border-slate-700 rounded-xl p-6">
+      <h2 class="text-base font-semibold text-white mb-2">Create Scoped API Key</h2>
+      <p class="text-xs text-slate-400 mb-4">Keys are hashed with SHA-256 before storage. Raw keys are shown once upon creation.</p>
+      <form method="post" action="/admin/api-keys" class="grid grid-cols-1 md:grid-cols-4 gap-4" id="create-key-form">
+        <input name="label" type="text" required placeholder="Key Label (e.g. Field Tablet Pune)"
+               class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
+        <input name="permitted_apps_csv" type="text" placeholder="Apps CSV (e.g. temperature_marker)"
+               class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
+        <input name="roles_csv" type="text" value="field_operator" placeholder="Roles CSV (e.g. field_operator)"
+               class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
+        <button type="submit"
+                class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors">
+          Generate Key
+        </button>
+      </form>
+      <div id="key-result" class="hidden mt-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm font-mono whitespace-pre-line"></div>
+      <script>
+        document.getElementById('create-key-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const fd = new FormData(e.target);
+          const res = await fetch('/admin/api-keys', { method: 'POST', body: fd });
+          const data = await res.json();
+          const el = document.getElementById('key-result');
+          el.textContent = '⚠️ COPY NOW — shown once:\n' + data.raw_key;
+          el.classList.remove('hidden');
+        });
+      </script>
+    </div>
+
+    <!-- Key table -->
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-700 bg-slate-800 text-slate-400 text-xs uppercase">
+            <th class="px-4 py-3 text-left">Label</th>
+            <th class="px-4 py-3 text-left">Principal</th>
+            <th class="px-4 py-3 text-left">Status</th>
+            <th class="px-4 py-3 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-700/60">
+          {% for key in api_keys %}
+          <tr class="hover:bg-slate-750/50">
+            <td class="px-4 py-3 text-white font-medium">{{ key.label }}</td>
+            <td class="px-4 py-3 text-slate-400">{{ key.principal_id }}</td>
+            <td class="px-4 py-3">
+              {% if key.revoked %}
+              <span class="px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-xs font-semibold">Revoked</span>
+              {% else %}
+              <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold">Active</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if not key.revoked %}
+              <form method="post" action="/admin/api-keys/revoke" class="inline">
+                <input type="hidden" name="key_hash" value="{{ key.key_hash }}" />
+                <button type="submit" class="text-red-400 hover:text-red-300 text-xs font-medium">Revoke</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="px-4 py-6 text-center text-slate-400 text-sm">No API keys generated yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+  </main>
+</body>
+</html>

@@ -1,0 +1,98 @@
+# ============================================================
+# TechGlobal Cloud Solutions — Department Scopes & SLAs
+# ============================================================
+
+departments:
+
+  Executive:
+    code: "EXEC"
+    description: "C-Suite leadership, board governance, investor relations, strategic decisions"
+    head: "victoria.sterling@yourcompany.com"
+    sla_response_hours: 4
+    escalation_contact: "chloe.harper@yourcompany.com"
+    distribution_lists:
+      - "exec-team@yourcompany.com"
+      - "board-announcements@yourcompany.com"
+    default_labels: ["Dept/Executive", "@VIP"]
+
+  Engineering:
+    code: "ENG"
+    description: "Core backend, frontend, architecture, code reviews, technical incident response"
+    head: "marcus.vance@yourcompany.com"
+    sla_response_hours: 8
+    escalation_contact: "arjun.mehta@yourcompany.com"
+    distribution_lists:
+      - "all-eng@yourcompany.com"
+      - "core-devs@yourcompany.com"
+      - "pr-reviews@yourcompany.com"
+    default_labels: ["Dept/Engineering"]
+
+  DevOps_SRE:
+    code: "SRE"
+    description: "Cloud infrastructure, Kubernetes, 24/7 on-call incident response, CI/CD, APM monitoring"
+    head: "sarah.jenkins@yourcompany.com"
+    sla_response_hours: 1
+    escalation_contact: "sarah.jenkins@yourcompany.com"
+    distribution_lists:
+      - "sre-oncall@yourcompany.com"
+      - "infra-alerts@yourcompany.com"
+      - "security-ops@yourcompany.com"
+    default_labels: ["Dept/SRE", "@System_Alert"]
+
+  Product:
+    code: "PROD"
+    description: "Product management, sprint planning, roadmap, UX/UI design critique, feature prioritization"
+    head: "priya.patel@yourcompany.com"
+    sla_response_hours: 12
+    escalation_contact: "priya.patel@yourcompany.com"
+    distribution_lists:
+      - "product-team@yourcompany.com"
+      - "design-critique@yourcompany.com"
+    default_labels: ["Dept/Product"]
+
+  Finance:
+    code: "FIN"
+    description: "Accounting, payroll, vendor invoicing, wire transfers, corporate cards, audits"
+    head: "eleanor.bennett@yourcompany.com"
+    sla_response_hours: 24
+    escalation_contact: "eleanor.bennett@yourcompany.com"
+    distribution_lists:
+      - "finance@yourcompany.com"
+      - "invoices@yourcompany.com"
+      - "payroll@yourcompany.com"
+    default_labels: ["Dept/Finance", "Finance/Receipts"]
+
+  Legal:
+    code: "LEGAL"
+    description: "Contracts, MSAs, NDAs, GDPR/CPRA compliance, intellectual property, regulatory audits"
+    head: "rachel.adams@yourcompany.com"
+    sla_response_hours: 8
+    escalation_contact: "rachel.adams@yourcompany.com"
+    distribution_lists:
+      - "legal@yourcompany.com"
+      - "privacy@yourcompany.com"
+      - "dpo@yourcompany.com"
+    default_labels: ["Dept/Legal"]
+
+  HR:
+    code: "HR"
+    description: "Talent acquisition, employee benefits, performance reviews, visas, people operations"
+    head: "olivia.martinez@yourcompany.com"
+    sla_response_hours: 24
+    escalation_contact: "olivia.martinez@yourcompany.com"
+    distribution_lists:
+      - "hr-team@yourcompany.com"
+      - "people-ops@yourcompany.com"
+      - "all-hands@yourcompany.com"
+    default_labels: ["Dept/HR"]
+
+  Sales_CS:
+    code: "SALES"
+    description: "Enterprise sales, customer success, tier-1 client escalations, QBRs, renewals"
+    head: "daniel.cross@yourcompany.com"
+    sla_response_hours: 4
+    escalation_contact: "daniel.cross@yourcompany.com"
+    distribution_lists:
+      - "sales-leads@yourcompany.com"
+      - "csm-escalations@yourcompany.com"
+    default_labels: ["Dept/Sales"]

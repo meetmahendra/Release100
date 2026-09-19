@@ -1,0 +1,50 @@
+[Unit]
+Description=Release100 Core Platform — CaneBot Temperature & Attendance Marker
+Documentation=https://github.com/mahendrag/release100
+After=network-online.target ntp.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=canebot
+Group=canebot
+WorkingDirectory=/opt/release100
+
+# Activate virtual environment and run the platform host
+ExecStart=/opt/release100/.venv/bin/python -m uvicorn \
+    core_platform.main:app \
+    --host 0.0.0.0 \
+    --port 8002 \
+    --workers 1 \
+    --log-level info \
+    --no-access-log
+
+# Environment
+Environment="PYTHONIOENCODING=utf-8"
+Environment="PYTHONUNBUFFERED=1"
+EnvironmentFile=/opt/release100/.env
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+StartLimitBurst=5
+StartLimitIntervalSec=60s
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=1G
+CPUQuota=80%
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/release100/logs
+
+# Graceful shutdown (give outbox drain worker time to flush)
+TimeoutStopSec=10s
+KillMode=mixed
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

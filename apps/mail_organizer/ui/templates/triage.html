@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Triage Simulator{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <div class="card">
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Inject Email Thread</h2>
+        <form id="triageForm">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem;">Sender</label>
+                <input type="email" id="sender" value="ceo@customer-enterprise.com" style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0b0f19; border: 1px solid var(--border-color); color: #fff;" required>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem;">Subject</label>
+                <input type="text" id="subject" value="URGENT: Contract Signature Needed for Q3 Renewal" style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0b0f19; border: 1px solid var(--border-color); color: #fff;" required>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem;">Email Body</label>
+                <textarea id="body" rows="6" style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0b0f19; border: 1px solid var(--border-color); color: #fff;" required>Hi Depali, We need the signed enterprise SLA amendment by 5 PM today to avoid service interruption. Can you please review and sign the attached document? Also let us know your availability for a 15-minute quick sync tomorrow morning.</textarea>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+                <button type="submit" class="btn">Run Complete LangGraph Pipeline</button>
+                <button type="button" class="btn btn-secondary" onclick="loadSample('promo')">Promo Sample</button>
+                <button type="button" class="btn btn-secondary" onclick="loadSample('pm')">PM Task Sample</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">Execution Diagnostic</h2>
+        <div id="simResult" style="background: #0b0f19; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; min-height: 380px; font-family: monospace; font-size: 0.85rem; color: #38bdf8; overflow-y: auto;">
+            Awaiting simulation input...
+        </div>
+    </div>
+</div>
+
+<script>
+function loadSample(type) {
+    if (type === 'promo') {
+        document.getElementById('sender').value = 'newsletter@marketing-blast.com';
+        document.getElementById('subject').value = 'Special Offer: 50% Off Annual Cloud Subscriptions!';
+        document.getElementById('body').value = 'Click here to claim your limited-time discount on enterprise hosting plans. Unsubscribe anytime.';
+    } else if (type === 'pm') {
+        document.getElementById('sender').value = 'lead-architect@internal.io';
+        document.getElementById('subject').value = 'Sprint Action: Implement Redis rate limiter on API Gateway';
+        document.getElementById('body').value = 'Please create an engineering ticket to implement token bucket rate limiting on /v1/auth before next sprint cutoff.';
+    }
+}
+
+document.getElementById('triageForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const resultBox = document.getElementById('simResult');
+    resultBox.innerHTML = '<span style="color: #f59e0b;">Executing LangGraph workflow...</span>';
+
+    const payload = {
+        sender: document.getElementById('sender').value,
+        recipients: ['depali@company.com'],
+        subject: document.getElementById('subject').value,
+        body: document.getElementById('body').value
+    };
+
+    try {
+        const resp = await fetch('/admin/apps/mail-organizer/api/simulate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        resultBox.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+        resultBox.innerHTML = '<span style="color: #ef4444;">Error: ' + err.message + '</span>';
+    }
+});
+</script>
+{% endblock %}

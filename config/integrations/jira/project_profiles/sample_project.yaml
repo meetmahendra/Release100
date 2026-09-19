@@ -1,0 +1,24 @@
+# ============================================================
+# Sample Jira Project Profile
+# Rename this file to your project name (e.g. project_alpha.yaml)
+# and populate with real project details.
+# ============================================================
+
+project_name: "Sample Project"
+jira_project_key: "SAMPLE"
+description: "Description of what this project does"
+status: "active"   # active | on-hold | completed
+
+# Sprint or milestone currently active
+current_sprint: "Sprint 1"
+
+# Team members on this project and their roles
+team:
+  - jira_username: "member.name"
+    role: "Tech Lead"
+  # Add more members
+
+# Keywords in email subjects that should trigger creating a task in this project
+trigger_keywords:
+  - "Sample Project"
+  - "SAMPLE"
