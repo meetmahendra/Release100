@@ -52,7 +52,7 @@ async def layer2_confidence_node(state: TemperatureMarkerState) -> TemperatureMa
         return state
 
     # 2. Evaluate OCR confidence if OCR reading is present
-    if ocr_conf is not None:
+    if state.get("chiller_temp_c") is not None and ocr_conf is not None:
         ocr_pass, ocr_disp, ocr_reason = Layer2PostExecutionGate.evaluate_confidence(float(ocr_conf), threshold=0.85)
         if not ocr_pass:
             state["layer_2_disposition"] = ocr_disp.value
@@ -64,6 +64,12 @@ async def layer2_confidence_node(state: TemperatureMarkerState) -> TemperatureMa
                     "Forwarded to Kiosk Supervisor for review."
                 )
             return state
+    elif not state.get("is_duty_checkin", True) and state.get("chiller_temp_c") is None:
+        # Periodic chiller check requires a valid temperature display reading
+        state["layer_2_disposition"] = PostGateDisposition.DIVERTED_TO_REVIEW.value
+        state["error_code"] = PlatformErrorCode.OCR_READING_UNREADABLE.value
+        state["error_message"] = "Periodic chiller check requires readable gauge temperature."
+        return state
 
     state["layer_2_disposition"] = PostGateDisposition.APPROVED_AUTONOMOUS.value
     return state

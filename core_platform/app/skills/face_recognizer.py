@@ -23,15 +23,20 @@ Guarantees:
 4. Image hygiene checks (verifies presence of a single, well-lit face).
 """
 
+import asyncio
 import base64
 from enum import Enum
 import hashlib
 import io
+import json
 import os
+import time
 from typing import Any, Dict, Optional, Tuple
+import urllib.request
+import uuid
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 from core_platform.app.config import settings
 from core_platform.app.skills.base import BaseSkill
@@ -43,6 +48,48 @@ class FaceModelSource(str, Enum):
     MOBILEFACENET_OPEN = "mobilefacenet_open"  # Commercially permissive open weights (Default)
     CUSTOM_TRAINED = "custom_trained"  # Client-provided fine-tuned ONNX model
     CLOUD_VISION = "cloud_vision"  # Enterprise Cloud Face API fallback
+
+
+def _normalize_face_crop(img: Image.Image) -> Image.Image:
+    """Normalize input image to square subject region preserving facial features.
+
+    Avoids aggressive chin/mouth clipping by taking an upper-centered square
+    for portrait photos and a center square for landscape photos.
+    """
+    w, h = img.size
+    if h > w:
+        # Portrait: take upper-centered square (faces reside in upper portion)
+        box_size = w
+        top = int(max(0, min(0.06 * h, h - box_size)))
+        return img.crop((0, top, w, top + box_size))
+    elif w > h:
+        # Landscape: center crop
+        box_size = h
+        left = int((w - box_size) / 2)
+        return img.crop((left, 0, left + box_size, h))
+    return img
+
+
+def mirror_hog_512_embedding(vec: np.ndarray) -> np.ndarray:
+    """Compute exact HOG-512 descriptor for the horizontally mirrored image.
+
+    Closed-form analytical transformation swapping grid columns (c -> 7-c)
+    and inverting horizontal gradient angles (b -> (8-b)%8).
+    Guarantees mirror-invariance for front-camera selfies.
+    """
+    mirrored = np.zeros(512, dtype=np.float32)
+    for r in range(8):
+        for c in range(8):
+            src_idx = (r * 8 + c) * 8
+            dst_c = 7 - c
+            dst_idx = (r * 8 + dst_c) * 8
+            for b in range(8):
+                dst_b = (8 - b) % 8
+                mirrored[dst_idx + dst_b] = vec[src_idx + b]
+    norm = float(np.linalg.norm(mirrored))
+    if norm > 0.0:
+        mirrored = mirrored / norm
+    return mirrored
 
 
 def _extract_hog_512_embedding(gray_img: Image.Image) -> np.ndarray:
@@ -130,7 +177,8 @@ class FaceRecognizerSkill(BaseSkill):
     ) -> float:
         """Compute cosine similarity score between two normalized embedding vectors.
 
-        Formula: (A . B) / (||A|| * ||B||)
+        Formula: max(A . B, A . mirror(B)) / (||A|| * ||B||)
+        Evaluates both direct and mirror orientations to support front-facing selfie cameras.
 
         Args:
             embedding_a: 512-dimensional vector A.
@@ -139,11 +187,14 @@ class FaceRecognizerSkill(BaseSkill):
         Returns:
             Cosine similarity float between 0.0 and 1.0.
         """
-        norm_a = np.linalg.norm(embedding_a)
-        norm_b = np.linalg.norm(embedding_b)
+        norm_a = float(np.linalg.norm(embedding_a))
+        norm_b = float(np.linalg.norm(embedding_b))
         if norm_a == 0.0 or norm_b == 0.0:
             return 0.0
-        similarity = float(np.dot(embedding_a, embedding_b) / (norm_a * norm_b))
+
+        sim_direct = float(np.dot(embedding_a, embedding_b) / (norm_a * norm_b))
+        sim_mirror = float(np.dot(embedding_a, mirror_hog_512_embedding(embedding_b)) / (norm_a * norm_b))
+        similarity = max(sim_direct, sim_mirror)
         return max(0.0, min(similarity, 1.0))
 
     def encrypt_embedding(self, embedding: np.ndarray) -> str:
@@ -178,6 +229,115 @@ class FaceRecognizerSkill(BaseSkill):
         raw_bytes = self._aesgcm.decrypt(nonce, ciphertext, None)
         return np.frombuffer(raw_bytes, dtype=np.float32)
 
+    async def verify_face_match(
+        self,
+        reference_image: bytes,
+        candidate_image: bytes,
+    ) -> Tuple[bool, float, str]:
+        """Biometrically verify candidate selfie against registered reference profile.
+
+        Primary Engine: Enterprise Gemini Multimodal Vision (face presence + biometric comparison).
+        Fallback Engine: Local canonical HOG-512 cosine similarity.
+
+        Args:
+            reference_image: Registered profile photo JPEG/PNG bytes.
+            candidate_image: Live check-in selfie JPEG/PNG bytes.
+
+        Returns:
+            Tuple of (matched: bool, confidence: float, reasoning: str).
+        """
+        # 1. Cloud Multimodal Biometric Verification
+        if getattr(settings, "GEMINI_API_KEY", ""):
+            try:
+                b64_ref = base64.b64encode(reference_image).decode("utf-8")
+                b64_cand = base64.b64encode(candidate_image).decode("utf-8")
+                model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
+                prompt = (
+                    "You are an AI biometric face verification system for CaneBot kiosk operators.\n"
+                    "Image 1 is the registered reference profile photo for this operator.\n"
+                    "Image 2 is the photo submitted for shift attendance check-in.\n"
+                    "Determine:\n"
+                    "1. Is a human face present in Image 2? (true/false)\n"
+                    "2. Does the face in Image 2 belong to the same person as Image 1? (true/false)\n"
+                    "3. Face match confidence score (float between 0.0 and 1.0, where >= 0.85 indicates a confident match).\n"
+                    "4. Brief reasoning.\n\n"
+                    "Return ONLY a valid JSON object with format:\n"
+                    '{"face_detected": bool, "same_person": bool, "match_confidence": float, "reasoning": string}'
+                )
+                payload = {
+                    "contents": [
+                        {
+                            "parts": [
+                                {"text": prompt},
+                                {"inlineData": {"mimeType": "image/jpeg", "data": b64_ref}},
+                                {"inlineData": {"mimeType": "image/jpeg", "data": b64_cand}},
+                            ]
+                        }
+                    ],
+                    "generationConfig": {
+                        "temperature": 0.0,
+                        "responseMimeType": "application/json",
+                    },
+                }
+
+                def _do_post() -> Optional[Dict[str, Any]]:
+                    t0 = time.perf_counter()
+                    req = urllib.request.Request(
+                        url,
+                        data=json.dumps(payload).encode("utf-8"),
+                        headers={"Content-Type": "application/json"},
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(req, timeout=25) as resp:
+                        latency_ms = (time.perf_counter() - t0) * 1000.0
+                        if resp.status == 200:
+                            data = json.loads(resp.read().decode("utf-8"))
+                            usage = data.get("usageMetadata", {})
+                            p_tokens = int(usage.get("promptTokenCount", 520))
+                            c_tokens = int(usage.get("candidatesTokenCount", 40))
+
+                            from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
+                            get_llm_cost_tracker().record_interaction(
+                                interaction_id=f"ix_{uuid.uuid4().hex[:10]}",
+                                operation_id="face_biometric_verification",
+                                task="biometric_match",
+                                provider="gemini",
+                                model=model_name,
+                                prompt_tokens=p_tokens,
+                                completion_tokens=c_tokens,
+                                latency_ms=latency_ms,
+                                success=True,
+                            )
+
+                            text = data["candidates"][0]["content"]["parts"][0]["text"]
+                            return json.loads(text)  # type: ignore
+                    return None
+
+                parsed = await asyncio.to_thread(_do_post)
+                if parsed and isinstance(parsed, dict):
+                    face_det = bool(parsed.get("face_detected", False))
+                    same_p = bool(parsed.get("same_person", False))
+                    match_conf = float(parsed.get("match_confidence", 0.0))
+                    reason = str(parsed.get("reasoning", "Gemini multimodal face match"))
+                    if not face_det:
+                        return False, 0.0, "No face detected in candidate photo"
+                    return (same_p and match_conf >= self.similarity_threshold), match_conf, reason
+            except Exception:
+                pass
+
+        # 2. Local Fallback: HOG-512 cosine similarity
+        ok_ref, v_ref, _ = await self.compute_embedding(reference_image)
+        ok_cand, v_cand, _ = await self.compute_embedding(candidate_image)
+        if ok_ref and ok_cand and v_ref is not None and v_cand is not None:
+            sim = self.compute_cosine_similarity(v_ref, v_cand)
+            if sim < 0.60:
+                # Features do not resemble a human face
+                return False, 0.0, f"No face detected in candidate photo (similarity {sim:.4f} < 0.60)"
+            return (sim >= self.similarity_threshold), sim, f"Local HOG-512 cosine similarity: {sim:.4f}"
+
+        return False, 0.0, "No face detected in candidate photo (unable to extract features)"
+
     async def compute_embedding(
         self,
         image_input: Any,
@@ -207,7 +367,8 @@ class FaceRecognizerSkill(BaseSkill):
             # Real image bytes: Canonical spatial normalization + HOG 512 extraction
             if isinstance(image_input, bytes):
                 try:
-                    img = Image.open(io.BytesIO(image_input)).convert("L")
+                    raw_pil = Image.open(io.BytesIO(image_input))
+                    img = ImageOps.exif_transpose(raw_pil).convert("L")
                     vec = _extract_hog_512_embedding(img)
                     return True, vec, "Face embedding extracted (HOG-512 canonical)"
                 except Exception:

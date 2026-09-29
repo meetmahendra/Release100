@@ -70,6 +70,7 @@
       </a>
 
       <!-- Section: Mail Organizer -->
+      {% if 'mail_organizer' in enabled_applications %}
       <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Mail & Calendar</p>
       <a href="/admin/apps/mail-organizer/dashboard"
          class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
@@ -79,6 +80,7 @@
          class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
         <span>🔑</span> Accounts & OAuth
       </a>
+      {% endif %}
 
       <!-- Admin & Security -->
       {% if is_admin %}
@@ -282,6 +284,7 @@
       </a>
 
       <!-- Action 4: Mail Organizer Triage -->
+      {% if 'mail_organizer' in enabled_applications %}
       <a href="/admin/apps/mail-organizer/dashboard"
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
@@ -291,6 +294,7 @@
         <p class="text-xs text-slate-400">View LangGraph email classification breakdown, VIP alerts, and dispatch tasks to Jira and Linear.</p>
         <p class="text-xs text-emerald-400 font-medium mt-3">Open Mail Dashboard →</p>
       </a>
+      {% endif %}
 
       <!-- Action 5: Live Settings & Disk Sync -->
       <a href="/settings"
@@ -418,6 +422,8 @@
       </table>
     </div>
     {% endif %}
+
+    {% block content %}{% endblock %}
 
   </main>
 </body>

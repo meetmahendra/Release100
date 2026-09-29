@@ -126,7 +126,7 @@ def _decode_image_bytes(raw_bytes: bytes) -> Optional[Any]:
         BGR numpy array, or None if decoding fails.
     """
     try:
-        import cv2  # type: ignore[import-not-found]
+        import cv2
         nparr = np.frombuffer(raw_bytes, dtype=np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         return img if img is not None else None

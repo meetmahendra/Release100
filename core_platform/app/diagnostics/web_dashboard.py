@@ -25,6 +25,7 @@ Provides:
 - POST /api/diagnostics/poller/toggle -> Verified Mail Poller start/stop with clean tree termination
 """
 
+import asyncio
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -33,7 +34,10 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
-from apps.mail_organizer.services.poller_manager import MailPollerManager
+try:
+    from apps.mail_organizer.services.poller_manager import MailPollerManager
+except ImportError:
+    MailPollerManager = None  # type: ignore[assignment, misc]
 from core_platform.app.apps_registry import ApplicationRegistry
 from core_platform.app.config import settings
 from core_platform.app.diagnostics.config_backup import (
@@ -126,6 +130,15 @@ async def api_diagnostics_save(req: SaveConfigRequest) -> Dict[str, Any]:
     success, msg = save_master_config(req.settings)
     if not success:
         raise HTTPException(status_code=500, detail=msg)
+
+    # Dynamically restart Cloud Relay if URL or Kiosk ID changed
+    try:
+        from core_platform.app.ingress.relay_client import CloudRelayClient
+        relay = CloudRelayClient.get_instance()
+        asyncio.create_task(relay.reconfigure_and_restart())
+    except Exception as exc:
+        logger.warning("[Diagnostics] Failed to trigger live relay reconnect: %s", exc)
+
     return {"success": True, "message": msg}
 
 
@@ -141,6 +154,13 @@ async def api_diagnostics_restore(req: RestoreRequest) -> Dict[str, Any]:
 @router.post("/api/diagnostics/poller/toggle", response_class=JSONResponse)
 async def api_diagnostics_poller_toggle() -> Dict[str, Any]:
     """Toggle the Mail Organizer poller worker with verified clean termination."""
+    if MailPollerManager is None:
+        return {
+            "success": False,
+            "is_running": False,
+            "status": "NOT_INSTALLED",
+            "message": "Mail Organizer cartridge is not installed in this edition.",
+        }
     mgr = MailPollerManager.get_instance()
     is_now_running = mgr.toggle()
     return {
@@ -179,7 +199,7 @@ async def view_settings_dashboard(request: Request) -> HTMLResponse:
     registry = ApplicationRegistry.get_instance()
     apps = registry.get_installed_applications()
     backups = list_backups()
-    poller_running = MailPollerManager.get_instance().is_running()
+    poller_running = MailPollerManager.get_instance().is_running() if MailPollerManager is not None else False
 
     # Read live on-disk values so nothing is lost
     env_data = read_env_dict()
@@ -877,7 +897,7 @@ async def view_settings_dashboard(request: Request) -> HTMLResponse:
         }}
 
         async function quickSaveRelay() {{
-            const url = document.getElementById('test-relay-url').value.trim();
+            const url = document.getElementById('test-relay-url').value.trim().replace(/^["']|["']$/g, '');
             await saveSingleSetting('RELAY_WS_URL', url, 'Relay URL saved to .env!');
         }}
 
@@ -943,7 +963,7 @@ async def view_settings_dashboard(request: Request) -> HTMLResponse:
                     WHATSAPP_ACCESS_TOKEN: document.getElementById('cfg-wa-token').value.trim(),
                     WHATSAPP_APP_SECRET: document.getElementById('cfg-wa-secret').value.trim(),
                     WHATSAPP_VERIFY_TOKEN: document.getElementById('cfg-wa-verify').value.trim(),
-                    RELAY_WS_URL: document.getElementById('cfg-relay').value.trim(),
+                    RELAY_WS_URL: document.getElementById('cfg-relay').value.trim().replace(/^["']|["']$/g, ''),
                     STATION_NAME: document.getElementById('cfg-station').value.trim(),
                     KIOSK_ID: document.getElementById('cfg-kiosk').value.trim(),
                     ORGANIZATION_NAME: document.getElementById('cfg-org').value.trim(),

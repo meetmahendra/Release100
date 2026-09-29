@@ -255,7 +255,7 @@
       "is_safety_critical": false,
       "input": {
         "correlation_id": "bench-013",
-        "sender_phone": "+919800011122",
+        "sender_phone": "+919800055566",
         "kiosk_id": "CANEBOT-PUNE-04",
         "user_coords": null,
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.2C"

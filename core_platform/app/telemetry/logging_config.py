@@ -95,6 +95,17 @@ def setup_platform_logging(log_dir_str: str = "logs") -> None:
     for handler in list(root_logger.handlers):
         root_logger.removeHandler(handler)
 
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+    if hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
     ctx_filter = ContextualLogFilter()
 
     console_handler = logging.StreamHandler(sys.stdout)

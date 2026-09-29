@@ -36,6 +36,9 @@ def workflow(tmp_path: Path) -> TemperatureMarkerWorkflow:
     db_file = tmp_path / "workflow_test.db"
     db_service = DatabaseService(db_url=f"sqlite:///{db_file}")
 
+    from apps.temperature_marker.services.session_manager import OperatorSessionManager
+    OperatorSessionManager.get_instance().clear()
+
     # Register active test employee
     db_service.register_employee(
         emp_code="EMP-1042",
@@ -151,3 +154,71 @@ async def test_workflow_physical_temperature_anomaly(workflow: TemperatureMarker
     assert final_state["layer_0_passed"] is False
     assert final_state["error_code"] == PlatformErrorCode.SAFETY_PHYSICAL_BOUND_VIOLATION.value
     assert "Sensor Reading Corrupted" in final_state["reply_message"]
+
+
+@pytest.mark.asyncio
+async def test_workflow_periodic_chiller_photo_bypasses_location_prompt(workflow: TemperatureMarkerWorkflow) -> None:
+    """An operator with active attendance today should NOT be prompted for location when sending subsequent photos."""
+    # 1. Initial morning shift punch-in (location verified)
+    first_state: TemperatureMarkerState = {
+        "correlation_id": "corr-morning-001",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": (18.5621, 73.9168),
+        "raw_image_bytes": b"DIGIT:3.2",
+    }
+    res1 = await workflow.execute(first_state)
+    assert res1.get("geofence_verified") is True
+    assert res1.get("is_duty_checkin") is True
+
+    # 2. Hours later, operator sends a periodic chiller photo WITHOUT coordinates (user_coords = None)
+    second_state: TemperatureMarkerState = {
+        "correlation_id": "corr-periodic-002",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": None,  # GPS cache expired
+        "raw_image_bytes": b"DIGIT:3.2",
+    }
+    res2 = await workflow.execute(second_state)
+
+    # Must inherit station coordinates, bypass location prompt, and verify chiller reading
+    assert res2.get("geofence_verified") is True
+    assert "Please verify CaneBot location" not in str(res2.get("reply_message"))
+    assert res2.get("is_duty_checkin") is False
+    assert res2.get("chiller_temp_c") == 3.2
+    assert "Chiller Verified" in str(res2.get("reply_message"))
+
+
+@pytest.mark.asyncio
+async def test_workflow_periodic_chiller_photo_no_face_exemption(workflow: TemperatureMarkerWorkflow) -> None:
+    """An on-duty operator sending a periodic chiller photo without a face must NOT fail face matching."""
+    # 1. First state: Morning punch in
+    first_state: TemperatureMarkerState = {
+        "correlation_id": "corr-morning-noface-1",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": (18.5621, 73.9168),
+        "raw_image_bytes": b"DIGIT:3.2",
+    }
+    res1 = await workflow.execute(first_state)
+    assert res1.get("is_duty_checkin") is True
+
+    # 2. Second state: Periodic chiller photo with simulated OCR having face_detected=False
+    second_state: TemperatureMarkerState = {
+        "correlation_id": "corr-periodic-noface-2",
+        "sender_phone": "+919800011122",
+        "kiosk_id": "CANEBOT-PUNE-04",
+        "user_coords": None,
+        "raw_image_bytes": b"DIGIT:3.5",
+        "multimodal_analysis": {
+            "face_detected": False,
+            "face_confidence": 0.0,
+            "temperature_c": 3.5,
+            "ocr_confidence": 0.95,
+        },
+    }
+    res2 = await workflow.execute(second_state)
+    assert res2.get("is_duty_checkin") is False
+    assert res2.get("chiller_temp_c") == 3.5
+    assert "Biometric Face Match Low" not in str(res2.get("reply_message"))
+    assert "Chiller Verified (Periodic Log)" in str(res2.get("reply_message"))

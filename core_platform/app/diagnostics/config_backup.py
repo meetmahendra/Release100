@@ -169,14 +169,18 @@ def reload_settings_from_env(env_path: Optional[Path] = None) -> None:
 
 def _format_env_value(val: str) -> str:
     """Format a setting value safely for .env storage."""
-    # If already safely quoted, return as-is
+    val = val.strip()
+    # Strip unnecessary outer quotes if the inner string has no whitespace or '#'
     if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+        inner = val[1:-1]
+        if not any(c in inner for c in [" ", "#", "\n"]):
+            return inner
         return val
     # If value contains double quotes (e.g. JSON list), wrap in single quotes
     if '"' in val:
         return f"'{val}'"
-    # If value contains spaces or special characters, wrap in double quotes
-    if any(c in val for c in [" ", "[", "]", ",", ":", "'"]):
+    # Only wrap in quotes if value contains spaces or '#'
+    if any(c in val for c in [" ", "#"]):
         return f'"{val}"'
     return val
 
@@ -232,6 +236,16 @@ def save_master_config(
         with open(src, "w", encoding="utf-8") as f:
             f.writelines(new_lines)
         reload_settings_from_env(src)
+
+        # Mirror to _internal/.env if running in PyInstaller bundle
+        internal_env = src.parent / "_internal" / ".env"
+        if internal_env.parent.exists():
+            try:
+                shutil.copy2(src, internal_env)
+                logger.info("[ConfigBackup] Mirrored updated .env to _internal/.env")
+            except Exception as exc:
+                logger.warning("[ConfigBackup] Failed to mirror to _internal/.env: %s", exc)
+
         logger.info("[ConfigBackup] Saved %d updated keys to %s", len(updated_keys), src.name)
         return True, f"Saved {len(updated_keys)} setting(s) successfully. Pre-save backup created."
     except Exception as exc:

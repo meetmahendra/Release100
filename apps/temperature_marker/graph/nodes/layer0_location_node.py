@@ -15,6 +15,7 @@
 """Layer 0 Geofencing and Location Verification Node."""
 
 import logging
+from typing import Any, Optional
 
 from apps.temperature_marker.graph.state import TemperatureMarkerState
 from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
@@ -28,6 +29,7 @@ logger = logging.getLogger("apps.temperature_marker.location")
 async def layer0_location_node(
     state: TemperatureMarkerState,
     kg_service: KnowledgeGraphService,
+    db_service: Optional[Any] = None,
 ) -> TemperatureMarkerState:
     """Verify user coordinates against kiosk fleet geofence."""
     kg_service.roster = kg_service._load_roster()
@@ -47,6 +49,30 @@ async def layer0_location_node(
             user_coords = cached
             state["user_coords"] = cached
 
+    # If coordinates are not cached, check if operator has ALREADY marked attendance today.
+    # On-duty operators submitting periodic/chiller inspection photos inherit verified station location.
+    if user_coords is None:
+        from apps.temperature_marker.database.db_service import DatabaseService
+        db_svc = db_service or DatabaseService.get_instance()
+        sender_phone = state.get("sender_phone")
+        emp = db_svc.get_employee_by_phone(str(sender_phone)) if sender_phone else None
+        emp_code = emp.emp_code if emp else state.get("operator_emp_code", "")
+        if emp_code:
+            today_att = db_svc.has_attendance_today(emp_code)
+            if today_att is not None:
+                assigned_kiosk = today_att.kiosk_id or kiosk_id
+                kiosk_geo = kg_service.get_kiosk_coordinates(assigned_kiosk)
+                if kiosk_geo:
+                    user_coords = (kiosk_geo[0], kiosk_geo[1])
+                    state["user_coords"] = user_coords
+                    state["geofence_verified"] = True
+                    state["distance_meters"] = float(getattr(today_att, "gps_distance_meters", 0.0) or 0.0)
+                    state["is_duty_checkin"] = False
+                    logger.info(
+                        "[Geofence] Operator %s (%s) already on duty today at %s — bypassing location prompt for periodic photo.",
+                        emp_code, sender_phone, assigned_kiosk,
+                    )
+
     # If Option 4 Web Geolocation link has not yet been clicked
     if user_coords is None:
         state["geofence_verified"] = False
@@ -60,10 +86,27 @@ async def layer0_location_node(
         base_url = settings.ORCHESTRATOR_BASE_URL.rstrip("/") if settings.ORCHESTRATOR_BASE_URL else f"http://localhost:{settings.ORCHESTRATOR_PORT}"
         kiosk_details = kg_service.get_kiosk_details(kiosk_id)
         station_name = kiosk_details.get("name", kiosk_id) if kiosk_details else kiosk_id
-        state["reply_message"] = (
-            f"📍 Please verify CaneBot location for {station_name} (1-click): "
-            f"{base_url}/loc?session={corr_id}&kiosk_id={kiosk_id}"
+
+        from core_platform.app.ingress.location_session import (
+            record_location_prompt,
+            should_prompt_location,
         )
+        phone_str = str(sender_phone) if sender_phone else ""
+        explicit = bool(state.get("explicit_location_request", False))
+
+        if should_prompt_location(phone_str, explicit_request=explicit):
+            if phone_str:
+                record_location_prompt(phone_str)
+            state["reply_message"] = (
+                f"📍 Please verify CaneBot location (1-click) for {station_name}: "
+                f"{base_url}/loc?session={corr_id}&kiosk_id={kiosk_id}"
+            )
+        else:
+            state["reply_message"] = (
+                f"📍 CaneBot location for {station_name} requires verification. "
+                "The 'Please verify CaneBot location (1-click)' link was already shared earlier today. "
+                "Please tap that link or send 'location' to request a new link."
+            )
         return state
 
     kiosk_geo = kg_service.get_kiosk_coordinates(kiosk_id)

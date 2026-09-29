@@ -73,12 +73,17 @@ class TemperatureMarkerWorkflow:
             return await reply_node(state)
 
         # Step 2: Layer 0 Geofence & Location Verification
-        state = await layer0_location_node(state, self.kg_service)
+        state = await layer0_location_node(state, self.kg_service, self.db_service)
         if not state.get("geofence_verified", False):
             return await reply_node(state)
 
         # Step 3: Layer 1 Biometric Face Match
         state = await layer1_face_node(state, self.db_service)
+        if not state.get("layer_0_passed", True) or state.get("layer_2_disposition") == "diverted_to_review":
+            state = await audit_node(state, self.audit_engine)
+            return await reply_node(state)
+        if state.get("reply_message") and state.get("chiller_temp_c") is None:
+            return await reply_node(state)
 
         # Step 4: Layer 1 Dual-Engine Display OCR
         state = await layer1_ocr_node(state)

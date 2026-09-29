@@ -79,7 +79,9 @@ if (Test-Path $vmHelper) {
 # 3. Sign Executables if present
 $targets = @(
     (Join-Path $DistDir "Release100\Release100.exe"),
-    (Join-Path $DistDir "installer\Release100_Setup_v1.3.0.exe")
+    (Join-Path $DistDir "Release100_Kiosk\Release100_Kiosk.exe"),
+    (Join-Path $DistDir "installer\Release100_Setup_v1.3.0.exe"),
+    (Join-Path $DistDir "installer\Release100_Kiosk_Setup_v1.3.0.exe")
 )
 
 Write-Host "[STEP 3] Signing available binaries..." -ForegroundColor Yellow

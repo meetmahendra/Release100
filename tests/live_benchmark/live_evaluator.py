@@ -82,6 +82,8 @@ class LiveBenchmarkEvaluator:
                 kg_service=self.kg_service,
                 audit_engine=self.audit_engine,
             )
+            from core_platform.app.ingress.location_session import reset_prompt_dates
+            reset_prompt_dates()
             self.mail_db_service = None
             self.mail_workflow = None
 
@@ -124,6 +126,14 @@ class LiveBenchmarkEvaluator:
             phone_number="+919800044455",
             assigned_kiosk_id="CANEBOT-PUNE-04",
             status="PENDING_APPROVAL",
+        )
+        # Unchecked-in Active Operator (For No-GPS Prompt Scenarios)
+        self.tm_db_service.register_employee(
+            emp_code="EMP-4050",
+            full_name="Deepak Mane",
+            phone_number="+919800055566",
+            assigned_kiosk_id="CANEBOT-PUNE-04",
+            status="ACTIVE",
         )
 
     async def run_scenario(self, scenario: Dict[str, Any]) -> Dict[str, Any]:

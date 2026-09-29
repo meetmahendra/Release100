@@ -70,11 +70,17 @@ class OperatorSessionManager:
         self._sessions: Dict[str, ActiveSession] = {}
         self._lock = threading.Lock()
 
+    def clear(self) -> None:
+        """Clear all active in-memory sessions (useful for tests)."""
+        with self._lock:
+            self._sessions.clear()
+
     def record_or_verify_checkin(
         self,
         emp_code: str,
         kiosk_id: str,
         role: str = "OPERATOR",
+        db_service: Optional[Any] = None,
     ) -> Tuple[bool, str]:
         """Evaluate if this is the operator's first duty check-in of the day.
 
@@ -82,13 +88,16 @@ class OperatorSessionManager:
             emp_code: Employee code.
             kiosk_id: Kiosk code.
             role: Operator role.
+            db_service: Optional DatabaseService instance.
 
         Returns:
             Tuple of (is_new_attendance_today: bool, checkin_time_display: str).
         """
+        from core_platform.app.common.timezone import to_local_ist
+
         now = datetime.now(timezone.utc)
         today_date = now.strftime("%Y-%m-%d")
-        now_time_str = now.strftime("%I:%M %p UTC")
+        now_time_str = to_local_ist(now)
 
         with self._lock:
             session = self._sessions.get(emp_code)
@@ -101,11 +110,11 @@ class OperatorSessionManager:
 
             # 2. Check persistent SQLite database if memory was evicted
             from apps.temperature_marker.database.db_service import DatabaseService
-            db = DatabaseService.get_instance()
+            db = db_service or DatabaseService.get_instance()
             existing_today = db.has_attendance_today(emp_code)
 
             if existing_today is not None:
-                chk_time = existing_today.checkin_time_utc.strftime("%I:%M %p UTC")
+                chk_time = to_local_ist(existing_today.checkin_time_utc)
                 self._sessions[emp_code] = ActiveSession(
                     emp_code=emp_code,
                     role=role,

@@ -159,17 +159,22 @@ class LLMGateway:
             )
             if result is None:
                 success = False
-                err_msg = "Provider returned None / empty response"
+                err_msg = getattr(provider, "last_error", None) or "Provider returned None / empty response"
         except Exception as exc:
             success = False
             err_msg = str(exc)
-            raise
+            result = None
         finally:
             latency_ms = (time.perf_counter() - start_time) * 1000.0
             # Approximate tokens: ~4 chars per token if usage metadata is absent
             prompt_tokens = max(1, len(prompt) // 4 + (len(system_instruction or "") // 4))
             resp_str = json.dumps(result) if result else ""
             completion_tokens = max(1, len(resp_str) // 4) if result else 0
+
+            # If rejected at ingress (HTTP 4xx client error), zero tokens were billed by cloud provider
+            if not success and err_msg and ("HTTP 4" in err_msg or "INVALID_ARGUMENT" in err_msg):
+                prompt_tokens = 0
+                completion_tokens = 0
 
             get_llm_cost_tracker().record_interaction(
                 interaction_id=interaction_id,
@@ -239,17 +244,22 @@ class LLMGateway:
             )
             if result is None:
                 success = False
-                err_msg = "Provider returned None / empty response"
+                err_msg = getattr(provider, "last_error", None) or "Provider returned None / empty response"
         except Exception as exc:
             success = False
             err_msg = str(exc)
-            raise
+            result = None
         finally:
             latency_ms = (time.perf_counter() - start_time) * 1000.0
             # Standard vision token base: ~258 tokens per high-res tile + prompt text
             prompt_tokens = max(1, (len(prompt) // 4) + 258)
             resp_str = json.dumps(result) if result else ""
             completion_tokens = max(1, len(resp_str) // 4) if result else 0
+
+            # If rejected at ingress (HTTP 4xx client error), zero tokens were billed by cloud provider
+            if not success and err_msg and ("HTTP 4" in err_msg or "INVALID_ARGUMENT" in err_msg):
+                prompt_tokens = 0
+                completion_tokens = 0
 
             get_llm_cost_tracker().record_interaction(
                 interaction_id=interaction_id,

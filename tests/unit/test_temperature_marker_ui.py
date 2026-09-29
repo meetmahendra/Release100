@@ -14,6 +14,8 @@
 
 """Synthetic Unit Tests for Temperature Marker Admin Web Shell and Stepper Wizard."""
 
+from pathlib import Path
+
 import pytest
 from starlette.testclient import TestClient
 
@@ -316,6 +318,59 @@ def test_temperature_marker_database_service_crud(tmp_path: Path) -> None:
     db.mark_outbox_failed(item2.id, max_attempts=1)
 
     db.close()
+
+
+def test_media_vault_photo_serving(tmp_path: Path) -> None:
+    """Verify check-in capture images and operator photos are served correctly without 404."""
+    from pathlib import Path
+
+    # Create dummy media photo
+    media_dir = Path("logs/media")
+    media_dir.mkdir(parents=True, exist_ok=True)
+    test_photo = media_dir / "test_unit_media.jpg"
+    test_photo.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+    try:
+        # Test root static mount /logs/media
+        resp_mount = client.get("/logs/media/test_unit_media.jpg")
+        assert resp_mount.status_code == 200
+        assert resp_mount.headers["content-type"] in ("image/jpeg", "image/pjpeg")
+
+        # Test app route /admin/apps/temperature-marker/media
+        resp_route = client.get("/admin/apps/temperature-marker/media/test_unit_media.jpg")
+        assert resp_route.status_code == 200
+        assert resp_route.headers["content-type"] == "image/jpeg"
+
+        # Test non-existent media returns 404
+        resp_404 = client.get("/logs/media/nonexistent_file_9999.jpg")
+        assert resp_404.status_code == 404
+    finally:
+        if test_photo.exists():
+            test_photo.unlink()
+
+
+def test_operator_photo_api() -> None:
+    """Verify operator profile photo API serves existing photo and returns 404 for missing photo."""
+    from pathlib import Path
+
+    photos_dir = Path("logs/photos")
+    photos_dir.mkdir(parents=True, exist_ok=True)
+    dummy_op_photo = photos_dir / "EMP-TEST-PHOTO_profile.jpg"
+    dummy_op_photo.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+
+    try:
+        # Operator with photo
+        resp_ok = client.get("/admin/apps/temperature-marker/api/members/EMP-TEST-PHOTO/photo")
+        assert resp_ok.status_code == 200
+        assert resp_ok.headers["content-type"] == "image/jpeg"
+
+        # Operator without photo returns 404
+        resp_404 = client.get("/admin/apps/temperature-marker/api/members/EMP-NO-SUCH-OP/photo")
+        assert resp_404.status_code == 404
+    finally:
+        if dummy_op_photo.exists():
+            dummy_op_photo.unlink()
+
 
 
 

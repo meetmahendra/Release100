@@ -57,6 +57,12 @@ class GeminiProvider(BaseLLMProvider):
         self._api_key = api_key
         self._default_model = default_model
         self._timeout = timeout_seconds
+        self._last_error: Optional[str] = None
+
+    @property
+    def last_error(self) -> Optional[str]:
+        """Return the most recent detailed error message, if any."""
+        return self._last_error
 
     def is_available(self) -> bool:
         """Return True when an API key is configured and looks valid."""
@@ -163,6 +169,7 @@ class GeminiProvider(BaseLLMProvider):
         Returns:
             Parsed response dict, or None on any error.
         """
+        self._last_error = None
         try:
             req = urllib.request.Request(
                 url,
@@ -186,8 +193,22 @@ class GeminiProvider(BaseLLMProvider):
                             return cast(Dict[str, Any], parsed) if isinstance(parsed, dict) else {"raw_text": text_part}
                         except json.JSONDecodeError:
                             return {"raw_text": text_part}
+                    else:
+                        cand = raw.get("candidates", [{}])[0]
+                        reason = cand.get("finishReason", "EMPTY_CONTENT")
+                        self._last_error = f"Gemini returned empty candidate (finishReason: {reason})"
+                        logger.warning("[GeminiProvider] %s", self._last_error)
         except urllib.error.HTTPError as exc:
-            logger.warning("[GeminiProvider] HTTP %s: %s", exc.code, exc.reason)
+            err_msg = exc.reason or str(exc)
+            try:
+                body = exc.read().decode("utf-8")
+                data = json.loads(body)
+                err_msg = data.get("error", {}).get("message", err_msg)
+            except Exception:
+                pass
+            self._last_error = f"HTTP {exc.code}: {err_msg}"
+            logger.warning("[GeminiProvider] HTTP %s: %s", exc.code, err_msg)
         except Exception as exc:
+            self._last_error = str(exc)
             logger.warning("[GeminiProvider] Request failed: %s", exc)
         return None

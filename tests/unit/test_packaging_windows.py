@@ -45,3 +45,21 @@ def test_spec_and_iss_integrity() -> None:
     assert "Release100 Industrial Automation Platform" in iss_content
     assert "Release100_Setup_v1.3.0" in iss_content
     assert "Mahendra GURAV" in iss_content
+
+
+def test_kiosk_edition_spec_and_iss_integrity() -> None:
+    """Kiosk edition spec and Inno Setup files must validate cleanly."""
+    builder = WindowsInstallerBuilder(edition="kiosk")
+    valid, missing = builder.validate_prerequisites()
+    assert valid is True
+    assert len(missing) == 0
+
+    spec_content = builder.spec_file.read_text(encoding="utf-8")
+    assert "canebot_fleet_roster.json" in spec_content
+    assert "Release100_Kiosk" in spec_content
+    assert "apps.mail_organizer" in spec_content  # in excludes
+
+    iss_content = builder.iss_file.read_text(encoding="utf-8")
+    assert "Release100 Kiosk & Retail Edition" in iss_content
+    assert "Release100_Kiosk_Setup_v1.3.0" in iss_content
+    assert "Mahendra GURAV" in iss_content

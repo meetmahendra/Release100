@@ -124,7 +124,21 @@ Supervisors and managers can access visual dashboards from any browser on the lo
 
 ---
 
-## 5. Safety & Quality Assurance (GEES v1.0)
+## 5. Mobile Operator Self-Service Geolocation (`/loc`)
+
+If WhatsApp does not automatically transmit your physical location when sending an attendance photo:
+1. You will receive an automated reply containing a secure one-time verification link:
+   ```text
+   📍 Location Verification Required:
+   https://kiosk.domain.com/loc?session=TOKEN
+   ```
+2. Tap the link in WhatsApp to open the verification page on your mobile browser.
+3. Tap **"Share Current Location"** and grant browser location permissions when prompted.
+4. Once verified within your kiosk's geofence, your duty check-in is instantly confirmed without needing to resend your photo.
+
+---
+
+## 6. Safety & Quality Assurance (GEES v1.0)
 
 Release100 follows strict safety guidelines to prevent mistakes:
 * **Zero Autonomous Destruction:** The AI cannot delete emails, remove database records, or drop tasks autonomously.
@@ -133,7 +147,7 @@ Release100 follows strict safety guidelines to prevent mistakes:
 
 ---
 
-## 6. Support & Escalation
+## 7. Support & Escalation
 
 * **Depot Support Hotline:** Contact your local site IT or Plant Automation team.
 * **Platform Administration:** Platform Operations Team (`ops@canebot.internal`)

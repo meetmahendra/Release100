@@ -28,7 +28,7 @@ import numpy as np
 from core_platform.app.skills.base import BaseSkill
 
 try:
-    import cv2  # type: ignore
+    import cv2
     _HAS_OPENCV = True
 except ImportError:
     cv2 = None

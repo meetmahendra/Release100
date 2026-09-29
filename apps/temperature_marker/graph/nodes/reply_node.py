@@ -14,6 +14,8 @@
 
 """Outbound WhatsApp Notification Composer Node."""
 
+import asyncio
+
 from apps.temperature_marker.graph.state import TemperatureMarkerState
 
 
@@ -36,7 +38,17 @@ async def reply_node(state: TemperatureMarkerState) -> TemperatureMarkerState:
     layer_2_disp = state.get("layer_2_disposition", "")
     haccp_comp = state.get("haccp_compliant", False)
 
+    from apps.temperature_marker.services.alert_dispatcher import dispatch_critical_hazard_alert
+
     if haccp_status == "CRITICAL_HAZARD" and temp_c is not None:
+        asyncio.create_task(
+            dispatch_critical_hazard_alert(
+                kiosk_id=kiosk_id,
+                operator_name=emp_name,
+                alert_type="HACCP Critical Spoilage",
+                details=f"Chiller reading {temp_c:.1f}°C exceeds safe 7.0°C limit!",
+            )
+        )
         state["reply_message"] = (
             f"🚨 CRITICAL CHILLER WARNING! 🚨\n"
             f"Machine: {kiosk_id}\n"
@@ -45,6 +57,14 @@ async def reply_node(state: TemperatureMarkerState) -> TemperatureMarkerState:
             f"🔒 Audit Trail: #{seq_num} ({hash_short})"
         )
     elif haccp_status == "FREEZING_HAZARD" and temp_c is not None:
+        asyncio.create_task(
+            dispatch_critical_hazard_alert(
+                kiosk_id=kiosk_id,
+                operator_name=emp_name,
+                alert_type="HACCP Freezing Hazard",
+                details=f"Chiller reading {temp_c:.1f}°C is at or below freezing!",
+            )
+        )
         state["reply_message"] = (
             f"❄️ CRITICAL FREEZING WARNING! ❄️\n"
             f"Machine: {kiosk_id}\n"
@@ -60,9 +80,18 @@ async def reply_node(state: TemperatureMarkerState) -> TemperatureMarkerState:
             f"Please adjust chiller thermostat and monitor temperature.\n"
             f"🔒 Audit Trail: #{seq_num} ({hash_short})"
         )
+    elif state.get("is_duty_checkin") and temp_c is None:
+        state["reply_message"] = (
+            f"✅ Shift Attendance Marked!\n"
+            f"👤 Operator: {emp_name} ({emp_code})\n"
+            f"📍 Kiosk: {kiosk_id} ({dist_m:.1f}m away)\n\n"
+            f"📸 Next: Chiller temperature reading pending.\n"
+            f"👉 Please take a clear close-up photo of the chiller digital LED/LCD display and send it to log today's temperature.\n\n"
+            f"🔒 Audit Trail: #{seq_num} ({hash_short})"
+        )
     elif temp_c is None or ocr_conf < 0.85 or layer_2_disp == "diverted_to_review":
         state["reply_message"] = (
-            f"⚠️ Duty Logged — Chiller Display Unreadable\n"
+            f"⚠️ Chiller Display Unreadable\n"
             f"👤 Operator: {emp_name} ({emp_code})\n"
             f"📍 Kiosk: {kiosk_id} ({dist_m:.1f}m away)\n\n"
             f"📸 The digital temperature readout could not be clearly detected in your photo.\n"

@@ -6,7 +6,7 @@ Create Date: 2026-09-16
 """
 from typing import Sequence, Union
 
-from alembic import op  # type: ignore[import-not-found]
+from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.

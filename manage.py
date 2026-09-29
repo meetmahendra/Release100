@@ -122,11 +122,11 @@ def command_export_audit() -> int:
     return 0
 
 
-def command_build(target: str, dry_run: bool) -> int:
+def command_build(target: str, dry_run: bool, edition: str = "kiosk") -> int:
     """Validate or execute packaging build."""
     if target == "windows":
         from deployment.packaging_windows.build_installer import WindowsInstallerBuilder
-        builder = WindowsInstallerBuilder()
+        builder = WindowsInstallerBuilder(edition=edition)
         return builder.build(dry_run=dry_run)
 
     print("=" * 70)
@@ -313,6 +313,7 @@ def main() -> None:
     # build
     build_parser = subparsers.add_parser("build", help="Build deployment artifacts")
     build_parser.add_argument("--target", choices=["windows", "docker", "linux"], default="windows")
+    build_parser.add_argument("--edition", choices=["kiosk", "all"], default="kiosk", help="Platform edition to package")
     build_parser.add_argument("--dry-run", action="store_true", help="Validate specs without compiling")
 
     args = parser.parse_args()
@@ -328,7 +329,7 @@ def main() -> None:
     elif args.command == "run":
         sys.exit(command_run(mode=args.mode, host=args.host, port=args.port))
     elif args.command == "build":
-        sys.exit(command_build(target=args.target, dry_run=args.dry_run))
+        sys.exit(command_build(target=args.target, dry_run=args.dry_run, edition=args.edition))
     else:
         parser.print_help()
         sys.exit(0)

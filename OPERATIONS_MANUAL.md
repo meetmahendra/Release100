@@ -287,3 +287,33 @@ python -c "from core_platform.app.telemetry.audit_engine import AuditEngine; eng
 | Ingress 401 Unauthorized | Missing or mismatched verify token | Check `WHATSAPP_VERIFY_TOKEN` in `.env` matches Meta webhook settings. |
 | Tray Icon displays Yellow / Error | Backend crashed or port 8000 in use | Check `logs/platform.log`; inspect port using `netstat -ano \| findstr 8000`. |
 | Confidence score < 85% diverted | Blurry image or low OCR confidence | System intentionally diverted reading to Admin Review Queue per GEES Layer 2 safety directives. |
+
+---
+
+## 10. Modern Operational Architecture (Plans 07 & 08)
+
+### 10.1 Outbound Cloud Relay (Zero Inbound Port Forwarding)
+To circumvent factory firewalls and carrier-grade NATs, Release100 uses an outbound reverse WebSocket client (`core_platform.app.ingress.relay_client`):
+* **Target Relay**: `wss://whatsapp-cloud-relay.myvirtualsecretory.workers.dev/ws/{kiosk_id}`
+* **Operation**: Initiates outbound connection on HTTPS port 443; automatically handles edge hibernation and exponential backoff reconnects without requiring open inbound firewall ports.
+
+### 10.2 1-Click Mobile Geolocation Portal (`/loc`)
+When an operator sends an attendance photo without native WhatsApp location metadata, the system generates a secure one-time session link (`/loc?session=<token>`):
+* Operator opens the link on mobile browser.
+* Mobile device grants HTML5 GPS coordinates.
+* System verifies coordinates against the kiosk's geofence radius via Haversine calculation and unlocks Layer 0 safety approval.
+
+### 10.3 Live Diagnostics & Configuration Management (`/settings`)
+* **Console URL**: `http://127.0.0.1:8002/settings`
+* Provides real-time telemetry on active applications, uptime, outbox pending records, and skills.
+* Includes a 1-click **Configuration Backup** generator that creates timestamped snapshots of `.env` and fleet topologies in `config_backups/`.
+
+### 10.4 Kiosk & Retail Edition Packaging
+Hardened standalone Windows executable built via:
+```powershell
+pyinstaller --clean deployment/packaging_windows/Kiosk_Retail_Edition.spec
+```
+* Bundles solely the Temperature & Attendance Marker cartridge and Desktop Tray.
+* Omits Mail Organizer, reducing installer size and isolating the attack surface.
+* Defaults to `PORT=8002` with `ENABLED_APPLICATIONS=["temperature_marker"]`.
+

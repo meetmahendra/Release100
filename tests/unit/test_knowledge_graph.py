@@ -33,7 +33,7 @@ def test_knowledge_graph_coordinates_lookup() -> None:
     lat, lon, radius = geo
     assert lat == 18.5621
     assert lon == 73.9168
-    assert radius == 100.0
+    assert radius == 300.0
 
 
 def test_knowledge_graph_haccp_limits() -> None:

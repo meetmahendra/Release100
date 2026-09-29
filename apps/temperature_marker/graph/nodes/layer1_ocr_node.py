@@ -30,6 +30,32 @@ async def layer1_ocr_node(state: TemperatureMarkerState) -> TemperatureMarkerSta
     Adheres strictly to GEES v1.0. If no image is provided, fails cleanly and diverts
     to review (Zero synthetic fallback injections).
     """
+    # Extract and validate visual watermark timestamp if present in state or multimodal analysis
+    watermark_ts = state.get("watermark_timestamp")
+    if not watermark_ts:
+        multimodal = state.get("multimodal_analysis")
+        if isinstance(multimodal, dict) and multimodal.get("watermark_timestamp"):
+            watermark_ts = str(multimodal["watermark_timestamp"])
+            state["watermark_timestamp"] = watermark_ts
+
+    if watermark_ts:
+        from core_platform.app.skills.display_ocr import validate_watermark_timestamp
+        is_valid, reason = validate_watermark_timestamp(watermark_ts)
+        if not is_valid:
+            logger.warning("[Watermark] Shift window mismatch: %s", reason)
+            state["layer_0_passed"] = False
+            state["layer_2_disposition"] = "diverted_to_review"
+            state["chiller_temp_c"] = None
+            state["ocr_confidence"] = 0.0
+            state["error_code"] = PlatformErrorCode.SAFETY_TAMPER_DETECTED.value
+            state["error_message"] = reason
+            state["reply_message"] = (
+                f"⚠️ Stale Photo Detected: Submitted photo shows timestamp '{watermark_ts}', "
+                "which is outside today's shift window. Please submit a current, live photo of the chiller display."
+            )
+            return state
+        logger.info("[Watermark] Verified valid timestamp in photo: %s", watermark_ts)
+
     # If temperature was already successfully extracted (e.g. by unified multimodal analysis)
     if state.get("ocr_confidence", 0.0) >= 0.85 and "chiller_temp_c" in state and state["chiller_temp_c"] is not None:
         return state
@@ -62,6 +88,25 @@ async def layer1_ocr_node(state: TemperatureMarkerState) -> TemperatureMarkerSta
         result = await ocr_skill.extract_display_reading(input_data)
         state["ocr_confidence"] = result.confidence
         state["ocr_engine_used"] = result.engine_used
+        if result.watermark_timestamp:
+            state["watermark_timestamp"] = result.watermark_timestamp
+            from core_platform.app.skills.display_ocr import validate_watermark_timestamp
+            is_valid, reason = validate_watermark_timestamp(result.watermark_timestamp)
+            if not is_valid:
+                logger.warning("[Watermark] Shift window mismatch: %s", reason)
+                state["layer_0_passed"] = False
+                state["layer_2_disposition"] = "diverted_to_review"
+                state["chiller_temp_c"] = None
+                state["ocr_confidence"] = 0.0
+                state["error_code"] = PlatformErrorCode.SAFETY_TAMPER_DETECTED.value
+                state["error_message"] = reason
+                state["reply_message"] = (
+                    f"⚠️ Stale Photo Detected: Submitted photo shows timestamp '{result.watermark_timestamp}', "
+                    "which is outside today's shift window. Please submit a current, live photo of the chiller display."
+                )
+                return state
+            logger.info("[Watermark] Verified valid timestamp in photo: %s", result.watermark_timestamp)
+
         logger.info(
             "[OCR] Engine=%s, extracted_temp=%.2f°C, confidence=%.2f",
             result.engine_used,
@@ -71,19 +116,21 @@ async def layer1_ocr_node(state: TemperatureMarkerState) -> TemperatureMarkerSta
 
         if result.confidence < 0.85:
             state["chiller_temp_c"] = None
-            state["layer_2_disposition"] = "diverted_to_review"
-            state["error_code"] = PlatformErrorCode.CONFIDENCE_BELOW_THRESHOLD.value
-            state["error_message"] = f"OCR confidence {result.confidence:.2f} is below 0.85 threshold."
+            if not (state.get("is_duty_checkin") and state.get("face_confidence", 0.0) >= 0.82):
+                state["layer_2_disposition"] = "diverted_to_review"
+                state["error_code"] = PlatformErrorCode.CONFIDENCE_BELOW_THRESHOLD.value
+                state["error_message"] = f"OCR confidence {result.confidence:.2f} is below 0.85 threshold."
         else:
             state["chiller_temp_c"] = result.value
     except Exception as err:
         state["ocr_confidence"] = 0.0
         state["chiller_temp_c"] = None
-        state["layer_2_disposition"] = "diverted_to_review"
-        state["error_code"] = PlatformErrorCode.OCR_READING_UNREADABLE.value
-        state["error_message"] = f"Failed to extract chiller temperature: {err}"
-        state["reply_message"] = (
-            "⚠️ Temperature Unreadable: The digital display reading could not be detected. Please ensure the LED display is clearly visible without glare and re-send."
-        )
+        if not (state.get("is_duty_checkin") and state.get("face_confidence", 0.0) >= 0.82):
+            state["layer_2_disposition"] = "diverted_to_review"
+            state["error_code"] = PlatformErrorCode.OCR_READING_UNREADABLE.value
+            state["error_message"] = f"Failed to extract chiller temperature: {err}"
+            state["reply_message"] = (
+                "⚠️ Temperature Unreadable: The digital display reading could not be detected. Please ensure the LED display is clearly visible without glare and re-send."
+            )
 
     return state

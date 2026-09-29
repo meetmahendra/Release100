@@ -24,7 +24,9 @@ Provides:
 
 import io
 import re
+import time
 from typing import Any, Dict, List, Optional, Tuple
+import uuid
 import numpy as np
 from PIL import Image
 from pydantic import BaseModel, Field
@@ -50,6 +52,208 @@ class DisplayReadingResult(BaseModel):
         default=False,
         description="True if cloud vision fallback was triggered due to low local confidence",
     )
+    watermark_timestamp: Optional[str] = Field(
+        default=None,
+        description="Visual watermark date/time stamped on pixels if detected, else None",
+    )
+
+
+# Standard visual camera timestamp regex patterns (ignoring GPS text, phone models, logos)
+_TIMESTAMP_PATTERNS = [
+    # YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD followed by time
+    r"\b(20\d{2}[-/.\\](?:0[1-9]|1[0-2])[-/.\\](?:0[1-9]|[12]\d|3[01]))[ T]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*(?:AM|PM|am|pm))?)\b",
+    # DD-MM-YYYY or DD/MM/YYYY or DD.MM.YYYY followed by time
+    r"\b((?:0[1-9]|[12]\d|3[01])[-/.\\](?:0[1-9]|1[0-2])[-/.\\](?:20\d{2}))[ T]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*(?:AM|PM|am|pm))?)\b",
+    # DD[-/ ]MonthName[-/ ]YYYY followed by time (e.g. 16-Sept-2026 10:14:29 am, 13-Sep-2026 10:30:20)
+    r"\b((?:0[1-9]|[12]\d|3[01])[-/ ]+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*[-/ ]+20\d{2})[ T]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*(?:AM|PM|am|pm))?)\b",
+    # Month DD, YYYY followed by time (e.g. Sep 20, 2026 10:15 AM, Sept 16, 2026)
+    r"\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+(?:0[1-9]|[12]\d|3[01]),?\s+20\d{2})[ T]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*(?:AM|PM|am|pm))?)\b",
+    # DD Month YYYY followed by time (e.g. 20 Sep 2026 10:15)
+    r"\b((?:0[1-9]|[12]\d|3[01])\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+20\d{2})[ T]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*(?:AM|PM|am|pm))?)\b",
+    # EXIF style YYYY:MM:DD HH:MM:SS
+    r"\b(20\d{2}:(?:0[1-9]|1[0-2]):(?:0[1-9]|[12]\d|3[01]))[ T]+(\d{1,2}:\d{2}(?::\d{2})?)\b",
+]
+
+_MONTH_NAMES_MAP = {
+    "jan": "01", "january": "01",
+    "feb": "02", "february": "02",
+    "mar": "03", "march": "03",
+    "apr": "04", "april": "04",
+    "may": "05",
+    "jun": "06", "june": "06",
+    "jul": "07", "july": "07",
+    "aug": "08", "august": "08",
+    "sep": "09", "sept": "09", "september": "09",
+    "oct": "10", "october": "10",
+    "nov": "11", "november": "11",
+    "dec": "12", "december": "12",
+}
+
+
+def extract_visual_timestamp_from_text(text: Optional[str]) -> Optional[str]:
+    """Extract visual date/time watermark from text, ignoring GPS/branding/logos.
+
+    Matches timestamp strings while ignoring coordinates, device models, and kiosk names.
+    """
+    if not text:
+        return None
+    for pattern in _TIMESTAMP_PATTERNS:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            date_part = match.group(1).strip()
+            time_part = match.group(2).strip()
+            return f"{date_part} {time_part}"
+    return None
+
+
+def parse_watermark_date(ts_str: Optional[str]) -> Optional[str]:
+    """Parse a watermark timestamp string into a normalized YYYY-MM-DD date."""
+    if not ts_str:
+        return None
+    from datetime import datetime
+
+    cleaned = ts_str.strip()
+
+    # Fast direct regex extraction for Day-MonthName-Year (e.g. 16-Sept-2026, 13-Sep-2026 10:30:20 am)
+    d_m_y = re.search(r"\b(\d{1,2})[-/ ]+([A-Za-z]+)[-/ ]+(20\d{2})\b", cleaned)
+    if d_m_y:
+        day_val = int(d_m_y.group(1))
+        mon_str = d_m_y.group(2).lower()
+        yr_str = d_m_y.group(3)
+        mon_val = _MONTH_NAMES_MAP.get(mon_str) or _MONTH_NAMES_MAP.get(mon_str[:3])
+        if mon_val and 1 <= day_val <= 31:
+            return f"{yr_str}-{mon_val}-{day_val:02d}"
+
+    # Fast direct regex extraction for MonthName-Day-Year (e.g. Sep 20, 2026 or Sept-16-2026)
+    m_d_y = re.search(r"\b([A-Za-z]+)[-/ ]+(\d{1,2}),?[-/ ]+(20\d{2})\b", cleaned)
+    if m_d_y:
+        mon_str = m_d_y.group(1).lower()
+        day_val = int(m_d_y.group(2))
+        yr_str = m_d_y.group(3)
+        mon_val = _MONTH_NAMES_MAP.get(mon_str) or _MONTH_NAMES_MAP.get(mon_str[:3])
+        if mon_val and 1 <= day_val <= 31:
+            return f"{yr_str}-{mon_val}-{day_val:02d}"
+
+    # Direct regex extraction for Year-Month-Day (numeric, e.g. 2026-09-16, 2026/09/16, 2026:09:16)
+    y_m_d = re.search(r"\b(20\d{2})[-/.:](0[1-9]|1[0-2])[-/.:](0[1-9]|[12]\d|3[01])\b", cleaned)
+    if y_m_d:
+        return f"{y_m_d.group(1)}-{y_m_d.group(2)}-{y_m_d.group(3)}"
+
+    # Direct regex extraction for Day-Month-Year (numeric, e.g. 20/09/2026, 16-09-2026)
+    num_d_m_y = re.search(r"\b(0[1-9]|[12]\d|3[01])[-/.:](0[1-9]|1[0-2])[-/.:](20\d{2})\b", cleaned)
+    if num_d_m_y:
+        return f"{num_d_m_y.group(3)}-{num_d_m_y.group(2)}-{num_d_m_y.group(1)}"
+
+    # Standard strptime fallback with 'Sept' normalized to 'Sep'
+    norm_cleaned = re.sub(r"\bSept\b", "Sep", cleaned, flags=re.IGNORECASE)
+    formats = [
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M",
+        "%Y/%m/%d %H:%M:%S",
+        "%Y/%m/%d %H:%M",
+        "%Y.%m.%d %H:%M:%S",
+        "%Y.%m.%d %H:%M",
+        "%d-%m-%Y %H:%M:%S",
+        "%d-%m-%Y %H:%M",
+        "%d/%m/%Y %H:%M:%S",
+        "%d/%m/%Y %H:%M",
+        "%d.%m.%Y %H:%M:%S",
+        "%d.%m.%Y %H:%M",
+        "%b %d, %Y %I:%M %p",
+        "%b %d, %Y %I:%M:%S %p",
+        "%B %d, %Y %I:%M %p",
+        "%B %d, %Y %I:%M:%S %p",
+        "%b %d %Y %H:%M:%S",
+        "%b %d %Y %H:%M",
+        "%d %b %Y %H:%M:%S",
+        "%d %b %Y %H:%M",
+        "%d-%b-%Y %I:%M:%S %p",
+        "%d-%b-%Y %I:%M %p",
+        "%d-%b-%Y %H:%M:%S",
+        "%d-%b-%Y %H:%M",
+        "%d-%b-%Y",
+        "%d/%b/%Y %I:%M:%S %p",
+        "%d/%b/%Y",
+        "%Y-%m-%d",
+        "%d-%m-%Y",
+        "%d/%m/%Y",
+    ]
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(norm_cleaned, fmt)
+            return dt.strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return None
+
+
+def validate_watermark_timestamp(
+    watermark_ts: str,
+    target_date: Optional[str] = None,
+) -> Tuple[bool, str]:
+    """Validate extracted watermark timestamp against the active shift window date.
+
+    Args:
+        watermark_ts: Timestamp string extracted from image watermark.
+        target_date: Expected shift date (YYYY-MM-DD). Defaults to current shift dates (IST & UTC).
+
+    Returns:
+        Tuple of (is_valid: bool, reason_message: str).
+    """
+    from datetime import datetime, timezone, timedelta
+
+    now_utc = datetime.now(timezone.utc)
+    now_ist = now_utc + timedelta(hours=5, minutes=30)
+    today_utc = now_utc.strftime("%Y-%m-%d")
+    today_ist = now_ist.strftime("%Y-%m-%d")
+
+    valid_dates = {today_utc, today_ist}
+    if target_date:
+        valid_dates.add(target_date)
+
+    wm_date = parse_watermark_date(watermark_ts)
+    if not wm_date:
+        # Check if year is explicitly prior to current calendar year
+        year_match = re.search(r"\b(202[0-9])\b", watermark_ts)
+        if year_match and int(year_match.group(1)) < now_utc.year:
+            return False, f"Watermark timestamp '{watermark_ts}' indicates an expired year {year_match.group(1)}. Stale photo rejected."
+        return True, f"Unrecognized watermark format '{watermark_ts}'; deferring to standard trust model."
+
+    if wm_date in valid_dates:
+        return True, f"Watermark date {wm_date} matches active shift date ({today_ist})."
+    else:
+        return False, (
+            f"Watermark date {wm_date} does not match active shift date ({today_ist}). "
+            "Photo appears to be stale or recycled from an older shift."
+        )
+
+
+def is_valid_image_bytes(data: Any) -> bool:
+    """Check whether input data can be processed as an image stream.
+
+    Adheres to GEES v1.0 Layer 0 Pre-Execution boundary checks to prevent
+    sending dummy simulation text payloads (e.g. starting with DIGIT:) to
+    cloud multimodal vision models.
+
+    Args:
+        data: Arbitrary input payload (bytes, bytearray, or other).
+
+    Returns:
+        True if data can be processed as an image stream, False otherwise.
+    """
+    if not isinstance(data, (bytes, bytearray)) or len(data) < 8:
+        return False
+    # Explicitly reject simulation dummy text strings
+    if data.startswith(b"DIGIT:") or data.startswith(b"TEXT:"):
+        return False
+    # Known valid image magic headers
+    if data.startswith(b"\xff\xd8\xff") or data.startswith(b"\x89PNG\r\n\x1a\n") or data.startswith(b"RIFF"):
+        return True
+    # Allow test buffers if not a known dummy text pattern
+    return True
+
 
 
 # Standard 7-segment binary lookup map: (a, b, c, d, e, f, g) -> digit character
@@ -155,6 +359,13 @@ def _recognize_seven_segment_digits(binary: np.ndarray) -> Optional[Tuple[float,
     if not intervals:
         return None
 
+    full_h, full_w = binary.shape
+    is_uncropped_scene = (full_w >= 300 and full_h >= 300)
+
+    # On uncropped full camera frames, require at least 2 distinct digit intervals
+    if is_uncropped_scene and len(intervals) < 2:
+        return None
+
     extracted_chars: List[str] = []
     confidences: List[float] = []
 
@@ -164,10 +375,19 @@ def _recognize_seven_segment_digits(binary: np.ndarray) -> Optional[Tuple[float,
         if dh < 8 or dw < 2:
             continue
 
+        # Reject candidate intervals that span an excessive width on uncropped scene
+        if is_uncropped_scene and dw > int(0.35 * full_w):
+            continue
+
         # Check for decimal point (small dot near the bottom)
         if dw <= max(4, int(0.3 * dh)) and dh < int(0.45 * h):
             extracted_chars.append(".")
             confidences.append(0.95)
+            continue
+
+        # Enforce valid aspect ratio for standard 7-segment digits
+        aspect = dh / max(1, dw)
+        if aspect < 1.0 or aspect > 3.8:
             continue
 
         # Sample 7 segments (a-g) using normalized relative coordinates
@@ -218,6 +438,11 @@ def _recognize_seven_segment_digits(binary: np.ndarray) -> Optional[Tuple[float,
     if not extracted_chars:
         return None
 
+    # On uncropped full camera frames, a single isolated digit without decimals or companions
+    # is almost certainly room/background clutter. Require >= 2 characters.
+    if is_uncropped_scene and len(extracted_chars) < 2:
+        return None
+
     digit_str = "".join(extracted_chars)
     match = re.search(r"(-?\d{1,3}(?:\.\d)?)", digit_str)
     if match:
@@ -266,6 +491,11 @@ class DisplayOCRSkill(BaseSkill):
         if isinstance(raw_input, dict) and "temperature_c" in raw_input:
             temp_val = float(raw_input["temperature_c"])
             conf = float(raw_input.get("confidence", 0.95))
+            wm_ts = (
+                str(raw_input["watermark_timestamp"])
+                if raw_input.get("watermark_timestamp")
+                else extract_visual_timestamp_from_text(raw_input.get("overlay_text") or raw_input.get("caption"))
+            )
             if conf >= self._local_confidence_threshold:
                 return DisplayReadingResult(
                     value=temp_val,
@@ -274,6 +504,7 @@ class DisplayOCRSkill(BaseSkill):
                     display_type=raw_input.get("display_type", "7_segment_led"),
                     engine_used="local_onnx",
                     is_fallback=False,
+                    watermark_timestamp=wm_ts,
                 )
 
         # If raw image bytes passed
@@ -318,7 +549,8 @@ class DisplayOCRSkill(BaseSkill):
                 or raw_input.startswith(b"GIF")
             )
             if not is_binary_image:
-                text_snippet = raw_input[:100].decode("utf-8", errors="ignore")
+                text_snippet = raw_input[:250].decode("utf-8", errors="ignore")
+                wm_ts = extract_visual_timestamp_from_text(text_snippet)
                 match = re.search(r"(-?\d{1,3}\.?\d?)", text_snippet)
                 if match:
                     try:
@@ -330,6 +562,7 @@ class DisplayOCRSkill(BaseSkill):
                             display_type="7_segment_led",
                             engine_used="local_onnx",
                             is_fallback=False,
+                            watermark_timestamp=wm_ts,
                         )
                     except ValueError:
                         pass
@@ -383,6 +616,11 @@ class DisplayOCRSkill(BaseSkill):
             val = float(image_data.get("temperature_c", 0.0))
             conf = float(image_data.get("cloud_confidence", 0.98))
             display_type = str(image_data.get("display_type", "lcd_screen"))
+            wm_ts = (
+                str(image_data["watermark_timestamp"])
+                if image_data.get("watermark_timestamp")
+                else extract_visual_timestamp_from_text(image_data.get("overlay_text") or image_data.get("caption"))
+            )
             return DisplayReadingResult(
                 value=val,
                 unit="C",
@@ -390,10 +628,11 @@ class DisplayOCRSkill(BaseSkill):
                 display_type=display_type,
                 engine_used="cloud_gemini_vision",
                 is_fallback=True,
+                watermark_timestamp=wm_ts,
             )
 
-        # If live image bytes passed and Gemini API key is configured
-        if isinstance(image_data, bytes) and settings.GEMINI_API_KEY and not settings.GEMINI_API_KEY.startswith("your_"):
+        # If live valid image bytes passed and Gemini API key is configured
+        if is_valid_image_bytes(image_data) and settings.GEMINI_API_KEY and not settings.GEMINI_API_KEY.startswith("your_"):
             try:
                 import base64
                 import json
@@ -407,10 +646,13 @@ class DisplayOCRSkill(BaseSkill):
                     "Inspect this photo taken at a CaneBot kiosk. The photo may be a direct close-up of the chiller gauge "
                     "OR a selfie containing both the operator and the chiller gauge in the frame.\n"
                     "Locate the digital temperature gauge display (typically a 7-segment LED or LCD readout showing numbers like 2.8, 3.2, 4.1).\n"
+                    "Also check if a visual date/time watermark is stamped on the image pixels (e.g. camera app timestamp in corners or borders such as '16-Sept-2026 10:14:29 am', '13-Sept-2026 10:30:20 am', or '2026-09-20 10:15').\n"
                     "Extract the numeric Celsius temperature reading and return ONLY a valid JSON object with format:\n"
-                    '{"value": float, "unit": "C", "confidence": float between 0.0 and 1.0, "display_type": "7_segment_led" | "lcd_screen"}\n'
+                    '{"value": float, "unit": "C", "confidence": float between 0.0 and 1.0, "display_type": "7_segment_led" | "lcd_screen", "watermark_timestamp": string or null}\n'
+                    "IMPORTANT: For 'watermark_timestamp', extract any visual date/time timestamp imprinted directly on the image "
+                    "(e.g. '16-Sept-2026 10:14:29 am' or '2026-09-20 10:15'). Explicitly IGNORE any other text like GPS coordinates, addresses, phone models, or logos.\n"
                     "If the gauge is not found or unreadable, return: "
-                    '{"value": 0.0, "unit": "C", "confidence": 0.0, "display_type": "unknown"}'
+                    '{"value": 0.0, "unit": "C", "confidence": 0.0, "display_type": "unknown", "watermark_timestamp": null}'
                 )
                 payload = {
                     "contents": [
@@ -438,14 +680,34 @@ class DisplayOCRSkill(BaseSkill):
                     headers={"Content-Type": "application/json"},
                     method="POST",
                 )
+                t0 = time.perf_counter()
                 with urllib.request.urlopen(req, timeout=10.0) as resp:
+                    latency_ms = (time.perf_counter() - t0) * 1000.0
                     if resp.status == 200:
                         res = json.loads(resp.read().decode("utf-8"))
+                        usage = res.get("usageMetadata", {})
+                        p_tokens = int(usage.get("promptTokenCount", 418))
+                        c_tokens = int(usage.get("candidatesTokenCount", 60))
+
+                        from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
+                        get_llm_cost_tracker().record_interaction(
+                            interaction_id=f"ix_{uuid.uuid4().hex[:10]}",
+                            operation_id="chiller_ocr_vision",
+                            task="vision_ocr",
+                            provider="gemini",
+                            model=model_name,
+                            prompt_tokens=p_tokens,
+                            completion_tokens=c_tokens,
+                            latency_ms=latency_ms,
+                            success=True,
+                        )
+
                         text_part = res["candidates"][0]["content"]["parts"][0]["text"]
                         parsed = json.loads(text_part)
                         read_val = float(parsed.get("value", 0.0))
                         read_conf = float(parsed.get("confidence", 0.0))
                         read_disp = str(parsed.get("display_type", "lcd_screen"))
+                        read_wm = str(parsed.get("watermark_timestamp")).strip() if parsed.get("watermark_timestamp") else None
                         return DisplayReadingResult(
                             value=read_val,
                             unit="C",
@@ -453,6 +715,7 @@ class DisplayOCRSkill(BaseSkill):
                             display_type=read_disp,
                             engine_used="cloud_gemini_vision",
                             is_fallback=True,
+                            watermark_timestamp=read_wm,
                         )
             except Exception:
                 pass
@@ -511,17 +774,23 @@ class DisplayOCRSkill(BaseSkill):
 
         # If simulated dictionary passed in testing
         if isinstance(image_data, dict):
+            wm_ts = (
+                str(image_data["watermark_timestamp"])
+                if image_data.get("watermark_timestamp")
+                else extract_visual_timestamp_from_text(image_data.get("overlay_text") or image_data.get("caption"))
+            )
             return {
                 "face_detected": bool(image_data.get("face_detected", True)),
                 "face_confidence": float(image_data.get("face_confidence", 0.95)),
                 "temperature_c": float(image_data.get("temperature_c", 3.2)),
                 "ocr_confidence": float(image_data.get("confidence", 0.95)),
                 "display_type": str(image_data.get("display_type", "7_segment_led")),
+                "watermark_timestamp": wm_ts,
                 "reasoning": "Simulated combined inspection payload",
             }
 
-        # Live Vision Processing via LLMGateway
-        if isinstance(image_data, bytes):
+        # Live Vision Processing via LLMGateway (only for valid image byte streams)
+        if is_valid_image_bytes(image_data):
             try:
                 from core_platform.app.llm.gateway import get_platform_llm_gateway
                 gateway = get_platform_llm_gateway()
@@ -536,8 +805,12 @@ class DisplayOCRSkill(BaseSkill):
                     '  "temperature_c": float or null if gauge unreadable/missing,\n'
                     '  "ocr_confidence": float between 0.0 and 1.0,\n'
                     '  "display_type": "7_segment_led" | "lcd_screen" | "unknown",\n'
+                    '  "watermark_timestamp": string or null (visual date/time watermark stamped on image pixels, e.g. "16-Sept-2026 10:14:29 am", "13-Sept-2026 10:30:20 am", or "2026-09-20 10:15", else null),\n'
                     '  "reasoning": "brief explanation of findings"\n'
-                    "}"
+                    "}\n\n"
+                    "IMPORTANT: For 'watermark_timestamp', only extract date/time timestamps imprinted directly on the image "
+                    "pixels (e.g. camera app timestamp in corners/borders). Explicitly IGNORE any other text like GPS coordinates, "
+                    "street addresses, camera device model branding (e.g. 'Shot on...'), or logos."
                 )
                 parsed = await gateway.generate_multimodal(
                     task="vision_processing",
@@ -549,12 +822,15 @@ class DisplayOCRSkill(BaseSkill):
                 if parsed and isinstance(parsed, dict):
                     raw_temp = parsed.get("temperature_c")
                     temp_val = float(raw_temp) if raw_temp is not None else None
+                    raw_wm = parsed.get("watermark_timestamp")
+                    wm_val = str(raw_wm).strip() if raw_wm else None
                     return {
                         "face_detected": bool(parsed.get("face_detected", False)),
                         "face_confidence": float(parsed.get("face_confidence", 0.0)),
                         "temperature_c": temp_val,
                         "ocr_confidence": float(parsed.get("ocr_confidence", 0.0)),
                         "display_type": str(parsed.get("display_type", "unknown")),
+                        "watermark_timestamp": wm_val,
                         "reasoning": str(parsed.get("reasoning", "LLM multimodal vision analysis")),
                     }
             except Exception:
@@ -578,6 +854,20 @@ class DisplayOCRSkill(BaseSkill):
             except Exception:
                 pass
 
+        wm_ts_fallback = (
+            ocr_result.watermark_timestamp
+            if ocr_result and ocr_result.watermark_timestamp
+            else None
+        )
+        if not wm_ts_fallback and isinstance(image_data, bytes):
+            is_bin = (
+                image_data.startswith(b"\xff\xd8")
+                or image_data.startswith(b"\x89PNG")
+                or image_data.startswith(b"RIFF")
+            )
+            if not is_bin:
+                wm_ts_fallback = extract_visual_timestamp_from_text(image_data[:250].decode("utf-8", errors="ignore"))
+
         if ocr_result is not None:
             return {
                 "face_detected": face_detected,
@@ -585,6 +875,7 @@ class DisplayOCRSkill(BaseSkill):
                 "temperature_c": ocr_result.value,
                 "ocr_confidence": ocr_result.confidence,
                 "display_type": ocr_result.display_type,
+                "watermark_timestamp": wm_ts_fallback,
                 "reasoning": "Local 7-segment digital zoning and edge face detection fallback",
             }
 
@@ -594,6 +885,7 @@ class DisplayOCRSkill(BaseSkill):
             "temperature_c": 0.0,
             "ocr_confidence": 0.0,
             "display_type": "unknown",
+            "watermark_timestamp": wm_ts_fallback,
             "reasoning": "Unable to extract face or gauge reading from image",
         }
 

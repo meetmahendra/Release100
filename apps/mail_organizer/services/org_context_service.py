@@ -29,7 +29,7 @@ import re
 from typing import Optional, List, Dict, Any
 
 try:
-    import yaml  # type: ignore[import-untyped]
+    import yaml
 except ImportError:
     yaml = None
 

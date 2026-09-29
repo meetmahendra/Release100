@@ -101,6 +101,10 @@ class PlatformSettings(BaseSettings):
         default="",
         description="Meta Cloud API Phone Number ID",
     )
+    SUPERVISOR_PHONE: str = Field(
+        default="+919800000000",
+        description="Default supervisor phone for escalated operator alerts",
+    )
 
     # Cloud Relay Settings (Outbound Zero-Inbound WebSocket Bridge)
     RELAY_WS_URL: str = Field(

@@ -35,15 +35,137 @@
     .chip-ok { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
     .chip-warn { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
     .chip-danger { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+
+    /* Sticky High Alert Banner */
+    .emergency-banner {
+        background: linear-gradient(90deg, #991b1b, #dc2626);
+        border: 1px solid #f87171;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+        animation: pulseAlert 2s infinite ease-in-out;
+    }
+    @keyframes pulseAlert {
+        0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+        50% { box-shadow: 0 0 22px rgba(239, 68, 68, 0.8); }
+    }
+
+    /* Kiosk Fleet Grid */
+    .kiosk-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+    .kiosk-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .kiosk-card:hover {
+        transform: translateY(-2px);
+        border-color: #64748b;
+    }
+    .kiosk-card.hazard {
+        border-left: 4px solid #ef4444;
+    }
+    .kiosk-card.overdue {
+        border-left: 4px solid #f59e0b;
+    }
+    .kiosk-card.ok {
+        border-left: 4px solid #10b981;
+    }
+
+    .progress-bar-bg {
+        background: #0f172a;
+        border-radius: 9999px;
+        height: 8px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+        border: 1px solid #334155;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 9999px;
+        transition: width 0.3s ease;
+    }
+
+    /* Tabs */
+    .nav-tabs {
+        display: flex;
+        gap: 0.5rem;
+        border-bottom: 2px solid #334155;
+        margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+        background: none;
+        border: none;
+        padding: 0.75rem 1.25rem;
+        color: #94a3b8;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.2s;
+    }
+    .tab-btn.active {
+        color: #38bdf8;
+        border-bottom-color: #38bdf8;
+    }
+    .tab-btn:hover {
+        color: #f8fafc;
+    }
+    .tab-panel {
+        display: none;
+    }
+    .tab-panel.active {
+        display: block;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+
+<!-- High-Alert Emergency Banner (Requirement 4) -->
+{% if active_alerts %}
+<div class="emergency-banner">
+    <div style="display: flex; align-items: center; gap: 0.85rem;">
+        <span style="font-size: 1.75rem;">🚨</span>
+        <div>
+            <div style="font-weight: 700; font-size: 1.05rem; letter-spacing: 0.02em;">
+                HIGH ALERT: {{ active_alerts|length }} Unresolved Safety Incident{% if active_alerts|length > 1 %}s{% endif %} Detected
+            </div>
+            <div style="font-size: 0.85rem; opacity: 0.95; margin-top: 0.15rem;">
+                {% for a in active_alerts[:3] %}
+                    • <strong>[{{ a.kiosk_id }}]</strong> {{ a.type }}: {{ a.description }} ({{ a.time_ist }}){% if not loop.last %} &nbsp;|&nbsp; {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <button onclick="document.getElementById('alertsDetailsModal').style.display='flex'" class="btn" style="background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.4); font-size: 0.85rem;">
+            Inspect All Alerts
+        </button>
+    </div>
+</div>
+{% endif %}
+
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
     <div>
-        <h1 style="font-size: 1.75rem; font-weight: 700; color: white;">📊 Live Attendance & Chiller Temperature Console</h1>
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: white;">📊 Unified Fleet Monitoring & HACCP Center</h1>
         <p style="color: var(--text-secondary); margin-top: 0.25rem;">
-            Real-time feed of duty check-ins, chiller readings, GPS geofence compliance, and administrative resolution.
+            Live operator attendance, multi-check chiller temperature logs, internal communications hub, and safety alert dispatch.
         </p>
     </div>
     <div style="display: flex; gap: 0.75rem;">
@@ -56,153 +178,414 @@
 <!-- KPI Summary Cards -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
     <div class="kpi-card">
-        <span class="kpi-lbl">Total Shift Records</span>
-        <span class="kpi-val" style="color: #38bdf8;">{{ records|length }}</span>
-        <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Captured check-ins & checks</span>
+        <span class="kpi-lbl">Total Kiosks Monitored</span>
+        <span class="kpi-val" style="color: #38bdf8;">{{ kiosks_summary|length }}</span>
+        <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+            {{ kiosks_summary|selectattr("has_checkin_today")|list|length }} active today
+        </span>
     </div>
     <div class="kpi-card">
-        <span class="kpi-lbl">HACCP Cold-Chain Compliant</span>
+        <span class="kpi-lbl">Attendance Check-ins</span>
         <span class="kpi-val" style="color: #10b981;">
-            {{ records|selectattr("haccp_compliant")|list|length }}
+            {{ kiosks_summary|selectattr("has_checkin_today")|list|length }} / {{ kiosks_summary|length }}
         </span>
-        <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Target range 2.0°C – 4.0°C</span>
+        <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Kiosks opened today</span>
     </div>
     <div class="kpi-card">
-        <span class="kpi-lbl">Geofence Verified</span>
+        <span class="kpi-lbl">Multi-Check HACCP Progress</span>
         <span class="kpi-val" style="color: #a78bfa;">
-            {{ records|selectattr("geofence_verified")|list|length }}
+            {{ records|selectattr("haccp_compliant")|list|length }} Checks
         </span>
-        <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Within assigned kiosk radius</span>
+        <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">In safe cold zone (2°C – 4°C)</span>
     </div>
     <div class="kpi-card">
-        <span class="kpi-lbl">Safety / Parameter Alerts</span>
-        <span class="kpi-val" style="color: #f87171;">
+        <span class="kpi-lbl">Safety & Operational Alerts</span>
+        <span class="kpi-val" style="color: {% if alert_count > 0 %}#f87171{% else %}#10b981{% endif %};">
             {{ alert_count }}
         </span>
-        <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Requiring supervisor override</span>
+        <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+            {% if alert_count > 0 %}Immediate Action Required{% else %}All Safe & Nominal{% endif %}
+        </span>
     </div>
 </div>
 
-<!-- Live Monitoring Table -->
-<div class="card" style="padding: 0; overflow: hidden;">
-    <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="font-size: 1.1rem; font-weight: 600;">Captured Duty Check-ins & Verifications</h3>
-        <span style="font-size: 0.8rem; color: var(--text-secondary);">Photos securely stored in local media vault</span>
+<!-- Requirement 1 & 2: Kiosk Fleet Status Matrix -->
+<div style="margin-bottom: 1.75rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h3 style="font-size: 1.15rem; font-weight: 600; color: white;">🏪 Kiosk Fleet Live Status Matrix</h3>
+        <span style="font-size: 0.8rem; color: var(--text-secondary);">Today's shift attendance & multi-point temperature cadence</span>
     </div>
 
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
-            <thead>
-                <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
-                    <th style="padding: 0.75rem 1rem;">Timestamp (UTC)</th>
-                    <th style="padding: 0.75rem 1rem;">Check-in Photo</th>
-                    <th style="padding: 0.75rem 1rem;">Operator</th>
-                    <th style="padding: 0.75rem 1rem;">Kiosk / Site</th>
-                    <th style="padding: 0.75rem 1rem;">Chiller Temp</th>
-                    <th style="padding: 0.75rem 1rem;">Location & Biometrics</th>
-                    <th style="padding: 0.75rem 1rem;">Compliance Status</th>
-                    <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for r in records %}
-                {% set has_alert = (not r.haccp_compliant) or (not r.geofence_verified) or (r.face_confidence < 0.82) %}
-                <tr style="border-bottom: 1px solid var(--border-color); background: {% if has_alert %}rgba(239, 68, 68, 0.05){% else %}transparent{% endif %};">
-                    <td style="padding: 0.85rem 1rem; font-family: monospace; font-size: 0.8rem; color: #94a3b8;">
-                        {{ r.checkin_time_utc.strftime('%Y-%m-%d %H:%M:%S') if r.checkin_time_utc else 'N/A' }}
-                    </td>
-                    <td style="padding: 0.85rem 1rem;">
-                        {% if r.photo_path %}
-                        <div style="position: relative; display: inline-block;">
-                            <img src="/{{ r.photo_path }}" alt="Photo"
-                                 onclick="previewPhoto('/{{ r.photo_path }}')"
-                                 style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; transition: transform 0.2s;"
-                                 onmouseover="this.style.transform='scale(1.15)'"
-                                 onmouseout="this.style.transform='scale(1.0)'" />
+    <div class="kiosk-grid">
+        {% for k in kiosks_summary %}
+        {% set card_state = 'hazard' if k.has_critical_hazard else ('overdue' if k.is_temp_overdue else ('ok' if k.has_checkin_today else '')) %}
+        <div class="kiosk-card {{ card_state }}">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div>
+                        <span style="font-weight: 700; font-size: 1.05rem; color: white;">{{ k.kiosk_id }}</span>
+                        <div style="font-size: 0.8rem; color: #94a3b8;">{{ k.name }} ({{ k.city }})</div>
+                    </div>
+                    {% if k.has_checkin_today %}
+                        <span class="badge badge-green">CHECKED IN</span>
+                    {% else %}
+                        <span class="badge badge-red">NOT CHECKED IN</span>
+                    {% endif %}
+                </div>
+
+                <!-- Operator Details -->
+                <div style="background: #0f172a; padding: 0.6rem 0.75rem; border-radius: 6px; font-size: 0.82rem; margin-top: 0.5rem; border: 1px solid #334155;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #94a3b8;">Operator:</span>
+                        <span style="font-weight: 600; color: #f8fafc;">
+                            {{ k.checkin_operator_name or (k.assigned_operators|join(', ') if k.assigned_operators else 'Unassigned') }}
+                        </span>
+                    </div>
+                    {% if k.checkin_time_ist %}
+                    <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
+                        <span style="color: #94a3b8;">Check-in (IST):</span>
+                        <span style="font-family: monospace; color: #38bdf8;">{{ k.checkin_time_ist }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Multi-Check Cadence (Requirement 2) -->
+                <div style="margin-top: 0.85rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                        <span style="color: #94a3b8;">Temp Checks Cadence:</span>
+                        <span style="font-weight: 700; color: {% if k.total_temp_checks_today >= k.required_temp_checks %}#10b981{% elif k.is_temp_overdue %}#f59e0b{% else %}#38bdf8{% endif %};">
+                            {{ k.total_temp_checks_today }} / {{ k.required_temp_checks }} Done
+                        </span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill"
+                             style="width: {{ k.temp_checks_progress_pct }}%; background: {% if k.total_temp_checks_today >= k.required_temp_checks %}#10b981{% elif k.is_temp_overdue %}#f59e0b{% else %}#38bdf8{% endif %};">
                         </div>
+                    </div>
+                </div>
+
+                <!-- Latest Chiller Reading -->
+                <div style="margin-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                    <span style="color: #94a3b8;">Latest Reading:</span>
+                    <div>
+                        {% if k.latest_chiller_temp_c is not none %}
+                            <span style="font-weight: 700; font-family: monospace; color: {% if k.latest_haccp_status == 'COMPLIANT' %}#10b981{% else %}#ef4444{% endif %};">
+                                {{ "%.1f"|format(k.latest_chiller_temp_c) }}°C
+                            </span>
+                            <span style="font-size: 0.72rem; color: #64748b;">({{ k.latest_temp_time_ist }})</span>
                         {% else %}
-                        <div style="width: 48px; height: 48px; border-radius: 6px; background: #0f172a; border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #64748b;">
-                            No Pic
-                        </div>
+                            <span style="color: #f59e0b; font-size: 0.8rem;">Pending Reading</span>
                         {% endif %}
-                    </td>
-                    <td style="padding: 0.85rem 1rem;">
-                        <div style="font-weight: 600; color: white;">
-                            {{ emp_map.get(r.emp_code, {}).get("full_name", r.emp_code) }}
-                        </div>
-                        <div style="font-family: monospace; font-size: 0.75rem; color: #a78bfa;">
-                            {{ r.emp_code }}
-                        </div>
-                    </td>
-                    <td style="padding: 0.85rem 1rem;">
-                        <div style="font-weight: 600; color: #38bdf8; font-family: monospace; font-size: 0.82rem;">
-                            {{ r.kiosk_id }}
-                        </div>
-                        <div style="font-size: 0.75rem; color: #94a3b8;">
-                            {{ kiosk_map.get(r.kiosk_id, {}).get("name", "CaneBot Kiosk") }}
-                        </div>
-                    </td>
-                    <td style="padding: 0.85rem 1rem;">
-                        {% if r.chiller_temp_c is not none %}
-                            <div style="font-size: 1.05rem; font-weight: 700; font-family: monospace; color: {% if r.haccp_compliant %}#10b981{% else %}#ef4444{% endif %};">
-                                {{ "%.1f"|format(r.chiller_temp_c) }}°C
-                            </div>
-                            <div style="font-size: 0.7rem; color: #64748b;">
-                                {{ r.ocr_engine_used }}
-                            </div>
-                        {% else %}
-                            <div style="font-size: 0.85rem; font-weight: 700; color: #f59e0b;">
-                                UNAVAILABLE
-                            </div>
-                            <div style="font-size: 0.7rem; color: #ef4444;">
-                                ⚠️ Missing Display
-                            </div>
-                        {% endif %}
-                    </td>
-                    <td style="padding: 0.85rem 1rem;">
-                        <div style="font-size: 0.8rem; margin-bottom: 0.2rem;">
-                            {% if r.geofence_verified %}
-                                <span class="alert-chip chip-ok">📍 GPS: {{ "%.0f"|format(r.gps_distance_meters) }}m</span>
-                            {% else %}
-                                <span class="alert-chip chip-danger" title="Outside kiosk allowed radius">⚠️ GPS: {{ "%.0f"|format(r.gps_distance_meters) }}m</span>
-                            {% endif %}
-                        </div>
-                        <div style="font-size: 0.8rem;">
-                            {% if r.face_confidence >= 0.82 %}
-                                <span class="alert-chip chip-ok">👤 Face: {{ "%.0f"|format(r.face_confidence * 100) }}%</span>
-                            {% else %}
-                                <span class="alert-chip chip-danger" title="Face similarity below 82% threshold">👤 Face: {{ "%.0f"|format(r.face_confidence * 100) }}%</span>
-                            {% endif %}
-                        </div>
-                    </td>
-                    <td style="padding: 0.85rem 1rem;">
-                        {% if r.manual_resolution_status %}
-                            <span class="badge badge-blue">{{ r.manual_resolution_status }}</span>
-                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.2rem; max-width: 140px; truncate;">
-                                {{ r.manual_resolution_notes or '' }}
-                            </div>
-                        {% elif r.haccp_compliant and r.geofence_verified and r.face_confidence >= 0.82 %}
-                            <span class="badge badge-green">COMPLIANT</span>
-                        {% else %}
-                            <span class="badge badge-red">NEEDS REVIEW</span>
-                        {% endif %}
-                    </td>
-                    <td style="padding: 0.85rem 1rem; text-align: right;">
-                        <button onclick="openResolveModal('{{ r.id }}', '{{ r.emp_code }}', '{{ r.kiosk_id }}', '{{ r.chiller_temp_c if r.chiller_temp_c is not none else 'N/A' }}', '{{ r.gps_distance_meters }}')"
-                                class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
-                            🛠️ Resolve
-                        </button>
-                    </td>
-                </tr>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 1rem; border-top: 1px solid #334155; padding-top: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                {% if k.is_temp_overdue %}
+                    <span class="alert-chip chip-warn">⚠️ Re-Check Overdue</span>
+                {% elif k.has_critical_hazard %}
+                    <span class="alert-chip chip-danger">🚨 Hazard Active</span>
+                {% elif k.has_checkin_today and k.total_temp_checks_today >= k.required_temp_checks %}
+                    <span class="alert-chip chip-ok">✅ Complete</span>
                 {% else %}
-                <tr>
-                    <td colspan="8" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
-                        No attendance or temperature records found yet. Records will stream in live from WhatsApp.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    <span class="alert-chip" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8;">In Progress</span>
+                {% endif %}
+
+                <button onclick="openKioskConfigModal('{{ k.kiosk_id }}', '{{ k.name }}', {{ k.required_temp_checks }})"
+                        class="btn" style="background: #334155; color: white; padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+                    ⚙️ Config
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Tabbed Navigation Panels -->
+<div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab(event, 'tab-records')">📸 Shift Records & Live Photo Feed</button>
+    <button class="tab-btn" onclick="switchTab(event, 'tab-messages')">
+        💬 Communications Hub (Who is messaging whom)
+        {% if messages %}
+            <span style="background: #3b82f6; color: white; border-radius: 9999px; padding: 0.1rem 0.5rem; font-size: 0.75rem; margin-left: 0.3rem;">
+                {{ messages|length }}
+            </span>
+        {% endif %}
+    </button>
+    <button class="tab-btn" onclick="switchTab(event, 'tab-config')">⚙️ Multi-Check HACCP Rules</button>
+</div>
+
+<!-- Tab 1: Live Records Table -->
+<div id="tab-records" class="tab-panel active">
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.1rem; font-weight: 600;">Captured Duty Check-ins & Verifications</h3>
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Photos securely stored in local media vault</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem 1rem;">Timestamp (IST)</th>
+                        <th style="padding: 0.75rem 1rem;">Check-in Photo</th>
+                        <th style="padding: 0.75rem 1rem;">Operator</th>
+                        <th style="padding: 0.75rem 1rem;">Kiosk / Site</th>
+                        <th style="padding: 0.75rem 1rem;">Chiller Temp</th>
+                        <th style="padding: 0.75rem 1rem;">Location & Biometrics</th>
+                        <th style="padding: 0.75rem 1rem;">Compliance Status</th>
+                        <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                    {% set has_alert = (not r.haccp_compliant) or (not r.geofence_verified) or (r.face_confidence < 0.82) %}
+                    <tr style="border-bottom: 1px solid var(--border-color); background: {% if has_alert %}rgba(239, 68, 68, 0.05){% else %}transparent{% endif %};">
+                        <td style="padding: 0.85rem 1rem; font-family: monospace; font-size: 0.8rem; color: #94a3b8;">
+                            {{ to_local_ist_full(r.checkin_time_utc) if r.checkin_time_utc else 'N/A' }}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            {% if r.photo_path %}
+                            {% set p_src = r.photo_path if r.photo_path.startswith('/') else '/' ~ r.photo_path %}
+                            <div style="position: relative; display: inline-block;">
+                                <img src="{{ p_src }}" alt="Photo"
+                                     onclick="previewPhoto('{{ p_src }}')"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                     style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; transition: transform 0.2s;"
+                                     onmouseover="this.style.transform='scale(1.15)'"
+                                     onmouseout="this.style.transform='scale(1.0)'" />
+                                <div style="display: none; width: 48px; height: 48px; border-radius: 6px; background: #0f172a; border: 1px dashed #ef4444; align-items: center; justify-content: center; font-size: 0.65rem; color: #f87171; text-align: center; line-height: 1.1;">
+                                    Corrupt File
+                                </div>
+                            </div>
+                            {% else %}
+                            <div style="width: 48px; height: 48px; border-radius: 6px; background: #0f172a; border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #64748b;">
+                                No Pic
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <div style="font-weight: 600; color: white;">
+                                {{ emp_map.get(r.emp_code, {}).get("full_name", r.emp_code) }}
+                            </div>
+                            <div style="font-family: monospace; font-size: 0.75rem; color: #a78bfa;">
+                                {{ r.emp_code }}
+                            </div>
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <div style="font-weight: 600; color: #38bdf8; font-family: monospace; font-size: 0.82rem;">
+                                {{ r.kiosk_id }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: #94a3b8;">
+                                {{ kiosk_map.get(r.kiosk_id, {}).get("name", "CaneBot Kiosk") }}
+                            </div>
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            {% if r.chiller_temp_c is not none %}
+                                <div style="font-size: 1.05rem; font-weight: 700; font-family: monospace; color: {% if r.haccp_compliant %}#10b981{% else %}#ef4444{% endif %};">
+                                    {{ "%.1f"|format(r.chiller_temp_c) }}°C
+                                </div>
+                                <div style="font-size: 0.7rem; color: #64748b;">
+                                    {{ r.ocr_engine_used }}
+                                </div>
+                            {% else %}
+                                <div style="font-size: 0.85rem; font-weight: 700; color: #f59e0b;">
+                                    UNAVAILABLE
+                                </div>
+                                <div style="font-size: 0.7rem; color: #ef4444;">
+                                    ⚠️ Missing Display
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <div style="font-size: 0.8rem; margin-bottom: 0.2rem;">
+                                {% if r.geofence_verified %}
+                                    <span class="alert-chip chip-ok">📍 GPS: {{ "%.0f"|format(r.gps_distance_meters) }}m</span>
+                                {% else %}
+                                    <span class="alert-chip chip-danger" title="Outside kiosk allowed radius">⚠️ GPS: {{ "%.0f"|format(r.gps_distance_meters) }}m</span>
+                                {% endif %}
+                            </div>
+                            <div style="font-size: 0.8rem;">
+                                {% if r.face_confidence >= 0.82 %}
+                                    <span class="alert-chip chip-ok">👤 Face: {{ "%.0f"|format(r.face_confidence * 100) }}%</span>
+                                {% else %}
+                                    <span class="alert-chip chip-danger" title="Face similarity below 82% threshold">👤 Face: {{ "%.0f"|format(r.face_confidence * 100) }}%</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            {% if r.manual_resolution_status %}
+                                <span class="badge badge-blue">{{ r.manual_resolution_status }}</span>
+                                <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.2rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    {{ r.manual_resolution_notes or '' }}
+                                </div>
+                            {% elif r.haccp_compliant and r.geofence_verified and r.face_confidence >= 0.82 %}
+                                <span class="badge badge-green">COMPLIANT</span>
+                            {% else %}
+                                <span class="badge badge-red">NEEDS REVIEW</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem 1rem; text-align: right;">
+                            <button onclick="openResolveModal('{{ r.id }}', '{{ r.emp_code }}', '{{ r.kiosk_id }}', '{{ r.chiller_temp_c if r.chiller_temp_c is not none else 'N/A' }}', '{{ r.gps_distance_meters }}')"
+                                    class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                                🛠️ Resolve
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
+                            No attendance or temperature records found yet. Records will stream in live from WhatsApp.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 2: Communications Hub (Requirement 3) -->
+<div id="tab-messages" class="tab-panel">
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="font-size: 1.1rem; font-weight: 600;">Internal Operator & Supervisor Communications</h3>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">Who is messaging whom, resolution states, and direct response center</span>
+            </div>
+            <span style="font-size: 0.8rem; color: #94a3b8;">Total: {{ messages|length }} Messages</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem 1rem;">Time (IST)</th>
+                        <th style="padding: 0.75rem 1rem;">Sender (Operator)</th>
+                        <th style="padding: 0.75rem 1rem;">Kiosk</th>
+                        <th style="padding: 0.75rem 1rem;">Recipient (Manager)</th>
+                        <th style="padding: 0.75rem 1rem;">Message Inquiry</th>
+                        <th style="padding: 0.75rem 1rem;">Status</th>
+                        <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in messages %}
+                    <tr style="border-bottom: 1px solid var(--border-color); background: {% if m.priority >= 100 and m.status != 'RESOLVED' %}rgba(239, 68, 68, 0.08){% else %}transparent{% endif %};">
+                        <td style="padding: 0.85rem 1rem; font-family: monospace; font-size: 0.8rem; color: #94a3b8;">
+                            {{ to_local_ist(m.created_at_utc) }}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <div style="font-weight: 600; color: white;">{{ m.sender_name or m.sender_emp_code }}</div>
+                            <div style="font-family: monospace; font-size: 0.75rem; color: #94a3b8;">{{ m.sender_phone }}</div>
+                        </td>
+                        <td style="padding: 0.85rem 1rem; font-family: monospace; color: #38bdf8; font-weight: 600;">
+                            {{ m.kiosk_id or '—' }}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <div style="font-weight: 600; color: #a78bfa;">{{ m.recipient_emp_code }}</div>
+                            <div style="font-family: monospace; font-size: 0.75rem; color: #94a3b8;">{{ m.recipient_phone }}</div>
+                        </td>
+                        <td style="padding: 0.85rem 1rem; max-width: 320px;">
+                            <div style="color: #f8fafc; font-size: 0.88rem; word-break: break-word;">
+                                "{{ m.message_text }}"
+                            </div>
+                            {% if m.reply_context %}
+                            <div style="margin-top: 0.4rem; padding: 0.4rem 0.6rem; background: #0f172a; border-left: 3px solid #10b981; border-radius: 4px; font-size: 0.8rem; color: #cbd5e1;">
+                                <strong>Manager Reply:</strong> {{ m.reply_context }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            {% if m.status == 'RESOLVED' %}
+                                <span class="badge badge-green">RESOLVED</span>
+                            {% elif m.priority >= 100 %}
+                                <span class="badge badge-red">CRITICAL PENDING</span>
+                            {% else %}
+                                <span class="badge badge-yellow">PENDING</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem 1rem; text-align: right;">
+                            {% if m.status != 'RESOLVED' %}
+                                <button onclick="openMessageReplyModal({{ m.id }}, '{{ m.sender_name or m.sender_emp_code }}', '{{ m.sender_phone }}', '{{ m.message_text|replace("'", "\\'") }}')"
+                                        class="btn btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                                    💬 Reply & Resolve
+                                </button>
+                            {% else %}
+                                <span style="font-size: 0.78rem; color: #64748b;">Resolved</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
+                            No internal operator inquiries or messages found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Tab 3: Multi-Check HACCP Rules Config -->
+<div id="tab-config" class="tab-panel">
+    <div class="card" style="max-width: 800px; margin: 0 auto;">
+        <h3 style="font-size: 1.2rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">
+            ⚙️ HACCP Multi-Check Frequency & Safety Thresholds
+        </h3>
+        <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.5rem;">
+            Configure temperature capture frequency requirements across all CaneBot kiosks. Overdue alarms trigger automatically when interval expires without a valid photo reading.
+        </p>
+
+        <form onsubmit="saveGlobalConfig(event)" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Required Daily Temp Checks *</label>
+                    <input type="number" id="cfgRequiredChecks" min="1" max="12" value="{{ kiosk_configs.get('GLOBAL_DEFAULT').required_daily_temp_checks if kiosk_configs.get('GLOBAL_DEFAULT') else 3 }}" required
+                           style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
+                    <span style="font-size: 0.75rem; color: #64748b;">e.g. 3 checks/day (Morning Check-in, Midday, Evening)</span>
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Check Interval Frequency (Hours) *</label>
+                    <input type="number" step="0.5" id="cfgIntervalHours" min="0.5" max="24.0" value="{{ kiosk_configs.get('GLOBAL_DEFAULT').check_interval_hours if kiosk_configs.get('GLOBAL_DEFAULT') else 4.0 }}" required
+                           style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
+                    <span style="font-size: 0.75rem; color: #64748b;">Max elapsed hours before kiosk flagged as OVERDUE</span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Min Safe Temp (°C)</label>
+                    <input type="number" step="0.1" id="cfgMinTemp" value="{{ kiosk_configs.get('GLOBAL_DEFAULT').min_safe_temp if kiosk_configs.get('GLOBAL_DEFAULT') else 2.0 }}" required
+                           style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Max Safe Temp (°C)</label>
+                    <input type="number" step="0.1" id="cfgMaxTemp" value="{{ kiosk_configs.get('GLOBAL_DEFAULT').max_safe_temp if kiosk_configs.get('GLOBAL_DEFAULT') else 4.0 }}" required
+                           style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.35rem;">Critical Alert Limit (°C)</label>
+                    <input type="number" step="0.1" id="cfgCritTemp" value="{{ kiosk_configs.get('GLOBAL_DEFAULT').critical_alert_temp if kiosk_configs.get('GLOBAL_DEFAULT') else 7.0 }}" required
+                           style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="cfgAlertManager" checked style="width: 18px; height: 18px;" />
+                <label for="cfgAlertManager" style="font-size: 0.88rem; color: #e2e8f0; cursor: pointer;">
+                    Push immediate WhatsApp high-alert notification to Fleet Supervisor upon critical HACCP violation or face mismatch
+                </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary" id="btnSaveConfig" style="padding: 0.6rem 1.5rem;">
+                    💾 Save Fleet HACCP Policy
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -254,7 +637,106 @@
     </div>
 </div>
 
+<!-- Modal 3: Message Reply & Resolve Modal -->
+<div id="replyModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 520px; background: #1e293b; border: 1px solid #334155;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: white;">💬 Reply & Resolve Operator Inquiry</h3>
+            <button onclick="closeModal('replyModal')" style="background: none; border: none; color: #94a3b8; font-size: 1.25rem; cursor: pointer;">✕</button>
+        </div>
+        <form onsubmit="submitMessageResolution(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="hidden" id="replyMsgId" />
+            <div style="background: #0f172a; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; border: 1px solid #334155;">
+                <div><strong>From:</strong> <span id="replySenderText" style="color: #38bdf8;"></span></div>
+                <div><strong>Phone:</strong> <span id="replyPhoneText" style="font-family: monospace;"></span></div>
+                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #334155;">
+                    <strong>Inquiry:</strong>
+                    <p id="replyBodyText" style="color: #cbd5e1; font-style: italic; margin-top: 0.25rem;"></p>
+                </div>
+            </div>
+
+            <div>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Supervisor Reply Message (Sent via WhatsApp) *</label>
+                <textarea id="replyResponseText" required rows="3" placeholder="Type instructions or resolution details for the operator..."
+                          style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white; font-family: inherit; font-size: 0.88rem;"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+                <button type="button" onclick="closeModal('replyModal')" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-success" id="replySubmitBtn">Send Reply & Mark Resolved</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 4: Kiosk Multi-Check Frequency Modal -->
+<div id="kioskConfigModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 450px; background: #1e293b; border: 1px solid #334155;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: white;" id="kioskCfgTitle">⚙️ Kiosk Schedule</h3>
+            <button onclick="closeModal('kioskConfigModal')" style="background: none; border: none; color: #94a3b8; font-size: 1.25rem; cursor: pointer;">✕</button>
+        </div>
+        <form onsubmit="submitKioskSpecificConfig(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+            <input type="hidden" id="kioskCfgId" />
+            <div>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Required Daily Checks</label>
+                <input type="number" id="kioskCfgChecks" min="1" max="12" required
+                       style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
+            </div>
+            <div>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Re-check Cadence Interval (Hours)</label>
+                <input type="number" step="0.5" id="kioskCfgInterval" min="0.5" max="24.0" value="4.0" required
+                       style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+                <button type="button" onclick="closeModal('kioskConfigModal')" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Schedule</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 5: Active Safety Alerts Inspection Modal -->
+<div id="alertsDetailsModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 650px; background: #1e293b; border: 1px solid #ef4444;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #f87171;">🚨 Active Emergency & Safety Incidents</h3>
+            <button onclick="closeModal('alertsDetailsModal')" style="background: none; border: none; color: #94a3b8; font-size: 1.25rem; cursor: pointer;">✕</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 60vh; overflow-y: auto;">
+            {% for a in active_alerts %}
+            <div style="background: #0f172a; padding: 0.85rem; border-radius: 6px; border-left: 4px solid #ef4444; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 700; color: white; font-size: 0.95rem;">
+                        [{{ a.kiosk_id }}] {{ a.type }}
+                    </div>
+                    <div style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.2rem;">
+                        {{ a.description }}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.2rem;">
+                        Reported at {{ a.time_ist }} by {{ a.emp_code }}
+                    </div>
+                </div>
+                <button onclick="acknowledgeAlertRecord({{ a.id }})" class="btn" style="background: #ef4444; color: white; padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                    Dismiss / Ack
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+            <button type="button" onclick="closeModal('alertsDetailsModal')" class="btn btn-secondary">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
+function switchTab(e, tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    e.target.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+}
+
 function previewPhoto(url) {
     document.getElementById('modalImg').src = url;
     document.getElementById('photoModal').style.display = 'flex';
@@ -267,6 +749,22 @@ function openResolveModal(id, emp, kiosk, temp, dist) {
     document.getElementById('resKioskText').textContent = kiosk;
     document.getElementById('resTempText').textContent = temp + '°C';
     document.getElementById('resolveModal').style.display = 'flex';
+}
+
+function openMessageReplyModal(msgId, sender, phone, text) {
+    document.getElementById('replyMsgId').value = msgId;
+    document.getElementById('replySenderText').textContent = sender;
+    document.getElementById('replyPhoneText').textContent = phone;
+    document.getElementById('replyBodyText').textContent = text;
+    document.getElementById('replyResponseText').value = '';
+    document.getElementById('replyModal').style.display = 'flex';
+}
+
+function openKioskConfigModal(kioskId, kioskName, currentChecks) {
+    document.getElementById('kioskCfgId').value = kioskId;
+    document.getElementById('kioskCfgTitle').textContent = `⚙️ ${kioskId} Schedule`;
+    document.getElementById('kioskCfgChecks').value = currentChecks || 3;
+    document.getElementById('kioskConfigModal').style.display = 'flex';
 }
 
 function closeModal(id) {
@@ -303,6 +801,119 @@ async function submitResolution(e) {
         alert("Network error: " + err.message);
         btn.disabled = false;
         btn.textContent = 'Save Resolution';
+    }
+}
+
+async function submitMessageResolution(e) {
+    e.preventDefault();
+    const btn = document.getElementById('replySubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    const msgId = document.getElementById('replyMsgId').value;
+    const payload = {
+        reply_text: document.getElementById('replyResponseText').value.trim(),
+        resolver_phone: '+919800000000'
+    };
+
+    try {
+        const resp = await fetch(`/admin/apps/temperature-marker/api/messages/${msgId}/resolve`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        if (resp.ok) {
+            window.location.reload();
+        } else {
+            const err = await resp.json();
+            alert("Reply failed: " + (err.detail || JSON.stringify(err)));
+            btn.disabled = false;
+            btn.textContent = 'Send Reply & Mark Resolved';
+        }
+    } catch (err) {
+        alert("Network error: " + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Send Reply & Mark Resolved';
+    }
+}
+
+async function submitKioskSpecificConfig(e) {
+    e.preventDefault();
+    const kioskId = document.getElementById('kioskCfgId').value;
+    const payload = {
+        required_daily_temp_checks: parseInt(document.getElementById('kioskCfgChecks').value, 10),
+        check_interval_hours: parseFloat(document.getElementById('kioskCfgInterval').value)
+    };
+
+    try {
+        const resp = await fetch(`/admin/apps/temperature-marker/api/kiosks/${kioskId}/config`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        if (resp.ok) {
+            window.location.reload();
+        } else {
+            const err = await resp.json();
+            alert("Config update failed: " + (err.detail || JSON.stringify(err)));
+        }
+    } catch (err) {
+        alert("Network error: " + err.message);
+    }
+}
+
+async function saveGlobalConfig(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSaveConfig');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const payload = {
+        required_daily_temp_checks: parseInt(document.getElementById('cfgRequiredChecks').value, 10),
+        check_interval_hours: parseFloat(document.getElementById('cfgIntervalHours').value),
+        min_safe_temp: parseFloat(document.getElementById('cfgMinTemp').value),
+        max_safe_temp: parseFloat(document.getElementById('cfgMaxTemp').value),
+        critical_alert_temp: parseFloat(document.getElementById('cfgCritTemp').value),
+        alert_manager_on_hazard: document.getElementById('cfgAlertManager').checked
+    };
+
+    try {
+        const resp = await fetch(`/admin/apps/temperature-marker/api/kiosks/GLOBAL_DEFAULT/config`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        if (resp.ok) {
+            alert("Fleet HACCP policy updated successfully!");
+            window.location.reload();
+        } else {
+            const err = await resp.json();
+            alert("Policy update failed: " + (err.detail || JSON.stringify(err)));
+            btn.disabled = false;
+            btn.textContent = '💾 Save Fleet HACCP Policy';
+        }
+    } catch (err) {
+        alert("Network error: " + err.message);
+        btn.disabled = false;
+        btn.textContent = '💾 Save Fleet HACCP Policy';
+    }
+}
+
+async function acknowledgeAlertRecord(recId) {
+    try {
+        const resp = await fetch(`/admin/apps/temperature-marker/api/alerts/${recId}/acknowledge`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ack_notes: "Dismissed by admin"})
+        });
+        if (resp.ok) {
+            window.location.reload();
+        } else {
+            const err = await resp.json();
+            alert("Acknowledge failed: " + (err.detail || JSON.stringify(err)));
+        }
+    } catch (err) {
+        alert("Network error: " + err.message);
     }
 }
 </script>

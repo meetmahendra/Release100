@@ -25,6 +25,8 @@
                     <th style="padding: 0.75rem 1rem;">Phone Number</th>
                     <th style="padding: 0.75rem 1rem;">Role</th>
                     <th style="padding: 0.75rem 1rem;">Assigned Kiosk</th>
+                    <th style="padding: 0.75rem 1rem;">Submitted Photo</th>
+                    <th style="padding: 0.75rem 1rem;">Status</th>
                     <th style="padding: 0.75rem 1rem;">Registered At</th>
                     <th style="padding: 0.75rem 1rem; text-align: right;">Approval Action</th>
                 </tr>
@@ -48,8 +50,24 @@
                         <td style="padding: 1rem; color: var(--text-secondary);">
                             {{ op.assigned_kiosk_id or 'Unassigned' }}
                         </td>
+                        <td style="padding: 0.5rem 1rem;">
+                            <a href="/admin/apps/temperature-marker/api/members/{{ op.emp_code }}/photo" target="_blank">
+                                <img src="/admin/apps/temperature-marker/api/members/{{ op.emp_code }}/photo"
+                                     alt="Profile Photo"
+                                     style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-color);"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" />
+                                <span class="badge badge-yellow" style="display: none; font-size: 0.75rem;">Waiting Photo</span>
+                            </a>
+                        </td>
+                        <td style="padding: 1rem;">
+                            {% if op.status == 'PENDING_PHOTO' %}
+                                <span class="badge badge-yellow">AWAITING PHOTO</span>
+                            {% else %}
+                                <span class="badge badge-yellow">PENDING APPROVAL</span>
+                            {% endif %}
+                        </td>
                         <td style="padding: 1rem; color: var(--text-secondary); font-size: 0.85rem;">
-                            {{ op.created_at_utc.strftime('%Y-%m-%d %H:%M UTC') if op.created_at_utc else 'Recent' }}
+                            {{ to_local_ist_full(op.created_at_utc) if op.created_at_utc else 'Recent' }}
                         </td>
                         <td style="padding: 1rem; text-align: right;">
                             <button onclick="handleApproval('{{ op.emp_code }}', 'approve')" class="btn btn-success" style="padding: 0.3rem 0.8rem; font-size: 0.85rem; margin-right: 0.5rem;">

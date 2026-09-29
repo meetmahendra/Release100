@@ -33,8 +33,8 @@ async def layer0_auth_guard_node(
         state["error_code"] = PlatformErrorCode.SAFETY_UNAUTHORIZED_OPERATOR.value
         state["error_message"] = f"Phone number {phone} is not registered."
         state["reply_message"] = (
-            f"❌ Unauthorized: Phone number {phone} is not registered. "
-            "Reply 'register <EMP-CODE> <Full Name>' or contact your supervisor to enroll."
+            f"❌ Unauthorized: Phone number {phone} is not registered with CaneBot. "
+            "Self-registration is disabled. Please contact your Fleet Supervisor or HR administrator to provision your account."
         )
         return state
 
@@ -44,8 +44,8 @@ async def layer0_auth_guard_node(
         state["error_code"] = PlatformErrorCode.SAFETY_UNAUTHORIZED_OPERATOR.value
         state["error_message"] = f"Operator {employee.full_name} ({employee.emp_code}) is currently '{employee.status}'."
         state["reply_message"] = (
-            f"⚠️ Operator {employee.full_name} ({employee.emp_code}) is currently "
-            f"'{employee.status}'. Awaiting Admin Approval."
+            f"⚠️ Access Restricted: Operator {employee.full_name} ({employee.emp_code}) is currently "
+            f"'{employee.status}'. Awaiting Admin Approval before duty check-in."
         )
         return state
 

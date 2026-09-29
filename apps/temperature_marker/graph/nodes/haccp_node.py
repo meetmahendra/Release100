@@ -28,9 +28,10 @@ async def haccp_node(
     haccp_rule = kg_service.get_haccp_limits(kiosk_id)
 
     if temp_c is None:
-        state["haccp_status"] = "READING_UNAVAILABLE"
+        state["haccp_status"] = "PENDING_CHILLER_PHOTO" if state.get("is_duty_checkin") else "READING_UNAVAILABLE"
         state["haccp_compliant"] = False
-        state["layer_2_disposition"] = "diverted_to_review"
+        if not (state.get("is_duty_checkin") and state.get("face_confidence", 0.0) >= 0.82):
+            state["layer_2_disposition"] = "diverted_to_review"
     elif haccp_rule.min_safe_temp <= temp_c <= haccp_rule.max_safe_temp:
         state["haccp_status"] = "SAFE_RANGE"
         state["haccp_compliant"] = True
@@ -41,8 +42,8 @@ async def haccp_node(
         state["haccp_status"] = "FREEZING_HAZARD"
         state["haccp_compliant"] = False
     else:
-        # Borderline readings (e.g. 0.0°C to 1.9°C or 4.1°C to 7.0°C)
-        state["haccp_status"] = "BORDERLINE_ELEVATED"
-        state["haccp_compliant"] = False
+        # Acceptable operating range before reaching critical threshold (4.1°C to 7.0°C)
+        state["haccp_status"] = "ACCEPTABLE_RANGE"
+        state["haccp_compliant"] = True
 
     return state

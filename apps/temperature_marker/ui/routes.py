@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional, cast
 import uuid
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
@@ -33,6 +33,7 @@ from apps.temperature_marker.database.db_service import DatabaseService
 from apps.temperature_marker.graph.state import TemperatureMarkerState
 from apps.temperature_marker.graph.state_graph import TemperatureMarkerWorkflow
 from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
+from core_platform.app.common.timezone import to_local_ist, to_local_ist_full
 from core_platform.app.skills.geofencing import GeofencingSkill
 from core_platform.app.telemetry.audit_engine import AuditEngine
 
@@ -41,6 +42,10 @@ router = APIRouter(prefix="/admin/apps/temperature-marker", tags=["Temperature M
 # Set up Jinja2 templates directory
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
+templates.env.filters["to_local_ist"] = to_local_ist
+templates.env.filters["to_local_ist_full"] = to_local_ist_full
+templates.env.globals["to_local_ist"] = to_local_ist
+templates.env.globals["to_local_ist_full"] = to_local_ist_full
 
 # Lazy shared services
 _kg_service = KnowledgeGraphService()
@@ -63,6 +68,7 @@ class SimulationRequest(BaseModel):
     face_confidence: float = Field(default=0.95, ge=0.0, le=1.0)
     latitude: float
     longitude: float
+    photo_source: str = "synthetic"  # "synthetic" | "real_photo"
 
 
 class LocationVerificationRequest(BaseModel):
@@ -97,6 +103,25 @@ class CreateMemberRequest(BaseModel):
     assigned_kiosk_id: str
     emp_code: Optional[str] = None
     photo_base64: Optional[str] = None
+    reporting_manager_emp_code: Optional[str] = None
+
+
+class UpdateMemberRequest(BaseModel):
+    """Payload for updating an existing operator profile."""
+
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    assigned_kiosk_id: Optional[str] = None
+    reporting_manager_emp_code: Optional[str] = None
+    status: Optional[str] = None
+
+
+class CalibrateKioskLocationRequest(BaseModel):
+    """Payload for live on-site GPS calibration of a kiosk."""
+
+    latitude: float
+    longitude: float
+    accuracy_meters: Optional[float] = None
 
 
 class ReassignMemberRequest(BaseModel):
@@ -116,6 +141,7 @@ async def view_fleet(request: Request) -> HTMLResponse:
     """Render interactive Fleet Map and Kiosk Roster with Member assignments."""
     kiosks = _kg_service.list_all_kiosks()
     employees = _db_service.get_all_employees()
+    managers = [e for e in employees if e.role in ("MANAGER", "SUPERVISOR") or e.emp_code.startswith("MGR")]
     return templates.TemplateResponse(
         request=request,
         name="fleet.html",
@@ -123,6 +149,7 @@ async def view_fleet(request: Request) -> HTMLResponse:
             "active_tab": "fleet",
             "kiosks": kiosks,
             "employees": employees,
+            "managers": managers,
         },
     )
 
@@ -161,6 +188,8 @@ async def get_members_api() -> List[Dict[str, Any]]:
             "phone_number": emp.phone_number,
             "assigned_kiosk_id": emp.assigned_kiosk_id,
             "status": emp.status,
+            "role": emp.role,
+            "reporting_manager_emp_code": emp.reporting_manager_emp_code,
             "has_biometrics": bool(emp.encrypted_face_embedding),
         }
         for emp in employees
@@ -170,9 +199,16 @@ async def get_members_api() -> List[Dict[str, Any]]:
 @router.post("/api/members")
 async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
     """Enroll a new operator, extract biometrics if photo provided, and update Knowledge Graph."""
-    phone = req.phone_number.strip()
+    from core_platform.app.common.phone_validator import normalize_phone_number
+
+    try:
+        phone = normalize_phone_number(req.phone_number.strip())
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid mobile number: {exc}")
+
     kiosk_id = req.assigned_kiosk_id.strip()
     full_name = req.full_name.strip()
+    mgr_code = req.reporting_manager_emp_code.strip() if req.reporting_manager_emp_code else None
 
     from apps.temperature_marker.downstream.hr_connector import resolve_or_generate_employee_code
     emp_code = await resolve_or_generate_employee_code(
@@ -182,7 +218,7 @@ async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
     )
 
     enc_emb = None
-    status = "ACTIVE"
+    status = "PENDING_PHOTO"
     if req.photo_base64:
         import base64
         try:
@@ -194,11 +230,17 @@ async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
                 ok, vec, _ = await face_skill.compute_embedding(raw_bytes)
                 if ok and vec is not None:
                     enc_emb = face_skill.encrypt_embedding(vec)
+                    # Persist profile photo to disk for visual admin audit
+                    photo_dir = Path("logs/photos")
+                    photo_dir.mkdir(parents=True, exist_ok=True)
+                    photo_path = photo_dir / f"{emp_code}_profile.jpg"
+                    photo_path.write_bytes(raw_bytes)
+                    status = "PENDING_APPROVAL"
         except Exception:
             pass
 
     if not enc_emb:
-        status = "PENDING_BIOMETRICS"
+        status = "PENDING_PHOTO"
 
     emp = _db_service.register_employee(
         emp_code=emp_code,
@@ -207,11 +249,12 @@ async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
         assigned_kiosk_id=kiosk_id,
         encrypted_face_embedding=enc_emb,
         status=status,
+        reporting_manager_emp_code=mgr_code,
     )
     _kg_service.assign_operator_to_kiosk(phone, kiosk_id)
 
     # If registered without photo, send automated onboarding message on WhatsApp
-    if status == "PENDING_BIOMETRICS":
+    if status == "PENDING_PHOTO":
         from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
         invite_msg = (
             f"👋 Welcome to Canectar CaneBot, {full_name}!\n\n"
@@ -220,7 +263,74 @@ async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
         )
         asyncio.create_task(send_whatsapp_message(phone, invite_msg))
 
-    return {"status": "SUCCESS", "emp_code": emp.emp_code, "member_status": status, "has_biometrics": bool(enc_emb)}
+    return {
+        "status": "SUCCESS",
+        "emp_code": emp.emp_code,
+        "member_status": status,
+        "reporting_manager_emp_code": emp.reporting_manager_emp_code,
+        "has_biometrics": bool(enc_emb),
+    }
+
+
+@router.post("/api/members/{emp_code}/update")
+async def update_member_api(emp_code: str, req: UpdateMemberRequest) -> Dict[str, Any]:
+    """Update operator profile details (name, phone, kiosk, manager, status)."""
+    from core_platform.app.common.phone_validator import normalize_phone_number
+
+    norm_phone = None
+    if req.phone_number:
+        try:
+            norm_phone = normalize_phone_number(req.phone_number.strip())
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid mobile number: {exc}")
+
+    emp = _db_service.update_employee(
+        emp_code=emp_code,
+        full_name=req.full_name,
+        phone_number=norm_phone,
+        assigned_kiosk_id=req.assigned_kiosk_id,
+        reporting_manager_emp_code=req.reporting_manager_emp_code,
+        status=req.status,
+    )
+    if not emp:
+        raise HTTPException(status_code=404, detail=f"Operator '{emp_code}' not found")
+
+    if norm_phone and req.assigned_kiosk_id:
+        _kg_service.assign_operator_to_kiosk(norm_phone, req.assigned_kiosk_id)
+
+    return {
+        "status": "SUCCESS",
+        "emp_code": emp.emp_code,
+        "full_name": emp.full_name,
+        "phone_number": emp.phone_number,
+        "assigned_kiosk_id": emp.assigned_kiosk_id,
+        "reporting_manager_emp_code": emp.reporting_manager_emp_code,
+        "member_status": emp.status,
+    }
+
+
+@router.post("/api/kiosks/{kiosk_id}/calibrate-location")
+async def calibrate_kiosk_location_api(kiosk_id: str, req: CalibrateKioskLocationRequest) -> Dict[str, Any]:
+    """Live ground-truth calibration of physical kiosk GPS coordinates."""
+    kiosk = _kg_service.get_kiosk_details(kiosk_id)
+    if not kiosk:
+        raise HTTPException(status_code=404, detail=f"Kiosk '{kiosk_id}' not found in fleet roster")
+
+    ok = _kg_service.update_kiosk_coordinates(
+        kiosk_id=kiosk_id,
+        latitude=req.latitude,
+        longitude=req.longitude,
+    )
+    if not ok:
+        raise HTTPException(status_code=500, detail=f"Failed to update coordinates for kiosk '{kiosk_id}'")
+
+    return {
+        "status": "SUCCESS",
+        "kiosk_id": kiosk_id,
+        "latitude": req.latitude,
+        "longitude": req.longitude,
+        "message": f"Kiosk '{kiosk_id}' coordinates calibrated to ({req.latitude:.6f}, {req.longitude:.6f})",
+    }
 
 
 @router.post("/api/members/{emp_code}/reassign")
@@ -233,6 +343,69 @@ async def reassign_member_api(emp_code: str, req: ReassignMemberRequest) -> Dict
     db_ok = _db_service.assign_employee_to_kiosk(emp_code, req.kiosk_id)
     kg_ok = _kg_service.assign_operator_to_kiosk(emp.phone_number, req.kiosk_id)
     return {"status": "SUCCESS", "emp_code": emp_code, "new_kiosk_id": req.kiosk_id, "db_ok": db_ok, "kg_ok": kg_ok}
+
+
+@router.post("/api/members/{emp_code}/forget-photo")
+async def forget_member_photo_api(emp_code: str) -> Dict[str, Any]:
+    """Clear an operator's stored biometric face photo/embedding and prompt re-enrollment."""
+    emp = _db_service.get_employee_by_code(emp_code)
+    if not emp:
+        raise HTTPException(status_code=404, detail=f"Operator '{emp_code}' not found")
+
+    ok = _db_service.clear_employee_face_embedding(emp_code)
+    if not ok:
+        raise HTTPException(status_code=500, detail="Failed to clear face embedding")
+
+    # Remove stored photo file if exists
+    photo_file = Path(f"logs/photos/{emp_code}_profile.jpg")
+    if photo_file.exists():
+        try:
+            photo_file.unlink()
+        except Exception:
+            pass
+
+    # Send automated WhatsApp invitation for fresh selfie
+    from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
+    site_label = emp.assigned_kiosk_id
+    kiosk_info = _kg_service.get_kiosk_details(emp.assigned_kiosk_id)
+    if kiosk_info:
+        site_label = f"{kiosk_info.get('name', site_label)} ({emp.assigned_kiosk_id})"
+
+    msg = (
+        f"📸 Biometric Profile Reset\n"
+        f"Hello {emp.full_name}, your registered face photo for {site_label} has been cleared by the Administrator.\n\n"
+        f"👉 Please reply to this WhatsApp chat with a clear, front-facing selfie photo to submit your new profile photo for approval."
+    )
+    asyncio.create_task(send_whatsapp_message(emp.phone_number, msg))
+
+    return {
+        "status": "SUCCESS",
+        "emp_code": emp_code,
+        "message": f"Biometric photo cleared for {emp.full_name}. Operator invited via WhatsApp.",
+    }
+
+
+@router.get("/api/members/{emp_code}/photo")
+async def get_member_photo_api(emp_code: str) -> Any:
+    """Serve the stored profile enrollment photo for an operator if available."""
+    from fastapi.responses import FileResponse
+    photo_file = Path(f"logs/photos/{emp_code}_profile.jpg")
+    if photo_file.exists() and photo_file.stat().st_size > 50:
+        return FileResponse(str(photo_file), media_type="image/jpeg")
+    raise HTTPException(status_code=404, detail=f"Photo for operator {emp_code} not found")
+
+
+@router.get("/media/{filename}")
+@router.get("/logs/media/{filename}")
+async def get_checkin_photo_api(filename: str) -> Any:
+    """Serve check-in captured media photo from the local media vault."""
+    from fastapi.responses import FileResponse
+    safe_name = Path(filename).name
+    photo_file = Path("logs/media") / safe_name
+    if photo_file.exists() and photo_file.is_file():
+        return FileResponse(str(photo_file), media_type="image/jpeg")
+    raise HTTPException(status_code=404, detail=f"Photo '{safe_name}' not found")
+
 
 
 @router.get("/wizard", response_class=HTMLResponse)
@@ -254,12 +427,19 @@ async def view_wizard(request: Request, kiosk_id: Optional[str] = None) -> HTMLR
 @router.post("/api/simulate")
 async def run_simulation(req: SimulationRequest) -> Dict[str, Any]:
     """Execute duty check-in simulation through the complete safety and workflow stack."""
+    if req.photo_source == "real_photo":
+        from apps.temperature_marker.common.fixture_generator import get_real_kiosk_fixture
+        raw_img = get_real_kiosk_fixture()
+    else:
+        from apps.temperature_marker.common.fixture_generator import generate_synthetic_gauge_jpeg
+        raw_img = generate_synthetic_gauge_jpeg(req.temperature, kiosk_id=req.kiosk_id)
+
     initial_state: TemperatureMarkerState = {
         "correlation_id": f"sim-{uuid.uuid4().hex[:8]}",
         "sender_phone": req.phone_number,
         "kiosk_id": req.kiosk_id,
         "user_coords": (req.latitude, req.longitude),
-        "raw_image_bytes": f"DIGIT:{req.temperature}".encode("utf-8"),
+        "raw_image_bytes": raw_img,
         "face_confidence": req.face_confidence,
     }
 
@@ -277,6 +457,10 @@ async def run_simulation(req: SimulationRequest) -> Dict[str, Any]:
         )
 
     # Determine status
+    # Evaluate simulation status
+    haccp_compliant = (2.0 <= req.temperature <= 4.0)
+    haccp_status = "COMPLIANT" if haccp_compliant else ("ELEVATED" if (4.0 < req.temperature <= 7.0) else "CRITICAL_HAZARD")
+
     if result_state.get("error_code"):
         status = "REJECTED"
         err_detail = result_state.get('error_message') or result_state.get('reply_message') or 'Verification failed'
@@ -284,7 +468,7 @@ async def run_simulation(req: SimulationRequest) -> Dict[str, Any]:
     elif result_state.get("requires_admin_approval"):
         status = "NEEDS_REVIEW"
         msg = "Operator onboarding pending administrator approval."
-    elif result_state.get("haccp_compliant") is False:
+    elif req.temperature > 7.0 or req.temperature < 2.0:
         status = "CRITICAL"
         msg = f"Critical Chiller Temperature Violation: {req.temperature}°C (Safe: 2-4°C)"
     elif req.temperature > 4.0:
@@ -302,7 +486,7 @@ async def run_simulation(req: SimulationRequest) -> Dict[str, Any]:
         "face_confidence": result_state.get("face_confidence", req.face_confidence),
         "geofence_status": "VERIFIED" if result_state.get("geofence_verified") else "BREACH",
         "distance_meters": distance,
-        "haccp_status": "COMPLIANT" if result_state.get("haccp_compliant") else "CRITICAL_HAZARD",
+        "haccp_status": haccp_status,
         "outbox_enqueued": result_state.get("outbox_queued", False),
         "audit_hash": result_state.get("audit_record_hash") or _audit_engine._last_hash,
     }
@@ -341,19 +525,45 @@ async def get_approvals_api() -> List[Dict[str, Any]]:
 
 @router.post("/api/approvals/{emp_id}/approve")
 async def approve_operator(emp_id: str) -> Dict[str, Any]:
-    """Approve a pending operator."""
+    """Approve a pending operator and notify them via WhatsApp."""
     success = _db_service.approve_employee(emp_id)
     if not success:
         raise HTTPException(status_code=404, detail=f"Operator {emp_id} not found")
+
+    emp = _db_service.get_employee_by_code(emp_id)
+    if emp and emp.phone_number:
+        from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
+        kiosk_info = _kg_service.get_kiosk_details(emp.assigned_kiosk_id)
+        station_name = kiosk_info.get("name", emp.assigned_kiosk_id) if kiosk_info else emp.assigned_kiosk_id
+        approval_msg = (
+            f"✅ Profile Approved!\n"
+            f"Hello {emp.full_name}, your CaneBot operator profile for {station_name} ({emp.assigned_kiosk_id}) "
+            f"has been approved by the Administrator.\n\n"
+            f"You are now authorized for daily duty check-ins! 🚀\n"
+            f"📍 Remember to verify your location and submit your selfie with the chiller display when your shift begins."
+        )
+        asyncio.create_task(send_whatsapp_message(emp.phone_number, approval_msg))
+
     return {"status": "success", "employee_id": emp_id, "new_state": "ACTIVE"}
 
 
 @router.post("/api/approvals/{emp_id}/reject")
 async def reject_operator(emp_id: str) -> Dict[str, Any]:
-    """Reject a pending operator."""
+    """Reject a pending operator and notify them via WhatsApp."""
+    emp = _db_service.get_employee_by_code(emp_id)
     success = _db_service.reject_employee(emp_id)
     if not success:
         raise HTTPException(status_code=404, detail=f"Operator {emp_id} not found")
+
+    if emp and emp.phone_number:
+        from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
+        rejection_msg = (
+            f"❌ Profile Review Notice\n"
+            f"Hello {emp.full_name}, your CaneBot operator profile request could not be approved at this time.\n"
+            f"Please contact your Fleet Supervisor or HR administrator for assistance."
+        )
+        asyncio.create_task(send_whatsapp_message(emp.phone_number, rejection_msg))
+
     return {"status": "success", "employee_id": emp_id, "new_state": "REJECTED"}
 
 
@@ -471,6 +681,30 @@ class ResolveAttendanceRequest(BaseModel):
     notes: str
 
 
+class KioskConfigRequest(BaseModel):
+    """Payload for configuring kiosk multi-check monitoring requirements."""
+
+    required_daily_temp_checks: int = Field(default=3, ge=1, le=12)
+    check_interval_hours: float = Field(default=4.0, ge=0.5, le=24.0)
+    min_safe_temp: float = Field(default=2.0)
+    max_safe_temp: float = Field(default=4.0)
+    critical_alert_temp: float = Field(default=7.0)
+    alert_manager_on_hazard: bool = Field(default=True)
+
+
+class ResolveMessageRequest(BaseModel):
+    """Payload for web-based manager message reply & resolution."""
+
+    reply_text: str = Field(min_length=1)
+    resolver_phone: str = Field(default="+919800000000")
+
+
+class AcknowledgeAlertRequest(BaseModel):
+    """Payload for acknowledging an active safety alert."""
+
+    ack_notes: str = Field(default="Acknowledged by manager via Web Console")
+
+
 @router.get("/monitoring", response_class=HTMLResponse)
 async def view_monitoring(request: Request) -> HTMLResponse:
     """Render live attendance, photo check-in, and chiller temperature monitoring console."""
@@ -481,10 +715,13 @@ async def view_monitoring(request: Request) -> HTMLResponse:
     kiosks = _kg_service.list_all_kiosks()
     kiosk_map = {k["kiosk_id"]: k for k in kiosks}
 
-    alert_count = sum(
-        1 for r in records
-        if (not r.haccp_compliant) or (not r.geofence_verified) or (r.face_confidence < 0.82)
-    )
+    # Enhanced fleet monitoring telemetry
+    kiosks_summary = _db_service.get_kiosk_daily_attendance_summary()
+    active_alerts = _db_service.get_active_high_alerts()
+    recent_messages = _db_service.get_recent_internal_messages(limit=50)
+    kiosk_configs = _db_service.get_all_kiosk_configs()
+
+    alert_count = len(active_alerts)
 
     return templates.TemplateResponse(
         request=request,
@@ -494,6 +731,10 @@ async def view_monitoring(request: Request) -> HTMLResponse:
             "records": records,
             "emp_map": emp_map,
             "kiosk_map": kiosk_map,
+            "kiosks_summary": kiosks_summary,
+            "active_alerts": active_alerts,
+            "messages": recent_messages,
+            "kiosk_configs": kiosk_configs,
             "alert_count": alert_count,
         },
     )
@@ -525,4 +766,69 @@ async def resolve_record_api(record_id: int, req: ResolveAttendanceRequest) -> D
     )
 
     return {"status": "SUCCESS", "record_id": record_id, "resolution_status": status_val}
+
+
+@router.post("/api/kiosks/{kiosk_id}/config")
+async def update_kiosk_config_api(kiosk_id: str, req: KioskConfigRequest) -> Dict[str, Any]:
+    """Upsert HACCP multi-check schedule configuration for a kiosk or GLOBAL_DEFAULT."""
+    updated = _db_service.upsert_kiosk_config(
+        kiosk_id=kiosk_id,
+        required_daily_temp_checks=req.required_daily_temp_checks,
+        check_interval_hours=req.check_interval_hours,
+        min_safe_temp=req.min_safe_temp,
+        max_safe_temp=req.max_safe_temp,
+        critical_alert_temp=req.critical_alert_temp,
+        alert_manager_on_hazard=req.alert_manager_on_hazard,
+    )
+    _audit_engine.record_event(
+        action_type="KIOSK_CONFIG_UPDATED",
+        operator_id="ADMIN_USER",
+        payload_summary={
+            "kiosk_id": kiosk_id,
+            "required_daily_temp_checks": req.required_daily_temp_checks,
+            "check_interval_hours": req.check_interval_hours,
+        },
+        layer_2_gate_status="CONFIG_SAVED",
+    )
+    return {"status": "SUCCESS", "kiosk_id": updated.kiosk_id, "required_checks": updated.required_daily_temp_checks}
+
+
+@router.post("/api/messages/{message_id}/resolve")
+async def resolve_internal_message_api(message_id: int, req: ResolveMessageRequest) -> Dict[str, Any]:
+    """Resolve an internal message from web UI and push reply to operator's WhatsApp."""
+    success, op_phone, outbound_reply = _db_service.resolve_internal_message_web(
+        message_id=message_id,
+        reply_text=req.reply_text.strip(),
+        resolver_phone=req.resolver_phone.strip(),
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Message #{message_id} not found")
+
+    if op_phone and outbound_reply:
+        from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
+        asyncio.create_task(send_whatsapp_message(op_phone, outbound_reply))
+
+    _audit_engine.record_event(
+        action_type="INTERNAL_MESSAGE_WEB_RESOLVED",
+        operator_id=req.resolver_phone,
+        payload_summary={"message_id": message_id, "reply_text": req.reply_text},
+        layer_2_gate_status="MESSAGE_RESOLVED",
+    )
+    return {"status": "SUCCESS", "message_id": message_id, "recipient": op_phone}
+
+
+@router.post("/api/alerts/{record_id}/acknowledge")
+async def acknowledge_alert_api(record_id: int, req: AcknowledgeAlertRequest) -> Dict[str, Any]:
+    """Acknowledge an active emergency compliance alert."""
+    success = _db_service.acknowledge_alert(record_id=record_id, ack_notes=req.ack_notes.strip())
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Alert record #{record_id} not found")
+
+    _audit_engine.record_event(
+        action_type="EMERGENCY_ALERT_ACKNOWLEDGED",
+        operator_id="ADMIN_USER",
+        payload_summary={"record_id": record_id, "notes": req.ack_notes},
+        layer_2_gate_status="ALERT_ACKNOWLEDGED",
+    )
+    return {"status": "SUCCESS", "record_id": record_id}
 

@@ -9,15 +9,25 @@ import os
 import sys
 from pathlib import Path
 
-from alembic import context  # type: ignore[import-not-found]
+from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 # ── Ensure project root is on PYTHONPATH ─────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 # ── Import all model metadata ─────────────────────────────────────────────────
-from apps.temperature_marker.database.models import Base as TMBase  # noqa: E402
-from apps.mail_organizer.database.models import Base as MOBase  # noqa: E402
+target_metadata = []
+try:
+    from apps.temperature_marker.database.models import Base as TMBase  # noqa: E402
+    target_metadata.append(TMBase.metadata)
+except ImportError:
+    pass
+
+try:
+    from apps.mail_organizer.database.models import Base as MOBase  # noqa: E402
+    target_metadata.append(MOBase.metadata)
+except ImportError:
+    pass
 
 # Alembic config object
 config = context.config
@@ -25,9 +35,6 @@ config = context.config
 # Set up Python logging from alembic.ini
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
-
-# Combined target metadata — all app models
-target_metadata = [TMBase.metadata, MOBase.metadata]
 
 
 def get_url() -> str:

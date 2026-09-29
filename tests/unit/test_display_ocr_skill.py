@@ -172,5 +172,21 @@ def test_recognize_seven_segment_hamming_fallback() -> None:
     assert "7_segment" in dtype
 
 
+def test_recognize_seven_segment_full_scene_rejection() -> None:
+    """Uncropped full-scene images (>300x300) with single interval or room clutter must return None."""
+    import numpy as np
+    from core_platform.app.skills.display_ocr import _recognize_seven_segment_digits
+
+    # Synthetic full-scene image (800x600) with broad room-spanning activation
+    arr = np.zeros((800, 600), dtype=np.uint8)
+    arr[50:750, 20:580] = 1  # Spans 560px width (> 0.35 * 600)
+    assert _recognize_seven_segment_digits(arr) is None
+
+    # Synthetic full-scene image with only 1 isolated digit
+    arr2 = np.zeros((800, 600), dtype=np.uint8)
+    arr2[100:140, 100:120] = 1
+    assert _recognize_seven_segment_digits(arr2) is None
+
+
 
 

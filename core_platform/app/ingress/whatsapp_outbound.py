@@ -43,7 +43,14 @@ async def send_whatsapp_message(to_phone: str, text: str) -> Optional[str]:
     Returns:
         Message ID if sent successfully, None otherwise.
     """
-    clean_to = to_phone.replace("+", "").replace(" ", "").replace("-", "").strip()
+    from core_platform.app.common.phone_validator import normalize_phone_number
+
+    try:
+        norm_phone = normalize_phone_number(to_phone)
+        clean_to = norm_phone.lstrip("+")
+    except Exception as exc:
+        logger.error("[WhatsApp Outbound] Invalid destination phone number '%s': %s", to_phone, exc)
+        return None
     if not (settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_PHONE_NUMBER_ID):
         logger.warning("[WhatsApp Outbound] WhatsApp credentials not configured; skipping dispatch to +%s", clean_to)
         return None

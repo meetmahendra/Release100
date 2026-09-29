@@ -40,6 +40,7 @@ logger = logging.getLogger("core_platform.llm.cost_tracker")
 # Based on standard published enterprise rates (2025/2026)
 PROVIDER_PRICING_PER_1M: Dict[str, tuple[float, float]] = {
     # Gemini
+    "gemini-3.6-flash": (0.075, 0.30),
     "gemini-2.5-flash": (0.075, 0.30),
     "gemini-2.0-flash": (0.10, 0.40),
     "gemini-1.5-flash": (0.075, 0.30),
@@ -89,6 +90,26 @@ class LLMCostTracker:
         self._records: collections.deque[LLMInteractionRecord] = collections.deque(maxlen=max_records)
         self._lock = threading.Lock()
         self._jsonl_path = jsonl_log_path or Path("logs/llm_cost_audit.jsonl")
+        self._load_existing_records()
+
+    def _load_existing_records(self) -> None:
+        """Replay historical audit records from JSONL file into memory on startup."""
+        if not self._jsonl_path.exists():
+            return
+        try:
+            with open(self._jsonl_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                        rec = LLMInteractionRecord(**data)
+                        self._records.append(rec)
+                    except Exception:
+                        pass
+        except Exception as err:
+            logger.warning("[LLMCostTracker] Failed to load existing audit records: %s", err)
 
     @staticmethod
     def calculate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
@@ -114,6 +135,11 @@ class LLMCostTracker:
     ) -> LLMInteractionRecord:
         """Record an LLM call interaction and append to memory buffer and disk audit log."""
         cost = self.calculate_cost(model, prompt_tokens, completion_tokens)
+        if not success and error_message and ("HTTP 4" in error_message or "INVALID_ARGUMENT" in error_message):
+            cost = 0.0
+            prompt_tokens = 0
+            completion_tokens = 0
+
         record = LLMInteractionRecord(
             interaction_id=interaction_id,
             operation_id=operation_id,

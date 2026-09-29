@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "release100"
-version = "1.0.0"
+version = "1.0.1"
 description = "Release100 Enterprise Multi-Application Agentic Platform & Ingress Gateway"
 readme = "README.md"
 authors = [{ name = "Mahendra GURAV" }]

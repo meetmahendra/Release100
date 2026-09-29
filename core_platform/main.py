@@ -30,6 +30,7 @@ from typing import Any, AsyncGenerator, Callable, Dict
 import uuid
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from core_platform.app.apps_registry import ApplicationRegistry
 from core_platform.app.config import settings
@@ -48,7 +49,7 @@ setup_platform_logging()
 
 logger = logging.getLogger("core_platform.host")
 _BOOT_TIME = time.time()
-relay_client = CloudRelayClient()
+relay_client = CloudRelayClient.get_instance()
 
 
 async def _outbox_sync_worker(stop_event: asyncio.Event) -> None:
@@ -97,6 +98,16 @@ app = FastAPI(
     version="1.3.0",
     lifespan=lifespan,
 )
+
+# Mount media and biometric photo storage vaults for browser monitoring inspection
+_media_vault = Path("logs/media")
+_media_vault.mkdir(parents=True, exist_ok=True)
+app.mount("/logs/media", StaticFiles(directory=str(_media_vault)), name="logs_media")
+
+_photos_vault = Path("logs/photos")
+_photos_vault.mkdir(parents=True, exist_ok=True)
+app.mount("/logs/photos", StaticFiles(directory=str(_photos_vault)), name="logs_photos")
+
 
 
 @app.middleware("http")
@@ -164,15 +175,18 @@ if "temperature_marker" in settings.ENABLED_APPLICATIONS:
     app.post("/api/verify-location")(verify_location_api)
 
 if "mail_organizer" in settings.ENABLED_APPLICATIONS:
-    from apps.mail_organizer.ui.routes import router as mail_router
+    try:
+        from apps.mail_organizer.ui.routes import router as mail_router
 
-    app.include_router(mail_router)
+        app.include_router(mail_router)
 
-    @app.get("/mail", response_class=RedirectResponse)
-    @app.get("/mail/", response_class=RedirectResponse)
-    async def mail_redirect() -> RedirectResponse:
-        """Redirect shortcut /mail to mail organizer dashboard."""
-        return RedirectResponse(url="/admin/apps/mail-organizer/dashboard")
+        @app.get("/mail", response_class=RedirectResponse)
+        @app.get("/mail/", response_class=RedirectResponse)
+        async def mail_redirect() -> RedirectResponse:
+            """Redirect shortcut /mail to mail organizer dashboard."""
+            return RedirectResponse(url="/admin/apps/mail-organizer/dashboard")
+    except ModuleNotFoundError:
+        pass
 
 # Mount Live Diagnostics & Settings Web Console
 from core_platform.app.diagnostics.web_dashboard import router as diag_router

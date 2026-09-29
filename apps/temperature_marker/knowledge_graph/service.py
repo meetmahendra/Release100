@@ -50,12 +50,24 @@ class KnowledgeGraphService:
 
     def _load_roster(self) -> KioskFleetRoster:
         """Load and parse fleet roster JSON file."""
+        sample_path = self.roster_path.parent / "canebot_fleet_roster.sample.json"
         if not self.roster_path.exists():
+            if sample_path.exists():
+                with open(sample_path, "r", encoding="utf-8") as f:
+                    return KioskFleetRoster.model_validate(json.load(f))
             return KioskFleetRoster()
 
         with open(self.roster_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return KioskFleetRoster.model_validate(data)
+            roster = KioskFleetRoster.model_validate(data)
+
+        # Fail-safe: If roster file is empty (e.g. fresh retail checkout), fallback to sample
+        if not roster.kiosks and sample_path.exists():
+            with open(sample_path, "r", encoding="utf-8") as f:
+                sample_data = json.load(f)
+                return KioskFleetRoster.model_validate(sample_data)
+
+        return roster
 
     def _save_roster(self) -> None:
         """Persist current fleet roster back to canebot_fleet_roster.json."""
@@ -179,6 +191,27 @@ class KnowledgeGraphService:
 
         # Add to target kiosk
         self.roster.kiosks[kiosk_id].primary_operator_phones.append(phone_number)
+        self._save_roster()
+        return True
+
+    def update_kiosk_coordinates(
+        self,
+        kiosk_id: str,
+        latitude: float,
+        longitude: float,
+        radius_meters: Optional[float] = None,
+    ) -> bool:
+        """Update live calibrated GPS coordinates for a kiosk's physical site."""
+        kiosk = self.roster.kiosks.get(kiosk_id)
+        if not kiosk:
+            return False
+        loc = self.roster.locations.get(kiosk.site_id)
+        if not loc:
+            return False
+        loc.latitude = float(latitude)
+        loc.longitude = float(longitude)
+        if radius_meters is not None and radius_meters > 0:
+            loc.geofence_radius_meters = float(radius_meters)
         self._save_roster()
         return True
 

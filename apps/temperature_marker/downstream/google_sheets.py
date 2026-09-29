@@ -208,8 +208,8 @@ class GoogleSheetsConnector(BaseDownstreamConnector):
             # This stub requests a token using the service account's private key via the
             # google-auth flow. Without google-auth installed, token request is skipped.
             try:
-                import google.oauth2.service_account as _sa  # type: ignore[import-not-found]
-                import google.auth.transport.requests as _tr  # type: ignore[import-not-found]
+                import google.oauth2.service_account as _sa
+                import google.auth.transport.requests as _tr
                 sa_creds = _sa.Credentials.from_service_account_file(
                     str(cred_path),
                     scopes=["https://www.googleapis.com/auth/spreadsheets"],

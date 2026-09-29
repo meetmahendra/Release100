@@ -25,6 +25,7 @@ Solves the enterprise factory firewall / NAT / port-forwarding challenge:
 """
 
 import asyncio
+import concurrent.futures.thread  # Pre-initialize threadpool atexit handler
 from datetime import datetime, timezone
 import json
 import logging
@@ -41,6 +42,15 @@ logger = logging.getLogger("core_platform.relay_client")
 class CloudRelayClient:
     """Resilient outbound WebSocket client bridging local kiosks to cloud relays."""
 
+    _instance: Optional["CloudRelayClient"] = None
+
+    @classmethod
+    def get_instance(cls) -> "CloudRelayClient":
+        """Retrieve the active singleton instance or create a new one."""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
     def __init__(
         self,
         relay_url: Optional[str] = None,
@@ -48,6 +58,7 @@ class CloudRelayClient:
         message_handler: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None,
     ) -> None:
         """Initialize relay client with connection target and message callback."""
+        CloudRelayClient._instance = self
         self.kiosk_id = kiosk_id or settings.KIOSK_ID
         raw_url = relay_url if relay_url is not None else settings.RELAY_WS_URL
         self.relay_url = self._format_relay_url(raw_url, self.kiosk_id)
@@ -70,7 +81,7 @@ class CloudRelayClient:
         """
         if not url:
             return ""
-        trimmed = url.strip()
+        trimmed = url.strip().strip('"').strip("'").strip()
         # Convert http(s) -> ws(s)
         if trimmed.startswith("https://"):
             trimmed = "wss://" + trimmed[len("https://") :]
@@ -120,6 +131,21 @@ class CloudRelayClient:
         self.is_connected = False
         logger.info("Cloud Relay client stopped.")
 
+    async def reconfigure_and_restart(
+        self, relay_url: Optional[str] = None, kiosk_id: Optional[str] = None
+    ) -> None:
+        """Dynamically reconfigure relay target and reconnect without restarting application."""
+        await self.stop()
+        self.kiosk_id = kiosk_id or settings.KIOSK_ID
+        raw_url = relay_url if relay_url is not None else settings.RELAY_WS_URL
+        self.relay_url = self._format_relay_url(raw_url, self.kiosk_id)
+        self.connection_attempts = 0
+        if self.relay_url:
+            self.start()
+            logger.info("[CloudRelay] Dynamically reconfigured and started targeting %s", self.relay_url)
+        else:
+            logger.info("[CloudRelay] Dynamically reconfigured to empty; client stopped.")
+
     @property
     def is_running(self) -> bool:
         """Indicate whether the relay client connection loop is actively running."""
@@ -156,6 +182,9 @@ class CloudRelayClient:
                     logger.warning("Cloud Relay connection closed (%s). Reconnecting in %ds...", exc, delay)
                 except Exception as err:
                     self.is_connected = False
+                    if "after shutdown" in str(err) or not self._running:
+                        logger.info("Cloud Relay terminating gracefully during shutdown.")
+                        break
                     logger.error("Cloud Relay connection error: %s. Retrying in %ds...", err, delay)
 
                 await asyncio.sleep(delay)

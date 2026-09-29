@@ -49,7 +49,9 @@ async def outbox_node(
 
     from apps.temperature_marker.services.session_manager import OperatorSessionManager
     session_mgr = OperatorSessionManager.get_instance()
-    is_new_duty, checkin_time = session_mgr.record_or_verify_checkin(emp_code=emp_code, kiosk_id=kiosk_id)
+    is_new_duty, checkin_time = session_mgr.record_or_verify_checkin(
+        emp_code=emp_code, kiosk_id=kiosk_id, db_service=db_service
+    )
 
     # 1. Save local attendance record (is_duty_checkin=True only on first check-in today)
     db_service.record_attendance(

@@ -45,6 +45,8 @@ class TemperatureMarkerState(TypedDict, total=False):
     geofence_verified: bool
     distance_meters: float
     gps_accuracy_meters: Optional[float]
+    explicit_location_request: bool
+    watermark_timestamp: Optional[str]
 
     # Dual-Engine OCR & Temperature
     chiller_temp_c: Optional[float]

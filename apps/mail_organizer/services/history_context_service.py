@@ -53,7 +53,7 @@ def build_thread_history(creds: Any, thread_id: str, current_msg_id: str = "") -
     if not creds or not thread_id:
         return []
     try:
-        from googleapiclient.discovery import build  # type: ignore[import-not-found]
+        from googleapiclient.discovery import build
         service = build('gmail', 'v1', credentials=creds)
         thread = service.users().threads().get(userId='me', id=thread_id, format='full').execute()
         messages = thread.get('messages', [])
