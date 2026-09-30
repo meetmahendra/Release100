@@ -162,8 +162,9 @@ def create_jwt_token(
     """
     if not secret_key:
         from core_platform.app.config import settings
-        secret_key = getattr(settings, "JWT_SECRET_KEY", "release100_dev_secret_change_in_prod")
+        secret_key = settings.JWT_SECRET_KEY or "release100_dev_secret_change_in_prod"
 
+    now_ts = int(time.time())
     token_jti = jti or str(uuid.uuid4())
     header = {"alg": "HS256", "typ": "JWT"}
     payload = {
@@ -171,8 +172,9 @@ def create_jwt_token(
         "tenant": tenant_id,
         "roles": roles,
         "apps": permitted_apps,
-        "iat": int(time.time()),
-        "exp": int(time.time()) + expiry_seconds,
+        "iat": now_ts,
+        "nbf": now_ts,
+        "exp": now_ts + expiry_seconds,
         "jti": token_jti,
     }
 
@@ -193,7 +195,7 @@ def create_jwt_token(
 def verify_jwt_token(token: str, secret_key: str = "") -> Optional[SecurityContext]:
     """Verify an HS256 JWT and return a SecurityContext.
 
-    Validates signature, expiration, and checks blacklist registry (SEC-2).
+    Validates signature, expiration, not-before (nbf), and checks blacklist registry (SEC-2).
 
     Args:
         token: Compact JWT string.
@@ -204,7 +206,7 @@ def verify_jwt_token(token: str, secret_key: str = "") -> Optional[SecurityConte
     """
     if not secret_key:
         from core_platform.app.config import settings
-        secret_key = getattr(settings, "JWT_SECRET_KEY", "release100_dev_secret_change_in_prod")
+        secret_key = settings.JWT_SECRET_KEY or "release100_dev_secret_change_in_prod"
 
     try:
         parts = token.strip().split(".")
@@ -225,10 +227,16 @@ def verify_jwt_token(token: str, secret_key: str = "") -> Optional[SecurityConte
             return None
 
         payload = json.loads(_b64url_decode(payload_b64).decode("utf-8"))
+        now_ts = int(time.time())
 
         # Expiry check.
-        if int(time.time()) > payload.get("exp", 0):
+        if now_ts > payload.get("exp", 0):
             logger.debug("[JWTUtils] Token expired for sub=%s", payload.get("sub"))
+            return None
+
+        # Not-Before (nbf) check (TECH-6).
+        if now_ts < payload.get("nbf", 0):
+            logger.warning("[JWTUtils] Token used before nbf for sub=%s", payload.get("sub"))
             return None
 
         # JTI Revocation check (SEC-2).

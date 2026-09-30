@@ -384,3 +384,110 @@ def test_admin_shell_observability_endpoints(tmp_path: Path) -> None:
     assert "summary" in res_costs_api.json()
     assert "operations" in res_costs_api.json()
 
+
+# ============================================================================
+# Phase 1 Residual Hardening Verification Tests
+# ============================================================================
+
+def test_tech6_jwt_nbf_claim_and_validation() -> None:
+    """Test JWT nbf (Not Before) generation and verification."""
+    import time
+    from core_platform.app.auth.jwt_utils import create_jwt_token, verify_jwt_token
+
+    # Valid token created now
+    token = create_jwt_token("user1", ["admin"], ["temperature_marker"])
+    ctx = verify_jwt_token(token)
+    assert ctx is not None
+    assert ctx.principal_id == "user1"
+
+    # Token with future nbf should be rejected
+    from core_platform.app.config import settings
+    future_nbf_payload = {
+        "sub": "user_future",
+        "tenant": "default_tenant",
+        "roles": ["admin"],
+        "apps": ["temperature_marker"],
+        "iat": int(time.time()),
+        "nbf": int(time.time()) + 300,  # 5 minutes in future
+        "exp": int(time.time()) + 3600,
+        "jti": "future-jti-123",
+    }
+    import base64, json, hmac, hashlib
+    def b64(d: bytes) -> str: return base64.urlsafe_b64encode(d).rstrip(b"=").decode("ascii")
+    hdr = b64(b'{"alg":"HS256","typ":"JWT"}')
+    pld = b64(json.dumps(future_nbf_payload).encode())
+    sig = b64(hmac.new(settings.JWT_SECRET_KEY.encode(), f"{hdr}.{pld}".encode(), hashlib.sha256).digest())
+    future_token = f"{hdr}.{pld}.{sig}"
+
+    assert verify_jwt_token(future_token) is None
+
+
+def test_sec5_admin_health_metrics_endpoint() -> None:
+    """Verify /admin/api/health-metrics endpoint structure and public /health sanitization."""
+    from core_platform.main import app
+    client = TestClient(app)
+
+    # Public health check
+    res_pub = client.get("/health")
+    assert res_pub.status_code == 200
+    pub_data = res_pub.json()
+    assert pub_data["status"] == "healthy"
+    assert "version" in pub_data
+
+    # Admin health metrics
+    res_adm = client.get("/admin/api/health-metrics")
+    assert res_adm.status_code == 200
+    adm_data = res_adm.json()
+    assert "cloud_relay" in adm_data
+    assert "relay_url" in adm_data["cloud_relay"]
+
+
+def test_sec6_phone_biometric_two_phase_contract() -> None:
+    """Verify PhoneBiometricStrategy two-phase authentication contract."""
+    from core_platform.app.auth.strategies import PhoneBiometricStrategy
+
+    ctx_phase1 = PhoneBiometricStrategy.authenticate("+919876543210", biometric_verified=False)
+    assert ctx_phase1.is_authenticated is True
+    assert ctx_phase1.is_biometric_verified is False
+
+    ctx_phase2 = PhoneBiometricStrategy.complete_biometric_verification(ctx_phase1)
+    assert ctx_phase2.is_authenticated is True
+    assert ctx_phase2.is_biometric_verified is True
+
+
+def test_sec7_api_key_per_key_rate_limit(tmp_path: Path) -> None:
+    """Verify APIKeyManager enforces max_rpm on key validation."""
+    from core_platform.app.auth.api_keys import APIKeyManager
+
+    mgr = APIKeyManager(db_path=tmp_path / "test_ratelimit_keys.db")
+    raw_key, _ = mgr.create_key(
+        label="RateLimitTestKey",
+        principal_id="test_client",
+        roles=["operator"],
+        permitted_apps=["temperature_marker"],
+        max_rpm=2,  # 2 requests per minute limit
+    )
+
+    # First request: Allowed
+    ctx1 = mgr.validate_key(raw_key)
+    assert ctx1 is not None
+
+    # Second request: Allowed
+    ctx2 = mgr.validate_key(raw_key)
+    assert ctx2 is not None
+
+    # Third request immediately: Exceeds 2 RPM capacity -> Rejected
+    ctx3 = mgr.validate_key(raw_key)
+    assert ctx3 is None
+
+
+@pytest.mark.anyio
+async def test_outbox_unknown_app_rejection() -> None:
+    """Verify OutboxSynchronizer rejects unknown cartridge applications."""
+    from core_platform.app.outbox.synchronizer import OutboxSynchronizer
+
+    sync = OutboxSynchronizer(drain_interval_seconds=60)
+    success, msg = await sync._dispatch_item("unknown_cartridge_xyz", "http_rest", {"test": 1})
+    assert success is False
+    assert "no active outbox transmitter registered" in msg
+

@@ -136,6 +136,6 @@ class OutboxSynchronizer:
         except Exception as exc:
             return False, f"Transmitter lookup failed for app_id={app_id}: {exc}"
 
-        # No transmitter registered — acknowledge without dispatch.
-        return True, f"Acknowledged (no outbox transmitter registered for app_id={app_id})"
+        # No transmitter registered — do not acknowledge to prevent silent drop
+        return False, f"Dispatch failed: no active outbox transmitter registered for app_id={app_id}"
 

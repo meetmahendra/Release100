@@ -28,7 +28,7 @@ import time
 from typing import Any, AsyncGenerator, Callable, Dict
 import uuid
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from core_platform.app.apps_registry import ApplicationRegistry
@@ -36,6 +36,9 @@ from core_platform.app.config import settings
 from core_platform.app.ingress.relay_client import CloudRelayClient
 from core_platform.app.skills.registry import SkillRegistry
 from core_platform.app.telemetry.audit_engine import AuditEngine
+from core_platform.app.telemetry.metrics import metrics_registry
+from core_platform.app.telemetry.otel_tracer import tracer
+
 
 
 from core_platform.app.telemetry.logging_config import (
@@ -52,6 +55,7 @@ relay_client = CloudRelayClient.get_instance()
 
 from core_platform.app.plugin_engine.loader import PluginLoader
 from core_platform.app.outbox.synchronizer import OutboxSynchronizer
+from core_platform.app.middleware.tenant_context import TenantContextMiddleware
 
 plugin_loader = PluginLoader(enabled_apps=settings.ENABLED_APPLICATIONS)
 _platform_synchronizer = OutboxSynchronizer(drain_interval_seconds=float(settings.OUTBOX_DRAIN_INTERVAL_SECONDS))
@@ -62,6 +66,10 @@ _platform_synchronizer = OutboxSynchronizer(drain_interval_seconds=float(setting
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage application startup and graceful shutdown."""
     print(f"[Release100] Booting Platform Host on port {settings.ORCHESTRATOR_PORT}...")
+    from core_platform.app.db.manager import get_db_manager
+    db_mgr = get_db_manager()
+    db_mgr.init_tables()
+
     relay_client.start()
     sync_task = asyncio.create_task(_platform_synchronizer.run())
     yield
@@ -73,6 +81,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         pass
     await relay_client.stop()
     plugin_loader.shutdown_all()
+    # Cleanly dispose all primary and custom database connection pools
+    db_mgr.shutdown()
 
 
 app = FastAPI(
@@ -80,6 +90,10 @@ app = FastAPI(
     version="1.3.0",
     lifespan=lifespan,
 )
+
+# Multi-Tenancy Dynamic Context Middleware (GEES v2.0 / Plan 09)
+app.add_middleware(TenantContextMiddleware, default_tenant=settings.TENANT_ID)
+
 
 # Mount media and biometric photo storage vaults for browser monitoring inspection
 _media_vault = Path("logs/media")
@@ -105,6 +119,21 @@ async def security_headers_middleware(request: Request, call_next: Callable[[Req
 
 
 @app.middleware("http")
+async def distributed_tracing_middleware(request: Request, call_next: Callable[[Request], Any]) -> Response:
+    """Propagate and record W3C traceparent headers across all inbound HTTP requests."""
+    traceparent = request.headers.get("traceparent")
+    endpoint_name = f"{request.method} {request.url.path}"
+    async with tracer.async_trace_span(endpoint_name, parent_traceparent=traceparent) as span:
+        span.set_attribute("http.method", request.method)
+        span.set_attribute("http.url", str(request.url))
+        span.set_attribute("http.client_ip", request.client.host if request.client else "unknown")
+        response: Response = await call_next(request)
+        span.set_attribute("http.status_code", response.status_code)
+        response.headers["traceparent"] = span.traceparent
+        return response
+
+
+@app.middleware("http")
 async def correlation_context_middleware(request: Request, call_next: Callable[[Request], Any]) -> Response:
     """Inject and propagate correlation_id across all request logging."""
     corr_id = request.headers.get("X-Correlation-ID") or f"req-{uuid.uuid4().hex[:8]}"
@@ -117,9 +146,19 @@ async def correlation_context_middleware(request: Request, call_next: Callable[[
         clear_log_context()
 
 
+@app.get("/metrics", response_class=PlainTextResponse)
+async def prometheus_metrics() -> PlainTextResponse:
+    """Prometheus text exposition format endpoint for scraping operational metrics."""
+    return PlainTextResponse(
+        content=metrics_registry.format_prometheus(),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
+
+
 @app.get("/health", response_class=JSONResponse)
 async def health_check() -> Dict[str, Any]:
-    """Comprehensive health heartbeat API for Process Supervisor and Tray App."""
+
+    """Operational health heartbeat API for Process Supervisor and external probes."""
     uptime_sec = round(time.time() - _BOOT_TIME, 2)
     audit_engine = AuditEngine.get_instance()
     skill_statuses = SkillRegistry.get_instance().get_all_health_statuses()
@@ -134,6 +173,8 @@ async def health_check() -> Dict[str, Any]:
         "status": "healthy",
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime_sec,
+        "version": "1.3.0",
+        "execution_mode": settings.EXECUTION_MODE,
         "tenant_id": settings.TENANT_ID,
         "kiosk_id": settings.KIOSK_ID,
         "organization_name": settings.ORGANIZATION_NAME,
@@ -142,7 +183,6 @@ async def health_check() -> Dict[str, Any]:
         "applications": ApplicationRegistry.get_instance().get_summary(),
         "cloud_relay": {
             "enabled": bool(settings.RELAY_WS_URL),
-            "relay_url": relay_client.relay_url if settings.RELAY_WS_URL else None,
             "connected": relay_client.is_connected,
             "messages_received": relay_client.messages_received,
             "connection_attempts": relay_client.connection_attempts,
@@ -156,6 +196,14 @@ async def health_check() -> Dict[str, Any]:
             "active_records_count": len(audit_engine._active_records),
         },
     }
+
+
+@app.get("/admin/api/health-metrics", response_class=JSONResponse)
+async def admin_health_metrics() -> Dict[str, Any]:
+    """Detailed administrative diagnostic telemetry (SEC-5)."""
+    base = await health_check()
+    base["cloud_relay"]["relay_url"] = relay_client.relay_url if settings.RELAY_WS_URL else None
+    return base
 
 
 # ── Dynamic Application Cartridge Discovery & Mounting via PluginLoader ──
@@ -214,6 +262,11 @@ if mcp_tools:
 # Mount Central Admin Shell (login, logout, dashboard, API key management)
 from core_platform.app.admin_shell.routes import router as admin_router
 app.include_router(admin_router)
+
+# Mount Edge-to-Cloud State Sync Router (Plan 09 / Phase 4)
+from core_platform.app.ingress.sync_router import sync_router
+app.include_router(sync_router)
+
 
 
 @app.get("/", response_class=RedirectResponse)

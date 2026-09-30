@@ -66,9 +66,18 @@ class MailOrganizerApplication(BaseApplication):
     dashboard_url: str = "/admin/apps/mail-organizer/dashboard"
     has_poller: bool = True
 
-    def __init__(self, db_url: str = "sqlite:///logs/mail_organizer.db") -> None:
-        """Initialize domain cartridge and assemble dependencies."""
-        self.db_service = MailDatabaseService(db_url=db_url)
+    def __init__(
+        self,
+        engine: Optional[Any] = None,
+        db_url: Optional[str] = None,
+    ) -> None:
+        """Initialize domain cartridge and assemble dependencies.
+
+        Args:
+            engine: Optional shared SQLAlchemy Engine (Core-Facilitated mode).
+            db_url: Optional explicit DB connection URL override (standalone test mode).
+        """
+        self.db_service = MailDatabaseService(engine=engine, db_url=db_url)
         self.gmail_connector = GmailConnector()
         self.calendar_connector = GoogleCalendarConnector()
         self.pm_manager = PMTaskManager(db_service=self.db_service)
@@ -81,10 +90,16 @@ class MailOrganizerApplication(BaseApplication):
             audit_engine=self.audit_engine,
         )
 
+    def on_bind_engine(self, engine: Any) -> None:
+        """Dynamically bind or update the database engine (Paradigm A)."""
+        if engine is not None and hasattr(self, "db_service") and self.db_service is not None:
+            self.db_service.bind_engine(engine)
+
     keywords: List[str] = [
         "mail", "email", "inbox", "draft", "reply", "forward",
         "meeting", "schedule", "calendar", "task", "jira", "linear",
     ]
+
 
     def get_workflow(self) -> MailOrganizerWorkflow:
         """Return the compiled LangGraph workflow orchestrator."""

@@ -102,6 +102,7 @@ class CreateMemberRequest(BaseModel):
     phone_number: str
     assigned_kiosk_id: str
     emp_code: Optional[str] = None
+    role: Optional[str] = "OPERATOR"
     photo_base64: Optional[str] = None
     reporting_manager_emp_code: Optional[str] = None
 
@@ -112,6 +113,7 @@ class UpdateMemberRequest(BaseModel):
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
     assigned_kiosk_id: Optional[str] = None
+    role: Optional[str] = None
     reporting_manager_emp_code: Optional[str] = None
     status: Optional[str] = None
 
@@ -249,6 +251,7 @@ async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
         assigned_kiosk_id=kiosk_id,
         encrypted_face_embedding=enc_emb,
         status=status,
+        role=req.role or "OPERATOR",
         reporting_manager_emp_code=mgr_code,
     )
     _kg_service.assign_operator_to_kiosk(phone, kiosk_id)
@@ -267,6 +270,7 @@ async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
         "status": "SUCCESS",
         "emp_code": emp.emp_code,
         "member_status": status,
+        "role": emp.role,
         "reporting_manager_emp_code": emp.reporting_manager_emp_code,
         "has_biometrics": bool(enc_emb),
     }
@@ -274,7 +278,7 @@ async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
 
 @router.post("/api/members/{emp_code}/update")
 async def update_member_api(emp_code: str, req: UpdateMemberRequest) -> Dict[str, Any]:
-    """Update operator profile details (name, phone, kiosk, manager, status)."""
+    """Update operator profile details (name, phone, kiosk, manager, status, role)."""
     from core_platform.app.common.phone_validator import normalize_phone_number
 
     norm_phone = None
@@ -291,6 +295,7 @@ async def update_member_api(emp_code: str, req: UpdateMemberRequest) -> Dict[str
         assigned_kiosk_id=req.assigned_kiosk_id,
         reporting_manager_emp_code=req.reporting_manager_emp_code,
         status=req.status,
+        role=req.role,
     )
     if not emp:
         raise HTTPException(status_code=404, detail=f"Operator '{emp_code}' not found")

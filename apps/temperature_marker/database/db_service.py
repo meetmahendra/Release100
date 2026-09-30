@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import uuid
 from sqlalchemy import create_engine, or_
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from apps.temperature_marker.database.models import (
@@ -43,63 +44,59 @@ class DatabaseService:
     _instance: Optional["DatabaseService"] = None
 
     @classmethod
-    def get_instance(cls, db_url: str = "sqlite:///logs/temperature_marker.db") -> "DatabaseService":
+    def get_instance(
+        cls,
+        db_url: Optional[str] = None,
+        engine: Optional[Engine] = None,
+    ) -> "DatabaseService":
         """Get or initialize singleton instance of DatabaseService."""
         if cls._instance is None:
-            cls._instance = cls(db_url=db_url)
+            cls._instance = cls(db_url=db_url, engine=engine)
         return cls._instance
 
-    def __init__(self, db_url: str = "sqlite:///logs/temperature_marker.db") -> None:
-        """Initialize DatabaseService and bind SQLAlchemy engine.
+    def __init__(
+        self,
+        db_url: Optional[str] = None,
+        engine: Optional[Engine] = None,
+    ) -> None:
+        """Initialize DatabaseService and configure session factory.
 
         Args:
-            db_url: SQLAlchemy connection string.
+            db_url: Optional explicit connection string (isolated test mode only).
+            engine: Optional pre-configured SQLAlchemy Engine instance (Core-Facilitated).
         """
-        if db_url.startswith("sqlite:///"):
-            db_path = db_url.replace("sqlite:///", "")
-            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+        if engine is not None:
+            self.engine = engine
+            Base.metadata.create_all(bind=self.engine)
+        elif db_url is not None:
+            if db_url.startswith("sqlite:///"):
+                db_path = db_url.replace("sqlite:///", "")
+                if db_path != ":memory:":
+                    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+            self.engine = create_engine(db_url, echo=False)
+            Base.metadata.create_all(bind=self.engine)
+        else:
+            from core_platform.app.db.manager import get_db_manager
+            self.engine = get_db_manager().get_engine()
+            Base.metadata.create_all(bind=self.engine)
 
-        self.engine = create_engine(db_url, echo=False)
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
-        self.create_tables()
+
+        if DatabaseService._instance is None:
+            DatabaseService._instance = self
+
+    def bind_engine(self, engine: Engine) -> None:
+        """Bind or reconfigure database engine."""
+        self.engine = engine
+        self.SessionLocal.configure(bind=engine)
 
     def close(self) -> None:
-        """Dispose SQLAlchemy connection pool and release file handles on Windows."""
-        self.engine.dispose()
+        """Cleanly release cartridge session handles without disposing shared platform engine."""
+        pass
 
     def create_tables(self) -> None:
-        """Create all database tables if they do not already exist."""
+        """Create domain database tables (utility helper for test fixtures)."""
         Base.metadata.create_all(bind=self.engine)
-        self._run_sqlite_schema_upgrades()
-
-    def _run_sqlite_schema_upgrades(self) -> None:
-        """Apply lightweight schema migrations for newly added model fields in SQLite."""
-        try:
-            from sqlalchemy import inspect, text
-            inspector = inspect(self.engine)
-            table_names = inspector.get_table_names()
-            if "employees" in table_names:
-                existing_cols = {col["name"] for col in inspector.get_columns("employees")}
-                with self.engine.begin() as conn:
-                    if "role" not in existing_cols:
-                        conn.execute(text("ALTER TABLE employees ADD COLUMN role VARCHAR(32) DEFAULT 'OPERATOR'"))
-                    if "reporting_manager_emp_code" not in existing_cols:
-                        conn.execute(text("ALTER TABLE employees ADD COLUMN reporting_manager_emp_code VARCHAR(64)"))
-            if "attendance_records" in table_names:
-                att_cols = {col["name"] for col in inspector.get_columns("attendance_records")}
-                with self.engine.begin() as conn:
-                    if "is_duty_checkin" not in att_cols:
-                        conn.execute(text("ALTER TABLE attendance_records ADD COLUMN is_duty_checkin BOOLEAN DEFAULT 1"))
-                    if "photo_path" not in att_cols:
-                        conn.execute(text("ALTER TABLE attendance_records ADD COLUMN photo_path VARCHAR(255)"))
-                    if "manual_resolution_status" not in att_cols:
-                        conn.execute(text("ALTER TABLE attendance_records ADD COLUMN manual_resolution_status VARCHAR(32)"))
-                    if "manual_resolution_notes" not in att_cols:
-                        conn.execute(text("ALTER TABLE attendance_records ADD COLUMN manual_resolution_notes TEXT"))
-                    if "created_at_utc" not in att_cols:
-                        conn.execute(text("ALTER TABLE attendance_records ADD COLUMN created_at_utc DATETIME"))
-        except Exception:
-            pass
 
     def register_employee(
         self,

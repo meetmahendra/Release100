@@ -155,17 +155,38 @@ class BaseApplication(ABC):
         """
         return []
 
+    custom_database_url: Optional[str] = None
+    """Optional custom database connection URL for cartridge-autonomous / 3rd-party persistence.
+    If None, the cartridge operates in Core-Facilitated mode, sharing the platform database."""
+
+    def get_database_service(self) -> Optional[Any]:
+        """Return the cartridge-specific database service instance if self-managed.
+
+        Returns:
+            Database service instance, or None if the cartridge uses Core-Facilitated DB.
+        """
+        return None
+
     def get_metadata(self) -> Optional[Any]:
-        """Return the SQLAlchemy MetaData object for Alembic migration discovery.
+        """Return the SQLAlchemy MetaData object for Core-Facilitated table creation and Alembic discovery.
 
         Override in cartridges that manage their own DB tables so that the
-        platform Alembic env.py can collect metadata dynamically without
-        importing app-specific symbols.
+        platform DatabaseManager and Alembic env.py can collect metadata dynamically
+        without importing app-specific symbols.
 
         Returns:
             SQLAlchemy MetaData instance, or None if no DB tables are managed.
         """
         return None
+
+    def on_bind_engine(self, engine: Any) -> None:
+        """Lifecycle callback when the Core Platform binds a database engine to this cartridge.
+
+        Called by PluginLoader during startup. Override to bind domain database
+        services to the provided SQLAlchemy Engine.
+        """
+        pass
+
 
     def get_outbox_transmitter(self) -> Optional[Callable[..., Any]]:
         """Return the async coroutine that flushes this app's outbox to downstream.

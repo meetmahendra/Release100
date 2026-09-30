@@ -33,7 +33,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -496,5 +496,66 @@ async def get_llm_costs_api(
             "operations": tracker.get_operations_report(limit=100),
         }
     )
+
+
+# ── Live WebSocket Fleet Telemetry Stream (Phase 4) ──────────────────────────
+
+class FleetEventBroadcaster:
+    """Thread-safe WebSocket broadcaster for real-time admin shell telemetry."""
+
+    _instance: Optional["FleetEventBroadcaster"] = None
+
+    @classmethod
+    def get_instance(cls) -> "FleetEventBroadcaster":
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def __init__(self) -> None:
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket) -> None:
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        logger.info("[FleetEventBroadcaster] WebSocket connected (total: %d)", len(self.active_connections))
+
+    def disconnect(self, websocket: WebSocket) -> None:
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+            logger.info("[FleetEventBroadcaster] WebSocket disconnected (total: %d)", len(self.active_connections))
+
+    async def broadcast(self, event_type: str, payload: Dict[str, Any]) -> None:
+        """Broadcast an event payload to all connected admin clients."""
+        msg = {"event": event_type, "data": payload}
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(msg)
+            except Exception:
+                disconnected.append(connection)
+        for dead in disconnected:
+            self.disconnect(dead)
+
+
+def get_fleet_broadcaster() -> FleetEventBroadcaster:
+    return FleetEventBroadcaster.get_instance()
+
+
+@router.websocket("/ws/fleet-events")
+async def fleet_events_websocket(websocket: WebSocket) -> None:
+    """Live streaming WebSocket feed of station check-ins, temperature violations, and alerts."""
+    broadcaster = get_fleet_broadcaster()
+    await broadcaster.connect(websocket)
+    try:
+        while True:
+            # Keep-alive heartbeat receiver
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text("pong")
+    except WebSocketDisconnect:
+        broadcaster.disconnect(websocket)
+    except Exception as exc:
+        logger.debug("[FleetEventBroadcaster] WebSocket stream ended: %s", exc)
+        broadcaster.disconnect(websocket)
 
 

@@ -58,6 +58,14 @@ class PlatformSettings(BaseSettings):
     ORCHESTRATOR_PORT: int = Field(default=8002, description="Main FastAPI host and admin shell port")
     MCP_SERVER_PORT: int = Field(default=8001, description="Native SSE MCP server port")
 
+    # Pluggable Database Configuration (GEES v2.0 Deployment-Time Database Selection)
+    DATABASE_URL: str = Field(
+        default="sqlite:///logs/platform_data.db",
+        description="Universal database connection URL (sqlite, postgresql, mysql, timescaledb, etc.)",
+    )
+    DB_POOL_SIZE: int = Field(default=20, description="Connection pool size for client-server SQL engines")
+    DB_MAX_OVERFLOW: int = Field(default=10, description="Max overflow connections beyond pool size")
+
     # Active Cartridges
     ENABLED_APPLICATIONS: List[str] = Field(
         default_factory=lambda: ["temperature_marker", "mail_organizer"],
@@ -74,7 +82,11 @@ class PlatformSettings(BaseSettings):
         description="Directory storing partitioned audit files",
     )
 
-    # Biometrics & Security (ISSUE-001 Commercial Compliance)
+    # Biometrics & Security (ISSUE-001 Commercial Compliance & SEC-2)
+    JWT_SECRET_KEY: str = Field(
+        default="release100_dev_secret_change_in_prod",
+        description="HMAC secret key for HS256 JWT tokens",
+    )
     FACE_MODEL_SOURCE: str = Field(
         default="mobilefacenet_open",
         description="Face recognition model: mobilefacenet_open | custom_trained | cloud_vision",
@@ -124,6 +136,26 @@ class PlatformSettings(BaseSettings):
         default=30,
         description="Interval in seconds for draining offline outbox records",
     )
+    # Distributed Messaging & Task Queue (Phase 2)
+    REDIS_URL: str = Field(
+        default="",
+        description="Redis connection URL for distributed streams and task queue (e.g. redis://localhost:6379/0)",
+    )
+
+    # Enterprise Observability & OpenTelemetry (Phase 3)
+    OTEL_ENABLED: bool = Field(
+        default=False,
+        description="Enable OpenTelemetry distributed tracing across all ingress and pipeline components",
+    )
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = Field(
+        default="",
+        description="OTLP collector endpoint (e.g. http://localhost:4317 or http://localhost:4318/v1/traces)",
+    )
+    OTEL_SERVICE_NAME: str = Field(
+        default="release100-platform",
+        description="Service name reported in distributed trace spans",
+    )
+
     # Public-facing base URL for reverse-proxy deployments (used by MCP SSE endpoint URL construction)
     # Leave empty for direct / LAN deployments — endpoint URL will be derived from the request.
     ORCHESTRATOR_BASE_URL: str = Field(
@@ -134,3 +166,4 @@ class PlatformSettings(BaseSettings):
 
 # Singleton settings instance
 settings = PlatformSettings()
+

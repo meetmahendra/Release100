@@ -20,6 +20,7 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+.databases/
 
 # Python bytecode and virtual environments
 __pycache__/

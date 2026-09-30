@@ -45,6 +45,10 @@ class SecurityContext(BaseModel):
         description="Strategy used: phone_biometric | local_jwt | api_key",
     )
     is_authenticated: bool = Field(default=False)
+    is_biometric_verified: bool = Field(
+        default=False,
+        description="Two-phase biometric verification status (SEC-6)",
+    )
 
     @property
     def is_admin(self) -> bool:

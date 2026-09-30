@@ -32,7 +32,8 @@ async def layer0_location_node(
     db_service: Optional[Any] = None,
 ) -> TemperatureMarkerState:
     """Verify user coordinates against kiosk fleet geofence."""
-    kg_service.roster = kg_service._load_roster()
+    if kg_service.roster is None:
+        kg_service.roster = kg_service._load_roster()
     kiosk_id = state.get("kiosk_id", "CANEBOT-PUNE-05")
     user_coords = state.get("user_coords")
 
@@ -109,13 +110,23 @@ async def layer0_location_node(
             )
         return state
 
+    if not kg_service.roster or not kg_service.roster.kiosks:
+        # Clean-slate guard (ISSUE-006)
+        state["geofence_verified"] = False
+        state["layer_0_passed"] = False
+        state["error_code"] = PlatformErrorCode.SAFETY_GEOFENCE_VIOLATION.value
+        state["error_message"] = "No registered kiosks found in fleet roster."
+        state["reply_message"] = "❌ No active kiosks are configured in the system fleet roster. Please contact your administrator."
+        return state
+
     kiosk_geo = kg_service.get_kiosk_coordinates(kiosk_id)
     if not kiosk_geo:
         # Unknown kiosk in registry
         state["geofence_verified"] = False
+        state["layer_0_passed"] = False
         state["error_code"] = PlatformErrorCode.SAFETY_GEOFENCE_VIOLATION.value
         state["error_message"] = f"Unknown kiosk identifier: {kiosk_id}"
-        state["reply_message"] = f"❌ Unknown kiosk identifier: {kiosk_id}"
+        state["reply_message"] = f"❌ Unknown kiosk identifier '{kiosk_id}'. Please contact your administrator."
         return state
 
     kiosk_lat, kiosk_lon, radius_m = kiosk_geo

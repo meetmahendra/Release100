@@ -140,14 +140,14 @@ async def test_outbox_synchronizer_run_and_dispatch() -> None:
     )
     assert ok_mail is True
 
-    # Test _dispatch_item for unknown / unregistered apps (generic fallback)
+    # Test _dispatch_item for unknown / unregistered apps (safe rejection without silent data loss)
     ok_other, msg_other = await sync._dispatch_item(
         app_id="unregistered_app",
         target="custom_api",
         payload={"test": 123},
     )
-    assert ok_other is True
-    assert "Acknowledged" in msg_other
+    assert ok_other is False
+    assert "no active outbox transmitter registered" in msg_other
 
     # Test run() background worker loop
     task = asyncio.create_task(sync.run())

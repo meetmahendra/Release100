@@ -141,7 +141,8 @@ def classify_ingress_intent(
         IngressClassification instance.
     """
     cmd_lower = text.strip().lower()
-    is_manager_role = sender_role.upper() in ["SUPERVISOR", "MANAGER", "ADMIN"]
+    sender_role_upper = (sender_role or "OPERATOR").upper()
+    is_manager_role = any(r in sender_role_upper for r in ["SUPERVISOR", "MANAGER", "ADMIN"])
 
     # 1. Images are classified as Attendance / Chiller verification by default
     if is_image:

@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Optional, Union
 import uuid
 
 from sqlalchemy import create_engine, desc, func, or_, select, update
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from apps.mail_organizer.database.models import (
@@ -44,25 +45,62 @@ class MailDatabaseService:
     _instance: Optional["MailDatabaseService"] = None
 
     @classmethod
-    def get_instance(cls, db_url: str = "sqlite:///logs/mail_organizer.db") -> "MailDatabaseService":
+    def get_instance(
+        cls,
+        db_url: Optional[str] = None,
+        engine: Optional[Engine] = None,
+    ) -> "MailDatabaseService":
         """Get or initialize singleton instance of MailDatabaseService."""
         if cls._instance is None:
-            cls._instance = cls(db_url=db_url)
+            cls._instance = cls(db_url=db_url, engine=engine)
         return cls._instance
 
-    def __init__(self, db_url: str = "sqlite:///logs/mail_organizer.db") -> None:
-        """Initialize database connection and ensure tables are created."""
+    def __init__(
+        self,
+        db_url: Optional[str] = None,
+        engine: Optional[Engine] = None,
+    ) -> None:
+        """Initialize database connection and configure session factory.
+
+        Args:
+            db_url: Optional explicit connection string (isolated test mode only).
+            engine: Optional pre-configured SQLAlchemy Engine instance (Core-Facilitated).
+        """
         self.db_url = db_url
 
-        if db_url.startswith("sqlite:///"):
-            raw_path = db_url.replace("sqlite:///", "")
-            if raw_path != ":memory:":
-                db_path = Path(raw_path)
-                db_path.parent.mkdir(parents=True, exist_ok=True)
+        if engine is not None:
+            self.engine = engine
+            Base.metadata.create_all(self.engine)
+        elif db_url is not None:
+            if db_url.startswith("sqlite:///"):
+                raw_path = db_url.replace("sqlite:///", "")
+                if raw_path != ":memory:":
+                    db_path = Path(raw_path)
+                    db_path.parent.mkdir(parents=True, exist_ok=True)
+            self.engine = create_engine(db_url, echo=False)
+            Base.metadata.create_all(self.engine)
+        else:
+            from core_platform.app.db.manager import get_db_manager
+            self.engine = get_db_manager().get_engine()
+            Base.metadata.create_all(self.engine)
 
-        self.engine = create_engine(self.db_url, echo=False)
         self.SessionFactory = sessionmaker(bind=self.engine)
-        Base.metadata.create_all(self.engine)
+
+        if MailDatabaseService._instance is None:
+            MailDatabaseService._instance = self
+
+    def bind_engine(self, engine: Engine) -> None:
+        """Bind or reconfigure database engine."""
+        self.engine = engine
+        self.SessionFactory.configure(bind=engine)
+
+    def create_tables(self) -> None:
+        """Create domain database tables (utility helper for test fixtures)."""
+        Base.metadata.create_all(bind=self.engine)
+
+    def close(self) -> None:
+        """Cleanly release cartridge session handles without disposing shared platform engine."""
+        pass
 
     def get_session(self) -> Session:
         """Create and return a new database session."""

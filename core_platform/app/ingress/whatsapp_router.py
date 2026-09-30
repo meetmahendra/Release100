@@ -504,40 +504,61 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
 
     # ── Flaw 3: Native WhatsApp Location Handling ──
     elif is_native_location and user_coords:
-        kiosk_details = _kg_service.get_kiosk_details(kiosk_id)
-        station_name = kiosk_details.get("name", kiosk_id) if kiosk_details else kiosk_id
-        target_lat = float(kiosk_details.get("latitude", 0.0)) if kiosk_details else 0.0
-        target_lon = float(kiosk_details.get("longitude", 0.0)) if kiosk_details else 0.0
-        radius = float(kiosk_details.get("radius_meters") or kiosk_details.get("geofence_radius_meters") or 100.0) if kiosk_details else 100.0
-
-        from core_platform.app.skills.geofencing import GeofencingSkill
-        geo_skill = GeofencingSkill()
-        within, dist = await geo_skill.verify_geofence(
-            user_coords=user_coords,
-            kiosk_coords=(target_lat, target_lon),
-            allowed_radius_meters=radius,
-        )
-
-        from core_platform.app.ingress.location_session import set_session_coordinates
-        set_session_coordinates(sender_phone, user_coords, ttl_seconds=1800)
-        set_session_coordinates(kiosk_id, user_coords, ttl_seconds=1800)
-
-        if within:
-            if emp:
-                _db_service.assign_employee_to_kiosk(emp.emp_code, kiosk_id)
-                _kg_service.assign_operator_to_kiosk(sender_phone, kiosk_id)
-
+        if emp is None:
+            # Unregistered sender guard (ISSUE-006 & ISSUE-007)
             reply_text = (
-                f"📍 Location Verified!\n"
-                f"You are within {round(dist, 1)}m of {station_name} ({kiosk_id}). Geofence check PASSED ✅\n\n"
-                f"📸 Please now send your check-in selfie photo showing the chiller temperature display."
+                f"👋 Welcome to CaneBot.\n\n"
+                f"Your phone number ({sender_phone}) is not registered with any CaneBot kiosk.\n"
+                f"Please reach out to your facility manager or administrator to be enrolled."
             )
         else:
-            reply_text = (
-                f"⚠️ Location Warning: Out of Geofence Boundary\n"
-                f"You are {round(dist, 1)}m away from {station_name} ({kiosk_id}) (permitted radius: {radius:.0f}m).\n\n"
-                f"Please move closer to your assigned CaneBot kiosk and resend your location pin."
-            )
+            kiosks_list = _kg_service.list_all_kiosks() if _kg_service else []
+            if not kiosks_list:
+                # Clean slate 0-kiosks guard (ISSUE-006)
+                reply_text = (
+                    "❌ No active kiosks are configured in the system fleet roster.\n"
+                    "Please contact your system administrator to register station locations."
+                )
+            else:
+                kiosk_details = _kg_service.get_kiosk_details(kiosk_id)
+                if not kiosk_details:
+                    reply_text = (
+                        f"❌ Assigned kiosk '{kiosk_id}' not found in fleet roster.\n"
+                        "Please contact your administrator."
+                    )
+                else:
+                    station_name = kiosk_details.get("name", kiosk_id)
+                    target_lat = float(kiosk_details.get("latitude", 0.0))
+                    target_lon = float(kiosk_details.get("longitude", 0.0))
+                    radius = float(kiosk_details.get("radius_meters") or kiosk_details.get("geofence_radius_meters") or 100.0)
+
+                    from core_platform.app.skills.geofencing import GeofencingSkill
+                    geo_skill = GeofencingSkill()
+                    within, dist = await geo_skill.verify_geofence(
+                        user_coords=user_coords,
+                        kiosk_coords=(target_lat, target_lon),
+                        allowed_radius_meters=radius,
+                    )
+
+                    from core_platform.app.ingress.location_session import set_session_coordinates
+                    set_session_coordinates(sender_phone, user_coords, ttl_seconds=1800)
+                    set_session_coordinates(kiosk_id, user_coords, ttl_seconds=1800)
+
+                    if within:
+                        _db_service.assign_employee_to_kiosk(emp.emp_code, kiosk_id)
+                        _kg_service.assign_operator_to_kiosk(sender_phone, kiosk_id)
+
+                        reply_text = (
+                            f"📍 Location Verified!\n"
+                            f"You are within {round(dist, 1)}m of {station_name} ({kiosk_id}). Geofence check PASSED ✅\n\n"
+                            f"📸 Please now send your check-in selfie photo showing the chiller temperature display."
+                        )
+                    else:
+                        reply_text = (
+                            f"⚠️ Location Warning: Out of Geofence Boundary\n"
+                            f"You are {round(dist, 1)}m away from {station_name} ({kiosk_id}) (permitted radius: {radius:.0f}m).\n\n"
+                            f"Please move closer to your assigned CaneBot kiosk and resend your location pin."
+                        )
 
     # ── Issue 14 / OP-4: Duplicate Attendance Action Guard (Idempotent Check-in Acknowledgment) ──
     elif (
@@ -697,55 +718,99 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
     # 1. Operator Operational Queries / Supply Requests / Machine Notes
     # Automatically route directly to assigned Reporting Manager (NO @tagging required)
     elif intent_result.intent == IngressIntent.OPERATOR_QUERY:
-        mgr = None
-        if emp and emp.reporting_manager_emp_code:
-            mgr = _db_service.get_employee_by_code(emp.reporting_manager_emp_code)
-
-        if mgr and mgr.phone_number:
-            mgr_phone = mgr.phone_number
-            mgr_emp = mgr.emp_code
-            mgr_name = mgr.full_name
+        if not emp:
+            # Unregistered sender guard (ISSUE-007)
+            reply_text = (
+                f"👋 Welcome to CaneBot.\n\n"
+                f"Your phone number ({sender_phone}) is not registered in the system.\n"
+                f"Please reach out to your facility manager or administrator to be enrolled."
+            )
         else:
-            mgr_phone = getattr(settings, "SUPERVISOR_PHONE", "+919800000000")
-            mgr_emp = "SUPERVISOR"
-            mgr_name = "Fleet Supervisor"
+            mgr = None
+            if emp.reporting_manager_emp_code:
+                mgr = _db_service.get_employee_by_code(emp.reporting_manager_emp_code)
 
-        sender_code = emp.emp_code if emp else "OPERATOR"
-        sender_name = emp.full_name if emp else "CaneBot Operator"
+            if mgr and mgr.phone_number:
+                mgr_phone = mgr.phone_number
+                mgr_emp = mgr.emp_code
+                mgr_name = mgr.full_name
+            else:
+                mgr_phone = getattr(settings, "SUPERVISOR_PHONE", "+919800000000")
+                mgr_emp = "SUPERVISOR"
+                mgr_name = "Fleet Supervisor"
 
-        # Enqueue into InternalMessageQueue
-        msg_record = _db_service.enqueue_internal_message(
-            correlation_id=correlation_id,
-            sender_phone=sender_phone,
-            sender_emp_code=sender_code,
-            sender_name=sender_name,
-            kiosk_id=kiosk_id,
-            recipient_emp_code=mgr_emp,
-            recipient_phone=mgr_phone,
-            message_text=text_content,
-            priority=intent_result.priority,
-        )
+            sender_code = emp.emp_code
+            sender_name = emp.full_name
 
-        # Urgent emergency bypass via Meta Template Message if critical
-        if intent_result.priority >= 100:
-            from core_platform.app.messaging.internal_dispatch import send_urgent_meta_template_alert
-            await send_urgent_meta_template_alert(
-                recipient_phone=mgr_phone,
-                operator_name=sender_name,
+            # Enqueue into InternalMessageQueue
+            msg_record = _db_service.enqueue_internal_message(
+                correlation_id=correlation_id,
+                sender_phone=sender_phone,
+                sender_emp_code=sender_code,
+                sender_name=sender_name,
                 kiosk_id=kiosk_id,
-                alert_summary=text_content[:60],
+                recipient_emp_code=mgr_emp,
+                recipient_phone=mgr_phone,
+                message_text=text_content,
+                priority=intent_result.priority,
             )
 
-        p_icon = "🚨" if intent_result.priority >= 100 else ("⚠️" if intent_result.priority >= 75 else "📦")
-        reply_text = (
-            f"{p_icon} Message Dispatched to {mgr_name} ({mgr_emp})\n"
-            f"Machine: {kiosk_id}\n"
-            "----------------------------------------\n"
-            f'"{text_content}"\n'
-            "----------------------------------------\n"
-            f"Priority: {intent_result.priority} | Ref: MSG-{msg_record.id}\n"
-            "Your manager has been notified and will reply directly."
-        )
+            # Urgent emergency bypass via Meta Template Message if critical, otherwise direct WhatsApp push (ISSUE-008)
+            from core_platform.app.messaging.internal_dispatch import (
+                send_urgent_meta_template_alert,
+                send_whatsapp_raw_message,
+            )
+            if intent_result.priority >= 100:
+                await send_urgent_meta_template_alert(
+                    recipient_phone=mgr_phone,
+                    operator_name=sender_name,
+                    kiosk_id=kiosk_id,
+                    alert_summary=text_content[:60],
+                )
+            else:
+                push_text = (
+                    f"📬 New Operator Message\n"
+                    f"From: {sender_name} ({sender_code})\n"
+                    f"Machine: {kiosk_id}\n"
+                    f"Priority: {intent_result.priority} | Ref: MSG-{msg_record.id}\n"
+                    f"----------------------------------------\n"
+                    f'"{text_content}"\n'
+                    f"----------------------------------------\n"
+                    f"Reply to this message directly or send 'NEXT' to triage."
+                )
+                await send_whatsapp_raw_message(to_phone=mgr_phone, text=push_text)
+
+            # Check if this is a general knowledge / procedural inquiry vs physical machine supply/dispatch note
+            is_question = (
+                cmd_lower.endswith("?")
+                or any(cmd_lower.startswith(w) for w in ["what", "how", "why", "where", "is ", "can ", "when", "tell ", "kya ", "kaise "])
+                or any(k in cmd_lower for k in ["temperature range", "haccp limit", "how to clean", "how to mark", "who is my manager"])
+            )
+
+            if is_question and intent_result.priority < 75:
+                # Natural language conversational answering (ISSUE-002 & ISSUE-004)
+                from core_platform.app.ingress.conversational_agent import generate_conversational_response
+                reply_text = await generate_conversational_response(
+                    sender_phone=sender_phone,
+                    user_text=text_content,
+                    emp=emp,
+                    kiosk_id=kiosk_id,
+                    kg_service=_kg_service,
+                    db_service=_db_service,
+                    operation_id=correlation_id,
+                )
+            else:
+                # Operational note / supply alert -> Dispatch to manager
+                p_icon = "🚨" if intent_result.priority >= 100 else ("⚠️" if intent_result.priority >= 75 else "📦")
+                reply_text = (
+                    f"{p_icon} Message Dispatched to {mgr_name} ({mgr_emp})\n"
+                    f"Machine: {kiosk_id}\n"
+                    "----------------------------------------\n"
+                    f'"{text_content}"\n'
+                    "----------------------------------------\n"
+                    f"Priority: {intent_result.priority} | Ref: MSG-{msg_record.id}\n"
+                    "Your manager has been notified and will reply directly."
+                )
 
     # 2. Manager Greeting / Triage Trigger
     elif intent_result.intent == IngressIntent.MANAGER_GREETING:

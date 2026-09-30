@@ -99,8 +99,42 @@ class PluginLoader:
                 if instance is not None:
                     self._loaded[app_id] = instance
                     logger.info("[PluginLoader] Loaded cartridge: %s v%s", app_id, instance.version)
+                    
+                    # ── Pluggable Polyglot Database Management Integration (GEES v2.0) ──
+                    try:
+                        from core_platform.app.db.manager import get_db_manager
+                        db_mgr = get_db_manager()
+
+                        custom_url: Optional[str] = getattr(instance, "custom_database_url", None)
+                        meta = instance.get_metadata()
+                        if custom_url:
+                            # Paradigm C: Dedicated Custom SQL Database via Core Factory
+                            custom_factory = db_mgr.create_custom_factory(app_id, custom_url)
+                            instance.on_bind_engine(custom_factory.get_engine())
+                            logger.info("[PluginLoader] Paradigm C (Dedicated DB): Registered factory for '%s'", app_id)
+                        elif meta is not None:
+                            # Paradigm A: Core-Facilitated Shared Platform Database
+                            db_mgr.register_cartridge_metadata(app_id, meta)
+                            instance.on_bind_engine(db_mgr.get_engine())
+                            logger.info("[PluginLoader] Paradigm A (Core-Facilitated): Registered metadata for '%s'", app_id)
+                        else:
+                            # Paradigm B: 100% Cartridge-Autonomous (MongoDB, DuckDB, Flat Files, External CRM)
+                            # Core Platform does not interfere with cartridge persistence
+                            logger.debug("[PluginLoader] Paradigm B (Cartridge-Autonomous): '%s' manages self-persistence", app_id)
+                    except Exception as db_exc:
+                        logger.warning("[PluginLoader] DB registration notice for '%s': %s", app_id, db_exc)
             except Exception as exc:
                 logger.error("[PluginLoader] Failed to load cartridge '%s': %s", app_id, exc)
+
+        # ── Centralized Platform DDL Table Initialization (Core Kernel) ───────────
+        try:
+            from core_platform.app.db.manager import get_db_manager
+            db_mgr = get_db_manager()
+            initialized_tables = db_mgr.init_tables()
+            if initialized_tables:
+                logger.info("[PluginLoader] Centralized Kernel DDL initialized tables: %s", initialized_tables)
+        except Exception as ddl_exc:
+            logger.warning("[PluginLoader] Centralized Kernel DDL initialization warning: %s", ddl_exc)
 
         return self._loaded
 
@@ -139,13 +173,27 @@ class PluginLoader:
             return None
 
         try:
-            instance: BaseApplication = app_class()
+            import inspect
+            sig = inspect.signature(app_class)
+            init_kwargs: Dict[str, Any] = {}
+
+            # If cartridge constructor accepts a shared engine and does not declare a custom DB URL,
+            # pass the central Core Database Engine directly (Paradigm A)
+            if "engine" in sig.parameters and not getattr(app_class, "custom_database_url", None):
+                try:
+                    from core_platform.app.db.manager import get_db_manager
+                    init_kwargs["engine"] = get_db_manager().get_engine()
+                except Exception:
+                    pass
+
+            instance: BaseApplication = app_class(**init_kwargs)
             return instance
         except Exception as exc:
             logger.error(
                 "[PluginLoader] Error instantiating '%s': %s", app_class.__name__, exc
             )
             return None
+
 
     def mount_all(self, fastapi_app: FastAPI) -> None:
         """Mount UI routers and register MCP tools for all loaded cartridges.

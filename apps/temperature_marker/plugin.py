@@ -59,9 +59,18 @@ class TemperatureMarkerApplication(BaseApplication):
     dashboard_url: str = "/admin/apps/temperature-marker/fleet"
     has_poller: bool = False
 
-    def __init__(self, db_url: str = "sqlite:///logs/temperature_marker.db") -> None:
-        """Initialize domain cartridge and wire dependencies."""
-        self.db_service = DatabaseService(db_url=db_url)
+    def __init__(
+        self,
+        engine: Optional[Any] = None,
+        db_url: Optional[str] = None,
+    ) -> None:
+        """Initialize domain cartridge and wire dependencies.
+
+        Args:
+            engine: Optional shared SQLAlchemy Engine (Core-Facilitated mode).
+            db_url: Optional explicit DB connection URL override (standalone test mode).
+        """
+        self.db_service = DatabaseService(engine=engine, db_url=db_url)
         self.kg_service = KnowledgeGraphService()
         self.audit_engine = AuditEngine.get_instance()
         from apps.temperature_marker.downstream.base_connector import create_downstream_connector
@@ -78,10 +87,16 @@ class TemperatureMarkerApplication(BaseApplication):
             audit_engine=self.audit_engine,
         )
 
+    def on_bind_engine(self, engine: Any) -> None:
+        """Dynamically bind or update the database engine (Paradigm A)."""
+        if engine is not None and hasattr(self, "db_service") and self.db_service is not None:
+            self.db_service.bind_engine(engine)
+
     keywords: List[str] = [
         "attendance", "check-in", "checkin", "punch", "kiosk",
         "chiller", "temperature", "temp", "canebot", "selfie", "photo", "face",
     ]
+
 
     def get_workflow(self) -> TemperatureMarkerWorkflow:
         """Return the workflow executor for processing inbound envelopes."""

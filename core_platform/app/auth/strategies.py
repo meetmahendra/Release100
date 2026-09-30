@@ -38,30 +38,31 @@ logger = logging.getLogger("core_platform.auth.strategies")
 # ── Strategy A: Phone + Biometric (WhatsApp / Kiosk) ─────────────────────────
 
 class PhoneBiometricStrategy:
-    """Authenticates WhatsApp/kiosk senders by phone number lookup.
+    """Authenticates WhatsApp/kiosk senders by phone number and two-phase biometric verification (SEC-6).
 
-    The phone number is matched against the registered employee table.
-    If found and ACTIVE, the sender is granted operator-level access to
-    temperature_marker. Further biometric verification happens inside the
-    LangGraph pipeline (layer1_face_node).
+    Stage 1: Channel phone identification grants operator routing context.
+    Stage 2: Biometric face verification inside the pipeline promotes `is_biometric_verified=True`.
     """
 
     @staticmethod
-    def authenticate(phone_number: str, tenant_id: str = "default_tenant") -> SecurityContext:
+    def authenticate(
+        phone_number: str,
+        tenant_id: str = "default_tenant",
+        biometric_verified: bool = False,
+    ) -> SecurityContext:
         """Authenticate a WhatsApp sender by phone number.
 
         Args:
             phone_number: Normalised E.164 phone number (e.g. "+919876543210").
             tenant_id: Tenant identifier.
+            biometric_verified: True if face/PIN biometric verification has passed.
 
         Returns:
-            Authenticated SecurityContext with operator role, or unauthenticated context.
+            SecurityContext with operator role and biometric verification status.
         """
         if not phone_number:
             return SecurityContext.unauthenticated()
 
-        # All registered phone numbers get operator-level access; biometric
-        # verification inside the pipeline acts as the actual authentication factor.
         return SecurityContext(
             principal_id=phone_number,
             tenant_id=tenant_id,
@@ -69,7 +70,13 @@ class PhoneBiometricStrategy:
             permitted_apps=list(settings.ENABLED_APPLICATIONS),
             auth_strategy="phone_biometric",
             is_authenticated=True,
+            is_biometric_verified=biometric_verified,
         )
+
+    @classmethod
+    def complete_biometric_verification(cls, ctx: SecurityContext) -> SecurityContext:
+        """Promote security context to full biometric verification (Phase 2)."""
+        return ctx.model_copy(update={"is_biometric_verified": True})
 
 
 # ── Password Hashing & Verification (SEC-1) ──────────────────────────────────

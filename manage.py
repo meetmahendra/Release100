@@ -253,15 +253,15 @@ def command_seed_mail() -> int:
     return 0
 
 
-def command_run(mode: str = "headless", host: str = "127.0.0.1", port: int = 8002) -> int:
+def command_run(mode: str = "headless", host: str = "0.0.0.0", port: int = 8002) -> int:
     """Launch Release100 platform host and admin web shell."""
     import uvicorn
 
     print("=" * 70)
     print(f"  LAUNCHING RELEASE100 PLATFORM HOST (Mode={mode.upper()})")
-    print(f"  Admin Web Shell: http://{host}:{port}/admin/apps/temperature-marker/fleet")
-    print(f"  1-Click Geolocation: http://{host}:{port}/loc")
-    print(f"  Health Diagnostic  : http://{host}:{port}/health")
+    print(f"  Admin Web Shell: http://127.0.0.1:{port}/admin/apps/temperature-marker/fleet")
+    print(f"  1-Click Geolocation: http://127.0.0.1:{port}/loc")
+    print(f"  Health Diagnostic  : http://127.0.0.1:{port}/health")
     print("=" * 70)
 
     from core_platform.main import app
@@ -307,7 +307,7 @@ def main() -> None:
     # run
     run_parser = subparsers.add_parser("run", help="Launch platform orchestrator and web shell")
     run_parser.add_argument("--mode", choices=["headless", "tray"], default="headless", help="Execution mode")
-    run_parser.add_argument("--host", default="127.0.0.1", help="Host interface")
+    run_parser.add_argument("--host", default="0.0.0.0", help="Host interface")
     run_parser.add_argument("--port", type=int, default=8002, help="Port number")
 
     # build

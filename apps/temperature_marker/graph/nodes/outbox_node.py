@@ -44,8 +44,8 @@ async def outbox_node(
         try:
             disk_photo.write_bytes(raw_img)
             photo_path = f"logs/media/{correlation_id}.jpg"
-        except Exception:
-            pass
+        except Exception as err:
+            logger.warning("[OutboxNode] Failed to write photo %s to disk: %s", correlation_id, err)
 
     from apps.temperature_marker.services.session_manager import OperatorSessionManager
     session_mgr = OperatorSessionManager.get_instance()

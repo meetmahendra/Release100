@@ -248,8 +248,8 @@ async def layer1_face_node(
                     photo_path = photo_dir / f"{employee.emp_code}_profile.jpg"
                     try:
                         photo_path.write_bytes(raw_image)
-                    except Exception:
-                        pass
+                    except Exception as err:
+                        logger.warning("[FaceNode] Failed to write profile photo to disk: %s", err)
 
                     # Enroll new biometric template for active employee
                     encrypted_emb = face_skill.encrypt_embedding(duty_vec)
@@ -264,8 +264,8 @@ async def layer1_face_node(
                     state["face_confidence"] = 0.95
                     state["is_duty_checkin"] = True
                     return state
-            except Exception:
-                pass
+            except Exception as err:
+                logger.warning("[FaceNode] Error during initial biometric registration: %s", err)
 
         state["face_confidence"] = 0.0
         state["layer_2_disposition"] = "diverted_to_review"

@@ -33,7 +33,9 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import threading
 from core_platform.app.auth.models import SecurityContext
+from core_platform.app.ingress.rate_limiter import TokenBucket
 
 logger = logging.getLogger("core_platform.auth.api_keys")
 
@@ -46,6 +48,7 @@ class APIKeyManager:
 
     Uses SQLite for persistence so keys survive process restarts.
     Keys are hashed with SHA-256; the raw key is NEVER stored.
+    Enforces per-key rate limits using TokenBucket (SEC-7).
     """
 
     def __init__(self, db_path: Optional[Path] = None) -> None:
@@ -56,6 +59,8 @@ class APIKeyManager:
         """
         self._db_path = db_path or _DB_PATH
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._rate_buckets: Dict[str, TokenBucket] = {}
+        self._rate_lock = threading.Lock()
         self._init_db()
 
     # ── DB Layer ──────────────────────────────────────────────────────────────
@@ -164,6 +169,16 @@ class APIKeyManager:
                 logger.debug("[APIKeyManager] Key expired for principal=%s", row["principal_id"])
                 return None
 
+            # SEC-7: Enforce per-key rate limit
+            max_rpm = row["max_rpm"] if row["max_rpm"] is not None else 60
+            if not self._check_rate_limit(key_hash, max_rpm):
+                logger.warning(
+                    "[APIKeyManager] Rate limit exceeded for principal=%s (max_rpm=%s)",
+                    row["principal_id"],
+                    max_rpm,
+                )
+                return None
+
             return SecurityContext(
                 principal_id=str(row["principal_id"]),
                 tenant_id=str(row["tenant_id"]),
@@ -175,6 +190,18 @@ class APIKeyManager:
         except Exception as exc:
             logger.warning("[APIKeyManager] Validation error: %s", exc)
             return None
+
+    def _check_rate_limit(self, key_hash: str, max_rpm: int) -> bool:
+        """Check and consume a token for key-level rate limiting (SEC-7)."""
+        with self._rate_lock:
+            if key_hash not in self._rate_buckets:
+                capacity = max(1.0, float(max_rpm))
+                refill_rate = max(0.01, float(max_rpm) / 60.0)
+                self._rate_buckets[key_hash] = TokenBucket(
+                    capacity=capacity,
+                    refill_rate_per_second=refill_rate,
+                )
+            return self._rate_buckets[key_hash].consume(1.0)
 
     def revoke_key(self, key_hash: str) -> bool:
         """Revoke an API key by its hash.
