@@ -52,9 +52,12 @@ class TemperatureMarkerApplication(BaseApplication):
     app_id: str = "temperature_marker"
     name: str = "Canectar CaneBot Temperature & Attendance Marker"
     version: str = "1.3.0"
+    description: str = "Factory floor attendance and chiller temperature recording via selfie photo and OCR."
     config_schema = TemperatureMarkerConfig
     required_roles: List[str] = ["operator", "supervisor", "admin"]
     supported_channels: List[str] = ["whatsapp", "web_kiosk", "mcp_agent"]
+    dashboard_url: str = "/admin/apps/temperature-marker/fleet"
+    has_poller: bool = False
 
     def __init__(self, db_url: str = "sqlite:///logs/temperature_marker.db") -> None:
         """Initialize domain cartridge and wire dependencies."""
@@ -75,6 +78,11 @@ class TemperatureMarkerApplication(BaseApplication):
             audit_engine=self.audit_engine,
         )
 
+    keywords: List[str] = [
+        "attendance", "check-in", "checkin", "punch", "kiosk",
+        "chiller", "temperature", "temp", "canebot", "selfie", "photo", "face",
+    ]
+
     def get_workflow(self) -> TemperatureMarkerWorkflow:
         """Return the workflow executor for processing inbound envelopes."""
         return self.workflow
@@ -88,4 +96,56 @@ class TemperatureMarkerApplication(BaseApplication):
         """Return the domain tools exported to Core MCP Server."""
         from apps.temperature_marker.downstream.mcp_tools import get_temperature_marker_mcp_tools
         return get_temperature_marker_mcp_tools(db_service=self.db_service, kg_service=self.kg_service)
+
+    def get_metadata(self) -> Any:
+        """Return SQLAlchemy MetaData so Alembic can discover TM tables dynamically."""
+        from apps.temperature_marker.database.models import Base
+        return Base.metadata
+
+    def get_outbox_transmitter(self) -> Any:
+        """Return the async sync callback for the platform OutboxSynchronizer."""
+        async def _transmitter(target: str, payload: Any) -> Any:
+            from apps.temperature_marker.downstream.base_connector import create_downstream_connector
+            connector = create_downstream_connector(target_type=target)
+            return await connector.dispatch(payload)
+        return _transmitter
+
+    def get_pending_outbox_count(self) -> int:
+        """Return pending unsynced outbox record count for platform /health."""
+        try:
+            return len(self.db_service.get_pending_outbox_items(limit=100))
+        except Exception:
+            return 0
+
+    def get_convenience_routes(self) -> List[Any]:
+        """Return /loc shortcut routes for registration at the platform root."""
+        from apps.temperature_marker.ui.routes import view_verify_location, verify_location_api
+        return [
+            ("GET", "/loc", view_verify_location),
+            ("POST", "/api/verify-location", verify_location_api),
+        ]
+
+    def get_health_status(self) -> Dict[str, Any]:
+        """Return enriched health dict including live DB connectivity check."""
+        base = super().get_health_status()
+        try:
+            db_ok = self.db_service.health_check() if hasattr(self.db_service, "health_check") else True
+            base["db_status"] = "ok" if db_ok else "degraded"
+        except Exception:
+            base["db_status"] = "error"
+        return base
+
+    async def resolve_or_generate_employee_code(
+        self,
+        phone_number: str,
+        full_name: str,
+        explicit_code: Optional[str] = None,
+    ) -> str:
+        """Resolve or generate employee code for enrollment."""
+        from apps.temperature_marker.downstream.hr_connector import resolve_or_generate_employee_code
+        return await resolve_or_generate_employee_code(
+            phone_number=phone_number,
+            full_name=full_name,
+            explicit_code=explicit_code,
+        )
 

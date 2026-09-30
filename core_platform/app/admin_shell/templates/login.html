@@ -33,6 +33,9 @@
 
       <!-- Login Form -->
       <form method="post" action="/admin/login" class="space-y-5">
+        {% if csrf_token %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        {% endif %}
         <div>
           <label for="username" class="block text-sm font-medium text-slate-300 mb-1">Username</label>
           <input

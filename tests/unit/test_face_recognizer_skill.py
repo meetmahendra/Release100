@@ -141,3 +141,60 @@ async def test_face_recognizer_2d_numpy_and_hygiene() -> None:
     assert "lacks contrast" in reason_blank
 
 
+def test_face_crop_normalization_and_mirroring() -> None:
+    """Test _normalize_face_crop and mirror_hog_512_embedding."""
+    from PIL import Image
+    from core_platform.app.skills.face_recognizer import (
+        _normalize_face_crop,
+        mirror_hog_512_embedding,
+        _extract_hog_512_embedding,
+    )
+
+    # Portrait crop
+    portrait = Image.new("RGB", (100, 200), color=(120, 120, 120))
+    crop_p = _normalize_face_crop(portrait)
+    assert crop_p.size == (100, 100)
+
+    # Landscape crop
+    landscape = Image.new("RGB", (200, 100), color=(120, 120, 120))
+    crop_l = _normalize_face_crop(landscape)
+    assert crop_l.size == (100, 100)
+
+    # Mirror embedding
+    vec = np.random.randn(512).astype(np.float32)
+    vec = vec / np.linalg.norm(vec)
+    m_vec = mirror_hog_512_embedding(vec)
+    assert m_vec.shape == (512,)
+    assert np.linalg.norm(m_vec) == pytest.approx(1.0, abs=1e-5)
+
+
+@pytest.mark.asyncio
+async def test_face_recognizer_verify_local_match_flow() -> None:
+    """Test verify_face_match using local HOG/ONNX fallback when Gemini key disabled."""
+    import io
+    from PIL import Image, ImageDraw
+    from unittest.mock import patch
+
+    skill = FaceRecognizerSkill()
+    await skill.ensure_initialized()
+
+    # Create two identical face images with valid contrast and patterns
+    img = Image.new("RGB", (112, 112), color=(200, 200, 200))
+    draw = ImageDraw.Draw(img)
+    draw.ellipse((30, 30, 80, 80), fill=(100, 100, 100))
+    draw.rectangle((40, 45, 50, 55), fill=(20, 20, 20))
+    draw.rectangle((62, 45, 72, 55), fill=(20, 20, 20))
+    draw.line((56, 55, 56, 70), fill=(50, 50, 50), width=2)
+    draw.rectangle((45, 75, 67, 80), fill=(30, 30, 30))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    b = buf.getvalue()
+
+    with patch("core_platform.app.skills.face_recognizer.settings.GEMINI_API_KEY", ""):
+        matched, sim, reason = await skill.verify_face_match(b, b)
+        assert matched is True
+        assert sim >= 0.82
+        assert "Local HOG-512" in reason or "similarity" in reason or "MobileFaceNet" in reason
+
+
+

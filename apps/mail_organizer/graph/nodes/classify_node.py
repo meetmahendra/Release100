@@ -21,12 +21,15 @@ Classifies inbound emails into canonical taxonomy:
 Constrained to structured Pydantic schema with clamped temperature (0.0).
 """
 
+import logging
 import time
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from apps.mail_organizer.graph.state import MailOrganizerState
 from core_platform.app.config import settings
+
+logger = logging.getLogger("mail_organizer.graph.classify_node")
 
 
 class EmailClassificationOutput(BaseModel):
@@ -93,15 +96,14 @@ async def classify_node(state: MailOrganizerState) -> MailOrganizerState:
             is_scheduling_request=False,
         )
 
-    # Step 2: Live Gemini LLM Classification with clamped temperature (0.0)
-    if llm_result is None and settings.GEMINI_API_KEY and not settings.GEMINI_API_KEY.startswith("your_"):
+    # Step 2: Live Platform LLM Gateway with clamped temperature (0.0)
+    if llm_result is None:
         try:
-            import json
-            import urllib.request
+            from core_platform.app.llm.gateway import get_platform_llm_gateway
+
+            gateway = get_platform_llm_gateway()
             org_block = build_org_context_block(sender, subject, body)
             org_prompt_section = f"{org_block}\n\n" if org_block else ""
-            model_name = getattr(settings, "GEMINI_ROUTING_MODEL", settings.GEMINI_MODEL)
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
             prompt = (
                 "You are an executive email triage and categorization assistant. "
                 "Analyze the following email and categorize it into exactly one of: "
@@ -122,27 +124,17 @@ async def classify_node(state: MailOrganizerState) -> MailOrganizerState:
                 '  "is_scheduling_request": bool\n'
                 "}"
             )
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.0,
-                    "responseMimeType": "application/json",
-                },
-            }
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST",
+            parsed = await gateway.generate(
+                task="text_generation",
+                prompt=prompt,
+                temperature=0.0,
+                response_mime_type="application/json",
+                operation_id=f"classify_{state.get('gmail_id', 'unknown')}",
             )
-            with urllib.request.urlopen(req, timeout=8.0) as resp:
-                if resp.status == 200:
-                    raw_data = json.loads(resp.read().decode("utf-8"))
-                    text_content = raw_data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                    parsed = json.loads(text_content)
-                    llm_result = EmailClassificationOutput(**parsed)
-        except Exception:
-            pass
+            if parsed and isinstance(parsed, dict) and "category" in parsed:
+                llm_result = EmailClassificationOutput(**parsed)
+        except Exception as exc:
+            logger.debug("[ClassifyNode] LLM gateway failed: %s", exc)
 
     # Step 3: Offline Deterministic Engine Fallback (when offline, no API key, or network error)
     if llm_result is None:

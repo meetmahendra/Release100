@@ -21,14 +21,16 @@ due date, assignee), and stages them for human approval.
 """
 
 import json
+import logging
 import re
 import time
 from typing import Any, Dict, List, Optional
-import urllib.request
 from pydantic import BaseModel, Field
 
 from apps.mail_organizer.graph.state import MailOrganizerState
 from core_platform.app.config import settings
+
+logger = logging.getLogger("mail_organizer.graph.pm_extract_node")
 
 
 class ExtractedTaskItem(BaseModel):
@@ -54,62 +56,66 @@ async def pm_extract_node(state: MailOrganizerState) -> MailOrganizerState:
 
     extracted_tasks: List[Dict[str, Any]] = []
 
-    # Step 1: Attempt Live Gemini LLM Task Extraction if API Key is configured
-    if settings.GEMINI_API_KEY and not settings.GEMINI_API_KEY.startswith("your_"):
-        try:
-            model_name = getattr(settings, "GEMINI_ROUTING_MODEL", settings.GEMINI_MODEL)
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
-            prompt = (
-                "You are an expert technical project manager. "
-                "Analyze the email thread below and extract ALL actionable work items, deliverables, and assignments.\n\n"
-                f"From: {sender}\n"
-                f"Subject: {subject}\n"
-                f"Category: {category}\n"
-                f"Body:\n{body[:2500]}\n\n"
-                "Return a JSON array of objects conforming strictly to this format:\n"
-                "[\n"
-                "  {\n"
-                '    "summary": "Imperative task title (e.g. \'Update chiller sensor calibration\', max 80 chars)",\n'
-                '    "description": "Specific details, context, and expectations",\n'
-                '    "priority": "High" | "Medium" | "Low",\n'
-                '    "due_date": "Specific deadline or \'Next Business Day\'",\n'
-                '    "assignee": "Person or role responsible (default \'Fleet Ops Lead\')"\n'
-                "  }\n"
-                "]\n"
-                "If there are no actionable work items, return []."
-            )
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.1,
-                    "responseMimeType": "application/json",
-                },
-            }
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=8.0) as resp:
-                if resp.status == 200:
-                    raw_data = json.loads(resp.read().decode("utf-8"))
-                    text_content = raw_data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                    parsed_list = json.loads(text_content)
-                    if isinstance(parsed_list, list):
-                        for item in parsed_list:
-                            task = ExtractedTaskItem(**item)
-                            extracted_tasks.append({
-                                "gmail_id": gmail_id,
-                                "summary": task.summary[:80].strip(),
-                                "description": task.description,
-                                "priority": task.priority,
-                                "due_date": task.due_date,
-                                "assignee": task.assignee,
-                                "destination": "sqlite_queue",
-                            })
-        except Exception:
-            extracted_tasks.clear()
+    # Step 1: Attempt Live Platform LLM Task Extraction via Gateway
+    try:
+        from core_platform.app.llm.gateway import get_platform_llm_gateway
+
+        gateway = get_platform_llm_gateway()
+        prompt = (
+            "You are an expert technical project manager. "
+            "Analyze the email thread below and extract ALL actionable work items, deliverables, and assignments.\n\n"
+            f"From: {sender}\n"
+            f"Subject: {subject}\n"
+            f"Category: {category}\n"
+            f"Body:\n{body[:2500]}\n\n"
+            "Return a JSON object conforming strictly to this format:\n"
+            "{\n"
+            '  "tasks": [\n'
+            "    {\n"
+            '      "summary": "Imperative task title (e.g. \'Update chiller sensor calibration\', max 80 chars)",\n'
+            '      "description": "Specific details, context, and expectations",\n'
+            '      "priority": "High" | "Medium" | "Low",\n'
+            '      "due_date": "Specific deadline or \'Next Business Day\'",\n'
+            '      "assignee": "Person or role responsible (default \'Fleet Ops Lead\')"\n'
+            "    }\n"
+            "  ]\n"
+            "}\n"
+            'If there are no actionable work items, return {"tasks": []}.'
+        )
+        res = await gateway.generate(
+            task="text_generation",
+            prompt=prompt,
+            temperature=0.1,
+            response_mime_type="application/json",
+            operation_id=f"pm_extract_{gmail_id}",
+        )
+        if res and isinstance(res, dict):
+            task_list = res.get("tasks")
+            if task_list is None and "raw_text" in res:
+                try:
+                    loaded = json.loads(res["raw_text"])
+                    if isinstance(loaded, list):
+                        task_list = loaded
+                    elif isinstance(loaded, dict):
+                        task_list = loaded.get("tasks", [])
+                except Exception:
+                    pass
+            if isinstance(task_list, list):
+                for item in task_list:
+                    if isinstance(item, dict) and item.get("summary"):
+                        task = ExtractedTaskItem(**item)
+                        extracted_tasks.append({
+                            "gmail_id": gmail_id,
+                            "summary": task.summary[:80].strip(),
+                            "description": task.description,
+                            "priority": task.priority,
+                            "due_date": task.due_date,
+                            "assignee": task.assignee,
+                            "destination": "sqlite_queue",
+                        })
+    except Exception as exc:
+        logger.debug("[PMExtractNode] LLM gateway failed: %s", exc)
+        extracted_tasks.clear()
 
     # Step 2: Offline Deterministic Regex Fallback Engine
     if not extracted_tasks and category != "@Promotions":

@@ -56,6 +56,48 @@ def clear_log_context() -> None:
     kiosk_id_ctx.set("-")
 
 
+import re
+
+# ── Secret Redaction Filter (SEC-6) ──────────────────────────────────────────
+
+_SENSITIVE_PATTERNS = [
+    re.compile(r"(Bearer\s+)[A-Za-z0-9_\-\.]{10,}", re.IGNORECASE),
+    re.compile(r"(ak_live_)[a-f0-9]{32,}", re.IGNORECASE),
+    re.compile(r"(password[\"']?\s*[:=]\s*[\"']?)[^\"'\s&]{4,}", re.IGNORECASE),
+    re.compile(r"(key=)[A-Za-z0-9_\-]{15,}", re.IGNORECASE),
+    re.compile(r"(token=)[A-Za-z0-9_\-]{15,}", re.IGNORECASE),
+]
+
+
+def redact_secrets(text: str) -> str:
+    """Scrub sensitive credentials, tokens, and API keys from log strings."""
+    if not text:
+        return text
+    redacted = text
+    for pattern in _SENSITIVE_PATTERNS:
+        redacted = pattern.sub(r"\1***REDACTED***", redacted)
+    return redacted
+
+
+class SecretRedactingFilter(logging.Filter):
+    """Filter that sanitizes credentials, tokens, and passwords from LogRecords."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.msg, str):
+            record.msg = redact_secrets(record.msg)
+        if record.args:
+            if isinstance(record.args, tuple):
+                record.args = tuple(
+                    redact_secrets(a) if isinstance(a, str) else a for a in record.args
+                )
+            elif isinstance(record.args, dict):
+                record.args = {
+                    k: redact_secrets(v) if isinstance(v, str) else v
+                    for k, v in record.args.items()
+                }
+        return True
+
+
 class ContextualLogFilter(logging.Filter):
     """Injects correlation_id and kiosk_id into every LogRecord."""
 
@@ -75,12 +117,12 @@ class JsonlFormatter(logging.Formatter):
             "logger": record.name,
             "correlation_id": getattr(record, "corr_id", "-"),
             "kiosk_id": getattr(record, "kiosk_id", "-"),
-            "message": record.getMessage(),
+            "message": redact_secrets(record.getMessage()),
             "file": record.filename,
             "line": record.lineno,
         }
         if record.exc_info:
-            data["exception"] = self.formatException(record.exc_info)
+            data["exception"] = redact_secrets(self.formatException(record.exc_info))
         return json.dumps(data, ensure_ascii=False)
 
 
@@ -107,6 +149,7 @@ def setup_platform_logging(log_dir_str: str = "logs") -> None:
             pass
 
     ctx_filter = ContextualLogFilter()
+    secret_filter = SecretRedactingFilter()
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
@@ -116,6 +159,7 @@ def setup_platform_logging(log_dir_str: str = "logs") -> None:
     )
     console_handler.setFormatter(console_formatter)
     console_handler.addFilter(ctx_filter)
+    console_handler.addFilter(secret_filter)
     root_logger.addHandler(console_handler)
 
     text_file_path = log_dir / "platform.log"
@@ -128,6 +172,7 @@ def setup_platform_logging(log_dir_str: str = "logs") -> None:
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(console_formatter)
     file_handler.addFilter(ctx_filter)
+    file_handler.addFilter(secret_filter)
     root_logger.addHandler(file_handler)
 
     jsonl_file_path = log_dir / "platform.jsonl"
@@ -140,4 +185,5 @@ def setup_platform_logging(log_dir_str: str = "logs") -> None:
     jsonl_handler.setLevel(logging.INFO)
     jsonl_handler.setFormatter(JsonlFormatter())
     jsonl_handler.addFilter(ctx_filter)
+    jsonl_handler.addFilter(secret_filter)
     root_logger.addHandler(jsonl_handler)

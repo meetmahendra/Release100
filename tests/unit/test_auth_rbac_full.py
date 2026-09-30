@@ -187,9 +187,10 @@ def test_admin_shell_routes() -> None:
     res_login_page = client.get("/admin/login")
     assert res_login_page.status_code == 200
     assert "Release100 Admin" in res_login_page.text
+    csrf_tok = res_login_page.cookies.get("csrf_token", "")
 
     # 2. Login POST failure
-    res_fail = client.post("/admin/login", data={"username": "bad", "password": "wrong"})
+    res_fail = client.post("/admin/login", data={"username": "bad", "password": "wrong", "csrf_token": csrf_tok})
     assert res_fail.status_code == 401
     assert "Invalid credentials" in res_fail.text
 

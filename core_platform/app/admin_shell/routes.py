@@ -38,10 +38,12 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from fastapi.templating import Jinja2Templates
 
 from core_platform.app.auth.api_keys import get_api_key_manager
-from core_platform.app.auth.jwt_utils import create_jwt_token
+from core_platform.app.auth.csrf import generate_csrf_token, verify_csrf_token
+from core_platform.app.auth.jwt_utils import create_jwt_token, revoke_jwt_token
 from core_platform.app.auth.models import SecurityContext
 from core_platform.app.auth.strategies import AuthResolver
 from core_platform.app.config import settings
+from core_platform.app.ingress.rate_limiter import get_platform_rate_limiter
 from core_platform.app.llm.gateway import get_platform_llm_gateway
 from core_platform.app.rbac.permissions import get_web_security_context
 
@@ -55,19 +57,30 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request) -> HTMLResponse:
-    """Render the login page.
+    """Render the login page with anti-CSRF token (SEC-3).
 
     Args:
         request: FastAPI request.
 
     Returns:
-        Rendered login.html template.
+        Rendered login.html template with CSRF cookie set.
     """
-    return templates.TemplateResponse(
+    csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
+    resp = templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"title": "Admin Login", "error": None},
+        context={"title": "Admin Login", "error": None, "csrf_token": csrf_token},
     )
+    if "csrf_token" not in request.cookies:
+        resp.set_cookie(
+            key="csrf_token",
+            value=csrf_token,
+            httponly=False,
+            samesite="lax",
+            secure=bool(settings.EXECUTION_MODE == "production" or getattr(settings, "COOKIE_SECURE", False)),
+            max_age=8 * 3600,
+        )
+    return resp
 
 
 @router.post("/login")
@@ -76,27 +89,60 @@ async def login_submit(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
+    csrf_token: Optional[str] = Form(default=None),
 ) -> Any:
-    """Process login form, set JWT cookie, redirect to dashboard.
+    """Process login form with Brute-Force Rate Limiting (SEC-4) & Anti-CSRF (SEC-3).
 
     Args:
-        response: FastAPI response (cookie will be set here).
+        response: FastAPI response.
         request: FastAPI request.
         username: Form field.
         password: Form field.
+        csrf_token: Form field token.
 
     Returns:
         Redirect to /admin/ on success, re-rendered login page on failure.
     """
+    # 1. Anti-CSRF verification (SEC-3)
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        logger.warning("[AdminShell] CSRF validation failed during login attempt.")
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"title": "Admin Login", "error": "Invalid session token. Please try again.", "csrf_token": generate_csrf_token()},
+            status_code=403,
+        )
+
+    # 2. Brute-Force Rate Limiting (SEC-4)
+    client_ip = request.client.host if request.client else "unknown_ip"
+    rate_limiter = get_platform_rate_limiter()
+    ip_allowed, _ = rate_limiter.check_and_consume(f"login_ip:{client_ip}")
+    user_allowed, _ = rate_limiter.check_and_consume(f"login_user:{username.strip().lower()}")
+
+    if not ip_allowed or not user_allowed:
+        logger.warning("[AdminShell] Brute-force protection triggered for IP=%s user=%s", client_ip, username)
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={
+                "title": "Admin Login",
+                "error": "Too many failed login attempts. Please wait 60 seconds and try again.",
+                "csrf_token": generate_csrf_token(),
+            },
+            status_code=429,
+        )
+
+    # 3. Credential validation (SEC-1)
     ctx = AuthResolver.resolve_credentials(username, password)
     if not ctx:
         return templates.TemplateResponse(
             request=request,
             name="login.html",
-            context={"title": "Admin Login", "error": "Invalid credentials."},
+            context={"title": "Admin Login", "error": "Invalid credentials.", "csrf_token": generate_csrf_token()},
             status_code=401,
         )
 
+    # 4. Token creation & Cookie hardening (SEC-2, SEC-5)
     token = create_jwt_token(
         principal_id=ctx.principal_id,
         roles=ctx.user_roles,
@@ -109,6 +155,7 @@ async def login_submit(
         value=token,
         httponly=True,
         samesite="lax",
+        secure=bool(settings.EXECUTION_MODE == "production" or getattr(settings, "COOKIE_SECURE", False)),
         max_age=8 * 3600,
     )
     logger.info("[AdminShell] Login success: principal=%s", ctx.principal_id)
@@ -116,14 +163,19 @@ async def login_submit(
 
 
 @router.get("/logout")
-async def logout() -> RedirectResponse:
-    """Clear the session cookie and redirect to login.
+async def logout(request: Request) -> RedirectResponse:
+    """Revoke session token and clear cookies (SEC-2, SEC-5).
 
     Returns:
-        Redirect to /admin/login with cookie cleared.
+        Redirect to /admin/login with cookie cleared and token blacklisted.
     """
+    token = request.cookies.get("admin_token")
+    if token:
+        revoke_jwt_token(token)
+
     redirect = RedirectResponse(url="/admin/login", status_code=status.HTTP_302_FOUND)
     redirect.delete_cookie("admin_token")
+    redirect.delete_cookie("csrf_token")
     return redirect
 
 

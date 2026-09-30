@@ -215,3 +215,22 @@ class PluginLoader:
     def loaded_app_ids(self) -> List[str]:
         """List of currently loaded app IDs."""
         return list(self._loaded.keys())
+
+    def get_application(self, app_id: str) -> Optional[BaseApplication]:
+        """Return the loaded cartridge instance for a given app_id, or None.
+
+        Args:
+            app_id: Application cartridge identifier (e.g. 'temperature_marker').
+
+        Returns:
+            Loaded BaseApplication instance, or None if not loaded.
+        """
+        return self._loaded.get(app_id)
+
+    def get_all_applications(self) -> Dict[str, BaseApplication]:
+        """Return all currently loaded cartridge instances.
+
+        Returns:
+            Dict mapping app_id to BaseApplication instance.
+        """
+        return dict(self._loaded)

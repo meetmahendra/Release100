@@ -66,19 +66,6 @@ def register_app_descriptor(app_id: str, description: str) -> None:
     logger.debug("[SemanticRouter] Registered app descriptor: %s", app_id)
 
 
-# Hardcoded fallback descriptors for known cartridges.
-_DEFAULT_DESCRIPTORS: Dict[str, str] = {
-    "temperature_marker": (
-        "Handles factory floor attendance and temperature recording. "
-        "Processes selfie photos with face recognition and chiller display OCR. "
-        "Keywords: attendance, check-in, temperature, chiller, CaneBot, photo."
-    ),
-    "mail_organizer": (
-        "Handles email triage, meeting scheduling, and PM task extraction. "
-        "Processes email content, drafts replies, and creates Jira/Linear tickets. "
-        "Keywords: email, meeting, schedule, task, draft, calendar, inbox."
-    ),
-}
 
 
 class SemanticRouter:
@@ -107,10 +94,11 @@ class SemanticRouter:
         """
         if not candidate_apps:
             logger.warning("[SemanticRouter] Empty candidate_apps for sender=%s", sender_id)
+            first_loaded = cls._first_loaded_app()
             return RoutingDecision(
-                selected_app="temperature_marker",
+                selected_app=first_loaded,
                 confidence=0.0,
-                reasoning="No candidate apps available — defaulting to temperature_marker",
+                reasoning=f"No candidate apps available — defaulting to {first_loaded}",
                 intent_category="unknown",
                 requires_disambiguation=False,
             )
@@ -132,7 +120,7 @@ class SemanticRouter:
         # ── Multi-app LLM routing ─────────────────────────────────────────────
         text = (text_content or "").strip()
         if not text:
-            # No text: for WhatsApp, image without text → most likely temperature_marker
+            # No text: for WhatsApp, image without text → first permitted app
             first = candidate_apps[0]
             return RoutingDecision(
                 selected_app=first,
@@ -145,7 +133,7 @@ class SemanticRouter:
         # Build app descriptor block for the LLM prompt.
         descriptor_lines = []
         for app_id in candidate_apps:
-            desc = _APP_DESCRIPTORS.get(app_id) or _DEFAULT_DESCRIPTORS.get(app_id) or app_id
+            desc = _APP_DESCRIPTORS.get(app_id) or cls._descriptor_from_loader(app_id) or app_id
             descriptor_lines.append(f'  "{app_id}": "{desc}"')
         descriptors_block = "{\n" + ",\n".join(descriptor_lines) + "\n}"
 
@@ -186,9 +174,37 @@ class SemanticRouter:
         )
         return cls._keyword_fallback(text, candidate_apps)
 
+    @staticmethod
+    def _first_loaded_app() -> str:
+        """Return the first app_id from the loaded plugin registry, or 'unknown'."""
+        try:
+            from core_platform.main import plugin_loader  # deferred import
+            ids = plugin_loader.loaded_app_ids
+            if ids:
+                return ids[0]
+        except Exception:
+            pass
+        return "unknown"
+
+    @staticmethod
+    def _descriptor_from_loader(app_id: str) -> Optional[str]:
+        """Retrieve a descriptor string from the loaded cartridge, if available."""
+        try:
+            from core_platform.main import plugin_loader  # deferred import
+            app_instance = plugin_loader.get_application(app_id)
+            if app_instance is not None:
+                return app_instance.description or app_instance.name
+        except Exception:
+            pass
+        return None
+
     @classmethod
     def _keyword_fallback(cls, text: str, candidate_apps: List[str]) -> RoutingDecision:
         """Deterministic keyword-based routing fallback when LLM is offline.
+
+        Scores each candidate app by counting how many of its declared ``keywords``
+        appear in the inbound message. Falls back to the first candidate if no
+        keywords match. This method has zero knowledge of specific app IDs.
 
         Args:
             text: Inbound message text.
@@ -198,32 +214,26 @@ class SemanticRouter:
             RoutingDecision based on keyword heuristics.
         """
         text_lower = text.lower()
+        scores: Dict[str, int] = {}
 
-        temperature_keywords = {
-            "temperature", "temp", "chiller", "attendance", "check-in", "check in",
-            "checkin", "punch", "photo", "selfie", "canebot", "face",
-        }
-        mail_keywords = {
-            "email", "mail", "meeting", "schedule", "task", "jira", "linear",
-            "calendar", "inbox", "draft", "reply", "forward",
-        }
+        try:
+            from core_platform.main import plugin_loader  # deferred import
+            for app_id in candidate_apps:
+                app_instance = plugin_loader.get_application(app_id)
+                kw_list = getattr(app_instance, "keywords", []) if app_instance else []
+                scores[app_id] = sum(1 for kw in kw_list if kw in text_lower)
+        except Exception:
+            # If plugin_loader not available, all scores stay 0 → first app wins.
+            scores = {app_id: 0 for app_id in candidate_apps}
 
-        tm_score = sum(1 for kw in temperature_keywords if kw in text_lower)
-        mo_score = sum(1 for kw in mail_keywords if kw in text_lower)
+        best_app = max(scores, key=lambda a: scores[a]) if scores else candidate_apps[0]
+        best_score = scores.get(best_app, 0)
 
-        if "temperature_marker" in candidate_apps and tm_score >= mo_score:
+        if best_score > 0:
             return RoutingDecision(
-                selected_app="temperature_marker",
+                selected_app=best_app,
                 confidence=0.7,
-                reasoning=f"Keyword fallback: temperature_marker score={tm_score}",
-                intent_category="keyword_routed",
-                requires_disambiguation=False,
-            )
-        if "mail_organizer" in candidate_apps and mo_score > tm_score:
-            return RoutingDecision(
-                selected_app="mail_organizer",
-                confidence=0.7,
-                reasoning=f"Keyword fallback: mail_organizer score={mo_score}",
+                reasoning=f"Keyword fallback: {best_app} score={best_score}",
                 intent_category="keyword_routed",
                 requires_disambiguation=False,
             )
@@ -236,3 +246,4 @@ class SemanticRouter:
             intent_category="keyword_fallback",
             requires_disambiguation=False,
         )
+

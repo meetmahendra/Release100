@@ -23,13 +23,12 @@ import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 import logging
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import time
 from typing import Any, AsyncGenerator, Callable, Dict
 import uuid
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from core_platform.app.apps_registry import ApplicationRegistry
@@ -51,29 +50,12 @@ logger = logging.getLogger("core_platform.host")
 _BOOT_TIME = time.time()
 relay_client = CloudRelayClient.get_instance()
 
+from core_platform.app.plugin_engine.loader import PluginLoader
+from core_platform.app.outbox.synchronizer import OutboxSynchronizer
 
-async def _outbox_sync_worker(stop_event: asyncio.Event) -> None:
-    """Resilient background worker periodically draining offline outbox records to downstream."""
-    while not stop_event.is_set():
-        if "temperature_marker" in settings.ENABLED_APPLICATIONS:
-            try:
-                from apps.temperature_marker.database.db_service import DatabaseService
-                from apps.temperature_marker.downstream.in_house_rest import InHouseRESTConnector
-                from apps.temperature_marker.downstream.outbox_manager import OutboxManager
+plugin_loader = PluginLoader(enabled_apps=settings.ENABLED_APPLICATIONS)
+_platform_synchronizer = OutboxSynchronizer(drain_interval_seconds=float(settings.OUTBOX_DRAIN_INTERVAL_SECONDS))
 
-                db_service = DatabaseService.get_instance()
-                connector = InHouseRESTConnector(endpoint_url=settings.DOWNSTREAM_REST_URL)
-                manager = OutboxManager(db_service=db_service, connector=connector)
-                synced, failed = await manager.sync_pending_outbox(max_batch=20)
-                if synced > 0:
-                    logger.info("[OutboxSync] Drained %d pending attendance telemetry records.", synced)
-            except Exception as exc:
-                logger.debug("[OutboxSync] Periodic drain cycle error: %s", exc)
-
-        try:
-            await asyncio.wait_for(stop_event.wait(), timeout=float(settings.OUTBOX_DRAIN_INTERVAL_SECONDS))
-        except asyncio.TimeoutError:
-            pass
 
 
 @asynccontextmanager
@@ -81,16 +63,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage application startup and graceful shutdown."""
     print(f"[Release100] Booting Platform Host on port {settings.ORCHESTRATOR_PORT}...")
     relay_client.start()
-    outbox_stop = asyncio.Event()
-    outbox_task = asyncio.create_task(_outbox_sync_worker(outbox_stop))
+    sync_task = asyncio.create_task(_platform_synchronizer.run())
     yield
     print("[Release100] Shutting down Platform Host cleanly.")
-    outbox_stop.set()
+    _platform_synchronizer.stop()
     try:
-        await asyncio.wait_for(outbox_task, timeout=2.0)
+        await asyncio.wait_for(sync_task, timeout=2.0)
     except Exception:
         pass
     await relay_client.stop()
+    plugin_loader.shutdown_all()
 
 
 app = FastAPI(
@@ -108,6 +90,18 @@ _photos_vault = Path("logs/photos")
 _photos_vault.mkdir(parents=True, exist_ok=True)
 app.mount("/logs/photos", StaticFiles(directory=str(_photos_vault)), name="logs_photos")
 
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next: Callable[[Request], Any]) -> Response:
+    """Inject standard HTTP security defense headers (SEC-6)."""
+    response: Response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(self), geolocation=(self), microphone=()"
+    return response
 
 
 @app.middleware("http")
@@ -130,13 +124,11 @@ async def health_check() -> Dict[str, Any]:
     audit_engine = AuditEngine.get_instance()
     skill_statuses = SkillRegistry.get_instance().get_all_health_statuses()
 
-    pending_outbox = 0
-    if "temperature_marker" in settings.ENABLED_APPLICATIONS:
-        try:
-            from apps.temperature_marker.database.db_service import DatabaseService
-            pending_outbox = len(DatabaseService.get_instance().get_pending_outbox_items(limit=100))
-        except Exception:
-            pass
+    # Aggregate pending outbox count from all loaded cartridges — no app-specific imports.
+    pending_outbox = sum(
+        app_inst.get_pending_outbox_count()
+        for app_inst in plugin_loader.get_all_applications().values()
+    )
 
     return {
         "status": "healthy",
@@ -166,27 +158,33 @@ async def health_check() -> Dict[str, Any]:
     }
 
 
-# Mount enabled application UI routers
-if "temperature_marker" in settings.ENABLED_APPLICATIONS:
-    from apps.temperature_marker.ui.routes import router as tm_router, view_verify_location, verify_location_api
+# ── Dynamic Application Cartridge Discovery & Mounting via PluginLoader ──
+from core_platform.app.routing.semantic_router import register_app_descriptor
 
-    app.include_router(tm_router)
-    app.get("/loc", response_class=HTMLResponse)(view_verify_location)
-    app.post("/api/verify-location")(verify_location_api)
+loaded_apps = plugin_loader.load_all()
+plugin_loader.mount_all(app)
 
-if "mail_organizer" in settings.ENABLED_APPLICATIONS:
-    try:
-        from apps.mail_organizer.ui.routes import router as mail_router
+# Register semantic descriptors dynamically from loaded cartridges
+for app_id, app_instance in loaded_apps.items():
+    desc = getattr(app_instance, "description", "") or app_instance.name
+    register_app_descriptor(app_id, desc)
 
-        app.include_router(mail_router)
-
-        @app.get("/mail", response_class=RedirectResponse)
-        @app.get("/mail/", response_class=RedirectResponse)
-        async def mail_redirect() -> RedirectResponse:
-            """Redirect shortcut /mail to mail organizer dashboard."""
-            return RedirectResponse(url="/admin/apps/mail-organizer/dashboard")
-    except ModuleNotFoundError:
-        pass
+# Mount application-declared convenience shortcut routes at the platform root.
+# Each cartridge advertises its own shortcuts via get_convenience_routes() —
+# no hardcoded app IDs or route paths in this file.
+_METHOD_DECORATOR_MAP = {
+    "GET": app.get,
+    "POST": app.post,
+    "PUT": app.put,
+    "DELETE": app.delete,
+}
+for _app_instance in loaded_apps.values():
+    for _method, _path, _handler in _app_instance.get_convenience_routes():
+        _decorator = _METHOD_DECORATOR_MAP.get(_method.upper())
+        if _decorator is not None:
+            _decorator(_path)(_handler)
+        else:
+            logger.warning("[Main] Unknown HTTP method '%s' in convenience route %s", _method, _path)
 
 # Mount Live Diagnostics & Settings Web Console
 from core_platform.app.diagnostics.web_dashboard import router as diag_router
@@ -208,39 +206,14 @@ from core_platform.app.mcp_server.tool_aggregator import register_app_tools
 
 app.include_router(mcp_router)
 
-# Register MCP tools from enabled cartridges
-if "temperature_marker" in settings.ENABLED_APPLICATIONS:
-    try:
-        from apps.temperature_marker.downstream.mcp_tools import get_temperature_marker_mcp_tools
-        from apps.temperature_marker.database.db_service import DatabaseService as _TMDB
-        from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService as _TMKG
-        register_app_tools(get_temperature_marker_mcp_tools(_TMDB.get_instance(), _TMKG()))
-    except Exception as _exc:
-        logger.warning("[MCP] Failed to register temperature_marker tools: %s", _exc)
-
-if "mail_organizer" in settings.ENABLED_APPLICATIONS:
-    try:
-        from apps.mail_organizer.mcp.tools import get_mail_organizer_mcp_tools
-        register_app_tools(get_mail_organizer_mcp_tools())
-    except Exception as _exc:
-        logger.warning("[MCP] Failed to register mail_organizer tools: %s", _exc)
+# Register MCP tools dynamically from loaded cartridges via PluginLoader
+mcp_tools = plugin_loader.get_all_mcp_tools()
+if mcp_tools:
+    register_app_tools(mcp_tools)
 
 # Mount Central Admin Shell (login, logout, dashboard, API key management)
 from core_platform.app.admin_shell.routes import router as admin_router
 app.include_router(admin_router)
-
-# Register semantic router app descriptors
-from core_platform.app.routing.semantic_router import register_app_descriptor
-if "temperature_marker" in settings.ENABLED_APPLICATIONS:
-    register_app_descriptor(
-        "temperature_marker",
-        "Factory floor attendance and chiller temperature recording via selfie photo and OCR.",
-    )
-if "mail_organizer" in settings.ENABLED_APPLICATIONS:
-    register_app_descriptor(
-        "mail_organizer",
-        "Email triage, meeting scheduling, and PM task extraction for executives.",
-    )
 
 
 @app.get("/", response_class=RedirectResponse)

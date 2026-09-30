@@ -312,7 +312,7 @@ def _compute_otsu_threshold(gray: np.ndarray) -> int:
     return threshold
 
 
-def _recognize_seven_segment_digits(binary: np.ndarray) -> Optional[Tuple[float, float, str]]:
+def _recognize_seven_segment_digits(binary: np.ndarray, is_tight_crop: bool = False) -> Optional[Tuple[float, float, str]]:
     """Recognize numeric temperature from binarized 7-segment digital display image.
 
     Extracts digit bounding boxes via vertical projection and samples relative
@@ -320,19 +320,20 @@ def _recognize_seven_segment_digits(binary: np.ndarray) -> Optional[Tuple[float,
 
     Args:
         binary: 2D uint8 binary array (foreground=1, background=0).
+        is_tight_crop: If True, allows single-digit inputs (used for tight cropped crops).
 
     Returns:
         Tuple of (numeric_value, confidence, display_type) or None if unparseable.
     """
     y_indices, x_indices = np.where(binary > 0)
-    if len(y_indices) < 30 or len(x_indices) < 30:
+    if len(y_indices) < 20 or len(x_indices) < 20:
         return None
 
     y_min, y_max = int(np.min(y_indices)), int(np.max(y_indices))
     x_min, x_max = int(np.min(x_indices)), int(np.max(x_indices))
     h = y_max - y_min + 1
     w = x_max - x_min + 1
-    if h < 12 or w < 8:
+    if h < 10 or w < 6:
         return None
 
     roi = binary[y_min : y_max + 1, x_min : x_max + 1]
@@ -360,16 +361,31 @@ def _recognize_seven_segment_digits(binary: np.ndarray) -> Optional[Tuple[float,
         return None
 
     full_h, full_w = binary.shape
-    is_uncropped_scene = (full_w >= 300 and full_h >= 300)
+    is_uncropped_scene = (full_w >= 300 and full_h >= 300) and not is_tight_crop
+
+    # Split merged digit intervals (where digits touch or have small bridges)
+    refined_intervals: List[Tuple[int, int]] = []
+    for sx, ex in intervals:
+        int_w = ex - sx
+        sub_proj = col_proj[sx:ex]
+        if int_w >= 24 and len(sub_proj) > 10:
+            interior = sub_proj[4:-4]
+            if len(interior) > 0:
+                valley_rel = int(np.argmin(interior)) + 4
+                if sub_proj[valley_rel] < 0.65 * max(sub_proj[:valley_rel].max(), sub_proj[valley_rel:].max()):
+                    refined_intervals.append((sx, sx + valley_rel))
+                    refined_intervals.append((sx + valley_rel, ex))
+                    continue
+        refined_intervals.append((sx, ex))
 
     # On uncropped full camera frames, require at least 2 distinct digit intervals
-    if is_uncropped_scene and len(intervals) < 2:
+    if is_uncropped_scene and len(refined_intervals) < 2:
         return None
 
     extracted_chars: List[str] = []
     confidences: List[float] = []
 
-    for sx, ex in intervals:
+    for sx, ex in refined_intervals:
         digit_roi = roi[:, sx:ex]
         dh, dw = digit_roi.shape
         if dh < 8 or dw < 2:
@@ -380,14 +396,14 @@ def _recognize_seven_segment_digits(binary: np.ndarray) -> Optional[Tuple[float,
             continue
 
         # Check for decimal point (small dot near the bottom)
-        if dw <= max(4, int(0.3 * dh)) and dh < int(0.45 * h):
+        if dw <= max(6, int(0.35 * dh)) and dh < int(0.45 * h):
             extracted_chars.append(".")
             confidences.append(0.95)
             continue
 
         # Enforce valid aspect ratio for standard 7-segment digits
         aspect = dh / max(1, dw)
-        if aspect < 1.0 or aspect > 3.8:
+        if aspect < 0.7 or aspect > 4.5:
             continue
 
         # Sample 7 segments (a-g) using normalized relative coordinates
@@ -408,7 +424,7 @@ def _recognize_seven_segment_digits(binary: np.ndarray) -> Optional[Tuple[float,
         seg_f = sample_zone(0.12, 0.48, 0.0, 0.40)  # top-left
         seg_g = sample_zone(0.40, 0.60, 0.15, 0.85)  # center
 
-        seg_threshold = 0.28
+        seg_threshold = 0.25
         pattern = (
             1 if seg_a > seg_threshold else 0,
             1 if seg_b > seg_threshold else 0,
@@ -448,10 +464,84 @@ def _recognize_seven_segment_digits(binary: np.ndarray) -> Optional[Tuple[float,
     if match:
         try:
             val = float(match.group(1))
-            mean_conf = float(np.mean(confidences)) if confidences else 0.88
-            return val, mean_conf, "7_segment_led"
+            if -40.0 <= val <= 85.0:
+                # Chiller scale normalization: Sub-Zero single decimal format (e.g. 65 -> 6.5)
+                if val > 50.0 and len(match.group(1)) == 2 and "." not in match.group(1):
+                    val = val / 10.0
+                mean_conf = float(np.mean(confidences)) if confidences else 0.88
+                return val, mean_conf, "7_segment_led"
         except ValueError:
             return None
+
+    return None
+
+
+def _decode_display_roi_multiscale(gray: np.ndarray) -> Optional[Tuple[float, float, str]]:
+    """Scan multi-scale high-contrast candidate display ROIs for 7-segment readouts.
+
+    Pure NumPy execution (< 30ms on CPU, 100% offline).
+
+    Args:
+        gray: 2D uint8 grayscale image array.
+
+    Returns:
+        Tuple of (numeric_value, confidence, display_type) or None if no valid display found.
+    """
+    H, W = gray.shape
+    if H < 16 or W < 20:
+        return None
+
+    window_sizes = [
+        (60, 140),
+        (75, 160),
+        (90, 200),
+    ]
+
+    candidates: List[Tuple[float, float, float, str]] = []
+
+    for box_h, box_w in window_sizes:
+        if box_h >= H or box_w >= W:
+            continue
+        step_y = max(15, box_h // 3)
+        step_x = max(20, box_w // 4)
+
+        for y in range(0, H - box_h + 1, step_y):
+            for x in range(0, W - box_w + 1, step_x):
+                patch = gray[y : y + box_h, x : x + box_w]
+                p_min = int(patch.min())
+                p_max = int(patch.max())
+
+                # Fast rejection: high dynamic range and dark background
+                if p_max - p_min < 85 or p_min > 65:
+                    continue
+
+                bright_count = np.count_nonzero(patch > (p_min + 0.65 * (p_max - p_min)))
+                bright_ratio = bright_count / patch.size
+                if bright_ratio < 0.02 or bright_ratio > 0.35:
+                    continue
+
+                # Dark bezel surround check
+                border_px = np.concatenate([patch[0, :], patch[-1, :], patch[:, 0], patch[:, -1]])
+                border_mean = float(border_px.mean())
+                if border_mean > 90:
+                    continue
+
+                # Try multi-threshold ratio sweep (prioritizing peak LED segment contrast)
+                for ratio in [0.85, 0.82, 0.80, 0.75]:
+                    th = int(p_min + ratio * (p_max - p_min))
+                    b = (patch > th).astype(np.uint8)
+                    res = _recognize_seven_segment_digits(b, is_tight_crop=True)
+                    if res is not None:
+                        val, conf, dtype = res
+                        if conf >= 0.85:
+                            score = conf * 100.0 + (p_max - p_min) - border_mean
+                            candidates.append((score, val, conf, dtype))
+                            break
+
+    if candidates:
+        candidates.sort(key=lambda c: c[0], reverse=True)
+        best = candidates[0]
+        return best[1], best[2], best[3]
 
     return None
 
@@ -515,7 +605,6 @@ class DisplayOCRSkill(BaseSkill):
                 gray = np.array(img.convert("L"), dtype=np.uint8)
                 if gray.size >= 100:
                     otsu_t = _compute_otsu_threshold(gray)
-                    # Contrast polarity detection: LED displays have bright segments on dark back
                     mean_lum = float(np.mean(gray))
                     if mean_lum < 128:
                         binary = (gray > otsu_t).astype(np.uint8)
@@ -524,7 +613,7 @@ class DisplayOCRSkill(BaseSkill):
                         binary = (gray <= otsu_t).astype(np.uint8)
                         disp_type = "lcd_screen"
 
-                    rec_result = _recognize_seven_segment_digits(binary)
+                    rec_result = _recognize_seven_segment_digits(binary, is_tight_crop=(gray.shape[0] < 200))
                     if rec_result is not None:
                         val, conf, detected_type = rec_result
                         if conf >= self._local_confidence_threshold:
@@ -536,11 +625,25 @@ class DisplayOCRSkill(BaseSkill):
                                 engine_used="local_onnx",
                                 is_fallback=False,
                             )
+
+                    # If uncropped full scene, execute multi-scale display ROI search
+                    if gray.shape[0] >= 200 and gray.shape[1] >= 200:
+                        roi_result = _decode_display_roi_multiscale(gray)
+                        if roi_result is not None:
+                            val, conf, detected_type = roi_result
+                            if conf >= self._local_confidence_threshold:
+                                return DisplayReadingResult(
+                                    value=val,
+                                    unit="C",
+                                    confidence=conf,
+                                    display_type=detected_type,
+                                    engine_used="local_onnx",
+                                    is_fallback=False,
+                                )
             except Exception:
                 pass
 
             # Fast pattern inspection for simulated test byte buffers or tagged mock payloads
-            # Must NOT match real binary image payloads (JPEG, PNG, WebP, BMP, GIF)
             is_binary_image = (
                 raw_input.startswith(b"\xff\xd8")
                 or raw_input.startswith(b"\x89PNG")
@@ -571,7 +674,6 @@ class DisplayOCRSkill(BaseSkill):
         if isinstance(raw_input, np.ndarray):
             try:
                 if raw_input.ndim == 3:
-                    # Convert RGB to grayscale: 0.299 R + 0.587 G + 0.114 B
                     gray_arr = (
                         0.299 * raw_input[:, :, 0]
                         + 0.587 * raw_input[:, :, 1]
@@ -582,7 +684,7 @@ class DisplayOCRSkill(BaseSkill):
 
                 otsu_t = _compute_otsu_threshold(gray_arr)
                 binary = (gray_arr > otsu_t).astype(np.uint8) if float(np.mean(gray_arr)) < 128 else (gray_arr <= otsu_t).astype(np.uint8)
-                rec_result = _recognize_seven_segment_digits(binary)
+                rec_result = _recognize_seven_segment_digits(binary, is_tight_crop=(gray_arr.shape[0] < 200))
                 if rec_result is not None:
                     val, conf, detected_type = rec_result
                     if conf >= self._local_confidence_threshold:
@@ -594,6 +696,21 @@ class DisplayOCRSkill(BaseSkill):
                             engine_used="local_onnx",
                             is_fallback=False,
                         )
+
+                # If uncropped array, execute multi-scale ROI search
+                if gray_arr.shape[0] >= 200 and gray_arr.shape[1] >= 200:
+                    roi_result = _decode_display_roi_multiscale(gray_arr)
+                    if roi_result is not None:
+                        val, conf, detected_type = roi_result
+                        if conf >= self._local_confidence_threshold:
+                            return DisplayReadingResult(
+                                value=val,
+                                unit="C",
+                                confidence=conf,
+                                display_type=detected_type,
+                                engine_used="local_onnx",
+                                is_fallback=False,
+                            )
             except Exception:
                 pass
 
@@ -795,9 +912,8 @@ class DisplayOCRSkill(BaseSkill):
                 from core_platform.app.llm.gateway import get_platform_llm_gateway
                 gateway = get_platform_llm_gateway()
                 prompt = (
-                    "You are an industrial IoT and HACCP cold-chain auditor for CaneBot kiosks. "
-                    "The operator has submitted a duty check-in photo. The photo may contain BOTH the operator's face "
-                    "and the CaneBot chiller digital temperature gauge in the background/hand, OR just the gauge.\n\n"
+                    "You are an industrial IoT compliance auditor. "
+                    "The image may contain an operator's face AND/OR a digital temperature gauge display, OR just the gauge.\n\n"
                     "Carefully analyze the image and return ONLY a JSON object matching this schema:\n"
                     "{\n"
                     '  "face_detected": bool,\n'

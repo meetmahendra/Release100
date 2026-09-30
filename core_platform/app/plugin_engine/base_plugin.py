@@ -27,7 +27,7 @@ This interface enforces:
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 from pydantic import BaseModel
 
 
@@ -61,7 +61,39 @@ class BaseApplication(ABC):
     config_schema: Optional[Type[BaseModel]] = None
     """Optional Pydantic model class for domain-specific configuration validation."""
 
-    # ── Lifecycle Methods ─────────────────────────────────────────────────────
+    keywords: List[str] = []
+    """Keyword hints for SemanticRouter offline fallback routing.
+
+    The router scores each candidate app by counting how many of its keywords
+    appear in the inbound message text and dispatches to the highest scorer.
+    Override with domain-specific vocabulary in each cartridge.
+    """
+
+    dashboard_url: str = ""
+    """Primary web UI entry point for this domain cartridge (e.g. '/admin/apps/mail-organizer/dashboard')."""
+
+    has_poller: bool = False
+    """True if this application runs an active background worker or email/message poller."""
+
+    # ── Lifecycle & Poller Methods ────────────────────────────────────────────
+
+    def get_poller_status(self) -> Optional[str]:
+        """Return the current runtime status of the cartridge's background poller.
+
+        Returns:
+            'RUNNING', 'STOPPED', 'UNAVAILABLE', or None if has_poller is False.
+        """
+        if not self.has_poller:
+            return None
+        return "STOPPED"
+
+    def toggle_poller(self) -> Tuple[bool, str]:
+        """Start or stop the background poller worker for this cartridge.
+
+        Returns:
+            Tuple of (is_running: bool, message: str).
+        """
+        return False, "Background poller not implemented for this cartridge."
 
     def on_startup(self) -> None:
         """Called once when the application cartridge is mounted by the plugin engine.
@@ -77,6 +109,23 @@ class BaseApplication(ABC):
         Override to flush queues, close DB sessions, stop background workers.
         """
         pass
+
+    def get_whatsapp_handler(self) -> Optional[Any]:
+        """Return the domain-specific WhatsApp message handler for this cartridge.
+
+        The returned object must expose an async ``dispatch(msg, context) -> str``
+        method that accepts the parsed WhatsApp message dict and a handler context
+        dict (sender_phone, kiosk_id, emp, correlation_id, etc.) and returns the
+        reply text string.
+
+        The platform ``whatsapp_router.py`` calls this via the loaded plugin instance,
+        making it a pure transport multiplexer with zero domain knowledge.
+
+        Returns:
+            Handler object with an async ``dispatch()`` method, or None if this
+            cartridge does not handle inbound WhatsApp messages directly.
+        """
+        return None
 
     # ── Required Accessors ────────────────────────────────────────────────────
 
@@ -106,6 +155,60 @@ class BaseApplication(ABC):
         """
         return []
 
+    def get_metadata(self) -> Optional[Any]:
+        """Return the SQLAlchemy MetaData object for Alembic migration discovery.
+
+        Override in cartridges that manage their own DB tables so that the
+        platform Alembic env.py can collect metadata dynamically without
+        importing app-specific symbols.
+
+        Returns:
+            SQLAlchemy MetaData instance, or None if no DB tables are managed.
+        """
+        return None
+
+    def get_outbox_transmitter(self) -> Optional[Callable[..., Any]]:
+        """Return the async coroutine that flushes this app's outbox to downstream.
+
+        Called by the platform OutboxSynchronizer._dispatch_item() to dispatch
+        pending records without any hardcoded app-specific knowledge.
+
+        Returns:
+            An async callable ``transmitter(target, payload) -> (bool, str)``,
+            or None if this app has no outbox integration.
+        """
+        return None
+
+    def get_pending_outbox_count(self) -> int:
+        """Return the count of pending (unsynced) outbox records for /health reporting.
+
+        Override in cartridges that maintain an outbox to surface pending record
+        counts in the platform heartbeat without importing app-specific DB services.
+
+        Returns:
+            Integer count of pending outbox items (0 when not applicable).
+        """
+        return 0
+
+    def get_convenience_routes(self) -> List[Tuple[str, str, Any]]:
+        """Return shortcut URL routes to register at the platform root level.
+
+        Each entry is a tuple of (http_method, path, handler_callable).
+        The platform main.py iterates these at startup and registers them
+        on the root FastAPI app — eliminating hardcoded per-app route blocks.
+
+        Example::
+
+            return [
+                ("GET", "/loc", view_verify_location),
+                ("POST", "/api/verify-location", verify_location_api),
+            ]
+
+        Returns:
+            List of (method, path, handler) tuples; empty list by default.
+        """
+        return []
+
     def get_health_status(self) -> Dict[str, Any]:
         """Return application health metadata for /health heartbeat endpoint.
 
@@ -117,4 +220,5 @@ class BaseApplication(ABC):
             "name": self.name,
             "version": self.version,
             "status": "operational",
+            "pending_outbox": self.get_pending_outbox_count(),
         }

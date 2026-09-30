@@ -124,13 +124,18 @@ class OutboxSynchronizer:
         Returns:
             Tuple of (success: bool, message: str).
         """
-        if app_id == "temperature_marker":
-            try:
-                from apps.temperature_marker.downstream.base_connector import create_downstream_connector
-                connector = create_downstream_connector(target_type=target)
-                return await connector.dispatch(payload)
-            except Exception as exc:
-                return False, str(exc)
+        # Ask the cartridge for its registered outbox transmitter callable.
+        try:
+            from core_platform.main import plugin_loader  # deferred import avoids circular dep
+            app_instance = plugin_loader.get_application(app_id)
+            if app_instance is not None:
+                transmitter = app_instance.get_outbox_transmitter()
+                if transmitter is not None:
+                    res = await transmitter(target=target, payload=payload)
+                    return bool(res[0]), str(res[1])
+        except Exception as exc:
+            return False, f"Transmitter lookup failed for app_id={app_id}: {exc}"
 
-        # Generic HTTP fallback for other apps
-        return True, f"Acknowledged (no dispatcher registered for app_id={app_id})"
+        # No transmitter registered — acknowledge without dispatch.
+        return True, f"Acknowledged (no outbox transmitter registered for app_id={app_id})"
+

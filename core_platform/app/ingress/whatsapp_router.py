@@ -32,10 +32,6 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 
 from core_platform.app.config import settings
 from core_platform.app.ingress.rate_limiter import get_platform_rate_limiter
-from apps.temperature_marker.database.db_service import DatabaseService
-from apps.temperature_marker.graph.state import TemperatureMarkerState
-from apps.temperature_marker.graph.state_graph import TemperatureMarkerWorkflow
-from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
 from core_platform.app.telemetry.audit_engine import AuditEngine
 from core_platform.app.telemetry.logging_config import bind_log_context, clear_log_context
 from core_platform.app.common.timezone import to_local_ist
@@ -51,14 +47,33 @@ except ImportError:
 
 router = APIRouter(tags=["WhatsApp Webhook Ingress"])
 
-_kg_service = KnowledgeGraphService()
-_db_service = DatabaseService()
-_audit_engine = AuditEngine.get_instance()
-_workflow = TemperatureMarkerWorkflow(
-    db_service=_db_service,
-    kg_service=_kg_service,
-    audit_engine=_audit_engine,
-)
+
+def _get_tm_app() -> Any:
+    """Return the loaded TemperatureMarker cartridge instance, or None."""
+    try:
+        from core_platform.main import plugin_loader  # deferred — avoids circular import
+        return plugin_loader.get_application("temperature_marker")
+    except Exception:
+        return None
+
+
+def _get_db_service() -> Any:
+    """Return the TM DatabaseService from the loaded cartridge, or None."""
+    tm = _get_tm_app()
+    return tm.db_service if tm is not None else None
+
+
+def _get_kg_service() -> Any:
+    """Return the TM KnowledgeGraphService from the loaded cartridge, or None."""
+    tm = _get_tm_app()
+    return tm.kg_service if tm is not None else None
+
+
+def _get_workflow() -> Any:
+    """Return the TM workflow from the loaded cartridge, or None."""
+    tm = _get_tm_app()
+    return tm.workflow if tm is not None else None
+
 
 
 def verify_meta_signature(body_bytes: bytes, signature_header: Optional[str]) -> bool:
@@ -138,6 +153,7 @@ async def handle_operator_enrollment_photo(
     emp: Any,
     raw_image_bytes: Optional[bytes],
     correlation_id: str,
+    db_service: Any,
 ) -> str:
     """Process an onboarding photo submitted by an operator in PENDING_PHOTO status.
 
@@ -183,7 +199,7 @@ async def handle_operator_enrollment_photo(
     profile_path.write_bytes(raw_image_bytes)
 
     # Update employee record in DB to PENDING_APPROVAL
-    _db_service.register_employee(
+    db_service.register_employee(
         emp_code=emp.emp_code,
         full_name=emp.full_name,
         phone_number=emp.phone_number,
@@ -300,7 +316,12 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     # Refresh fleet roster to catch any dynamic assignments
-    _kg_service.roster = _kg_service._load_roster()
+    _kg_service = _get_kg_service()
+    _db_service = _get_db_service()
+    _workflow = _get_workflow()
+
+    if _kg_service is not None:
+        _kg_service.roster = _kg_service._load_roster()
 
     # Extract location if shared directly or retrieve recently verified location for this operator
     user_coords = None
@@ -343,14 +364,14 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
     # 4. Proximity check if GPS coordinates are cached/available (within 1500m)
     # 5. Default settings.KIOSK_ID
     kiosk_id: Optional[str] = explicit_kiosk
-    if not kiosk_id:
+    if not kiosk_id and _kg_service:
         kiosk_id = _kg_service.resolve_kiosk_by_phone(sender_phone)
 
-    from apps.temperature_marker.database.db_service import DatabaseService
-    emp = DatabaseService.get_instance().get_employee_by_phone(sender_phone)
+    emp = _db_service.get_employee_by_phone(sender_phone) if _db_service else None
     if not kiosk_id and emp and emp.assigned_kiosk_id:
         kiosk_id = emp.assigned_kiosk_id
-        _kg_service.assign_operator_to_kiosk(sender_phone, kiosk_id)
+        if _kg_service:
+            _kg_service.assign_operator_to_kiosk(sender_phone, kiosk_id)
 
     # If coordinates are missing, check if operator already marked attendance today
     if not user_coords and emp:
@@ -430,12 +451,15 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
                 full_name = " ".join(name_tokens) if name_tokens else "New Operator"
                 target_phone = phone_arg or sender_phone
 
-                from apps.temperature_marker.downstream.hr_connector import resolve_or_generate_employee_code
-                emp_code = await resolve_or_generate_employee_code(
-                    phone_number=target_phone,
-                    full_name=full_name,
-                    explicit_code=explicit_code,
-                )
+                tm = _get_tm_app()
+                if tm is not None and hasattr(tm, "resolve_or_generate_employee_code"):
+                    emp_code = await tm.resolve_or_generate_employee_code(
+                        phone_number=target_phone,
+                        full_name=full_name,
+                        explicit_code=explicit_code,
+                    )
+                else:
+                    emp_code = explicit_code or f"EMP-{uuid.uuid4().hex[:4].upper()}"
 
                 _db_service.register_employee(
                     emp_code=emp_code,
@@ -457,7 +481,7 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
     elif emp is not None and emp.status in ("PENDING_PHOTO", "PENDING_BIOMETRICS"):
         if is_image:
             raw_bytes = await extract_image_bytes_from_msg(msg)
-            reply_text = await handle_operator_enrollment_photo(emp, raw_bytes, correlation_id)
+            reply_text = await handle_operator_enrollment_photo(emp, raw_bytes, correlation_id, _db_service)
         else:
             kiosk_details = _kg_service.get_kiosk_details(kiosk_id)
             station_name = kiosk_details.get("name", kiosk_id) if kiosk_details else (emp.assigned_kiosk_id or "your station")
@@ -889,10 +913,13 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
     # 2. Mail & Calendar Domain Commands
     elif any(cmd_lower.startswith(prefix) for prefix in ["mail", "#email", "/mail", "email", "approve", "reject"]):
         try:
-            from apps.mail_organizer.database.db_service import MailDatabaseService
-            mail_db = MailDatabaseService()
-        except ImportError:
-            reply_text = "⚠️ Mail Organizer cartridge is not enabled on this Kiosk device."
+            from core_platform.main import plugin_loader  # deferred
+            mo_app = plugin_loader.get_application("mail_organizer")
+            mail_db = getattr(mo_app, "db_service", None)
+            if mail_db is None:
+                raise ImportError("mail_organizer db_service not found")
+        except (ImportError, Exception):
+            reply_text = "⚠️ Mail Organizer cartridge is not enabled on this device."
             return {"status": "success", "reply": reply_text, "source": "whatsapp_router"}
 
         if cmd_lower.startswith("approve "):
@@ -931,7 +958,7 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
         raw_image_bytes = await extract_image_bytes_from_msg(msg) if is_image else None
 
         is_explicit_loc = any(w in cmd_lower for w in ["location", "link", "loc", "gps", "where"])
-        initial_state: TemperatureMarkerState = {
+        initial_state: Dict[str, Any] = {
             "correlation_id": correlation_id,
             "sender_phone": sender_phone,
             "kiosk_id": kiosk_id,
@@ -940,8 +967,11 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
             "raw_image_bytes": raw_image_bytes,
             "explicit_location_request": is_explicit_loc,
         }
-        final_state = await _workflow.execute(initial_state)
-        reply_text = str(final_state.get("reply_message") or "Reading processed.")
+        if _workflow is not None:
+            final_state = await _workflow.execute(initial_state)
+            reply_text = str(final_state.get("reply_message") or "Reading processed.")
+        else:
+            reply_text = "⚠️ Attendance & temperature service is currently unavailable. Please try again later."
 
     logger.info(
         "[WhatsApp Ingress] Generated reply for %s: '%s'",

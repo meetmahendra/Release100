@@ -132,10 +132,18 @@ async def test_outbox_synchronizer_run_and_dispatch() -> None:
     assert isinstance(ok, bool)
     assert isinstance(msg, str)
 
-    # Test _dispatch_item for unknown / other apps (generic fallback)
-    ok_other, msg_other = await sync._dispatch_item(
+    # Test _dispatch_item for mail_organizer transmitter
+    ok_mail, msg_mail = await sync._dispatch_item(
         app_id="mail_organizer",
         target="gmail_api",
+        payload={"action": "apply_labels", "gmail_id": "G-100", "add_labels": ["READ"]},
+    )
+    assert ok_mail is True
+
+    # Test _dispatch_item for unknown / unregistered apps (generic fallback)
+    ok_other, msg_other = await sync._dispatch_item(
+        app_id="unregistered_app",
+        target="custom_api",
         payload={"test": 123},
     )
     assert ok_other is True

@@ -214,14 +214,20 @@ def test_root_mounted_shortcuts_and_redirects() -> None:
 
 @pytest.mark.anyio
 async def test_main_outbox_sync_worker_cycle() -> None:
-    """Test _outbox_sync_worker loop in main.py executes a drain cycle."""
-    import asyncio
-    from core_platform.main import _outbox_sync_worker
+    """Test OutboxSynchronizer drain cycle runs without error.
 
-    stop_evt = asyncio.Event()
-    stop_evt.set()  # Stop immediately after one check
-    # Should complete without error
-    await _outbox_sync_worker(stop_evt)
+    The old _outbox_sync_worker was replaced by the generic OutboxSynchronizer
+    in core_platform.main. This test verifies the new synchronizer runs a
+    drain cycle cleanly.
+    """
+    from core_platform.app.outbox.synchronizer import OutboxSynchronizer
+
+    sync = OutboxSynchronizer(drain_interval_seconds=0.01)
+    # Run exactly one drain cycle
+    synced, failed = await sync._drain_cycle()
+    # Drain cycle must complete without raising exceptions
+    assert isinstance(synced, int)
+    assert isinstance(failed, int)
 
 
 def test_temperature_marker_database_service_crud(tmp_path: Path) -> None:

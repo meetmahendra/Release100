@@ -188,5 +188,77 @@ def test_recognize_seven_segment_full_scene_rejection() -> None:
     assert _recognize_seven_segment_digits(arr2) is None
 
 
+def test_decode_display_roi_multiscale_direct() -> None:
+    """Test _decode_display_roi_multiscale on synthetic dark bezel gauge."""
+    import numpy as np
+    from core_platform.app.skills.display_ocr import _decode_display_roi_multiscale
+
+    # Create dark scene with a 7-segment display inside a dark bezel
+    img = np.zeros((300, 400), dtype=np.uint8)
+    # Bezel background: 20
+    img[80:180, 100:260] = 20
+    # Digits '8' and '8' at brightness 240
+    for offset_x in [120, 180]:
+        img[90:95, offset_x:offset_x+25] = 240   # seg a
+        img[95:120, offset_x+20:offset_x+25] = 240 # seg b
+        img[125:150, offset_x+20:offset_x+25] = 240 # seg c
+        img[150:155, offset_x:offset_x+25] = 240  # seg d
+        img[125:150, offset_x:offset_x+5] = 240  # seg e
+        img[95:120, offset_x:offset_x+5] = 240   # seg f
+        img[120:125, offset_x:offset_x+25] = 240 # seg g
+
+    res = _decode_display_roi_multiscale(img)
+    assert res is not None
+    val, conf, dtype = res
+    assert isinstance(val, float)
+    assert conf >= 0.85
+    assert dtype == "7_segment_led"
+
+
+@pytest.mark.asyncio
+async def test_display_ocr_cloud_fallback_execution() -> None:
+    """Test cloud vision fallback and failure modes."""
+    skill = DisplayOCRSkill()
+    await skill.ensure_initialized()
+
+    # Empty/unreadable image fallback
+    res = await skill._extract_cloud_vision(b"INVALID_IMAGE_BYTES_12345678")
+    assert res.engine_used == "cloud_gemini_vision"
+    assert res.is_fallback is True
+    assert res.confidence == 0.0
+    assert res.display_type == "unreadable"
+
+
+def test_watermark_timestamp_parsing_and_validation() -> None:
+    """Test visual timestamp regex and validation logic."""
+    from core_platform.app.skills.display_ocr import (
+        extract_visual_timestamp_from_text,
+        parse_watermark_date,
+        validate_watermark_timestamp,
+    )
+
+    # Various watermark patterns
+    assert extract_visual_timestamp_from_text("Shot on Kiosk 16-Sept-2026 10:14:29 am GPS 18.52") == "16-Sept-2026 10:14:29 am"
+    assert extract_visual_timestamp_from_text("2026-09-20 14:30 CaneBot Pune") == "2026-09-20 14:30"
+    assert extract_visual_timestamp_from_text("No watermark text") is None
+
+    # Date parsing
+    assert parse_watermark_date("16-Sept-2026 10:14:29 am") == "2026-09-16"
+    assert parse_watermark_date("Sep 20, 2026 14:30") == "2026-09-20"
+    assert parse_watermark_date("2026-09-21 11:00") == "2026-09-21"
+    assert parse_watermark_date("20/09/2026") == "2026-09-20"
+
+    # Validation against target date
+    ok, msg = validate_watermark_timestamp("16-Sept-2026 10:14:29 am", target_date="2026-09-16")
+    assert ok is True
+    assert "2026-09-16" in msg
+
+    # Stale date from previous year
+    ok_stale, msg_stale = validate_watermark_timestamp("15-Sep-2024 10:00:00 am")
+    assert ok_stale is False
+    assert "recycled" in msg_stale or "expired" in msg_stale or "does not match" in msg_stale
+
+
+
 
 

@@ -46,7 +46,8 @@ from apps.temperature_marker.downstream.in_house_rest import InHouseRESTConnecto
 from core_platform.app.skills.display_ocr import DisplayOCRSkill
 from core_platform.app.skills.image_enhancer import ImageEnhancerSkill
 from core_platform.app.ingress.relay_client import CloudRelayClient
-from core_platform.main import _outbox_sync_worker, app
+from core_platform.app.outbox.synchronizer import OutboxSynchronizer
+from core_platform.main import app
 
 
 @pytest.fixture
@@ -404,9 +405,10 @@ async def test_relay_client_lifecycle():
 
 @pytest.mark.asyncio
 async def test_main_outbox_sync_worker():
-    stop_evt = asyncio.Event()
-    stop_evt.set()
-    await _outbox_sync_worker(stop_evt)
+    sync = OutboxSynchronizer(drain_interval_seconds=0.01)
+    synced, failed = await sync._drain_cycle()
+    assert isinstance(synced, int)
+    assert isinstance(failed, int)
 
 
 @pytest.mark.asyncio

@@ -72,13 +72,86 @@ class PhoneBiometricStrategy:
         )
 
 
+# ── Password Hashing & Verification (SEC-1) ──────────────────────────────────
+
+_PBKDF2_ITERATIONS = 100_000
+
+
+def hash_password(password: str, salt: Optional[str] = None) -> str:
+    """Hash a password using salted PBKDF2-HMAC-SHA256.
+
+    Args:
+        password: Plain text password string.
+        salt: Optional 16-byte hex salt; generated securely if omitted.
+
+    Returns:
+        Formatted hash string: 'pbkdf2_sha256$<iterations>$<salt_hex>$<hash_hex>'
+    """
+    import secrets
+    if not salt:
+        salt_bytes = secrets.token_bytes(16)
+        salt_hex = salt_bytes.hex()
+    else:
+        salt_hex = salt
+        salt_bytes = bytes.fromhex(salt_hex)
+
+    derived = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt_bytes,
+        _PBKDF2_ITERATIONS,
+    )
+    return f"pbkdf2_sha256${_PBKDF2_ITERATIONS}${salt_hex}${derived.hex()}"
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a plain text password against a hashed representation.
+
+    Supports:
+    1. Modern salted PBKDF2 ('pbkdf2_sha256$<iterations>$<salt>$<hash>')
+    2. Legacy unsalted SHA-256 (64 hex characters) for seamless backward compatibility.
+
+    Args:
+        plain_password: Plain text password.
+        hashed_password: Stored hash string.
+
+    Returns:
+        True if password matches, False otherwise.
+    """
+    if not plain_password or not hashed_password:
+        return False
+
+    # 1. PBKDF2-HMAC-SHA256 salted hash
+    if hashed_password.startswith("pbkdf2_sha256$"):
+        try:
+            parts = hashed_password.split("$")
+            if len(parts) == 4:
+                _, iter_str, salt_hex, expected_hex = parts
+                iterations = int(iter_str)
+                salt_bytes = bytes.fromhex(salt_hex)
+                derived = hashlib.pbkdf2_hmac(
+                    "sha256",
+                    plain_password.encode("utf-8"),
+                    salt_bytes,
+                    iterations,
+                )
+                return _constant_time_compare(derived.hex(), expected_hex)
+        except Exception as exc:
+            logger.warning("[LocalJWTStrategy] PBKDF2 verification error: %s", exc)
+            return False
+
+    # 2. Legacy raw SHA-256 comparison with constant-time check
+    legacy_hash = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
+    return _constant_time_compare(legacy_hash, hashed_password)
+
+
 # ── Strategy C: Local Username + Password → JWT (Web Admin) ──────────────────
 
 class LocalJWTStrategy:
     """Authenticates web admin users with username + password → JWT.
 
     Credentials configured in platform settings (ADMIN_USERNAME / ADMIN_PASSWORD_HASH).
-    Password is SHA-256 hashed before comparison; never stored in plaintext.
+    Password comparison uses salted PBKDF2 or timing-safe SHA-256; never plaintext.
     """
 
     @staticmethod
@@ -103,8 +176,7 @@ class LocalJWTStrategy:
         if username != admin_username:
             return None
 
-        pwd_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
-        if not _constant_time_compare(pwd_hash, admin_pwd_hash):
+        if not verify_password(password, admin_pwd_hash):
             logger.warning("[LocalJWTStrategy] Invalid password attempt for user=%s", username)
             return None
 

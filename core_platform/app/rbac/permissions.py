@@ -36,11 +36,30 @@ from core_platform.app.config import settings
 
 logger = logging.getLogger("core_platform.rbac.permissions")
 
-# Per-app role requirements (must match plugin.py required_roles).
-_APP_REQUIRED_ROLES: dict[str, List[str]] = {
-    "temperature_marker": ["operator", "supervisor", "admin"],
-    "mail_organizer": ["manager", "executive", "admin"],
-}
+
+def _get_required_roles(app_id: str) -> List[str]:
+    """Retrieve required roles for an app from the loaded cartridge.
+
+    Uses a deferred import to avoid circular imports at module load time.
+    Falls back to an empty list if the plugin loader is not yet initialised
+    or the cartridge is not loaded (fail-open; the RBAC filter still enforces
+    the tenant-enabled check).
+
+    Args:
+        app_id: Application cartridge identifier.
+
+    Returns:
+        List of role strings required to access this application.
+    """
+    try:
+        from core_platform.main import plugin_loader  # deferred — avoids circular import
+        app_instance = plugin_loader.get_application(app_id)
+        if app_instance is not None:
+            return list(app_instance.required_roles)
+    except Exception:
+        pass
+    return []
+
 
 
 class RBACFilter:
@@ -72,7 +91,7 @@ class RBACFilter:
         candidate_apps: List[str] = []
         for app_id in enabled_apps:
             # Check principal has at least one required role for this app.
-            required_roles = _APP_REQUIRED_ROLES.get(app_id, [])
+            required_roles = _get_required_roles(app_id)
             has_role = (
                 not required_roles  # No role restriction
                 or any(r in context.user_roles for r in required_roles)
@@ -174,6 +193,34 @@ def require_admin(
             detail="Admin role required.",
         )
     return ctx
+
+
+from typing import Callable, List, Optional
+
+def require_roles(*allowed_roles: str) -> Callable[[Optional[str]], SecurityContext]:
+    """FastAPI dependency factory: require at least one of the specified roles (SEC-8)."""
+    def _role_checker(
+        admin_token: Optional[str] = Cookie(default=None, alias="admin_token"),
+    ) -> SecurityContext:
+        ctx = get_web_security_context(admin_token)
+        if not any(r in ctx.user_roles for r in allowed_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Required role: {', '.join(allowed_roles)}",
+            )
+        return ctx
+    return _role_checker
+
+
+def require_app(app_id: str) -> Callable[[Optional[str]], SecurityContext]:
+    """FastAPI dependency factory: assert access to a specific application cartridge (SEC-8)."""
+    def _app_checker(
+        admin_token: Optional[str] = Cookie(default=None, alias="admin_token"),
+    ) -> SecurityContext:
+        ctx = get_web_security_context(admin_token)
+        RBACFilter.assert_app_access(ctx, app_id)
+        return ctx
+    return _app_checker
 
 
 def get_api_security_context(request: Request) -> SecurityContext:

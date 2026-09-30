@@ -48,6 +48,95 @@ def _b64url_decode(s: str) -> bytes:
     return base64.urlsafe_b64decode(s)
 
 
+import threading
+import uuid
+
+# ── JWT Revocation Registry (SEC-2) ──────────────────────────────────────────
+
+class TokenBlacklistRegistry:
+    """Thread-safe in-memory blacklist registry for revoked JWT tokens and JTIs."""
+
+    _instance: Optional["TokenBlacklistRegistry"] = None
+    _lock = threading.Lock()
+
+    @classmethod
+    def get_instance(cls) -> "TokenBlacklistRegistry":
+        """Get singleton instance."""
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = cls()
+            return cls._instance
+
+    def __init__(self) -> None:
+        self._revoked_jtis: dict[str, float] = {}  # jti -> expires_at
+        self._lock = threading.Lock()
+
+    def revoke_token(self, token: str) -> bool:
+        """Revoke a JWT token by extracting its JTI and expiry.
+
+        Args:
+            token: Raw compact JWT string.
+
+        Returns:
+            True if token was parsed and blacklisted, False otherwise.
+        """
+        if not token:
+            return False
+        try:
+            parts = token.strip().split(".")
+            if len(parts) != 3:
+                return False
+            payload = json.loads(_b64url_decode(parts[1]).decode("utf-8"))
+            jti = payload.get("jti")
+            exp = float(payload.get("exp", time.time() + _TOKEN_EXPIRY_SECONDS))
+            if jti:
+                with self._lock:
+                    self._purge_expired()
+                    self._revoked_jtis[str(jti)] = exp
+                logger.info("[TokenBlacklistRegistry] Revoked JWT jti=%s (exp=%s)", jti, exp)
+                return True
+        except Exception as exc:
+            logger.warning("[TokenBlacklistRegistry] Error revoking token: %s", exc)
+        return False
+
+    def is_revoked(self, jti: Optional[str]) -> bool:
+        """Check if a JTI has been revoked.
+
+        Args:
+            jti: Unique JWT ID claim string.
+
+        Returns:
+            True if revoked and active, False otherwise.
+        """
+        if not jti:
+            return False
+        with self._lock:
+            self._purge_expired()
+            return jti in self._revoked_jtis
+
+    def clear(self) -> None:
+        """Clear all revoked tokens (for testing)."""
+        with self._lock:
+            self._revoked_jtis.clear()
+
+    def _purge_expired(self) -> None:
+        """Remove expired JTIs from memory."""
+        now = time.time()
+        expired_keys = [k for k, exp in self._revoked_jtis.items() if now > exp]
+        for k in expired_keys:
+            del self._revoked_jtis[k]
+
+
+def get_token_blacklist() -> TokenBlacklistRegistry:
+    """Return platform token blacklist registry singleton."""
+    return TokenBlacklistRegistry.get_instance()
+
+
+def revoke_jwt_token(token: str) -> bool:
+    """Helper to blacklist an active JWT."""
+    return get_token_blacklist().revoke_token(token)
+
+
 def create_jwt_token(
     principal_id: str,
     roles: list[str],
@@ -55,6 +144,7 @@ def create_jwt_token(
     tenant_id: str = "default_tenant",
     secret_key: str = "",
     expiry_seconds: int = _TOKEN_EXPIRY_SECONDS,
+    jti: Optional[str] = None,
 ) -> str:
     """Create an HS256 JWT token for web admin authentication.
 
@@ -65,6 +155,7 @@ def create_jwt_token(
         tenant_id: Tenant identifier.
         secret_key: HMAC signing secret.
         expiry_seconds: Token lifetime in seconds.
+        jti: Optional explicit JWT identifier; generated securely if None.
 
     Returns:
         Compact JWT string (header.payload.signature).
@@ -73,6 +164,7 @@ def create_jwt_token(
         from core_platform.app.config import settings
         secret_key = getattr(settings, "JWT_SECRET_KEY", "release100_dev_secret_change_in_prod")
 
+    token_jti = jti or str(uuid.uuid4())
     header = {"alg": "HS256", "typ": "JWT"}
     payload = {
         "sub": principal_id,
@@ -81,6 +173,7 @@ def create_jwt_token(
         "apps": permitted_apps,
         "iat": int(time.time()),
         "exp": int(time.time()) + expiry_seconds,
+        "jti": token_jti,
     }
 
     header_b64 = _b64url_encode(json.dumps(header, separators=(",", ":")).encode())
@@ -100,12 +193,14 @@ def create_jwt_token(
 def verify_jwt_token(token: str, secret_key: str = "") -> Optional[SecurityContext]:
     """Verify an HS256 JWT and return a SecurityContext.
 
+    Validates signature, expiration, and checks blacklist registry (SEC-2).
+
     Args:
         token: Compact JWT string.
         secret_key: HMAC signing secret.
 
     Returns:
-        SecurityContext if valid, None if invalid or expired.
+        SecurityContext if valid and not revoked, None otherwise.
     """
     if not secret_key:
         from core_platform.app.config import settings
@@ -134,6 +229,12 @@ def verify_jwt_token(token: str, secret_key: str = "") -> Optional[SecurityConte
         # Expiry check.
         if int(time.time()) > payload.get("exp", 0):
             logger.debug("[JWTUtils] Token expired for sub=%s", payload.get("sub"))
+            return None
+
+        # JTI Revocation check (SEC-2).
+        jti = payload.get("jti")
+        if jti and get_token_blacklist().is_revoked(jti):
+            logger.warning("[JWTUtils] Revoked token presented (jti=%s) — access denied", jti)
             return None
 
         return SecurityContext(

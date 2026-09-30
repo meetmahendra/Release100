@@ -34,10 +34,6 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
-try:
-    from apps.mail_organizer.services.poller_manager import MailPollerManager
-except ImportError:
-    MailPollerManager = None  # type: ignore[assignment, misc]
 from core_platform.app.apps_registry import ApplicationRegistry
 from core_platform.app.config import settings
 from core_platform.app.diagnostics.config_backup import (
@@ -152,22 +148,37 @@ async def api_diagnostics_restore(req: RestoreRequest) -> Dict[str, Any]:
 
 
 @router.post("/api/diagnostics/poller/toggle", response_class=JSONResponse)
-async def api_diagnostics_poller_toggle() -> Dict[str, Any]:
-    """Toggle the Mail Organizer poller worker with verified clean termination."""
-    if MailPollerManager is None:
+async def api_diagnostics_poller_toggle(app_name: Optional[str] = None) -> Dict[str, Any]:
+    """Toggle background poller worker for an application cartridge with verified clean termination."""
+    try:
+        from core_platform.main import plugin_loader
+        loaded = plugin_loader.get_all_applications()
+    except Exception:
+        loaded = {}
+
+    target_app = None
+    if app_name and app_name in loaded:
+        target_app = loaded[app_name]
+    else:
+        for app_inst in loaded.values():
+            if getattr(app_inst, "has_poller", False):
+                target_app = app_inst
+                break
+
+    if target_app is None:
         return {
             "success": False,
             "is_running": False,
             "status": "NOT_INSTALLED",
-            "message": "Mail Organizer cartridge is not installed in this edition.",
+            "message": "No active cartridge with a background poller was found.",
         }
-    mgr = MailPollerManager.get_instance()
-    is_now_running = mgr.toggle()
+
+    is_now_running, msg = target_app.toggle_poller()
     return {
         "success": True,
         "is_running": is_now_running,
         "status": "RUNNING" if is_now_running else "STOPPED",
-        "message": "Mail Poller is now active." if is_now_running else "Mail Poller was stopped cleanly (0 zombies).",
+        "message": msg,
     }
 
 
@@ -199,7 +210,6 @@ async def view_settings_dashboard(request: Request) -> HTMLResponse:
     registry = ApplicationRegistry.get_instance()
     apps = registry.get_installed_applications()
     backups = list_backups()
-    poller_running = MailPollerManager.get_instance().is_running() if MailPollerManager is not None else False
 
     # Read live on-disk values so nothing is lost
     env_data = read_env_dict()
@@ -227,6 +237,7 @@ async def view_settings_dashboard(request: Request) -> HTMLResponse:
 
         poller_widget = ""
         if app.has_poller:
+            poller_running = (app.poller_status == "RUNNING")
             p_color = "#10b981" if poller_running else "#ef4444"
             p_badge = "RUNNING" if poller_running else "STOPPED"
             p_btn_label = "Stop Poller" if poller_running else "Start Poller"
@@ -237,7 +248,7 @@ async def view_settings_dashboard(request: Request) -> HTMLResponse:
                     <span style="display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: bold; background: {p_color}; color: white;">{p_badge}</span>
                     <p style="margin: 4px 0 0 0; font-size: 11px; color: #9ca3af;">Cooperative sentinel-based shutdown (Resolving ISSUE-005).</p>
                 </div>
-                <button class="btn btn-sm" onclick="togglePoller()" style="background: {'#ef4444' if poller_running else '#10b981'}; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 600;">{p_btn_label}</button>
+                <button class="btn btn-sm" onclick="togglePoller('{app.app_name}')" style="background: {'#ef4444' if poller_running else '#10b981'}; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 600;">{p_btn_label}</button>
             </div>
             """
 
@@ -1008,9 +1019,10 @@ async def view_settings_dashboard(request: Request) -> HTMLResponse:
             }}
         }}
 
-        async function togglePoller() {{
+        async function togglePoller(appName) {{
             try {{
-                const res = await fetch('/api/diagnostics/poller/toggle', {{ method: 'POST' }});
+                const url = appName ? '/api/diagnostics/poller/toggle?app_name=' + encodeURIComponent(appName) : '/api/diagnostics/poller/toggle';
+                const res = await fetch(url, {{ method: 'POST' }});
                 const data = await res.json();
                 alert(data.message);
                 window.location.reload();

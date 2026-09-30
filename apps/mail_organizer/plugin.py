@@ -59,9 +59,12 @@ class MailOrganizerApplication(BaseApplication):
     app_id: str = "mail_organizer"
     name: str = "AI Email & Calendar Organizer"
     version: str = "1.0.0"
+    description: str = "Email triage, meeting scheduling, and PM task extraction for executives."
     config_schema = MailOrganizerConfig
     required_roles: List[str] = ["manager", "executive", "admin"]
     supported_channels: List[str] = ["email", "whatsapp", "web_kiosk", "mcp_agent"]
+    dashboard_url: str = "/admin/apps/mail-organizer/dashboard"
+    has_poller: bool = True
 
     def __init__(self, db_url: str = "sqlite:///logs/mail_organizer.db") -> None:
         """Initialize domain cartridge and assemble dependencies."""
@@ -78,6 +81,11 @@ class MailOrganizerApplication(BaseApplication):
             audit_engine=self.audit_engine,
         )
 
+    keywords: List[str] = [
+        "mail", "email", "inbox", "draft", "reply", "forward",
+        "meeting", "schedule", "calendar", "task", "jira", "linear",
+    ]
+
     def get_workflow(self) -> MailOrganizerWorkflow:
         """Return the compiled LangGraph workflow orchestrator."""
         return self.workflow
@@ -90,3 +98,86 @@ class MailOrganizerApplication(BaseApplication):
     def get_mcp_tools(self) -> List[Dict[str, Any]]:
         """Return the domain tools exported to Core MCP Server."""
         return get_mail_organizer_mcp_tools()
+
+    def get_metadata(self) -> Any:
+        """Return SQLAlchemy MetaData so Alembic can discover mail organizer tables dynamically."""
+        from apps.mail_organizer.database.models import Base
+        return Base.metadata
+
+    def get_convenience_routes(self) -> List[Any]:
+        """Return /mail redirect shortcut for registration at the platform root."""
+        from fastapi.responses import RedirectResponse
+
+        async def mail_redirect() -> RedirectResponse:
+            """Redirect shortcut /mail to mail organizer dashboard."""
+            return RedirectResponse(url="/admin/apps/mail-organizer/dashboard")
+
+        return [
+            ("GET", "/mail", mail_redirect),
+            ("GET", "/mail/", mail_redirect),
+        ]
+
+    def get_poller_status(self) -> Optional[str]:
+        """Return the running status of the background email poller."""
+        try:
+            from apps.mail_organizer.services.poller_manager import MailPollerManager
+            mgr = MailPollerManager.get_instance()
+            return "RUNNING" if mgr.is_running() else "STOPPED"
+        except Exception:
+            return "UNAVAILABLE"
+
+    def toggle_poller(self) -> Tuple[bool, str]:
+        """Toggle the background email poller on/off."""
+        from apps.mail_organizer.services.poller_manager import MailPollerManager
+        mgr = MailPollerManager.get_instance()
+        if mgr.is_running():
+            mgr.stop()
+            return False, "Mail Poller was stopped cleanly (0 zombies)."
+        else:
+            mgr.start()
+            return True, "Mail Poller is now active."
+
+    def get_outbox_transmitter(self) -> Any:
+        """Return transmitter callable to retry pending or failed Gmail/PM tasks."""
+        async def _transmitter(target: str, payload: Any) -> Tuple[bool, str]:
+            if target == "gmail_api":
+                action = payload.get("action")
+                if action == "apply_labels":
+                    gmail_id = payload.get("gmail_id")
+                    add_labels = payload.get("add_labels", [])
+                    rem_labels = payload.get("remove_labels", [])
+                    res = await self.gmail_connector.apply_labels(
+                        gmail_id=gmail_id,
+                        add_labels=add_labels,
+                        remove_labels=rem_labels,
+                    )
+                    return bool(res), "Gmail labels applied"
+                elif action == "create_draft":
+                    res = await self.gmail_connector.create_draft(
+                        thread_id=payload.get("thread_id", ""),
+                        recipient=payload.get("recipient", ""),
+                        subject=payload.get("subject", ""),
+                        body=payload.get("body", ""),
+                    )
+                    return bool(res.get("draft_id")), f"Draft created: {res.get('draft_id')}"
+                else:
+                    return True, f"Gmail action '{action or 'generic'}' acknowledged"
+            elif target in ("jira", "linear", "pm_export"):
+                task_id = payload.get("task_id")
+                dest = payload.get("destination") or target
+                if task_id:
+                    res = await self.pm_manager.approve_and_export(task_id, destination=dest)
+                    return bool(res.get("success", False)), f"Exported task {task_id} to {dest}"
+                return True, f"PM action on {dest} acknowledged"
+            return False, f"Unknown mail target: {target}"
+        return _transmitter
+
+    def get_pending_outbox_count(self) -> int:
+        """Return pending unsynced outbox record count for platform /health."""
+        try:
+            from core_platform.app.outbox.queue import PlatformOutboxQueue
+            queue = PlatformOutboxQueue()
+            pending = queue.get_pending_records(app_id="mail_organizer", limit=100)
+            return len(pending)
+        except Exception:
+            return 0

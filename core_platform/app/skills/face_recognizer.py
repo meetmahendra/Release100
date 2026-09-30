@@ -160,10 +160,25 @@ class FaceRecognizerSkill(BaseSkill):
         self.similarity_threshold: float = 0.82
         self._encryption_key: bytes = bytes.fromhex(settings.BIOMETRIC_ENCRYPTION_KEY[:64])
         self._aesgcm: AESGCM = AESGCM(self._encryption_key)
+        self._onnx_session: Optional[Any] = None
+        self._init_onnx_session()
+
+    def _init_onnx_session(self) -> None:
+        """Initialize ONNX runtime inference session if model file is available."""
+        model_path = getattr(settings, "FACE_ONNX_MODEL_PATH", "models/mobilefacenet.onnx")
+        if os.path.exists(model_path):
+            try:
+                import onnxruntime as ort
+                opts = ort.SessionOptions()
+                opts.intra_op_num_threads = 2
+                opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+                self._onnx_session = ort.InferenceSession(model_path, opts, providers=["CPUExecutionProvider"])
+            except Exception:
+                self._onnx_session = None
 
     async def initialize(self) -> None:
         """Initialize face embedding model weights."""
-        # Simulated/MobileFaceNet ONNX session ready
+        self._init_onnx_session()
         self._initialized = True
 
     def is_available(self) -> bool:
@@ -364,10 +379,24 @@ class FaceRecognizerSkill(BaseSkill):
                     vec = vec / norm
                 return True, vec, "Mock embedding generated"
 
-            # Real image bytes: Canonical spatial normalization + HOG 512 extraction
+            # Real image bytes: Canonical spatial normalization + ONNX / HOG 512 extraction
             if isinstance(image_input, bytes):
                 try:
                     raw_pil = Image.open(io.BytesIO(image_input))
+                    if self._onnx_session is not None:
+                        # MobileFaceNet standard input: 1x3x112x112 normalized to [-1, 1]
+                        rgb_img = ImageOps.exif_transpose(raw_pil).convert("RGB")
+                        rgb_crop = _normalize_face_crop(rgb_img).resize((112, 112), Image.Resampling.BILINEAR)
+                        rgb_arr = (np.array(rgb_crop, dtype=np.float32) - 127.5) / 128.0
+                        tensor_in = np.transpose(rgb_arr, (2, 0, 1))[np.newaxis, :, :, :].astype(np.float32)
+                        input_name = self._onnx_session.get_inputs()[0].name
+                        raw_out = self._onnx_session.run(None, {input_name: tensor_in})[0]
+                        vec = raw_out.flatten().astype(np.float32)
+                        norm_val = float(np.linalg.norm(vec))
+                        if norm_val > 0:
+                            vec = vec / norm_val
+                        return True, vec, "Face embedding extracted (MobileFaceNet ONNX deep features)"
+
                     img = ImageOps.exif_transpose(raw_pil).convert("L")
                     vec = _extract_hog_512_embedding(img)
                     return True, vec, "Face embedding extracted (HOG-512 canonical)"

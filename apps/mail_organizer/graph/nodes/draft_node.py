@@ -20,9 +20,12 @@ Synthesizes professional, fact-grounded draft replies using calendar context
 and ownership roles. Suppresses drafts for OBSERVER_ONLY and promotional mail.
 """
 
+import logging
 import time
 from typing import Any, Dict, List, Optional, cast
 from apps.mail_organizer.graph.state import MailOrganizerState
+
+logger = logging.getLogger("mail_organizer.graph.draft_node")
 
 
 async def draft_node(state: MailOrganizerState) -> MailOrganizerState:
@@ -91,7 +94,6 @@ async def draft_node(state: MailOrganizerState) -> MailOrganizerState:
     if settings.GEMINI_API_KEY and not settings.GEMINI_API_KEY.startswith("your_"):
         try:
             import json
-            import urllib.request
             from apps.mail_organizer.services.history_context_service import format_history_for_prompt
             from apps.mail_organizer.services.org_context_service import build_org_context_block
 
@@ -114,28 +116,29 @@ async def draft_node(state: MailOrganizerState) -> MailOrganizerState:
                 f"Category: {category}\n"
                 f"Email Body:\n{body[:2000]}\n\n"
                 f"{cal_ctx}"
-                "Return ONLY the plain-text draft body without markdown formatting or subject lines."
+                "Return a JSON object conforming strictly to this format:\n"
+                "{\n"
+                '  "draft": "concise, professional plain-text response body without markdown or subject lines"\n'
+                "}"
             )
-            model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"maxOutputTokens": 400, "temperature": 0.2},
-            }
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST",
+            from core_platform.app.llm.gateway import get_platform_llm_gateway
+
+            gateway = get_platform_llm_gateway()
+            res = await gateway.generate(
+                task="text_generation",
+                prompt=prompt,
+                temperature=0.2,
+                response_mime_type="application/json",
+                operation_id=f"draft_{state.get('gmail_id', 'unknown')}",
             )
-            with urllib.request.urlopen(req, timeout=8.0) as resp:
-                if resp.status == 200:
-                    res_data = json.loads(resp.read().decode("utf-8"))
-                    gen_text = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                    if gen_text:
-                        draft = gen_text
-        except Exception:
-            pass
+            if res and isinstance(res, dict):
+                gen_text = res.get("draft")
+                if not gen_text and "raw_text" in res:
+                    gen_text = res["raw_text"].strip()
+                if gen_text:
+                    draft = gen_text
+        except Exception as exc:
+            logger.debug("[DraftNode] LLM gateway failed: %s", exc)
 
     state["suggested_reply"] = draft
 

@@ -704,6 +704,21 @@ class DatabaseService:
         with self.SessionLocal() as session:
             return session.query(InternalMessageQueue).filter(InternalMessageQueue.wamid_outbound == wamid).first()
 
+    def get_message_by_id(self, message_id: int) -> Optional[InternalMessageQueue]:
+        """Retrieve an internal message queue item by primary key.
+
+        Used by the generic internal_dispatch module to avoid importing the
+        InternalMessageQueue ORM model at module level (decoupling).
+
+        Args:
+            message_id: Primary key of the InternalMessageQueue row.
+
+        Returns:
+            InternalMessageQueue instance or None if not found.
+        """
+        with self.SessionLocal() as session:
+            return session.query(InternalMessageQueue).filter(InternalMessageQueue.id == message_id).first()
+
     def resolve_internal_message(
         self,
         message_id: int,

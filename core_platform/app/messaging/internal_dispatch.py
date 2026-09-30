@@ -21,6 +21,11 @@ Adheres strictly to GEES v1.0 and Plan 02 v1.3:
 3. Two-way message relay attributing original operator note with 'Re: [quote]' context.
 4. Meta Template Message bypass for critical emergencies / Tier 1 hazards.
 5. Zero arbitrary @tagging.
+
+Design Note: All domain-specific database operations are injected via the
+``db_service`` parameter. This module contains zero direct imports from
+application cartridges (``apps.*``). The caller (e.g. the TM WhatsApp handler)
+is responsible for providing the correct DatabaseService instance.
 """
 
 from datetime import datetime, timezone
@@ -29,8 +34,6 @@ import re
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
-from apps.temperature_marker.database.db_service import DatabaseService
-from apps.temperature_marker.database.models import InternalMessageQueue
 from core_platform.app.config import settings
 
 logger = logging.getLogger("core_platform.messaging.internal_dispatch")
@@ -128,7 +131,7 @@ def _short_summary(text: str, max_chars: int = 35) -> str:
 def build_top10_digest(
     manager_phone: str,
     manager_name: str,
-    db_service: DatabaseService,
+    db_service: Any,
     session_mgr: Optional[ManagerTriageSessionManager] = None,
 ) -> str:
     """Compose prioritized single-screen digest and active Message 1 for manager.
@@ -187,7 +190,7 @@ def handle_manager_navigation(
     manager_phone: str,
     manager_name: str,
     command: str,
-    db_service: DatabaseService,
+    db_service: Any,
     session_mgr: Optional[ManagerTriageSessionManager] = None,
 ) -> str:
     """Handle navigation commands ('NEXT', 'SKIP', 'ALL') from manager.
@@ -253,7 +256,7 @@ def handle_manager_navigation(
 
 def build_fleet_executive_digest(
     manager_name: str,
-    db_service: DatabaseService,
+    db_service: Any,
 ) -> str:
     """Build a comprehensive multi-kiosk status matrix for managers via WhatsApp.
 
@@ -330,7 +333,7 @@ def handle_manager_reply(
     manager_name: str,
     reply_text: str,
     quoted_wamid: Optional[str],
-    db_service: DatabaseService,
+    db_service: Any,
     session_mgr: Optional[ManagerTriageSessionManager] = None,
 ) -> Tuple[str, Optional[str], Optional[str]]:
     """Resolve active or quoted message and construct two-way operator forwarding text.
@@ -349,7 +352,7 @@ def handle_manager_reply(
     if session_mgr is None:
         session_mgr = ManagerTriageSessionManager.get_instance()
 
-    target_msg: Optional[InternalMessageQueue] = None
+    target_msg: Optional[Any] = None
     clean_reply = reply_text.strip()
 
     # 1. Quoted reply via WhatsApp wamid
@@ -365,12 +368,12 @@ def handle_manager_reply(
         if 0 <= num_idx < len(pending):
             target_msg = pending[num_idx]
 
-    # 3. Active message in triage session
+    # 3. Active message in triage session — use db_service.get_message_by_id() to avoid
+    #    importing InternalMessageQueue model directly in this core_platform module.
     if not target_msg:
-        active_id = session_mgr.get_active_message_id(manager_phone)
-        if active_id:
-            with db_service.SessionLocal() as session:
-                target_msg = session.query(InternalMessageQueue).filter(InternalMessageQueue.id == active_id).first()
+        active_id = session_mgr.get_active_message_id(manager_phone) if session_mgr else None
+        if active_id and hasattr(db_service, "get_message_by_id"):
+            target_msg = db_service.get_message_by_id(active_id)
 
     # 4. Fallback to top-1 pending message
     if not target_msg:

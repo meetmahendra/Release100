@@ -76,22 +76,6 @@ class ApplicationRegistry:
     _instance: Optional["ApplicationRegistry"] = None
     _lock = threading.Lock()
 
-    # Pre-defined metadata mappings for canonical apps
-    _METADATA_MAP: Dict[str, Dict[str, Any]] = {
-        "temperature_marker": {
-            "title": "Temperature & Attendance Marker",
-            "description": "Cold-chain chiller monitoring, Display OCR, biometric shift check-in, and geofencing.",
-            "dashboard_url": "/admin/apps/temperature-marker/fleet",
-            "has_poller": False,
-        },
-        "mail_organizer": {
-            "title": "Mail Organizer & PM Triage",
-            "description": "LangGraph email classification, executive digest, and PM task extraction with Jira/Linear sync.",
-            "dashboard_url": "/admin/apps/mail-organizer/dashboard",
-            "has_poller": True,
-        },
-    }
-
     def __init__(self, root_dir: Optional[Path] = None) -> None:
         """Initialize ApplicationRegistry."""
         self.root_dir = root_dir or Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -106,41 +90,47 @@ class ApplicationRegistry:
             return cls._instance
 
     def get_installed_applications(self) -> List[ApplicationInfo]:
-        """Scan apps/ directory and discover installed cartridges."""
+        """Scan apps/ directory and discover installed cartridges dynamically."""
         apps: List[ApplicationInfo] = []
         if not self.apps_dir.exists():
             return apps
 
         enabled = set(settings.ENABLED_APPLICATIONS)
 
+        # Deferred lookup from platform plugin_loader to inspect live cartridge instances
+        loaded_apps = {}
+        try:
+            from core_platform.main import plugin_loader
+            loaded_apps = plugin_loader.get_all_applications()
+        except Exception:
+            pass
+
         for child in sorted(self.apps_dir.iterdir()):
             if child.is_dir() and not child.name.startswith(("_", ".")):
                 name = child.name
-                meta = self._METADATA_MAP.get(name, {
-                    "title": name.replace("_", " ").title(),
-                    "description": f"Domain cartridge: {name}",
-                    "dashboard_url": f"/admin/apps/{name.replace('_', '-')}",
-                    "has_poller": False,
-                })
-
                 is_active = name in enabled
-                poller_status: Optional[str] = None
+                app_inst = loaded_apps.get(name)
 
-                if meta["has_poller"] and name == "mail_organizer":
-                    try:
-                        from apps.mail_organizer.services.poller_manager import MailPollerManager
-                        mgr = MailPollerManager.get_instance()
-                        poller_status = "RUNNING" if mgr.is_running() else "STOPPED"
-                    except Exception:
-                        poller_status = "UNAVAILABLE"
+                if app_inst is not None:
+                    title = app_inst.name
+                    description = app_inst.description or f"Domain cartridge: {name}"
+                    dashboard_url = getattr(app_inst, "dashboard_url", "") or f"/admin/apps/{name.replace('_', '-')}"
+                    has_poller = getattr(app_inst, "has_poller", False)
+                    poller_status = app_inst.get_poller_status() if has_poller else None
+                else:
+                    title = name.replace("_", " ").title()
+                    description = f"Domain cartridge: {name}"
+                    dashboard_url = f"/admin/apps/{name.replace('_', '-')}"
+                    has_poller = False
+                    poller_status = None
 
                 info = ApplicationInfo(
                     app_name=name,
-                    title=str(meta["title"]),
-                    description=str(meta["description"]),
-                    dashboard_url=str(meta["dashboard_url"]),
+                    title=title,
+                    description=description,
+                    dashboard_url=dashboard_url,
                     is_active=is_active,
-                    has_poller=bool(meta["has_poller"]),
+                    has_poller=has_poller,
                     poller_status=poller_status,
                 )
                 apps.append(info)
