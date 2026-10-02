@@ -21,7 +21,7 @@ variables with safe defaults. Adheres to GEES v1.0 fail-safe defaults (DRY_RUN=T
 
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
