@@ -63,19 +63,24 @@ jobs:
           cp dist/wheels/*/* dist/all_wheels/
           ls -la dist/all_wheels/
 
-      - name: Upload Wheels to GitHub Release Assets
+      - name: Generate PEP 503 Simple Index Tree
+        run: |
+          python packaging/generate_simple_index.py
+          ls -la dist/simple/
+
+      - name: Upload Wheels & Simple Index to GitHub Release Assets
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
         with:
-          files: dist/all_wheels/*
+          files: |
+            dist/all_wheels/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish to GitHub Packages Registry
-        env:
-          TWINE_USERNAME: ${{ github.actor }}
-          TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-          TWINE_REPOSITORY_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/simple/
-        run: |
-          echo "[PUBLISH] Uploading wheels to GitHub Packages index..."
-          python -m twine upload --repository-url "https://upload.pkg.github.com/${{ github.repository_owner }}/" dist/all_wheels/* || echo "[NOTICE] Package upload completed (or already exists)."
+      - name: Deploy Simple Index to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/simple
+          destination_dir: simple
