@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "release100-core"
-version = "2.0.0"
+version = "2.0.1"
 description = "Release100 Enterprise Multi-Kiosk Platform Microkernel (GEES v2.0)"
 authors = [{ name = "Mahendra GURAV" }]
 readme = "README.md"
@@ -18,6 +18,11 @@ dependencies = [
     "sqlalchemy>=2.0.0",
     "jinja2>=3.1.0",
     "certifi",
+    "numpy>=1.24.0",
+    "pillow>=9.0.0",
+    "cryptography>=41.0.0",
+    "httpx>=0.24.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [project.optional-dependencies]
