@@ -196,3 +196,7 @@ class MailOrganizerApplication(BaseApplication):
             return len(pending)
         except Exception:
             return 0
+
+
+MailOrganizerPlugin = MailOrganizerApplication
+

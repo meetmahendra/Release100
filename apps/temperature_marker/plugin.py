@@ -164,3 +164,7 @@ class TemperatureMarkerApplication(BaseApplication):
             explicit_code=explicit_code,
         )
 
+
+TemperatureMarkerPlugin = TemperatureMarkerApplication
+
+
