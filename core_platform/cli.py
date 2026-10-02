@@ -132,9 +132,9 @@ def command_build(target: str, dry_run: bool, edition: str = "kiosk") -> int:
 def command_seed() -> int:
     """Seed sample active operators for multi-kiosk fleet manual testing."""
     try:
-        from apps.temperature_marker.database.db_service import DatabaseService
-
-        db = DatabaseService()
+        mod = importlib.import_module("apps.temperature_marker.database.db_service")
+        db_cls = getattr(mod, "DatabaseService")
+        db = db_cls()
         seeds = [
             ("EMP-1042", "Rajesh Pawar", "+919800011122", "CANEBOT-PUNE-04", "ACTIVE"),
             ("EMP-2088", "Sunil Patil", "+919800022233", "CANEBOT-MUMBAI-08", "ACTIVE"),
@@ -156,7 +156,7 @@ def command_seed() -> int:
         print("=" * 70)
         print("[SUCCESS] Seeding complete. Ready for manual browser & simulator testing.")
         return 0
-    except ImportError:
+    except (ImportError, AttributeError):
         print("[NOTICE] Temperature Marker cartridge is not installed on this system.")
         return 0
 
@@ -164,9 +164,9 @@ def command_seed() -> int:
 def command_seed_mail() -> int:
     """Seed sample rules, pending PM tasks, and triaged emails for Mail Organizer testing."""
     try:
-        from apps.mail_organizer.database.db_service import MailDatabaseService
-
-        db = MailDatabaseService()
+        mod = importlib.import_module("apps.mail_organizer.database.db_service")
+        db_cls = getattr(mod, "MailDatabaseService")
+        db = db_cls()
         print("=" * 70)
         print("  SEEDING SAMPLE DATA FOR AI MAIL & CALENDAR ORGANIZER")
         print("=" * 70)

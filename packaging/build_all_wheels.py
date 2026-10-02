@@ -33,8 +33,12 @@ OUTPUT_DIR = ROOT_DIR / "dist" / "wheels"
 def build_package(src_dir: Path, out_dir: Path) -> int:
     """Build a python package wheel and sdist into target output directory."""
     print(f"\n[BUILD] Compiling package in: {src_dir}")
+    python_bin = sys.executable
+    venv_py = ROOT_DIR / ".venv" / "Scripts" / "python.exe"
+    if venv_py.exists():
+        python_bin = str(venv_py)
     cmd = [
-        sys.executable,
+        python_bin,
         "-m",
         "build",
         "--sdist",

@@ -19,6 +19,7 @@ Adheres strictly to GEES v1.0.
 
 from pathlib import Path
 from typing import Any, Dict, List
+import unittest.mock
 import pytest
 from fastapi import APIRouter, FastAPI
 
@@ -177,9 +178,10 @@ class AppOne(BaseApplication):
     assert "app_one" in available
     assert "ignored_dir" not in available
 
-    # Test load with nonexistent app directory
-    nonexistent_loader = PluginLoader(apps_root=tmp_path / "does_not_exist")
-    assert nonexistent_loader.discover_available() == []
+    # Test load with nonexistent app directory and empty entry points
+    with unittest.mock.patch("core_platform.app.plugin_engine.loader.entry_points", return_value=[]):
+        nonexistent_loader = PluginLoader(apps_root=tmp_path / "does_not_exist")
+        assert nonexistent_loader.discover_available() == []
 
     # Test loaded_app_ids
     loader._loaded["mock"] = SampleCartridge()

@@ -15,8 +15,8 @@
 """
 PEP 503 Compliant Static Simple Index Generator for Release100.
 
-Generates a static HTML repository index for wheels in dist/wheels/ so that:
-  set UV_EXTRA_INDEX_URL=https://.../simple/
+Generates a static HTML repository index for wheels in dist/ so that:
+  set UV_EXTRA_INDEX_URL=https://meetmahendra.github.io/Release100/
   uv pip install release100-core
   uv pip install release100-cartridge-temperature-marker
 works seamlessly across all machines.
@@ -27,7 +27,7 @@ import re
 import shutil
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-WHEELS_DIR = ROOT_DIR / "dist" / "wheels"
+DIST_DIR = ROOT_DIR / "dist"
 SIMPLE_DIR = ROOT_DIR / "dist" / "simple"
 
 
@@ -36,27 +36,35 @@ def normalize_name(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
-def generate_index(base_url: str = "") -> None:
+def generate_index() -> None:
     """Generate PEP 503 static index tree."""
     if SIMPLE_DIR.exists():
         shutil.rmtree(SIMPLE_DIR)
     SIMPLE_DIR.mkdir(parents=True, exist_ok=True)
 
     packages: dict[str, list[Path]] = {}
+    seen_files: set[str] = set()
 
-    for wheel_file in WHEELS_DIR.glob("*.whl"):
-        # Wheel filename format: {distribution}-{version}(-{build tag})?-{python tag}-{abi tag}-{platform tag}.whl
-        parts = wheel_file.name.split("-")
-        raw_pkg_name = parts[0]
-        norm_pkg = normalize_name(raw_pkg_name)
-        packages.setdefault(norm_pkg, []).append(wheel_file)
+    search_dirs = [
+        DIST_DIR / "all_wheels",
+        DIST_DIR / "wheels",
+        DIST_DIR,
+    ]
 
-    for sdist_file in WHEELS_DIR.glob("*.tar.gz"):
-        raw_pkg_name = sdist_file.name.split("-")[0]
-        norm_pkg = normalize_name(raw_pkg_name)
-        packages.setdefault(norm_pkg, []).append(sdist_file)
+    for d in search_dirs:
+        if d.exists():
+            for f in d.rglob("*"):
+                if f.is_file() and (f.suffix == ".whl" or f.name.endswith(".tar.gz")):
+                    if "simple" in f.parts:
+                        continue
+                    if f.name in seen_files:
+                        continue
+                    seen_files.add(f.name)
+                    raw_pkg_name = f.name.split("-")[0]
+                    norm_pkg = normalize_name(raw_pkg_name)
+                    packages.setdefault(norm_pkg, []).append(f)
 
-    # 1. Root index.html
+    # 1. Root index.html (at / and /simple/)
     root_lines = [
         "<!DOCTYPE html>",
         "<html>",
@@ -68,12 +76,24 @@ def generate_index(base_url: str = "") -> None:
         root_lines.append(f'<a href="{pkg}/">{pkg}</a><br/>')
     root_lines.extend(["</body>", "</html>"])
 
-    (SIMPLE_DIR / "index.html").write_text("\n".join(root_lines), encoding="utf-8")
+    root_html = "\n".join(root_lines)
+    (SIMPLE_DIR / "index.html").write_text(root_html, encoding="utf-8")
+    (SIMPLE_DIR / ".nojekyll").touch(exist_ok=True)
 
-    # 2. Per-package index.html
+    # 2. Also create simple/ subdirectory inside simple for backwards-compatible /simple/ URLs
+    sub_simple = SIMPLE_DIR / "simple"
+    sub_simple.mkdir(parents=True, exist_ok=True)
+    (sub_simple / "index.html").write_text(root_html, encoding="utf-8")
+    (sub_simple / ".nojekyll").touch(exist_ok=True)
+
+    # 3. Per-package index.html and wheels
     for pkg, files in packages.items():
         pkg_dir = SIMPLE_DIR / pkg
         pkg_dir.mkdir(parents=True, exist_ok=True)
+
+        # Also create nested under simple/{pkg}
+        nested_pkg_dir = sub_simple / pkg
+        nested_pkg_dir.mkdir(parents=True, exist_ok=True)
 
         pkg_lines = [
             "<!DOCTYPE html>",
@@ -83,18 +103,21 @@ def generate_index(base_url: str = "") -> None:
             f"<h1>Links for {pkg}</h1>",
         ]
         for f in sorted(files, key=lambda x: x.name):
-            # Copy the file into the package dir for direct hosting
+            # Copy file to both pkg_dir and nested_pkg_dir
             dest_file = pkg_dir / f.name
             shutil.copy2(f, dest_file)
+            shutil.copy2(f, nested_pkg_dir / f.name)
             pkg_lines.append(f'<a href="{f.name}">{f.name}</a><br/>')
 
         pkg_lines.extend(["</body>", "</html>"])
-        (pkg_dir / "index.html").write_text("\n".join(pkg_lines), encoding="utf-8")
+        pkg_html = "\n".join(pkg_lines)
+        (pkg_dir / "index.html").write_text(pkg_html, encoding="utf-8")
+        (nested_pkg_dir / "index.html").write_text(pkg_html, encoding="utf-8")
 
     print(f"[SUCCESS] PEP 503 Simple Index generated at: {SIMPLE_DIR}")
     print(f"Total Packages: {len(packages)}")
-    for p in packages:
-        print(f"  - {p} ({len(packages[p])} file(s))")
+    for p, flist in packages.items():
+        print(f"  - {p} ({len(flist)} file(s)): {[x.name for x in flist]}")
 
 
 if __name__ == "__main__":
