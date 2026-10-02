@@ -96,7 +96,7 @@ def test_verifier_helpers() -> None:
     assert _is_placeholder("") is True
     assert _is_placeholder("your_api_key_here") is True
     assert _is_placeholder("none") is True
-    assert _is_placeholder("AQ.Ab8RN6IfpmkEh0-fkLpswxYjdaDZjIv2fkDINHm9WKnjannDxw") is False
+    assert _is_placeholder("valid_prod_api_key_sample_12345") is False
 
     # 2. Local port verification (mocked socket)
     with patch("socket.socket") as mock_sock_cls:
