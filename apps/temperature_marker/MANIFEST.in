@@ -1,0 +1,9 @@
+include *.py
+recursive-include common *.py
+recursive-include database *.py
+recursive-include downstream *.py
+recursive-include graph *.py
+recursive-include knowledge_graph *.py *.json
+recursive-include services *.py
+recursive-include ui *.py
+recursive-include ui/templates *.html

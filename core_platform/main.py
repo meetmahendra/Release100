@@ -27,7 +27,7 @@ from pathlib import Path
 import time
 from typing import Any, AsyncGenerator, Callable, Dict
 import uuid
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -269,7 +269,29 @@ app.include_router(sync_router)
 
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon() -> Response:
+    """Lightweight 204 No Content for browser favicon requests."""
+    return Response(status_code=204)
+
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException) -> Response:
+    """Handle HTTPExceptions gracefully: redirect unauthenticated browser requests to /admin/login."""
+    if exc.status_code == 401:
+        accept = request.headers.get("accept", "")
+        # If it's a browser page load (HTML request) under /admin/, redirect to login
+        if "text/html" in accept and request.url.path.startswith("/admin") and request.url.path != "/admin/login":
+            return RedirectResponse(url="/admin/login", status_code=302)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers)
+
+
 @app.get("/", response_class=RedirectResponse)
 async def root_redirect() -> RedirectResponse:
-    """Redirect platform root to default active application dashboard."""
-    return RedirectResponse(url="/admin/apps/temperature-marker/fleet")
+    """Redirect platform root dynamically to first active application dashboard or admin shell."""
+    if loaded_apps:
+        first_app = next(iter(loaded_apps.values()))
+        dash_url = getattr(first_app, "dashboard_url", None)
+        if dash_url:
+            return RedirectResponse(url=dash_url)
+    return RedirectResponse(url="/admin/")

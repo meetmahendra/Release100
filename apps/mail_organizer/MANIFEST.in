@@ -1,0 +1,9 @@
+include *.py
+recursive-include connectors *.py
+recursive-include database *.py
+recursive-include graph *.py
+recursive-include mcp *.py
+recursive-include pm *.py
+recursive-include services *.py
+recursive-include ui *.py
+recursive-include ui/templates *.html

@@ -15,11 +15,38 @@ dependencies = [
     "pillow>=9.0.0",
     "onnxruntime>=1.15.0",
     "numpy>=1.24.0",
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
 ]
 
 [project.entry-points."release100.cartridges"]
 temperature_marker = "apps.temperature_marker.plugin:TemperatureMarkerPlugin"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["apps.temperature_marker*"]
+[tool.setuptools.package-dir]
+"apps.temperature_marker" = "."
+"apps.temperature_marker.common" = "common"
+"apps.temperature_marker.database" = "database"
+"apps.temperature_marker.downstream" = "downstream"
+"apps.temperature_marker.graph" = "graph"
+"apps.temperature_marker.graph.nodes" = "graph/nodes"
+"apps.temperature_marker.knowledge_graph" = "knowledge_graph"
+"apps.temperature_marker.services" = "services"
+"apps.temperature_marker.ui" = "ui"
+
+[tool.setuptools]
+packages = [
+    "apps.temperature_marker",
+    "apps.temperature_marker.common",
+    "apps.temperature_marker.database",
+    "apps.temperature_marker.downstream",
+    "apps.temperature_marker.graph",
+    "apps.temperature_marker.graph.nodes",
+    "apps.temperature_marker.knowledge_graph",
+    "apps.temperature_marker.services",
+    "apps.temperature_marker.ui",
+]
+
+[tool.setuptools.package-data]
+"*" = ["*.html", "*.css", "*.js", "*.json", "*.svg", "*.ico", "*.png", "*.sql", "*.onnx"]
+"apps.temperature_marker.ui" = ["templates/*.html", "templates/**/*.html"]
+"apps.temperature_marker.knowledge_graph" = ["*.json"]

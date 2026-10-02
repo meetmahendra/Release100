@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "release100-core"
-version = "2.0.4"
+version = "2.0.5"
 description = "Release100 Enterprise Multi-Kiosk Platform Microkernel (GEES v2.0)"
 authors = [{ name = "Mahendra GURAV" }]
 readme = "README.md"
@@ -46,6 +46,9 @@ release100 = "core_platform.cli:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["core_platform*", "deployment*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.html", "*.css", "*.js", "*.json", "*.svg", "*.ico", "*.png", "*.sql"]
 
 [tool.mypy]
 strict = true

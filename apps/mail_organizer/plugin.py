@@ -18,7 +18,7 @@ Mail Organizer Application Cartridge Plugin.
 Adheres strictly to Plan 04 v1.0 Section 2 and Core Platform Plugin Architecture.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 

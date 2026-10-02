@@ -329,15 +329,24 @@ def command_run(
         settings.ENABLED_APPLICATIONS = selected_apps
         os.environ["ENABLED_APPLICATIONS"] = json.dumps(selected_apps)
 
+    from core_platform.main import app, loaded_apps
+
+    active_ids = list(loaded_apps.keys())
     print("=" * 70)
     print(f"  LAUNCHING RELEASE100 PLATFORM HOST (Mode={mode.upper()})")
-    print(f"  Active Cartridges  : {settings.ENABLED_APPLICATIONS or '[NONE - Pure Microkernel]'}")
-    print(f"  Admin Web Shell: http://127.0.0.1:{port}/admin/apps/temperature-marker/fleet")
-    print(f"  1-Click Geolocation: http://127.0.0.1:{port}/loc")
+    print(f"  Active Cartridges  : {', '.join(active_ids) if active_ids else '[NONE - Pure Microkernel]'}")
+    print(f"  Admin Web Shell    : http://127.0.0.1:{port}/admin/")
     print(f"  Health Diagnostic  : http://127.0.0.1:{port}/health")
+    for app_id, app_inst in loaded_apps.items():
+        dash = getattr(app_inst, "dashboard_url", None)
+        if dash:
+            print(f"  Cartridge [{app_id:<14}]: http://127.0.0.1:{port}{dash}")
+        convenience_func = getattr(app_inst, "get_convenience_routes", None)
+        if convenience_func and callable(convenience_func):
+            for _method, _path, _ in convenience_func():
+                if _method.upper() == "GET":
+                    print(f"  Convenience [{_path:<10}]: http://127.0.0.1:{port}{_path}")
     print("=" * 70)
-
-    from core_platform.main import app
 
     if mode == "tray":
         import threading

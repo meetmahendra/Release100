@@ -13,11 +13,37 @@ dependencies = [
     "release100-core",
     "sqlalchemy>=2.0.0",
     "google-api-python-client>=2.0.0",
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
 ]
 
 [project.entry-points."release100.cartridges"]
 mail_organizer = "apps.mail_organizer.plugin:MailOrganizerPlugin"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["apps.mail_organizer*"]
+[tool.setuptools.package-dir]
+"apps.mail_organizer" = "."
+"apps.mail_organizer.connectors" = "connectors"
+"apps.mail_organizer.database" = "database"
+"apps.mail_organizer.graph" = "graph"
+"apps.mail_organizer.graph.nodes" = "graph/nodes"
+"apps.mail_organizer.mcp" = "mcp"
+"apps.mail_organizer.pm" = "pm"
+"apps.mail_organizer.services" = "services"
+"apps.mail_organizer.ui" = "ui"
+
+[tool.setuptools]
+packages = [
+    "apps.mail_organizer",
+    "apps.mail_organizer.connectors",
+    "apps.mail_organizer.database",
+    "apps.mail_organizer.graph",
+    "apps.mail_organizer.graph.nodes",
+    "apps.mail_organizer.mcp",
+    "apps.mail_organizer.pm",
+    "apps.mail_organizer.services",
+    "apps.mail_organizer.ui",
+]
+
+[tool.setuptools.package-data]
+"*" = ["*.html", "*.css", "*.js", "*.json", "*.svg", "*.ico", "*.png", "*.sql"]
+"apps.mail_organizer.ui" = ["templates/*.html", "templates/**/*.html"]

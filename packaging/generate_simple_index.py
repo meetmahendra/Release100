@@ -59,8 +59,8 @@ def generate_index() -> None:
                         continue
                     if f.name in seen_files:
                         continue
-                    seen_files.add(f.name)
-                    raw_pkg_name = f.name.split("-")[0]
+                    m = re.match(r"^([a-zA-Z0-9_\-\.]+?)-\d", f.name)
+                    raw_pkg_name = m.group(1) if m else f.name.split("-")[0]
                     norm_pkg = normalize_name(raw_pkg_name)
                     packages.setdefault(norm_pkg, []).append(f)
 

@@ -106,9 +106,25 @@ class DatabaseConnectionFactory:
             )
 
         # Standard client-server relational databases (PostgreSQL, MySQL, MSSQL)
+        clean_url = self.db_url
+        if clean_url.startswith(("timescaledb://", "timescale://")):
+            clean_url = clean_url.replace("timescaledb://", "postgresql+psycopg2://").replace("timescale://", "postgresql+psycopg2://")
+        elif clean_url.startswith("postgresql://"):
+            try:
+                import psycopg  # type: ignore[import-untyped]
+            except ImportError:
+                clean_url = clean_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+        elif clean_url.startswith("postgres://"):
+            clean_url = clean_url.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif clean_url.startswith("mysql://"):
+            try:
+                import MySQLdb  # type: ignore[import-untyped]
+            except ImportError:
+                clean_url = clean_url.replace("mysql://", "mysql+pymysql://", 1)
+
         try:
             return create_engine(
-                self.db_url,
+                clean_url,
                 connect_args=connect_args,
                 poolclass=QueuePool,
                 pool_size=self.config.pool_size,

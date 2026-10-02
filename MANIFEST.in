@@ -1,0 +1,3 @@
+recursive-include core_platform *.html *.css *.js *.json *.svg *.ico *.png *.sql
+recursive-include deployment *.html *.css *.js *.json *.svg *.ico *.png *.sql
+recursive-include apps *.html *.css *.js *.json *.svg *.ico *.png *.sql *.onnx
