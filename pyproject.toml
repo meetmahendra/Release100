@@ -33,7 +33,7 @@ dev = [
 ]
 
 [project.scripts]
-release100 = "manage:main"
+release100 = "core_platform.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
