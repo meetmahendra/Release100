@@ -204,7 +204,10 @@ Every application cartridge must be self-contained in `apps/<app_id>/` and decla
 
 ## 9. Pillar 8: Zero-Trust Security & Credential Isolation
 
-1. **Zero Secrets in Git:** `.env`, secrets, private keys, tokens, and `*.db` files must NEVER be committed to version control.
+1. **Zero Real Credentials or Secret Signatures in Git / Code / Tests:**
+   - `.env`, secrets, private keys, live tokens, and `*.db` files must NEVER be committed to version control.
+   - **Mandatory Synthetic Test Fixtures:** Unit tests, doctests, mocks, fixtures, and documentation MUST NEVER contain real credentials or live provider secret signatures (e.g. `AIza...`, `AQ....`, `EAA...`, `ghp_...`, `sk-...`). All test keys, test assertions, and placeholder tokens MUST use generic, synthetic dummy strings (e.g. `mock_gemini_test_key_12345`, `mock_whatsapp_access_token_abcdef`, `test_jwt_secret_98765`).
+   - **Automated Zero-Secret Leak Guard:** The test suite must continuously execute an automated secret scanner (`test_zero_secret_leak_guard.py`) that fails the test build if any tracked file matches live credential token patterns or unmasked credentials.
 2. **Encryption at Rest:** Sensitive tokens, credentials, and biometric embeddings must be encrypted locally using **AES-256-GCM**.
 3. **Zero Inbound Attack Surface:** Edge machines must use outbound reverse tunnels / WebSocket relays (e.g. Cloudflare Workers with Durable Objects) instead of open inbound ports.
 4. **Public Endpoint Sanitization:** Public `/health` endpoints must reveal strictly minimal status (`{"status": "UP", "version": "..."}`); detailed metrics require authenticated administrative tokens.

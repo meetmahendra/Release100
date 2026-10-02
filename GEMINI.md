@@ -45,7 +45,9 @@
 * **Cryptographic Non-Repudiation:** SHA-256 hash chaining ($\text{Record Hash} = \text{SHA-256}(\text{Prev Hash} + \text{Timestamp} + \text{Payload})$) must be enforced on all audit trails to prevent retrospective tampering (FDA 21 CFR Part 11 / ISO 22000 compliance).
 
 ## 8. Zero-Trust Security & Credential Isolation
-* **Zero Credentials in Git:** `.env`, secrets, private keys, tokens, and `*.db` files must NEVER be committed to Git.
+* **Zero Real Credentials or Secret Signatures in Git / Code / Tests:** `.env`, secrets, private keys, tokens, and `*.db` files must NEVER be committed to Git.
+* **Mandatory Synthetic Test Fixtures:** Unit tests, mocks, fixtures, and documentation MUST NEVER contain real credentials or live provider secret signatures (e.g. `AIza...`, `AQ....`, `EAA...`, `ghp_...`, `sk-...`). All test keys, test assertions, and placeholder tokens MUST use generic, synthetic dummy strings (e.g. `mock_gemini_test_key_12345`, `mock_whatsapp_access_token_abcdef`, `test_jwt_secret_98765`).
+* **Automated Zero-Secret Leak Guard:** The test suite must continuously execute an automated secret scanner (`test_zero_secret_leak_guard.py`) that fails the test build if any tracked file matches live credential token patterns or unmasked credentials.
 * **Encryption at Rest:** Sensitive tokens, credentials, and biometric embeddings must be encrypted locally using **AES-256-GCM**.
 * **Zero Inbound Attack Surface:** Edge machines must use outbound reverse tunnels / WebSocket relays (e.g. Cloudflare Workers with Durable Objects) instead of open inbound ports.
 * **Public Endpoint Sanitization:** Public `/health` endpoints must return strictly minimal status (`{"status": "UP", "version": "..."}`); detailed diagnostics require authenticated admin access.
