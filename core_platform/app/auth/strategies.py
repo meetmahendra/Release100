@@ -63,11 +63,19 @@ class PhoneBiometricStrategy:
         if not phone_number:
             return SecurityContext.unauthenticated()
 
+        permitted_apps = list(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else []
+        if not permitted_apps:
+            try:
+                from core_platform.main import plugin_loader
+                permitted_apps = list(plugin_loader.get_all_applications().keys())
+            except Exception:
+                permitted_apps = []
+
         return SecurityContext(
             principal_id=phone_number,
             tenant_id=tenant_id,
             user_roles=["operator"],
-            permitted_apps=list(settings.ENABLED_APPLICATIONS),
+            permitted_apps=permitted_apps,
             auth_strategy="phone_biometric",
             is_authenticated=True,
             is_biometric_verified=biometric_verified,
@@ -187,11 +195,19 @@ class LocalJWTStrategy:
             logger.warning("[LocalJWTStrategy] Invalid password attempt for user=%s", username)
             return None
 
+        permitted_apps = list(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else []
+        if not permitted_apps:
+            try:
+                from core_platform.main import plugin_loader
+                permitted_apps = list(plugin_loader.get_all_applications().keys())
+            except Exception:
+                permitted_apps = []
+
         return SecurityContext(
             principal_id=username,
             tenant_id=settings.TENANT_ID,
             user_roles=["admin"],
-            permitted_apps=list(settings.ENABLED_APPLICATIONS),
+            permitted_apps=permitted_apps,
             auth_strategy="local_jwt",
             is_authenticated=True,
         )

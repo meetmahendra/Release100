@@ -15,9 +15,9 @@
 """
 Dynamic Applications Registry & Monitoring Engine (`apps_registry.py`).
 
-Adheres strictly to Plan 07 v1.0 and GEES v1.0.
+Adheres strictly to Plan 07 v1.0 and GEES v2.0.
 Provides:
-1. Dynamic discovery of installed domain cartridges in `apps/`.
+1. Dynamic discovery of installed domain cartridges (entry points and apps/).
 2. Live comparison against `settings.ENABLED_APPLICATIONS`.
 3. Health and poller status monitoring.
 4. Clean application metadata introspection for Windows Tray UI and Web Console.
@@ -90,41 +90,43 @@ class ApplicationRegistry:
             return cls._instance
 
     def get_installed_applications(self) -> List[ApplicationInfo]:
-        """Scan apps/ directory and discover installed cartridges dynamically."""
+        """Discover installed cartridges dynamically via PluginLoader and apps/ directory."""
         apps: List[ApplicationInfo] = []
-        if not self.apps_dir.exists():
-            return apps
+        discovered_names: set[str] = set()
 
-        enabled = set(settings.ENABLED_APPLICATIONS)
-
-        # Deferred lookup from platform plugin_loader to inspect live cartridge instances
-        loaded_apps = {}
+        # Deferred lookup from platform plugin_loader
+        loaded_apps: Dict[str, Any] = {}
+        descriptors: Dict[str, Any] = {}
         try:
             from core_platform.main import plugin_loader
             loaded_apps = plugin_loader.get_all_applications()
+            descriptors = plugin_loader.discover_descriptors()
         except Exception:
             pass
 
-        for child in sorted(self.apps_dir.iterdir()):
-            if child.is_dir() and not child.name.startswith(("_", ".")):
-                name = child.name
-                is_active = name in enabled
-                app_inst = loaded_apps.get(name)
+        enabled_set = set(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else None
 
-                if app_inst is not None:
-                    title = app_inst.name
-                    description = app_inst.description or f"Domain cartridge: {name}"
-                    dashboard_url = getattr(app_inst, "dashboard_url", "") or f"/admin/apps/{name.replace('_', '-')}"
-                    has_poller = getattr(app_inst, "has_poller", False)
-                    poller_status = app_inst.get_poller_status() if has_poller else None
-                else:
-                    title = name.replace("_", " ").title()
-                    description = f"Domain cartridge: {name}"
-                    dashboard_url = f"/admin/apps/{name.replace('_', '-')}"
-                    has_poller = False
-                    poller_status = None
+        # 1. From discovered descriptors (entry points & apps)
+        for name, desc in descriptors.items():
+            discovered_names.add(name)
+            is_active = (name in enabled_set) if enabled_set is not None else True
+            app_inst = loaded_apps.get(name)
 
-                info = ApplicationInfo(
+            if app_inst is not None:
+                title = getattr(app_inst, "name", name.replace("_", " ").title())
+                description = getattr(app_inst, "description", f"Domain cartridge: {name}") or f"Domain cartridge: {name}"
+                dashboard_url = getattr(app_inst, "dashboard_url", "") or f"/admin/apps/{name.replace('_', '-')}"
+                has_poller = getattr(app_inst, "has_poller", False)
+                poller_status = app_inst.get_poller_status() if has_poller else None
+            else:
+                title = name.replace("_", " ").title()
+                description = f"Domain cartridge: {name}"
+                dashboard_url = f"/admin/apps/{name.replace('_', '-')}"
+                has_poller = False
+                poller_status = None
+
+            apps.append(
+                ApplicationInfo(
                     app_name=name,
                     title=title,
                     description=description,
@@ -133,17 +135,57 @@ class ApplicationRegistry:
                     has_poller=has_poller,
                     poller_status=poller_status,
                 )
-                apps.append(info)
+            )
+
+        # 2. From filesystem apps_dir (if any directories not captured in descriptors)
+        if self.apps_dir.exists():
+            for child in sorted(self.apps_dir.iterdir()):
+                if child.is_dir() and not child.name.startswith(("_", ".")):
+                    name = child.name
+                    if name in discovered_names:
+                        continue
+                    discovered_names.add(name)
+                    is_active = (name in enabled_set) if enabled_set is not None else True
+                    app_inst = loaded_apps.get(name)
+
+                    if app_inst is not None:
+                        title = getattr(app_inst, "name", name.replace("_", " ").title())
+                        description = getattr(app_inst, "description", f"Domain cartridge: {name}") or f"Domain cartridge: {name}"
+                        dashboard_url = getattr(app_inst, "dashboard_url", "") or f"/admin/apps/{name.replace('_', '-')}"
+                        has_poller = getattr(app_inst, "has_poller", False)
+                        poller_status = app_inst.get_poller_status() if has_poller else None
+                    else:
+                        title = name.replace("_", " ").title()
+                        description = f"Domain cartridge: {name}"
+                        dashboard_url = f"/admin/apps/{name.replace('_', '-')}"
+                        has_poller = False
+                        poller_status = None
+
+                    apps.append(
+                        ApplicationInfo(
+                            app_name=name,
+                            title=title,
+                            description=description,
+                            dashboard_url=dashboard_url,
+                            is_active=is_active,
+                            has_poller=has_poller,
+                            poller_status=poller_status,
+                        )
+                    )
 
         return apps
 
     def is_app_active(self, app_name: str) -> bool:
         """Check if a specific domain application is currently enabled."""
+        if settings.ENABLED_APPLICATIONS is None:
+            return True
         return app_name in settings.ENABLED_APPLICATIONS
 
     def enable_application(self, app_name: str) -> bool:
         """Dynamically enable an application."""
         with self._lock:
+            if settings.ENABLED_APPLICATIONS is None:
+                settings.ENABLED_APPLICATIONS = [a.app_name for a in self.get_installed_applications()]
             if app_name not in settings.ENABLED_APPLICATIONS:
                 settings.ENABLED_APPLICATIONS.append(app_name)
                 logger.info("[AppRegistry] Enabled application: %s", app_name)
@@ -153,6 +195,8 @@ class ApplicationRegistry:
     def disable_application(self, app_name: str) -> bool:
         """Dynamically disable an application."""
         with self._lock:
+            if settings.ENABLED_APPLICATIONS is None:
+                settings.ENABLED_APPLICATIONS = [a.app_name for a in self.get_installed_applications()]
             if app_name in settings.ENABLED_APPLICATIONS:
                 settings.ENABLED_APPLICATIONS.remove(app_name)
                 logger.info("[AppRegistry] Disabled application: %s", app_name)

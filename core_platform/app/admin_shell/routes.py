@@ -313,7 +313,7 @@ async def create_api_key(
         label=label,
         principal_id=ctx.principal_id,
         roles=roles,
-        permitted_apps=permitted_apps or list(settings.ENABLED_APPLICATIONS),
+        permitted_apps=permitted_apps or (list(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else []),
         max_rpm=max_rpm,
         tenant_id=ctx.tenant_id,
         expiry_days=expiry_days,
@@ -357,7 +357,7 @@ async def revoke_api_key(
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _build_nav_apps(ctx: SecurityContext) -> List[Dict[str, str]]:
-    """Build the sidebar navigation app links for the shell template.
+    """Build the sidebar navigation app links for the shell template dynamically.
 
     Args:
         ctx: Authenticated SecurityContext.
@@ -365,24 +365,23 @@ def _build_nav_apps(ctx: SecurityContext) -> List[Dict[str, str]]:
     Returns:
         List of nav app dicts with 'id', 'label', and 'url'.
     """
-    _APP_NAV: Dict[str, Dict[str, str]] = {
-        "temperature_marker": {
-            "label": "🌡️ Temperature Marker",
-            "url": "/admin/apps/temperature-marker/",
-        },
-        "mail_organizer": {
-            "label": "📧 Mail Organizer",
-            "url": "/admin/apps/mail-organizer/",
-        },
-    }
+    try:
+        from core_platform.main import plugin_loader
+        all_apps = plugin_loader.get_all_applications()
+    except Exception:
+        all_apps = {}
 
-    enabled = set(settings.ENABLED_APPLICATIONS)
+    enabled = set(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else set(all_apps.keys())
     permitted = set(ctx.permitted_apps) if ctx.permitted_apps else enabled
 
     nav_apps = []
-    for app_id, nav in _APP_NAV.items():
+    for app_id, app_inst in all_apps.items():
         if app_id in enabled and app_id in permitted:
-            nav_apps.append({"id": app_id, **nav})
+            nav_apps.append({
+                "id": app_id,
+                "label": app_inst.name,
+                "url": getattr(app_inst, "dashboard_url", "") or f"/admin/apps/{app_id.replace('_', '-')}/",
+            })
     return nav_apps
 
 

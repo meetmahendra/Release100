@@ -194,6 +194,22 @@ def test_admin_shell_routes() -> None:
     assert res_fail.status_code == 401
     assert "Invalid credentials" in res_fail.text
 
+    # 2b. Login POST success with default admin credentials and None ENABLED_APPLICATIONS
+    from core_platform.app.config import settings
+    orig_enabled = settings.ENABLED_APPLICATIONS
+    try:
+        settings.ENABLED_APPLICATIONS = None
+        res_success = client.post(
+            "/admin/login",
+            data={"username": "admin", "password": "release100_admin", "csrf_token": csrf_tok},
+            headers={"cookie": f"csrf_token={csrf_tok}"},
+        )
+        assert res_success.status_code == 302
+        assert res_success.headers["location"] == "/admin/"
+        assert "admin_token" in res_success.cookies
+    finally:
+        settings.ENABLED_APPLICATIONS = orig_enabled
+
     # 3. Logout
     res_logout = client.get("/admin/logout")
     assert res_logout.status_code == 302
@@ -234,3 +250,4 @@ def test_admin_shell_routes() -> None:
     res_revoke = client.post("/admin/api-keys/revoke", data={"key_hash": data["key_hash"]})
     assert res_revoke.status_code == 200
     assert res_revoke.json()["revoked"] is True
+

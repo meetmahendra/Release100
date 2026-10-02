@@ -83,7 +83,14 @@ class RBACFilter:
             Ordered list of apps this principal may access.
         """
         if enabled_apps is None:
-            enabled_apps = list(settings.ENABLED_APPLICATIONS)
+            if settings.ENABLED_APPLICATIONS is not None:
+                enabled_apps = list(settings.ENABLED_APPLICATIONS)
+            else:
+                try:
+                    from core_platform.main import plugin_loader
+                    enabled_apps = list(plugin_loader.get_all_applications().keys())
+                except Exception:
+                    enabled_apps = []
 
         if not context.is_authenticated:
             return []
