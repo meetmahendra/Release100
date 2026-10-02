@@ -13,20 +13,24 @@
 # limitations under the License.
 
 """
-Dynamic Application Plugin Loader & Lifecycle Manager.
+Dynamic Application Plugin Loader & Lifecycle Manager (GEES v2.0).
 
 Adheres strictly to Plan 02 v1.3 Section 11 and Plan 01 v1.4 Section 1.
-Scans the apps/ directory, imports domain cartridges, validates the BaseApplication
-interface, and mounts their UI routers and MCP tools into the FastAPI host.
+Supports hybrid cartridge discovery:
+  1. Python Standard Entry Points (group='release100.cartridges' or 'core_platform.apps')
+  2. Local apps/ Directory Filesystem Scanning (Zero-Boilerplate Monorepo Fallback)
 
-Replaces the hardcoded 'if temperature_marker in settings.ENABLED_APPLICATIONS'
-blocks in main.py with a fully dynamic, zero-boilerplate mounting lifecycle.
+Mounts UI routers, configures polyglot persistence paradigms (A/B/C),
+and registers MCP tools into the FastAPI host dynamically.
 """
 
+from dataclasses import dataclass
 import importlib
+from importlib.metadata import EntryPoint, entry_points
+import inspect
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type, cast
 
 from fastapi import FastAPI
 
@@ -35,16 +39,30 @@ from core_platform.app.plugin_engine.base_plugin import BaseApplication
 logger = logging.getLogger("core_platform.plugin_engine")
 
 
+@dataclass
+class CartridgeDescriptor:
+    """Descriptor for a discovered application cartridge."""
+
+    app_id: str
+    source: str  # "entry_point" | "filesystem"
+    target: str  # Entry point target (e.g. 'apps.foo:Plugin') or directory path
+    package_name: Optional[str] = None
+    version: Optional[str] = None
+    entry_point_obj: Optional[EntryPoint] = None
+
+
 class PluginLoader:
     """
     Dynamic loader that discovers, validates, and mounts application cartridges.
 
     Lifecycle:
-      1. discover()  — scans apps/ for plugin.py files
-      2. load(app)   — imports the plugin module and instantiates BaseApplication
-      3. mount(app)  — mounts UI router + MCP tools into FastAPI host
-      4. shutdown()  — calls on_shutdown() on all loaded cartridges
+      1. discover_descriptors() / discover_available() — scans entry points and apps/
+      2. load_all()   — imports modules, instantiates BaseApplication, binds DBs
+      3. mount_all()  — mounts UI routers + MCP tools into FastAPI host
+      4. shutdown_all() — calls on_shutdown() on all loaded cartridges
     """
+
+    ENTRY_POINT_GROUPS: List[str] = ["release100.cartridges", "core_platform.apps"]
 
     def __init__(
         self,
@@ -61,25 +79,72 @@ class PluginLoader:
             # Resolve relative to this file: core_platform/app/plugin_engine/loader.py → ../../../.. → apps/
             apps_root = Path(__file__).resolve().parent.parent.parent.parent / "apps"
         self.apps_root = apps_root
-        self.enabled_apps: List[str] = enabled_apps or []
+        self.enabled_apps: Optional[List[str]] = enabled_apps
         self._loaded: Dict[str, BaseApplication] = {}
+        self._descriptors: Dict[str, CartridgeDescriptor] = {}
 
-    def discover_available(self) -> List[str]:
-        """Scan the apps/ directory to find all installed cartridges.
+    def discover_descriptors(self) -> Dict[str, CartridgeDescriptor]:
+        """Discover all cartridges registered via Python entry points or local filesystem.
 
         Returns:
-            List of app_id strings for all apps that have a plugin.py.
+            Dict mapping app_id to its CartridgeDescriptor.
         """
-        discovered: List[str] = []
-        if not self.apps_root.exists():
-            logger.warning("[PluginLoader] apps/ directory not found at %s", self.apps_root)
-            return discovered
+        descriptors: Dict[str, CartridgeDescriptor] = {}
 
-        for app_dir in sorted(self.apps_root.iterdir()):
-            if app_dir.is_dir() and (app_dir / "plugin.py").exists():
-                discovered.append(app_dir.name)
+        # 1. Discover via Python Standard Entry Points
+        for group in self.ENTRY_POINT_GROUPS:
+            try:
+                eps = entry_points(group=group)
+                for ep in eps:
+                    app_id = ep.name
+                    if app_id not in descriptors:
+                        dist = getattr(ep, "dist", None)
+                        pkg_name = getattr(dist, "name", None) if dist else None
+                        pkg_ver = getattr(dist, "version", None) if dist else None
+                        descriptors[app_id] = CartridgeDescriptor(
+                            app_id=app_id,
+                            source="entry_point",
+                            target=ep.value,
+                            package_name=pkg_name,
+                            version=pkg_ver,
+                            entry_point_obj=ep,
+                        )
+                        logger.debug(
+                            "[PluginLoader] Discovered entry-point cartridge: %s (%s)",
+                            app_id,
+                            ep.value,
+                        )
+            except Exception as exc:
+                logger.debug("[PluginLoader] Entry point group '%s' query notice: %s", group, exc)
 
-        return discovered
+        # 2. Discover via Local Filesystem Fallback (apps/ directory)
+        if self.apps_root.exists():
+            for app_dir in sorted(self.apps_root.iterdir()):
+                if app_dir.is_dir() and (app_dir / "plugin.py").exists():
+                    app_id = app_dir.name
+                    if app_id not in descriptors:
+                        descriptors[app_id] = CartridgeDescriptor(
+                            app_id=app_id,
+                            source="filesystem",
+                            target=str(app_dir),
+                        )
+                        logger.debug(
+                            "[PluginLoader] Discovered filesystem cartridge: %s (%s)",
+                            app_id,
+                            app_dir,
+                        )
+
+        self._descriptors = descriptors
+        return descriptors
+
+    def discover_available(self) -> List[str]:
+        """Scan entry points and apps/ directory to find all available cartridge IDs.
+
+        Returns:
+            List of app_id strings for all discovered cartridges.
+        """
+        descriptors = self.discover_descriptors()
+        return list(descriptors.keys())
 
     def load_all(self) -> Dict[str, BaseApplication]:
         """Load and instantiate all enabled application cartridges.
@@ -87,19 +152,20 @@ class PluginLoader:
         Returns:
             Dict mapping app_id to loaded BaseApplication instance.
         """
-        available = self.discover_available()
+        descriptors = self.discover_descriptors()
 
-        for app_id in available:
-            if self.enabled_apps and app_id not in self.enabled_apps:
+        for app_id, descriptor in descriptors.items():
+            if self.enabled_apps is not None and app_id not in self.enabled_apps:
                 logger.debug("[PluginLoader] Skipping disabled cartridge: %s", app_id)
                 continue
 
             try:
-                instance = self._load_single(app_id)
+                instance = self._load_single_descriptor(descriptor)
                 if instance is not None:
                     self._loaded[app_id] = instance
-                    logger.info("[PluginLoader] Loaded cartridge: %s v%s", app_id, instance.version)
-                    
+                    src_tag = f"ENTRY_POINT ({descriptor.target})" if descriptor.source == "entry_point" else "FILESYSTEM"
+                    logger.info("[PluginLoader] Loaded cartridge '%s' v%s via [%s]", app_id, instance.version, src_tag)
+
                     # ── Pluggable Polyglot Database Management Integration (GEES v2.0) ──
                     try:
                         from core_platform.app.db.manager import get_db_manager
@@ -119,7 +185,6 @@ class PluginLoader:
                             logger.info("[PluginLoader] Paradigm A (Core-Facilitated): Registered metadata for '%s'", app_id)
                         else:
                             # Paradigm B: 100% Cartridge-Autonomous (MongoDB, DuckDB, Flat Files, External CRM)
-                            # Core Platform does not interfere with cartridge persistence
                             logger.debug("[PluginLoader] Paradigm B (Cartridge-Autonomous): '%s' manages self-persistence", app_id)
                     except Exception as db_exc:
                         logger.warning("[PluginLoader] DB registration notice for '%s': %s", app_id, db_exc)
@@ -139,46 +204,81 @@ class PluginLoader:
         return self._loaded
 
     def _load_single(self, app_id: str) -> Optional[BaseApplication]:
-        """Import and instantiate a single application cartridge.
+        """Import and instantiate a single application cartridge by ID.
 
         Args:
-            app_id: Directory name under apps/ (e.g. 'temperature_marker').
+            app_id: Cartridge identifier.
 
         Returns:
             Instantiated BaseApplication or None on failure.
         """
-        module_path = f"apps.{app_id}.plugin"
-        try:
-            module = importlib.import_module(module_path)
-        except ImportError as exc:
-            logger.error("[PluginLoader] Cannot import '%s': %s", module_path, exc)
-            return None
+        descriptors = self.discover_descriptors()
+        desc = descriptors.get(app_id)
+        if desc is None:
+            # Fallback to direct filesystem specification
+            desc = CartridgeDescriptor(
+                app_id=app_id,
+                source="filesystem",
+                target=f"apps.{app_id}.plugin",
+            )
+        return self._load_single_descriptor(desc)
 
-        # Find the BaseApplication subclass in the module
-        app_class: Optional[type] = None
-        for attr_name in dir(module):
-            obj = getattr(module, attr_name)
-            if (
-                isinstance(obj, type)
-                and issubclass(obj, BaseApplication)
-                and obj is not BaseApplication
-            ):
-                app_class = obj
-                break
+    def _load_single_descriptor(self, descriptor: CartridgeDescriptor) -> Optional[BaseApplication]:
+        """Import and instantiate a single cartridge from a descriptor."""
+        app_class: Optional[Type[BaseApplication]] = None
+
+        if descriptor.source == "entry_point" and descriptor.entry_point_obj is not None:
+            try:
+                loaded_obj = descriptor.entry_point_obj.load()
+                if isinstance(loaded_obj, type) and issubclass(loaded_obj, BaseApplication):
+                    app_class = loaded_obj
+                elif isinstance(loaded_obj, BaseApplication):
+                    return loaded_obj
+            except Exception as ep_exc:
+                logger.warning(
+                    "[PluginLoader] Entry point load failed for '%s', attempting module fallback: %s",
+                    descriptor.app_id,
+                    ep_exc,
+                )
 
         if app_class is None:
-            logger.error(
-                "[PluginLoader] No BaseApplication subclass found in '%s'", module_path
-            )
+            # Module import path resolution
+            if descriptor.source == "entry_point" and ":" in descriptor.target:
+                mod_name, cls_name = descriptor.target.split(":", 1)
+            else:
+                mod_name = f"apps.{descriptor.app_id}.plugin"
+                cls_name = ""
+
+            try:
+                module = importlib.import_module(mod_name)
+            except ImportError as exc:
+                logger.error("[PluginLoader] Cannot import module '%s': %s", mod_name, exc)
+                return None
+
+            if cls_name:
+                cand = getattr(module, cls_name, None)
+                if isinstance(cand, type) and issubclass(cand, BaseApplication) and cand is not BaseApplication:
+                    app_class = cand
+
+            if app_class is None:
+                for attr_name in dir(module):
+                    obj = getattr(module, attr_name)
+                    if (
+                        isinstance(obj, type)
+                        and issubclass(obj, BaseApplication)
+                        and obj is not BaseApplication
+                    ):
+                        app_class = obj
+                        break
+
+        if app_class is None:
+            logger.error("[PluginLoader] No BaseApplication subclass found for '%s'", descriptor.app_id)
             return None
 
         try:
-            import inspect
             sig = inspect.signature(app_class)
             init_kwargs: Dict[str, Any] = {}
 
-            # If cartridge constructor accepts a shared engine and does not declare a custom DB URL,
-            # pass the central Core Database Engine directly (Paradigm A)
             if "engine" in sig.parameters and not getattr(app_class, "custom_database_url", None):
                 try:
                     from core_platform.app.db.manager import get_db_manager
@@ -189,11 +289,8 @@ class PluginLoader:
             instance: BaseApplication = app_class(**init_kwargs)
             return instance
         except Exception as exc:
-            logger.error(
-                "[PluginLoader] Error instantiating '%s': %s", app_class.__name__, exc
-            )
+            logger.error("[PluginLoader] Error instantiating '%s': %s", app_class.__name__, exc)
             return None
-
 
     def mount_all(self, fastapi_app: FastAPI) -> None:
         """Mount UI routers and register MCP tools for all loaded cartridges.
@@ -234,22 +331,14 @@ class PluginLoader:
                 logger.warning("[PluginLoader] on_shutdown() error for '%s': %s", app_id, exc)
 
     def get_all_health_statuses(self) -> Dict[str, Any]:
-        """Aggregate health metadata from all loaded cartridges.
-
-        Returns:
-            Dict mapping app_id to its health status dict.
-        """
+        """Aggregate health metadata from all loaded cartridges."""
         return {
             app_id: instance.get_health_status()
             for app_id, instance in self._loaded.items()
         }
 
     def get_all_mcp_tools(self) -> List[Dict[str, Any]]:
-        """Collect all MCP tool manifests from loaded cartridges.
-
-        Returns:
-            Flat list of tool descriptor dicts ready for MCP server registration.
-        """
+        """Collect all MCP tool manifests from loaded cartridges."""
         all_tools: List[Dict[str, Any]] = []
         for instance in self._loaded.values():
             try:
@@ -265,20 +354,9 @@ class PluginLoader:
         return list(self._loaded.keys())
 
     def get_application(self, app_id: str) -> Optional[BaseApplication]:
-        """Return the loaded cartridge instance for a given app_id, or None.
-
-        Args:
-            app_id: Application cartridge identifier (e.g. 'temperature_marker').
-
-        Returns:
-            Loaded BaseApplication instance, or None if not loaded.
-        """
+        """Return the loaded cartridge instance for a given app_id, or None."""
         return self._loaded.get(app_id)
 
     def get_all_applications(self) -> Dict[str, BaseApplication]:
-        """Return all currently loaded cartridge instances.
-
-        Returns:
-            Dict mapping app_id to BaseApplication instance.
-        """
+        """Return all currently loaded cartridge instances."""
         return dict(self._loaded)

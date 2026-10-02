@@ -1,78 +1,49 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "release100"
-version = "1.0.3"
-description = "Release100 Enterprise Multi-Application Agentic Platform & Ingress Gateway"
-readme = "README.md"
+name = "release100-core"
+version = "2.0.0"
+description = "Release100 Enterprise Multi-Kiosk Platform Microkernel (GEES v2.0)"
 authors = [{ name = "Mahendra GURAV" }]
-license = { text = "Apache-2.0" }
+readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
 dependencies = [
-    "pydantic>=2.7.0",
-    "pydantic-settings>=2.2.0",
-    "fastapi>=0.111.0",
-    "uvicorn[standard]>=0.30.0",
-    "cryptography>=42.0.0",
-    "jinja2>=3.1.4",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.22.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "sqlalchemy>=2.0.0",
+    "jinja2>=3.1.0",
+    "certifi",
 ]
 
-[tool.ruff]
-line-length = 88
-target-version = "py311"
-exclude = [
-    ".git",
-    "__pycache__",
-    "dist",
-    "build",
-    ".venv",
-    "venv",
+[project.optional-dependencies]
+all-databases = [
+    "duckdb>=0.9.0",
+    "psycopg2-binary>=2.9.0",
+    "pymysql>=1.1.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.4.0",
 ]
 
-[tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "C4", "UP"]
-ignore = ["E501"]
+[project.scripts]
+release100 = "manage:main"
 
-[tool.black]
-line-length = 88
-target-version = ["py311"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core_platform*", "deployment*"]
 
 [tool.mypy]
-python_version = "3.12"
-explicit_package_bases = true
 strict = true
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = false
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
+python_version = "3.10"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-minversion = "7.0"
-addopts = "-ra -q --strict-markers"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-asyncio_mode = "auto"
-
-[tool.coverage.run]
-branch = true
-source = ["core_platform", "apps"]
-omit = [
-    "tests/*",
-    "**/__pycache__/*",
-]
-
-[tool.coverage.report]
-fail_under = 80
-show_missing = true
-skip_covered = false

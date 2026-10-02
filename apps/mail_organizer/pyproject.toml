@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "release100-cartridge-mail-organizer"
+version = "1.0.0"
+description = "Autonomous AI Email Triage & Calendar Task Management Cartridge for Release100"
+authors = [{ name = "Mahendra GURAV" }]
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+dependencies = [
+    "release100-core",
+    "sqlalchemy>=2.0.0",
+    "google-api-python-client>=2.0.0",
+]
+
+[project.entry-points."release100.cartridges"]
+mail_organizer = "apps.mail_organizer.plugin:MailOrganizerPlugin"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["apps.mail_organizer*"]

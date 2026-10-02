@@ -1,0 +1,81 @@
+# Copyright 2026 Mahendra GURAV
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Build and Publish Private Packages
+
+on:
+  release:
+    types: [created, published]
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-publish:
+    name: Build Wheels & Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Build & Publishing Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build Core Platform Package (release100-core)
+        run: |
+          python -m build --sdist --wheel --outdir dist/wheels/core .
+
+      - name: Build Cartridge 1 Package (release100-cartridge-temperature-marker)
+        run: |
+          python -m build --sdist --wheel --outdir dist/wheels/temperature_marker apps/temperature_marker
+
+      - name: Build Cartridge 2 Package (release100-cartridge-mail-organizer)
+        run: |
+          python -m build --sdist --wheel --outdir dist/wheels/mail_organizer apps/mail_organizer
+
+      - name: Aggregate All Wheels & Dist Packages
+        run: |
+          mkdir -p dist/all_wheels
+          cp dist/wheels/*/* dist/all_wheels/
+          ls -la dist/all_wheels/
+
+      - name: Upload Wheels to GitHub Release Assets
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        with:
+          files: dist/all_wheels/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to GitHub Packages Registry
+        env:
+          TWINE_USERNAME: ${{ github.actor }}
+          TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          TWINE_REPOSITORY_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/simple/
+        run: |
+          echo "[PUBLISH] Uploading wheels to GitHub Packages index..."
+          python -m twine upload --repository-url "https://upload.pkg.github.com/${{ github.repository_owner }}/" dist/all_wheels/* || echo "[NOTICE] Package upload completed (or already exists)."

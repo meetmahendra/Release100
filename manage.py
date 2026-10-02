@@ -253,12 +253,76 @@ def command_seed_mail() -> int:
     return 0
 
 
-def command_run(mode: str = "headless", host: str = "0.0.0.0", port: int = 8002) -> int:
+def command_list_cartridges() -> int:
+    """Discover and list all installed application cartridges and their discovery sources."""
+    from core_platform.app.plugin_engine.loader import PluginLoader
+
+    loader = PluginLoader()
+    descriptors = loader.discover_descriptors()
+
+    print("=" * 75)
+    print("  RELEASE100 DISCOVERED APPLICATION CARTRIDGES (GEES v2.0)")
+    print("=" * 75)
+    if not descriptors:
+        print("  [INFO] No application cartridges discovered.")
+    else:
+        for app_id, desc in descriptors.items():
+            src_label = f"ENTRY_POINT ({desc.package_name or 'installed'})" if desc.source == "entry_point" else f"FILESYSTEM ({desc.target})"
+            ver_label = f"v{desc.version}" if desc.version else ""
+            print(f"  - {app_id:<22} : [{desc.source.upper()}] {ver_label:<8} -> {src_label}")
+    print("=" * 75)
+    return 0
+
+
+def command_create_cartridge(name: str, output_dir: str, author: str, description: str) -> int:
+    """Scaffold a new standalone, decoupled cartridge project."""
+    from core_platform.app.plugin_engine.scaffolder import generate_cartridge_project
+
+    target_path = Path(output_dir).resolve()
+    print("=" * 75)
+    print(f"  SCAFFOLDING NEW DECOUPLED CARTRIDGE: {name}")
+    print(f"  Target Directory: {target_path}")
+    print("=" * 75)
+
+    created = generate_cartridge_project(
+        cartridge_name=name,
+        output_dir=target_path,
+        author=author,
+        description=description if description else None,
+    )
+
+    for key, path in created.items():
+        print(f"  [CREATED] {key:<12} -> {path}")
+
+    print("=" * 75)
+    print("[SUCCESS] Cartridge generated successfully!")
+    print("To install in editable mode for the platform:")
+    print(f"  cd {created['pyproject'].parent}")
+    print("  pip install -e .")
+    print("=" * 75)
+    return 0
+
+
+def command_run(
+    mode: str = "headless",
+    host: str = "0.0.0.0",
+    port: int = 8002,
+    apps: Optional[str] = None,
+) -> int:
     """Launch Release100 platform host and admin web shell."""
     import uvicorn
 
+    if apps is not None:
+        if apps.lower() in ("none", "empty", "[]", "zero"):
+            selected_apps: List[str] = []
+        else:
+            selected_apps = [a.strip() for a in apps.split(",") if a.strip()]
+        settings.ENABLED_APPLICATIONS = selected_apps
+        os.environ["ENABLED_APPLICATIONS"] = json.dumps(selected_apps)
+
     print("=" * 70)
     print(f"  LAUNCHING RELEASE100 PLATFORM HOST (Mode={mode.upper()})")
+    print(f"  Active Cartridges  : {settings.ENABLED_APPLICATIONS or '[NONE - Pure Microkernel]'}")
     print(f"  Admin Web Shell: http://127.0.0.1:{port}/admin/apps/temperature-marker/fleet")
     print(f"  1-Click Geolocation: http://127.0.0.1:{port}/loc")
     print(f"  Health Diagnostic  : http://127.0.0.1:{port}/health")
@@ -298,6 +362,16 @@ def main() -> None:
     # export-audit
     subparsers.add_parser("export-audit", help="Zip audit logs (.jsonl, .csv, .html) to Desktop")
 
+    # list-cartridges
+    subparsers.add_parser("list-cartridges", help="Discover and display all installed/filesystem cartridges")
+
+    # create-cartridge
+    create_parser = subparsers.add_parser("create-cartridge", help="Scaffold a new decoupled cartridge package")
+    create_parser.add_argument("--name", required=True, help="Cartridge snake_case identifier (e.g. smart_billing)")
+    create_parser.add_argument("--output-dir", default=".", help="Target directory to create project")
+    create_parser.add_argument("--author", default="Platform Contributor", help="Author name")
+    create_parser.add_argument("--description", default="", help="Cartridge description")
+
     # seed
     subparsers.add_parser("seed", help="Seed sample operators for manual testing")
 
@@ -309,6 +383,11 @@ def main() -> None:
     run_parser.add_argument("--mode", choices=["headless", "tray"], default="headless", help="Execution mode")
     run_parser.add_argument("--host", default="0.0.0.0", help="Host interface")
     run_parser.add_argument("--port", type=int, default=8002, help="Port number")
+    run_parser.add_argument(
+        "--apps",
+        default=None,
+        help="Comma-separated list of cartridges to load (e.g. 'temperature_marker', 'mail_organizer', or 'none')",
+    )
 
     # build
     build_parser = subparsers.add_parser("build", help="Build deployment artifacts")
@@ -322,12 +401,16 @@ def main() -> None:
         sys.exit(command_health())
     elif args.command == "export-audit":
         sys.exit(command_export_audit())
+    elif args.command == "list-cartridges":
+        sys.exit(command_list_cartridges())
+    elif args.command == "create-cartridge":
+        sys.exit(command_create_cartridge(name=args.name, output_dir=args.output_dir, author=args.author, description=args.description))
     elif args.command == "seed":
         sys.exit(command_seed())
     elif args.command == "seed-mail":
         sys.exit(command_seed_mail())
     elif args.command == "run":
-        sys.exit(command_run(mode=args.mode, host=args.host, port=args.port))
+        sys.exit(command_run(mode=args.mode, host=args.host, port=args.port, apps=args.apps))
     elif args.command == "build":
         sys.exit(command_build(target=args.target, dry_run=args.dry_run, edition=args.edition))
     else:
