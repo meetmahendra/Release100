@@ -67,7 +67,14 @@ def command_health() -> int:
     print(f"Tenant / Org  : {settings.ORGANIZATION_NAME} ({settings.TENANT_ID})")
     print(f"Active Kiosk  : {settings.STATION_NAME} [{settings.KIOSK_ID}]")
     print(f"Execution Mode: {settings.EXECUTION_MODE.upper()} (DRY_RUN={settings.DRY_RUN})")
-    print(f"Active Cartridges: {', '.join(settings.ENABLED_APPLICATIONS)}")
+
+    from core_platform.app.plugin_engine.loader import PluginLoader
+    loader = PluginLoader(enabled_apps=settings.ENABLED_APPLICATIONS)
+    discovered = loader.discover_available()
+    if discovered:
+        print(f"Active Cartridges: {', '.join(discovered)}")
+    else:
+        print("Active Cartridges: [NONE] (0 cartridges installed)")
     print("-" * 70)
 
     print("COGNITIVE SKILLS HEALTH:")

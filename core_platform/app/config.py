@@ -66,10 +66,10 @@ class PlatformSettings(BaseSettings):
     DB_POOL_SIZE: int = Field(default=20, description="Connection pool size for client-server SQL engines")
     DB_MAX_OVERFLOW: int = Field(default=10, description="Max overflow connections beyond pool size")
 
-    # Active Cartridges
-    ENABLED_APPLICATIONS: List[str] = Field(
-        default_factory=lambda: ["temperature_marker", "mail_organizer"],
-        description="List of active application cartridges",
+    # Active Cartridges Whitelist (GEES v2.0 Rule 4: zero hardcoded domain cartridges)
+    ENABLED_APPLICATIONS: Optional[List[str]] = Field(
+        default=None,
+        description="Optional list of active application cartridges. If None, all discovered cartridges are loaded.",
     )
 
     # Audit & Telemetry Directories
