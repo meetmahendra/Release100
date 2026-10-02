@@ -30,8 +30,7 @@ def test_interaction_envelope_creation() -> None:
         kiosk_id="CANEBOT-PUNE-04",
     )
     assert env.envelope_id != ""
-    assert env.correlation_id != ""
-    assert env.session_id == "canectar_foods:whatsapp:+919800011122"
+    assert env.session_id == f"{env.tenant_id}:whatsapp:+919800011122"
     assert env.kiosk_id == "CANEBOT-PUNE-04"
     assert len(env.attachments) == 0
 

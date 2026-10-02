@@ -114,6 +114,11 @@ class KnowledgeGraphService:
             return None
         return (loc.latitude, loc.longitude, loc.geofence_radius_meters)
 
+    def get_kiosk_geofence_radius(self, kiosk_id: str) -> float:
+        """Retrieve geofence radius in meters for a kiosk (default 100.0)."""
+        loc = self.get_location_for_kiosk(kiosk_id)
+        return float(loc.geofence_radius_meters) if loc else 100.0
+
     def get_kiosk_by_id(self, kiosk_id: str) -> Optional[Dict[str, Any]]:
         """Retrieve resolved dictionary of kiosk profile and location coordinates.
 

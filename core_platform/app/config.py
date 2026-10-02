@@ -35,10 +35,11 @@ class PlatformSettings(BaseSettings):
         extra="ignore",
     )
 
-    # Operational Identity & Multi-Kiosk Defaults (Domain-neutral core defaults)
+    # Operational Identity & Node Defaults (Domain-neutral core defaults)
     ORGANIZATION_NAME: str = Field(default="Release100 Organization", description="Client organization name")
-    STATION_NAME: str = Field(default="Release100 Node #01", description="Friendly station display name")
-    KIOSK_ID: str = Field(default="NODE-01", description="Unique physical kiosk fleet identifier")
+    STATION_NAME: str = Field(default="Release100 Node #01", description="Friendly station or facility display name")
+    NODE_ID: str = Field(default="NODE-01", description="Unique physical or logical host node identifier")
+    KIOSK_ID: str = Field(default="NODE-01", description="Alias for NODE_ID (backward-compatible host identifier)")
     TENANT_ID: str = Field(default="default_tenant", description="Multi-tenant identifier")
 
     # Safety & Execution Modes (GEES v1.0 Section 2.3)
@@ -121,7 +122,7 @@ class PlatformSettings(BaseSettings):
     # Cloud Relay Settings (Outbound Zero-Inbound WebSocket Bridge)
     RELAY_WS_URL: str = Field(
         default="",
-        description="Outbound WebSocket URL to Cloudflare/Render relay (e.g. wss://relay.canectar.com/ws/CANEBOT-PUNE-04)",
+        description="Outbound WebSocket URL to Cloudflare/Render edge relay (e.g. wss://relay.example.com/ws/NODE-01)",
     )
     RELAY_RECONNECT_INTERVAL_SECONDS: int = Field(
         default=5,
@@ -129,8 +130,8 @@ class PlatformSettings(BaseSettings):
     )
     # Downstream Enterprise Telemetry Endpoint
     DOWNSTREAM_REST_URL: str = Field(
-        default="https://api.canectar.com/v1/telemetry/chiller-attendance",
-        description="Enterprise downstream ingest endpoint for attendance & temperature",
+        default="",
+        description="Enterprise downstream ingest endpoint for operational telemetry",
     )
     OUTBOX_DRAIN_INTERVAL_SECONDS: int = Field(
         default=30,
@@ -160,7 +161,7 @@ class PlatformSettings(BaseSettings):
     # Leave empty for direct / LAN deployments — endpoint URL will be derived from the request.
     ORCHESTRATOR_BASE_URL: str = Field(
         default="",
-        description="Public base URL (e.g. 'https://kiosk.canectar.com') for reverse-proxy deployments",
+        description="Public base URL (e.g. 'https://node.example.com') for reverse-proxy deployments",
     )
 
 

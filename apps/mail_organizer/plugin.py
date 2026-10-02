@@ -98,6 +98,7 @@ class MailOrganizerApplication(BaseApplication):
     keywords: List[str] = [
         "mail", "email", "inbox", "draft", "reply", "forward",
         "meeting", "schedule", "calendar", "task", "jira", "linear",
+        "approve", "reject", "summary", "digest",
     ]
 
 
@@ -118,6 +119,15 @@ class MailOrganizerApplication(BaseApplication):
         """Return SQLAlchemy MetaData so Alembic can discover mail organizer tables dynamically."""
         from apps.mail_organizer.database.models import Base
         return Base.metadata
+
+    def get_whatsapp_handler(self) -> Any:
+        """Return the domain-specific WhatsApp message handler for Mail Organizer."""
+        from apps.mail_organizer.services.whatsapp_handler import MailOrganizerWhatsAppHandler
+        return MailOrganizerWhatsAppHandler(
+            db_service=self.db_service,
+            pm_manager=self.pm_manager,
+            workflow=self.workflow,
+        )
 
     def get_convenience_routes(self) -> List[Any]:
         """Return /mail redirect shortcut for registration at the platform root."""

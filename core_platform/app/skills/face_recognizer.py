@@ -185,6 +185,16 @@ class FaceRecognizerSkill(BaseSkill):
         """Report availability of the face recognition engine."""
         return True
 
+    def extract_embedding(self, image_bytes: bytes) -> Optional[np.ndarray]:
+        """Synchronously extract normalized 512D embedding vector from image bytes."""
+        try:
+            img = Image.open(io.BytesIO(image_bytes))
+            crop = _normalize_face_crop(img)
+            gray = crop.convert("L")
+            return _extract_hog_512_embedding(gray)
+        except Exception:
+            return None
+
     def compute_cosine_similarity(
         self,
         embedding_a: np.ndarray,
@@ -269,9 +279,9 @@ class FaceRecognizerSkill(BaseSkill):
                 model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
                 prompt = (
-                    "You are an AI biometric face verification system for CaneBot kiosk operators.\n"
-                    "Image 1 is the registered reference profile photo for this operator.\n"
-                    "Image 2 is the photo submitted for shift attendance check-in.\n"
+                    "You are an AI biometric face verification system for enterprise personnel.\n"
+                    "Image 1 is the registered reference profile photo for this person.\n"
+                    "Image 2 is the candidate photo submitted for identity/attendance verification.\n"
                     "Determine:\n"
                     "1. Is a human face present in Image 2? (true/false)\n"
                     "2. Does the face in Image 2 belong to the same person as Image 1? (true/false)\n"
@@ -471,3 +481,15 @@ class FaceRecognizerSkill(BaseSkill):
         status["encryption"] = "AES-256-GCM"
         status["similarity_threshold"] = self.similarity_threshold
         return status
+
+
+_face_recognizer_singleton: Optional[FaceRecognizerSkill] = None
+
+
+def get_platform_face_recognizer() -> FaceRecognizerSkill:
+    """Return singleton instance of FaceRecognizerSkill."""
+    global _face_recognizer_singleton
+    if _face_recognizer_singleton is None:
+        _face_recognizer_singleton = FaceRecognizerSkill()
+    return _face_recognizer_singleton
+

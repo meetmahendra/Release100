@@ -23,6 +23,7 @@ Constrains LLM reasoning to clamped temperature (0.1) with live kiosk state grou
 import logging
 from typing import Any, Optional
 
+from core_platform.app.config import settings
 from core_platform.app.llm.gateway import get_platform_llm_gateway
 from core_platform.app.messaging.conversation_memory import ConversationMemory
 
@@ -89,29 +90,29 @@ async def generate_conversational_response(
 
     # 2. Construct Grounded System Instruction
     system_instruction = (
-        "You are the CaneBot AI Fleet Coordinator for Canectar Foods. You assist kiosk operators "
-        "and retail station supervisors in managing sugarcane juice extraction kiosks across India.\n"
+        f"You are the AI Operational Assistant for {settings.ORGANIZATION_NAME}. You assist field operators "
+        "and station supervisors in executing operations, shift procedures, and compliance reporting.\n"
         "Grounding Context:\n"
         f"- Operator Name: {op_name} ({op_code}, Role: {op_role})\n"
         f"- Active Station: {station_name}\n"
-        f"- HACCP Food Safety Rules: {haccp_info}\n"
+        f"- Operating Guidelines: {haccp_info}\n"
         f"- {manager_info}\n"
         f"- Today's Shift Status: {attendance_status}\n\n"
         "Guidelines:\n"
         "1. Be polite, professional, concise, and helpful in WhatsApp markdown format.\n"
-        "2. Answer procedural, food safety, operating, and shift questions accurately using Grounding Context.\n"
-        "3. If the user asks to mark attendance, explain the two-step verification process (location + photo).\n"
-        "4. If there is a critical hardware emergency, electrical fault, or injury, instruct them to press the Emergency Stop button and call their manager.\n"
+        "2. Answer procedural, safety, operating, and shift questions accurately using Grounding Context.\n"
+        "3. If the user asks to mark attendance or report metrics, explain the required verification steps.\n"
+        "4. If there is a critical hardware emergency, electrical fault, or safety hazard, instruct them to press the Emergency Stop button and call their manager.\n"
         "5. Keep replies under 3-4 sentences whenever possible."
     )
 
     prompt = (
         f"Conversation History:\n{history_str}\n\n"
         f"Operator: {user_text}\n"
-        "CaneBot Coordinator:"
+        "Assistant:"
     ) if history_str else (
         f"Operator: {user_text}\n"
-        "CaneBot Coordinator:"
+        "Assistant:"
     )
 
     # 3. Invoke LLMGateway
@@ -139,17 +140,17 @@ async def generate_conversational_response(
     if not reply_text:
         query_lower = user_text.lower()
         if any(w in query_lower for w in ["temp", "temperature", "chiller", "cooling", "degree", "celsius"]):
-            reply_text = f"❄️ {haccp_info}\nPlease take and send a clear photo of the temperature gauge to record compliance."
+            reply_text = f"❄️ {haccp_info}\nPlease take and send a clear photo of the gauge display to record compliance."
         elif any(w in query_lower for w in ["manager", "supervisor", "boss", "lead", "contact"]):
             reply_text = f"👤 {manager_info}\nSend 'help' or your question directly, and it will be forwarded to your supervisor."
         elif any(w in query_lower for w in ["attendance", "duty", "punch", "checkin", "check-in"]):
             reply_text = (
                 f"📋 Shift Attendance Status: {attendance_status}\n"
-                "To punch in: 1) Click the location link shared earlier, 2) Send your selfie photo showing the chiller gauge."
+                "To punch in: 1) Verify location coordinates, 2) Send your verification photo."
             )
         else:
             reply_text = (
-                f"👋 Hello {op_name}! I am your CaneBot Fleet Assistant for {station_name}.\n"
+                f"👋 Hello {op_name}! I am your AI Operational Assistant for {station_name}.\n"
                 "You can submit your check-in photo, send operational notes, or ask for help at any time."
             )
 

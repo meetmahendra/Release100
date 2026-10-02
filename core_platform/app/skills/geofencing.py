@@ -21,7 +21,7 @@ and geofence checking against registered retail kiosk coordinates.
 """
 
 import math
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from core_platform.app.skills.base import BaseSkill
 
@@ -99,8 +99,31 @@ class GeofencingSkill(BaseSkill):
         is_within = effective_distance <= allowed_radius_meters
         return is_within, round(raw_distance, 2)
 
+    def verify_proximity(
+        self,
+        user_lat: float,
+        user_lon: float,
+        target_lat: float,
+        target_lon: float,
+        radius_meters: float = 100.0,
+    ) -> Tuple[bool, float]:
+        """Verify if (user_lat, user_lon) is within radius_meters of target."""
+        dist = self.calculate_distance_meters((user_lat, user_lon), (target_lat, target_lon))
+        return dist <= radius_meters, dist
+
     def get_health_status(self) -> Dict[str, Any]:
         """Return operational metadata for health heartbeat."""
         status = super().get_health_status()
         status["engine"] = "haversine_wgs84"
         return status
+
+
+_geofencer_singleton: Optional[GeofencingSkill] = None
+
+
+def get_platform_geofencer() -> GeofencingSkill:
+    """Return singleton instance of GeofencingSkill."""
+    global _geofencer_singleton
+    if _geofencer_singleton is None:
+        _geofencer_singleton = GeofencingSkill()
+    return _geofencer_singleton

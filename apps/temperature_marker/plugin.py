@@ -132,6 +132,15 @@ class TemperatureMarkerApplication(BaseApplication):
         except Exception:
             return 0
 
+    def get_whatsapp_handler(self) -> Any:
+        """Return the domain-specific WhatsApp message handler for Temperature Marker."""
+        from apps.temperature_marker.services.whatsapp_handler import TemperatureMarkerWhatsAppHandler
+        return TemperatureMarkerWhatsAppHandler(
+            db_service=self.db_service,
+            kg_service=self.kg_service,
+            workflow=self.workflow,
+        )
+
     def get_convenience_routes(self) -> List[Any]:
         """Return /loc shortcut routes for registration at the platform root."""
         from apps.temperature_marker.ui.routes import view_verify_location, verify_location_api

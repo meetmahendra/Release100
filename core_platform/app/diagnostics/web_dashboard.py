@@ -240,12 +240,12 @@ async def view_settings_dashboard(
     wa_phone = env_data.get("WHATSAPP_PHONE_NUMBER_ID", settings.WHATSAPP_PHONE_NUMBER_ID or "")
     wa_token = env_data.get("WHATSAPP_ACCESS_TOKEN", settings.WHATSAPP_ACCESS_TOKEN or "")
     wa_secret = env_data.get("WHATSAPP_APP_SECRET", settings.WHATSAPP_APP_SECRET or "")
-    wa_verify = env_data.get("WHATSAPP_VERIFY_TOKEN", settings.WHATSAPP_VERIFY_TOKEN or "canectar_verify_token_2026")
+    wa_verify = env_data.get("WHATSAPP_VERIFY_TOKEN", settings.WHATSAPP_VERIFY_TOKEN or "release100_verify_token")
     relay_url = env_data.get("RELAY_WS_URL", settings.RELAY_WS_URL or "")
-    station_name = env_data.get("STATION_NAME", settings.STATION_NAME or "Kiosk #04 (Phoenix Mall)")
-    kiosk_id = env_data.get("KIOSK_ID", settings.KIOSK_ID or "CANEBOT-PUNE-04")
-    org_name = env_data.get("ORGANIZATION_NAME", settings.ORGANIZATION_NAME or "Canectar Foods Pvt Ltd")
-    tenant_id = env_data.get("TENANT_ID", settings.TENANT_ID or "canectar_foods")
+    station_name = env_data.get("STATION_NAME", settings.STATION_NAME or "Release100 Node #01")
+    node_id = env_data.get("NODE_ID", env_data.get("KIOSK_ID", settings.NODE_ID or "NODE-01"))
+    org_name = env_data.get("ORGANIZATION_NAME", settings.ORGANIZATION_NAME or "Release100 Organization")
+    tenant_id = env_data.get("TENANT_ID", settings.TENANT_ID or "default_tenant")
     exec_mode = env_data.get("EXECUTION_MODE", settings.EXECUTION_MODE or "shadow")
     dry_run_val = env_data.get("DRY_RUN", str(settings.DRY_RUN)).lower() == "true"
 
@@ -474,7 +474,7 @@ async def view_settings_dashboard(
             <div>
                 <h1>⚙️ Release100 — Live Settings & Diagnostics</h1>
                 <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 13px;">
-                    Station: <strong>{station_name}</strong> ({kiosk_id}) &bull; Tenant: {tenant_id}
+                    Node: <strong>{node_id}</strong> ({station_name}) &bull; Tenant: {tenant_id}
                 </p>
             </div>
             <div style="display: flex; gap: 8px;">
@@ -599,7 +599,7 @@ async def view_settings_dashboard(
                     </div>
                 </div>
                 <div style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 12px; color: #93c5fd;">
-                    💡 <strong>Cloudflare Worker tip:</strong> Paste your Cloudflare Worker URL directly (e.g. <code>https://release100-relay.your-name.workers.dev</code>). The system automatically transforms it into <code>wss://.../ws/{kiosk_id}</code>!
+                    💡 <strong>Cloudflare Worker tip:</strong> Paste your Cloudflare Worker URL directly (e.g. <code>https://release100-relay.your-name.workers.dev</code>). The system automatically transforms it into <code>wss://.../ws/{node_id}</code>!
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="test-relay-url" value="{relay_url}" placeholder="e.g. https://release100-relay.xyz.workers.dev" class="input-control field-flex" oninput="updateRelayPreview()">
@@ -618,7 +618,7 @@ async def view_settings_dashboard(
                 </p>
                 <div class="field-row">
                     <input type="text" id="test-phone" placeholder="Recipient Phone (e.g. 919876543210)" class="input-control" style="flex: 1;">
-                    <input type="text" id="test-msg-body" value="Hello from Release100! Your cold-chain kiosk connection is operational." class="input-control" style="flex: 2;">
+                    <input type="text" id="test-msg-body" value="Hello from Release100! Your platform node connection is operational." class="input-control" style="flex: 2;">
                     <button class="btn btn-primary" onclick="sendTestMsg()">Send Message</button>
                 </div>
                 <div id="res-whatsapp_send" class="diag-result"></div>
@@ -704,7 +704,7 @@ async def view_settings_dashboard(
             <!-- 3. Cloud Relay & Identity -->
             <div class="card">
                 <h3 style="margin-top: 0; font-size: 17px; border-bottom: 1px solid var(--border); padding-bottom: 8px; color: #a78bfa;">
-                    🌐 Outbound Cloud Relay & Multi-Kiosk Fleet Identity
+                    🌐 Outbound Cloud Relay & Platform Node Identity
                 </h3>
                 <div class="input-group">
                     <label>Outbound Cloud Relay URL (RELAY_WS_URL)</label>
@@ -713,21 +713,21 @@ async def view_settings_dashboard(
                 </div>
                 <div class="field-row">
                     <div class="input-group field-flex">
-                        <label>Station Name</label>
+                        <label>Station / Facility Name (STATION_NAME)</label>
                         <input type="text" id="cfg-station" value="{station_name}" class="input-control">
                     </div>
                     <div class="input-group field-flex">
-                        <label>Kiosk Fleet ID</label>
-                        <input type="text" id="cfg-kiosk" value="{kiosk_id}" class="input-control">
+                        <label>Platform Node / Host ID (NODE_ID)</label>
+                        <input type="text" id="cfg-node" value="{node_id}" class="input-control">
                     </div>
                 </div>
                 <div class="field-row">
                     <div class="input-group field-flex">
-                        <label>Organization Name</label>
+                        <label>Organization Name (ORGANIZATION_NAME)</label>
                         <input type="text" id="cfg-org" value="{org_name}" class="input-control">
                     </div>
                     <div class="input-group field-flex">
-                        <label>Tenant ID</label>
+                        <label>Tenant ID (TENANT_ID)</label>
                         <input type="text" id="cfg-tenant" value="{tenant_id}" class="input-control">
                     </div>
                 </div>
@@ -787,22 +787,22 @@ async def view_settings_dashboard(
 
         function updateRelayPreview() {{
             const raw = document.getElementById('test-relay-url').value.trim();
-            const kiosk = document.getElementById('cfg-kiosk') ? document.getElementById('cfg-kiosk').value.trim() : '{kiosk_id}';
+            const node = document.getElementById('cfg-node') ? document.getElementById('cfg-node').value.trim() : '{node_id}';
             const prev = document.getElementById('relay-preview');
             if (!raw) {{
                 prev.innerText = 'Relay not configured (running in local simulator mode).';
                 return;
             }}
             let formatted = raw.startsWith('https://') ? 'wss://' + raw.slice(8) : (raw.startsWith('http://') ? 'ws://' + raw.slice(7) : raw);
-            if (formatted.includes('{{kiosk_id}}')) {{
-                formatted = formatted.replace('{{kiosk_id}}', kiosk);
+            if (formatted.includes('{{node_id}}') || formatted.includes('{{kiosk_id}}')) {{
+                formatted = formatted.replace('{{node_id}}', node).replace('{{kiosk_id}}', node);
             }} else if (formatted.includes('/ws/')) {{
                 // already has /ws/
             }} else if (formatted.endsWith('/ws')) {{
-                formatted = formatted + '/' + kiosk;
+                formatted = formatted + '/' + node;
             }} else {{
                 const cleanBase = formatted.endsWith('/') ? formatted.slice(0, -1) : formatted;
-                formatted = cleanBase + '/ws/' + kiosk;
+                formatted = cleanBase + '/ws/' + node;
             }}
             prev.innerText = 'Effective WebSocket: ' + formatted;
         }}
@@ -998,7 +998,8 @@ async def view_settings_dashboard(
                     WHATSAPP_VERIFY_TOKEN: document.getElementById('cfg-wa-verify').value.trim(),
                     RELAY_WS_URL: document.getElementById('cfg-relay').value.trim().replace(/^["']|["']$/g, ''),
                     STATION_NAME: document.getElementById('cfg-station').value.trim(),
-                    KIOSK_ID: document.getElementById('cfg-kiosk').value.trim(),
+                    NODE_ID: document.getElementById('cfg-node').value.trim(),
+                    KIOSK_ID: document.getElementById('cfg-node').value.trim(),
                     ORGANIZATION_NAME: document.getElementById('cfg-org').value.trim(),
                     TENANT_ID: document.getElementById('cfg-tenant').value.trim(),
                     EXECUTION_MODE: document.getElementById('cfg-mode').value,

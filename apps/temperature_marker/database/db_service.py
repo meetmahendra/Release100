@@ -22,7 +22,7 @@ attendance records, and local offline outbox transactions.
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 import uuid
 from sqlalchemy import create_engine, or_
 from sqlalchemy.engine import Engine
@@ -158,6 +158,30 @@ class DatabaseService:
             session.refresh(new_emp)
             return new_emp
 
+    def update_employee_photo(
+        self,
+        emp_code: str,
+        photo_bytes: Optional[bytes] = None,
+        embedding: Optional[Union[str, Any]] = None,
+        status: Optional[str] = "PENDING_APPROVAL",
+    ) -> Optional[Employee]:
+        """Update face photo embedding and onboarding status for an employee."""
+        with self.SessionLocal() as session:
+            emp = session.query(Employee).filter(Employee.emp_code == emp_code).first()
+            if not emp:
+                return None
+            if embedding is not None:
+                if isinstance(embedding, str):
+                    emp.encrypted_face_embedding = embedding
+                elif hasattr(embedding, "tobytes"):
+                    from core_platform.app.skills.face_recognizer import get_platform_face_recognizer
+                    emp.encrypted_face_embedding = get_platform_face_recognizer().encrypt_embedding(embedding)
+            if status is not None:
+                emp.status = status
+            session.commit()
+            session.refresh(emp)
+            return emp
+
     def update_employee(
         self,
         emp_code: str,
@@ -257,6 +281,37 @@ class DatabaseService:
         """
         with self.SessionLocal() as session:
             return session.query(Employee).order_by(Employee.id.asc()).all()
+
+    def get_supervisor_for_kiosk(self, kiosk_id: str) -> Optional[Employee]:
+        """Fetch active supervisor assigned to a specific kiosk or fallback supervisor.
+
+        Args:
+            kiosk_id: Kiosk identifier.
+
+        Returns:
+            Supervisor Employee instance if found, else None.
+        """
+        with self.SessionLocal() as session:
+            sup = (
+                session.query(Employee)
+                .filter(
+                    Employee.assigned_kiosk_id == kiosk_id,
+                    Employee.role == "SUPERVISOR",
+                    Employee.status == "ACTIVE",
+                )
+                .first()
+            )
+            if sup:
+                return sup
+
+            return (
+                session.query(Employee)
+                .filter(
+                    Employee.role.in_(["SUPERVISOR", "MANAGER"]),
+                    Employee.status == "ACTIVE",
+                )
+                .first()
+            )
 
     def assign_employee_to_kiosk(self, emp_code: str, new_kiosk_id: str) -> bool:
         """Reassign an employee to a different kiosk.

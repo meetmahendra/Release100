@@ -75,9 +75,9 @@ class CloudRelayClient:
         """Ensure WebSocket URL includes the per-kiosk dynamic routing suffix.
 
         Handles:
-        - Cloudflare Worker base URLs: https://my-relay.workers.dev -> wss://my-relay.workers.dev/ws/{kiosk_id}
-        - Explicit wss URLs: wss://my-relay.workers.dev/ws/CANEBOT-PUNE-04
-        - Template strings: wss://my-relay.workers.dev/ws/{kiosk_id}
+        - Cloudflare Worker base URLs: https://my-relay.workers.dev -> wss://my-relay.workers.dev/ws/{node_id}
+        - Explicit wss URLs: wss://my-relay.workers.dev/ws/NODE-01
+        - Template strings: wss://my-relay.workers.dev/ws/{node_id}
         """
         if not url:
             return ""

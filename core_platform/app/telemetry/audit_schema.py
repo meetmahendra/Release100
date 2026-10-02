@@ -49,19 +49,19 @@ class AuditRecord(BaseModel):
         description="ISO 8601 UTC timestamp",
     )
     organization_id: str = Field(
-        default="CANECTAR_FOODS",
+        default="DEFAULT_TENANT",
         description="Tenant / Organization code",
     )
     facility_id: str = Field(
-        default="PHOENIX_MALL_PUNE",
-        description="Plant, station, or retail facility identifier",
+        default="STATION_01",
+        description="Plant, station, or facility identifier",
     )
     kiosk_id: str = Field(
-        default="CANEBOT-PUNE-04",
-        description="Physical machine or terminal identifier",
+        default="NODE-01",
+        description="Platform node or terminal identifier",
     )
     operator_id: str = Field(
-        default="EMP_1042",
+        default="USER_001",
         description="Operator or user ID initiating the transaction",
     )
     action_type: str = Field(

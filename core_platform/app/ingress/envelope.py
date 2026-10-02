@@ -64,12 +64,12 @@ class InteractionEnvelope(BaseModel):
         description="Distributed tracing ID preserved across full transaction lifecycle",
     )
     tenant_id: str = Field(
-        default="canectar_foods",
+        default="default_tenant",
         description="Multi-tenant identifier for enterprise isolation",
     )
     kiosk_id: Optional[str] = Field(
         default=None,
-        description="Physical kiosk/station identifier (e.g. 'CANEBOT-PUNE-04')",
+        description="Physical node/kiosk/station identifier (e.g. 'NODE-01')",
     )
     timestamp_utc: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),

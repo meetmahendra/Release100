@@ -22,6 +22,7 @@ import numpy as np
 from PIL import Image
 import pytest
 
+from core_platform.app.config import settings
 from core_platform.app.ingress.location_session import LocationSessionCache
 from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
 from core_platform.app.skills.face_recognizer import FaceRecognizerSkill
@@ -81,7 +82,9 @@ async def test_send_whatsapp_message_cases() -> None:
     mock_resp.is_success = True
     mock_resp.json.return_value = {"messages": [{"id": "wamid.OUT_123"}]}
 
-    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
+    with patch.object(settings, "WHATSAPP_ACCESS_TOKEN", "mock_whatsapp_access_token_12345"), \
+         patch.object(settings, "WHATSAPP_PHONE_NUMBER_ID", "1234567890"), \
+         patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp):
         msg_id = await send_whatsapp_message("+919800011122", "Test Outbound")
         assert msg_id == "wamid.OUT_123"
 
@@ -175,7 +178,8 @@ async def test_face_recognizer_cloud_vision_verification_flow() -> None:
     mock_resp.__enter__.return_value = mock_resp
     mock_resp.__exit__.return_value = None
 
-    with patch("urllib.request.urlopen", return_value=mock_resp):
+    with patch.object(settings, "GEMINI_API_KEY", "mock_gemini_test_key_12345"), \
+         patch("urllib.request.urlopen", return_value=mock_resp):
         matched, sim, reason = await skill.verify_face_match(b1, b1)
         assert matched is True
         assert sim == 0.96

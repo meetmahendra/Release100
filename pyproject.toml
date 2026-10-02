@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "release100-core"
-version = "2.0.10"
+version = "2.0.11"
 description = "Release100 Enterprise Multi-Kiosk Platform Microkernel (GEES v2.0)"
 authors = [{ name = "Mahendra GURAV" }]
 readme = "README.md"

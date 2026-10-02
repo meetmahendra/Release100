@@ -759,12 +759,12 @@ class DisplayOCRSkill(BaseSkill):
                 model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
                 prompt = (
-                    "You are an industrial IoT HACCP cold-chain auditor. "
-                    "Inspect this photo taken at a CaneBot kiosk. The photo may be a direct close-up of the chiller gauge "
-                    "OR a selfie containing both the operator and the chiller gauge in the frame.\n"
-                    "Locate the digital temperature gauge display (typically a 7-segment LED or LCD readout showing numbers like 2.8, 3.2, 4.1).\n"
+                    "You are an industrial IoT instrument and display reader. "
+                    "Inspect this photo taken at an industrial facility or workstation. The photo may be a direct close-up of a gauge/meter "
+                    "OR a wide shot containing both the operator and the instrument gauge in the frame.\n"
+                    "Locate the digital display or gauge (typically a 7-segment LED or LCD readout showing numbers like 2.8, 3.2, 4.1).\n"
                     "Also check if a visual date/time watermark is stamped on the image pixels (e.g. camera app timestamp in corners or borders such as '16-Sept-2026 10:14:29 am', '13-Sept-2026 10:30:20 am', or '2026-09-20 10:15').\n"
-                    "Extract the numeric Celsius temperature reading and return ONLY a valid JSON object with format:\n"
+                    "Extract the numeric reading and return ONLY a valid JSON object with format:\n"
                     '{"value": float, "unit": "C", "confidence": float between 0.0 and 1.0, "display_type": "7_segment_led" | "lcd_screen", "watermark_timestamp": string or null}\n'
                     "IMPORTANT: For 'watermark_timestamp', extract any visual date/time timestamp imprinted directly on the image "
                     "(e.g. '16-Sept-2026 10:14:29 am' or '2026-09-20 10:15'). Explicitly IGNORE any other text like GPS coordinates, addresses, phone models, or logos.\n"
