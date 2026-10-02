@@ -233,10 +233,12 @@ Every application cartridge must be self-contained in `apps/<app_id>/` and decla
    # limitations under the License.
    ```
 2. **Protected Pet Projects Constraint:** The pet projects `D:\mailOrganizer`, `D:\WhatsappClientForMailOrganized`, and `D:\AI-ProjectManager` are strictly read-only references. **NEVER modify or write to those directories under any circumstances.**
+3. **Explicit User Approval for Remote Git Pushes:** Under NO circumstances may an agent or automated script execute `git push` to GitHub or any remote repository without first presenting the proposed commit list/diff to the USER and receiving explicit user confirmation ("go" / approval). Local git commits, local packaging, and local tests may proceed autonomously, but remote pushes are strictly gated by user consent.
 
 ---
 
 ## 11. Compliance Certification Checklist & Rubric
+
 
 ```
 ═══════════════════════════════════════════════════════════════════════════

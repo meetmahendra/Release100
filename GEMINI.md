@@ -58,3 +58,7 @@
 
 ## 10. Protected Pet Projects Constraint
 * The pet projects `D:\mailOrganizer`, `D:\WhatsappClientForMailOrganized`, and `D:\AI-ProjectManager` are read-only references. **NEVER modify or write to those directories under any circumstances.**
+
+## 11. Explicit User Approval for Remote Git Pushes
+* **Explicit Go Required for Remote Pushes:** Under NO circumstances may an agent or subagent execute `git push` to GitHub or any remote repository without first presenting the proposed commit list/diff to the USER and receiving explicit user confirmation ("go" / approval). Local git commits and local tests may proceed autonomously, but remote pushes are strictly gated by user consent.
+
