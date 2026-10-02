@@ -55,6 +55,35 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 # ── Auth Routes ───────────────────────────────────────────────────────────────
 
+def _render_login_view(
+    request: Request,
+    error: Optional[str] = None,
+    status_code: int = 200,
+    force_new_csrf: bool = False,
+) -> HTMLResponse:
+    """Helper to render login.html ensuring CSRF cookie and form token are always in sync."""
+    if force_new_csrf:
+        csrf_token = generate_csrf_token()
+    else:
+        csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
+
+    resp = templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"title": "Admin Login", "error": error, "csrf_token": csrf_token},
+        status_code=status_code,
+    )
+    resp.set_cookie(
+        key="csrf_token",
+        value=csrf_token,
+        httponly=False,
+        samesite="lax",
+        secure=bool(settings.EXECUTION_MODE == "production" or getattr(settings, "COOKIE_SECURE", False)),
+        max_age=8 * 3600,
+    )
+    return resp
+
+
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request) -> HTMLResponse:
     """Render the login page with anti-CSRF token (SEC-3).
@@ -65,22 +94,7 @@ async def login_page(request: Request) -> HTMLResponse:
     Returns:
         Rendered login.html template with CSRF cookie set.
     """
-    csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
-    resp = templates.TemplateResponse(
-        request=request,
-        name="login.html",
-        context={"title": "Admin Login", "error": None, "csrf_token": csrf_token},
-    )
-    if "csrf_token" not in request.cookies:
-        resp.set_cookie(
-            key="csrf_token",
-            value=csrf_token,
-            httponly=False,
-            samesite="lax",
-            secure=bool(settings.EXECUTION_MODE == "production" or getattr(settings, "COOKIE_SECURE", False)),
-            max_age=8 * 3600,
-        )
-    return resp
+    return _render_login_view(request)
 
 
 @router.post("/login")
@@ -106,11 +120,11 @@ async def login_submit(
     # 1. Anti-CSRF verification (SEC-3)
     if not verify_csrf_token(request, submitted_token=csrf_token):
         logger.warning("[AdminShell] CSRF validation failed during login attempt.")
-        return templates.TemplateResponse(
+        return _render_login_view(
             request=request,
-            name="login.html",
-            context={"title": "Admin Login", "error": "Invalid session token. Please try again.", "csrf_token": generate_csrf_token()},
+            error="Invalid session token. Please try again.",
             status_code=403,
+            force_new_csrf=True,
         )
 
     # 2. Brute-Force Rate Limiting (SEC-4)
@@ -121,24 +135,18 @@ async def login_submit(
 
     if not ip_allowed or not user_allowed:
         logger.warning("[AdminShell] Brute-force protection triggered for IP=%s user=%s", client_ip, username)
-        return templates.TemplateResponse(
+        return _render_login_view(
             request=request,
-            name="login.html",
-            context={
-                "title": "Admin Login",
-                "error": "Too many failed login attempts. Please wait 60 seconds and try again.",
-                "csrf_token": generate_csrf_token(),
-            },
+            error="Too many failed login attempts. Please wait 60 seconds and try again.",
             status_code=429,
         )
 
     # 3. Credential validation (SEC-1)
     ctx = AuthResolver.resolve_credentials(username, password)
     if not ctx:
-        return templates.TemplateResponse(
+        return _render_login_view(
             request=request,
-            name="login.html",
-            context={"title": "Admin Login", "error": "Invalid credentials.", "csrf_token": generate_csrf_token()},
+            error="Invalid credentials.",
             status_code=401,
         )
 

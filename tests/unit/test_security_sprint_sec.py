@@ -214,6 +214,49 @@ def test_sec4_sec5_admin_shell_login_logout() -> None:
     assert verify_jwt_token(admin_cookie) is None
 
 
+def test_sec3_login_csrf_token_resilience_multi_attempt() -> None:
+    """Verify that multiple failed login attempts maintain CSRF token synchronization."""
+    from core_platform.main import app
+
+    client = TestClient(app)
+
+    # Step 1: Initial page load
+    resp1 = client.get("/admin/login")
+    assert resp1.status_code == 200
+    csrf1 = resp1.cookies.get("csrf_token")
+    assert csrf1 is not None
+
+    # Step 2: Failed attempt #1 (wrong password)
+    resp2 = client.post(
+        "/admin/login",
+        data={"username": "admin", "password": "wrong_password_1", "csrf_token": csrf1},
+    )
+    assert resp2.status_code == 401
+    assert "Invalid credentials" in resp2.text
+    assert "Invalid session token" not in resp2.text
+
+    # Step 3: Failed attempt #2 (wrong password again)
+    csrf2 = resp2.cookies.get("csrf_token") or client.cookies.get("csrf_token") or csrf1
+    resp3 = client.post(
+        "/admin/login",
+        data={"username": "admin", "password": "wrong_password_2", "csrf_token": csrf2},
+    )
+    assert resp3.status_code == 401
+    assert "Invalid credentials" in resp3.text
+    assert "Invalid session token" not in resp3.text
+
+    # Step 4: Successful attempt #3 with valid credentials
+    csrf3 = resp3.cookies.get("csrf_token") or client.cookies.get("csrf_token") or csrf2
+    resp4 = client.post(
+        "/admin/login",
+        data={"username": "admin", "password": "release100_admin", "csrf_token": csrf3},
+        follow_redirects=False,
+    )
+    assert resp4.status_code == 302
+    assert resp4.headers["location"] == "/admin/"
+    assert "admin_token" in resp4.cookies
+
+
 # ============================================================================
 # SEC-6: HTTP Security Headers & Secret Redaction Filter Tests
 # ============================================================================
