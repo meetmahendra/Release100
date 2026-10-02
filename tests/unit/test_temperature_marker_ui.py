@@ -17,19 +17,35 @@
 from pathlib import Path
 
 import pytest
-from starlette.testclient import TestClient
+from fastapi.testclient import TestClient
 
 from apps.temperature_marker.database.db_service import DatabaseService
+from core_platform.app.auth.jwt_utils import create_jwt_token
 from core_platform.main import app
 
 client = TestClient(app)
+token = create_jwt_token("admin", ["admin"], ["all", "temperature_marker"])
+client.cookies.set("admin_token", token)
 
 
 def test_ui_root_redirect() -> None:
-    """Root redirect must redirect to fleet dashboard."""
-    resp = client.get("/", follow_redirects=False)
-    assert resp.status_code in (302, 307)
-    assert resp.headers["location"] == "/admin/apps/temperature-marker/fleet"
+    """Root redirect: unauth redirects to /admin/login; auth redirects to fleet dashboard."""
+    unauth_client = TestClient(app, follow_redirects=False)
+    resp_unauth = unauth_client.get("/", follow_redirects=False)
+    assert resp_unauth.status_code == 302
+    assert resp_unauth.headers["location"] == "/admin/login"
+
+    resp_auth = client.get("/", follow_redirects=False)
+    assert resp_auth.status_code == 302
+    assert resp_auth.headers["location"] == "/admin/apps/temperature-marker/fleet"
+
+
+def test_tm_unauthenticated_access() -> None:
+    """Unauthenticated browser access to temperature marker admin must redirect to /admin/login."""
+    unauth_client = TestClient(app, follow_redirects=False)
+    resp = unauth_client.get("/admin/apps/temperature-marker/fleet", headers={"Accept": "text/html"})
+    assert resp.status_code == 302
+    assert resp.headers["location"] == "/admin/login"
 
 
 def test_fleet_html_view() -> None:

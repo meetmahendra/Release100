@@ -205,10 +205,15 @@ class {class_name}(BaseApplication):
     routes_content = f'''# Copyright 2026 {author}
 # Licensed under the Apache License, Version 2.0.
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import HTMLResponse
+from core_platform.app.rbac.permissions import get_web_security_context
 
-router = APIRouter(prefix="/admin/apps/{pkg_name.replace('_', '-')}", tags=["{display_title}"])
+router = APIRouter(
+    prefix="/admin/apps/{pkg_name.replace('_', '-')}",
+    tags=["{display_title}"],
+    dependencies=[Depends(get_web_security_context)],
+)
 
 
 @router.get("/dashboard", response_class=HTMLResponse)

@@ -163,6 +163,7 @@ class PlatformTracer:
         parent_span = self.get_active_span()
         parent_trace_id, parent_span_id = self.parse_traceparent(parent_traceparent)
 
+        p_span_id: Optional[str] = None
         if parent_span is not None:
             trace_id = parent_span.trace_id
             p_span_id = parent_span.span_id
@@ -210,6 +211,7 @@ class PlatformTracer:
         parent_span = self.get_active_span()
         parent_trace_id, parent_span_id = self.parse_traceparent(parent_traceparent)
 
+        p_span_id: Optional[str] = None
         if parent_span is not None:
             trace_id = parent_span.trace_id
             p_span_id = parent_span.span_id

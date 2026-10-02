@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import uuid
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -37,8 +37,13 @@ from apps.mail_organizer.database.db_service import MailDatabaseService
 from apps.mail_organizer.graph.state import MailOrganizerState
 from apps.mail_organizer.graph.state_graph import MailOrganizerWorkflow
 from apps.mail_organizer.pm.task_manager import PMTaskManager
+from core_platform.app.rbac.permissions import get_web_security_context
 
-router = APIRouter(prefix="/admin/apps/mail-organizer", tags=["Mail Organizer Admin"])
+router = APIRouter(
+    prefix="/admin/apps/mail-organizer",
+    tags=["Mail Organizer Admin"],
+    dependencies=[Depends(get_web_security_context)],
+)
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))

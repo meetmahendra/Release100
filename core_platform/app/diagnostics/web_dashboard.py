@@ -30,12 +30,14 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 from core_platform.app.apps_registry import ApplicationRegistry
+from core_platform.app.auth.models import SecurityContext
 from core_platform.app.config import settings
+from core_platform.app.rbac.permissions import get_web_security_context
 from core_platform.app.diagnostics.config_backup import (
     list_backups,
     read_env_dict,
@@ -85,13 +87,18 @@ class RestoreRequest(BaseModel):
 
 
 @router.get("/api/diagnostics/status", response_class=JSONResponse)
-async def api_diagnostics_status() -> Dict[str, Any]:
+async def api_diagnostics_status(
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> Dict[str, Any]:
     """Return real-time verification and system health status."""
     return get_full_status()
 
 
 @router.post("/api/diagnostics/verify", response_class=JSONResponse)
-async def api_diagnostics_verify(req: VerifyRequest) -> Dict[str, Any]:
+async def api_diagnostics_verify(
+    req: VerifyRequest,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> Dict[str, Any]:
     """Test a single credential or service endpoint without modifying disk."""
     svc = req.service.lower().strip()
 
@@ -121,7 +128,10 @@ async def api_diagnostics_verify(req: VerifyRequest) -> Dict[str, Any]:
 
 
 @router.post("/api/diagnostics/save", response_class=JSONResponse)
-async def api_diagnostics_save(req: SaveConfigRequest) -> Dict[str, Any]:
+async def api_diagnostics_save(
+    req: SaveConfigRequest,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> Dict[str, Any]:
     """Non-destructively save configuration parameters with pre-save backup."""
     success, msg = save_master_config(req.settings)
     if not success:
@@ -139,7 +149,10 @@ async def api_diagnostics_save(req: SaveConfigRequest) -> Dict[str, Any]:
 
 
 @router.post("/api/diagnostics/restore", response_class=JSONResponse)
-async def api_diagnostics_restore(req: RestoreRequest) -> Dict[str, Any]:
+async def api_diagnostics_restore(
+    req: RestoreRequest,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> Dict[str, Any]:
     """Restore configuration from historical backup snapshot."""
     success, msg = restore_backup(req.filename)
     if not success:
@@ -148,7 +161,10 @@ async def api_diagnostics_restore(req: RestoreRequest) -> Dict[str, Any]:
 
 
 @router.post("/api/diagnostics/poller/toggle", response_class=JSONResponse)
-async def api_diagnostics_poller_toggle(app_name: Optional[str] = None) -> Dict[str, Any]:
+async def api_diagnostics_poller_toggle(
+    app_name: Optional[str] = None,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> Dict[str, Any]:
     """Toggle background poller worker for an application cartridge with verified clean termination."""
     try:
         from core_platform.main import plugin_loader
@@ -183,7 +199,10 @@ async def api_diagnostics_poller_toggle(app_name: Optional[str] = None) -> Dict[
 
 
 @router.post("/api/diagnostics/apps/{app_name}/toggle", response_class=JSONResponse)
-async def api_diagnostics_app_toggle(app_name: str) -> Dict[str, Any]:
+async def api_diagnostics_app_toggle(
+    app_name: str,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> Dict[str, Any]:
     """Dynamically toggle an application between active and inactive state."""
     registry = ApplicationRegistry.get_instance()
     if registry.is_app_active(app_name):
@@ -205,7 +224,10 @@ async def api_diagnostics_app_toggle(app_name: str) -> Dict[str, Any]:
 
 
 @router.get("/settings", response_class=HTMLResponse)
-async def view_settings_dashboard(request: Request) -> HTMLResponse:
+async def view_settings_dashboard(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Render responsive, offline-safe Live Configuration & Testing Console."""
     registry = ApplicationRegistry.get_instance()
     apps = registry.get_installed_applications()

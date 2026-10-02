@@ -155,7 +155,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: Any, default_tenant: Optional[str] = None) -> None:
         super().__init__(app)
-        self.default_tenant = default_tenant or getattr(settings, "TENANT_ID", "default")
+        self.default_tenant: str = str(default_tenant or getattr(settings, "TENANT_ID", "default") or "default")
 
     async def dispatch(
         self,

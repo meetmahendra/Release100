@@ -16,12 +16,24 @@
 
 import pytest
 from fastapi.testclient import TestClient
+from core_platform.app.auth.jwt_utils import create_jwt_token
 from core_platform.main import app
 
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    c = TestClient(app)
+    token = create_jwt_token("admin", ["admin"], ["all", "mail_organizer"])
+    c.cookies.set("admin_token", token)
+    return c
+
+
+def test_mail_organizer_unauthenticated_access():
+    """Unauthenticated requests to mail organizer admin endpoints must be rejected."""
+    unauth = TestClient(app, follow_redirects=False)
+    res = unauth.get("/admin/apps/mail-organizer/dashboard", headers={"Accept": "text/html"})
+    assert res.status_code == 302
+    assert res.headers["location"] == "/admin/login"
 
 
 def test_dashboard_endpoint(client):

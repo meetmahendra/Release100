@@ -82,7 +82,7 @@ class RedisOutboxSynchronizer:
             return False
 
         try:
-            import redis.asyncio as aioredis  # type: ignore[import-untyped]
+            import redis.asyncio as aioredis
             self._redis_client = aioredis.from_url(
                 self.redis_url,
                 encoding="utf-8",

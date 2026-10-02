@@ -22,9 +22,12 @@ from starlette.testclient import TestClient
 
 from apps.temperature_marker.database.db_service import DatabaseService
 from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
+from core_platform.app.auth.jwt_utils import create_jwt_token
 from core_platform.main import app
 
 client = TestClient(app)
+token = create_jwt_token("admin", ["admin"], ["all", "temperature_marker"])
+client.cookies.set("admin_token", token)
 
 
 def test_member_lifecycle_and_approval_apis() -> None:

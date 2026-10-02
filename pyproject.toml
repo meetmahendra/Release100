@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "release100-core"
-version = "2.0.8"
+version = "2.0.9"
 description = "Release100 Enterprise Multi-Kiosk Platform Microkernel (GEES v2.0)"
 authors = [{ name = "Mahendra GURAV" }]
 readme = "README.md"
@@ -54,7 +54,7 @@ include = ["core_platform*", "deployment*"]
 
 [tool.mypy]
 strict = true
-python_version = "3.10"
+python_version = "3.12"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

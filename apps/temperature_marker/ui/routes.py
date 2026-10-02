@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 import uuid
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -34,10 +34,15 @@ from apps.temperature_marker.graph.state import TemperatureMarkerState
 from apps.temperature_marker.graph.state_graph import TemperatureMarkerWorkflow
 from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
 from core_platform.app.common.timezone import to_local_ist, to_local_ist_full
+from core_platform.app.rbac.permissions import get_web_security_context
 from core_platform.app.skills.geofencing import GeofencingSkill
 from core_platform.app.telemetry.audit_engine import AuditEngine
 
-router = APIRouter(prefix="/admin/apps/temperature-marker", tags=["Temperature Marker Admin"])
+router = APIRouter(
+    prefix="/admin/apps/temperature-marker",
+    tags=["Temperature Marker Admin"],
+    dependencies=[Depends(get_web_security_context)],
+)
 
 # Set up Jinja2 templates directory
 _TEMPLATES_DIR = Path(__file__).parent / "templates"

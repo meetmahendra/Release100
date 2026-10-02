@@ -161,28 +161,28 @@ class MailOrganizerApplication(BaseApplication):
                     gmail_id = payload.get("gmail_id")
                     add_labels = payload.get("add_labels", [])
                     rem_labels = payload.get("remove_labels", [])
-                    res = await self.gmail_connector.apply_labels(
+                    res_labels: bool = await self.gmail_connector.apply_labels(
                         gmail_id=gmail_id,
                         add_labels=add_labels,
                         remove_labels=rem_labels,
                     )
-                    return bool(res), "Gmail labels applied"
+                    return bool(res_labels), "Gmail labels applied"
                 elif action == "create_draft":
-                    res = await self.gmail_connector.create_draft(
+                    res_draft: Dict[str, Any] = await self.gmail_connector.create_draft(
                         thread_id=payload.get("thread_id", ""),
                         recipient=payload.get("recipient", ""),
                         subject=payload.get("subject", ""),
                         body=payload.get("body", ""),
                     )
-                    return bool(res.get("draft_id")), f"Draft created: {res.get('draft_id')}"
+                    return bool(res_draft.get("draft_id")), f"Draft created: {res_draft.get('draft_id')}"
                 else:
                     return True, f"Gmail action '{action or 'generic'}' acknowledged"
             elif target in ("jira", "linear", "pm_export"):
                 task_id = payload.get("task_id")
                 dest = payload.get("destination") or target
                 if task_id:
-                    res = await self.pm_manager.approve_and_export(task_id, destination=dest)
-                    return bool(res.get("success", False)), f"Exported task {task_id} to {dest}"
+                    res_pm: Dict[str, Any] = await self.pm_manager.approve_and_export(task_id, destination=dest)
+                    return bool(res_pm.get("success", False)), f"Exported task {task_id} to {dest}"
                 return True, f"PM action on {dest} acknowledged"
             return False, f"Unknown mail target: {target}"
         return _transmitter
@@ -192,7 +192,7 @@ class MailOrganizerApplication(BaseApplication):
         try:
             from core_platform.app.outbox.queue import PlatformOutboxQueue
             queue = PlatformOutboxQueue()
-            pending = queue.get_pending_records(app_id="mail_organizer", limit=100)
+            pending = queue.get_pending(app_id="mail_organizer", limit=100)
             return len(pending)
         except Exception:
             return 0

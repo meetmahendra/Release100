@@ -423,7 +423,7 @@ def test_tech6_jwt_nbf_claim_and_validation() -> None:
 
 
 def test_sec5_admin_health_metrics_endpoint() -> None:
-    """Verify /admin/api/health-metrics endpoint structure and public /health sanitization."""
+    """Verify /admin/api/health-metrics endpoint structure, auth requirement, and public /health sanitization."""
     from core_platform.main import app
     client = TestClient(app)
 
@@ -434,7 +434,13 @@ def test_sec5_admin_health_metrics_endpoint() -> None:
     assert pub_data["status"] == "healthy"
     assert "version" in pub_data
 
-    # Admin health metrics
+    # Unauthenticated call to /admin/api/health-metrics must be rejected with 401
+    res_unauth = client.get("/admin/api/health-metrics")
+    assert res_unauth.status_code == 401
+
+    # Authenticated call to /admin/api/health-metrics
+    token = create_jwt_token("admin", ["admin"], ["temperature_marker", "mail_organizer"])
+    client.cookies.set("admin_token", token)
     res_adm = client.get("/admin/api/health-metrics")
     assert res_adm.status_code == 200
     adm_data = res_adm.json()

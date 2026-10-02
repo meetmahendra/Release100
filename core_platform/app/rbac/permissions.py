@@ -28,7 +28,7 @@ Routing cases:
 import logging
 from typing import List, Optional
 
-from fastapi import Cookie, HTTPException, Request, status
+from fastapi import Cookie, Header, HTTPException, Request, status
 
 from core_platform.app.auth.models import SecurityContext
 from core_platform.app.auth.strategies import AuthResolver
@@ -148,32 +148,47 @@ class RBACFilter:
 
 def get_web_security_context(
     admin_token: Optional[str] = Cookie(default=None, alias="admin_token"),
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+    api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
 ) -> SecurityContext:
-    """FastAPI dependency: extract SecurityContext from the admin JWT cookie.
+    """FastAPI dependency: extract SecurityContext from the admin JWT cookie, Bearer header, or X-API-Key.
 
     Used on all web admin routes to enforce authentication.
 
     Args:
-        admin_token: JWT from the 'admin_token' cookie (injected by FastAPI).
+        admin_token: JWT from the 'admin_token' cookie.
+        authorization: Bearer token or API key from Authorization header.
+        api_key: API key from X-API-Key header.
 
     Returns:
         Authenticated SecurityContext.
 
     Raises:
-        HTTPException: 401 if the token is missing or invalid.
+        HTTPException: 401 if credentials are missing or invalid.
     """
-    if not admin_token:
+    ctx: Optional[SecurityContext] = None
+
+    token_val = admin_token if isinstance(admin_token, str) and admin_token else None
+    auth_val = authorization if isinstance(authorization, str) and authorization else None
+    key_val = api_key if isinstance(api_key, str) and api_key else None
+
+    if token_val:
+        ctx = AuthResolver.resolve_web(token_val)
+
+    if ctx is None and auth_val:
+        raw_auth = auth_val.removeprefix("Bearer ").strip()
+        if raw_auth.startswith("ak_live_"):
+            ctx = AuthResolver.resolve_api_key(raw_auth)
+        else:
+            ctx = AuthResolver.resolve_web(raw_auth)
+
+    if ctx is None and key_val:
+        ctx = AuthResolver.resolve_api_key(key_val.strip())
+
+    if not ctx or not ctx.is_authenticated:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required. Please log in at /admin/login.",
-            headers={"Location": "/admin/login"},
-        )
-
-    ctx = AuthResolver.resolve_web(admin_token)
-    if not ctx:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session expired or invalid. Please log in again.",
             headers={"Location": "/admin/login"},
         )
     return ctx

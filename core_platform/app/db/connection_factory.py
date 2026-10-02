@@ -110,16 +110,14 @@ class DatabaseConnectionFactory:
         if clean_url.startswith(("timescaledb://", "timescale://")):
             clean_url = clean_url.replace("timescaledb://", "postgresql+psycopg2://").replace("timescale://", "postgresql+psycopg2://")
         elif clean_url.startswith("postgresql://"):
-            try:
-                import psycopg  # type: ignore[import-untyped]
-            except ImportError:
+            import importlib.util
+            if importlib.util.find_spec("psycopg") is None:
                 clean_url = clean_url.replace("postgresql://", "postgresql+psycopg2://", 1)
         elif clean_url.startswith("postgres://"):
             clean_url = clean_url.replace("postgres://", "postgresql+psycopg2://", 1)
         elif clean_url.startswith("mysql://"):
-            try:
-                import MySQLdb  # type: ignore[import-untyped]
-            except ImportError:
+            import importlib.util
+            if importlib.util.find_spec("MySQLdb") is None:
                 clean_url = clean_url.replace("mysql://", "mysql+pymysql://", 1)
 
         try:

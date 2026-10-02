@@ -14,9 +14,12 @@
 
 """Layer 1 Biometric Face Match Node."""
 
+import logging
 from typing import Any, Optional
 
 import numpy as np
+
+logger = logging.getLogger("apps.temperature_marker.face_node")
 
 from apps.temperature_marker.database.db_service import DatabaseService
 from apps.temperature_marker.graph.state import TemperatureMarkerState

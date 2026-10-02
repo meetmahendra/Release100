@@ -37,17 +37,29 @@ from core_platform.app.diagnostics.verifier import (
     verify_webhook_ingress,
     verify_whatsapp,
 )
+from core_platform.app.auth.jwt_utils import create_jwt_token
 from core_platform.main import app
 
 
 @pytest.fixture
 def client() -> TestClient:
-    """Provide TestClient instance."""
-    return TestClient(app)
+    """Provide authenticated TestClient instance."""
+    c = TestClient(app)
+    token = create_jwt_token("admin", ["admin"], ["all"])
+    c.cookies.set("admin_token", token)
+    return c
+
+
+def test_settings_unauthenticated_access() -> None:
+    """Unauthenticated GET /settings must redirect to /admin/login."""
+    unauth_client = TestClient(app, follow_redirects=False)
+    response = unauth_client.get("/settings", headers={"Accept": "text/html"})
+    assert response.status_code == 302
+    assert response.headers["location"] == "/admin/login"
 
 
 def test_settings_html_dashboard_endpoint(client: TestClient) -> None:
-    """GET /settings must return 200 with HTML console and tabs."""
+    """GET /settings must return 200 with HTML console and tabs when authenticated."""
     response = client.get("/settings")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]

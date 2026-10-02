@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Offline Outbox Persistence Node (Edge Resilience Pattern)."""
-
+import logging
 from apps.temperature_marker.database.db_service import DatabaseService
 from apps.temperature_marker.graph.state import TemperatureMarkerState
+
+logger = logging.getLogger("apps.temperature_marker.outbox_node")
 
 
 async def outbox_node(

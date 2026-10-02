@@ -21,6 +21,7 @@ Provides the main entry point for the `release100` console script.
 
 import argparse
 from datetime import datetime, timezone
+import importlib
 import json
 import os
 from pathlib import Path

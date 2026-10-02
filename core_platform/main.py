@@ -27,9 +27,12 @@ from pathlib import Path
 import time
 from typing import Any, AsyncGenerator, Callable, Dict
 import uuid
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+
+from core_platform.app.auth.models import SecurityContext
+from core_platform.app.rbac.permissions import get_web_security_context
 
 from core_platform.app.apps_registry import ApplicationRegistry
 from core_platform.app.config import settings
@@ -199,7 +202,9 @@ async def health_check() -> Dict[str, Any]:
 
 
 @app.get("/admin/api/health-metrics", response_class=JSONResponse)
-async def admin_health_metrics() -> Dict[str, Any]:
+async def admin_health_metrics(
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> Dict[str, Any]:
     """Detailed administrative diagnostic telemetry (SEC-5)."""
     base = await health_check()
     base["cloud_relay"]["relay_url"] = relay_client.relay_url if settings.RELAY_WS_URL else None
@@ -278,20 +283,26 @@ async def favicon() -> Response:
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException) -> Response:
     """Handle HTTPExceptions gracefully: redirect unauthenticated browser requests to /admin/login."""
-    if exc.status_code == 401:
+    if exc.status_code in (401, 403):
         accept = request.headers.get("accept", "")
-        # If it's a browser page load (HTML request) under /admin/, redirect to login
-        if "text/html" in accept and request.url.path.startswith("/admin") and request.url.path != "/admin/login":
-            return RedirectResponse(url="/admin/login", status_code=302)
+        is_browser_page = "text/html" in accept or request.headers.get("sec-fetch-dest") == "document"
+        if is_browser_page and not request.url.path.startswith("/admin/login"):
+            redirect = RedirectResponse(url="/admin/login", status_code=302)
+            if exc.status_code == 401:
+                redirect.delete_cookie("admin_token")
+            return redirect
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers)
 
 
 @app.get("/", response_class=RedirectResponse)
-async def root_redirect() -> RedirectResponse:
+async def root_redirect(request: Request) -> RedirectResponse:
     """Redirect platform root dynamically to first active application dashboard or admin shell."""
+    token = request.cookies.get("admin_token")
+    if not token:
+        return RedirectResponse(url="/admin/login", status_code=302)
     if loaded_apps:
         first_app = next(iter(loaded_apps.values()))
         dash_url = getattr(first_app, "dashboard_url", None)
         if dash_url:
-            return RedirectResponse(url=dash_url)
-    return RedirectResponse(url="/admin/")
+            return RedirectResponse(url=dash_url, status_code=302)
+    return RedirectResponse(url="/admin/", status_code=302)

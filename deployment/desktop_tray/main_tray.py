@@ -36,7 +36,7 @@ from deployment.desktop_tray.exporter import AuditExporter
 
 try:
     from PIL import Image, ImageDraw
-    import pystray  # type: ignore[import-untyped]
+    import pystray
     _HAS_TRAY = True
 except ImportError:
     Image = None  # type: ignore[assignment]

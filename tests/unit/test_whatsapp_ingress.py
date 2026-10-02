@@ -754,16 +754,22 @@ def test_operator_in_pending_approval_cannot_punch_in() -> None:
 def test_admin_approvals_photo_endpoint() -> None:
     """GET /admin/apps/temperature-marker/api/members/{emp_code}/photo must return 200 for saved photos."""
     from pathlib import Path
+    from core_platform.app.auth.jwt_utils import create_jwt_token
+
     photo_file = Path("logs/photos/EMP-TEST-99_profile.jpg")
     photo_file.parent.mkdir(parents=True, exist_ok=True)
     photo_file.write_bytes(b"\xff\xd8\xff\xe0\x00\x10JFIF" + b"\x00" * 100)
 
-    resp = client.get("/admin/apps/temperature-marker/api/members/EMP-TEST-99/photo")
+    token = create_jwt_token("admin", ["admin"], ["all", "temperature_marker"])
+    adm_client = TestClient(app)
+    adm_client.cookies.set("admin_token", token)
+
+    resp = adm_client.get("/admin/apps/temperature-marker/api/members/EMP-TEST-99/photo")
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "image/jpeg"
 
     # Nonexistent photo returns 404
-    resp_404 = client.get("/admin/apps/temperature-marker/api/members/NONEXISTENT/photo")
+    resp_404 = adm_client.get("/admin/apps/temperature-marker/api/members/NONEXISTENT/photo")
     assert resp_404.status_code == 404
 
 
