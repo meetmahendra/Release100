@@ -222,7 +222,7 @@ async def admin_dashboard(
             "principal": ctx.principal_id,
             "is_admin": ctx.is_admin,
             "nav_apps": nav_apps,
-            "enabled_applications": settings.ENABLED_APPLICATIONS,
+            "enabled_applications": list(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else [a["id"] for a in nav_apps],
             "dry_run": settings.DRY_RUN,
             "execution_mode": settings.EXECUTION_MODE,
             "organization": settings.ORGANIZATION_NAME,

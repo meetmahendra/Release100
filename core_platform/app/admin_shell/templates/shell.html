@@ -50,37 +50,17 @@
         Settings & Credentials
       </a>
 
-      <!-- Section: Temperature Marker -->
-      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Temperature Marker</p>
-      <a href="/admin/apps/temperature-marker/monitoring"
+      <!-- Section: Dynamic Installed Applications -->
+      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Applications</p>
+      {% for nav in nav_apps %}
+      <a href="{{ nav.url }}"
          class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <span>📊</span> Live Monitoring
+        <span>📦</span>
+        <span class="truncate">{{ nav.label }}</span>
       </a>
-      <a href="/admin/apps/temperature-marker/fleet"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <span>🚚</span> Fleet Roster & Map
-      </a>
-      <a href="/admin/apps/temperature-marker/approvals"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <span>👥</span> Operator Approvals
-      </a>
-      <a href="/loc" target="_blank"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <span>📍</span> 1-Click GPS Check-in ↗
-      </a>
-
-      <!-- Section: Mail Organizer -->
-      {% if 'mail_organizer' in enabled_applications %}
-      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Mail & Calendar</p>
-      <a href="/admin/apps/mail-organizer/dashboard"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <span>📥</span> Triage Dashboard
-      </a>
-      <a href="/admin/apps/mail-organizer/accounts"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <span>🔑</span> Accounts & OAuth
-      </a>
-      {% endif %}
+      {% else %}
+      <p class="px-3 py-1.5 text-xs text-slate-500 italic">No cartridges installed</p>
+      {% endfor %}
 
       <!-- Admin & Security -->
       {% if is_admin %}
@@ -146,7 +126,7 @@
       <div>
         <h1 class="text-2xl font-bold text-white">{{ title }}</h1>
         <p class="text-xs text-slate-400 mt-1">
-          Kiosk: <span class="font-mono text-emerald-400">{{ kiosk_id }}</span> ({{ station }}) &bull; Tenant: {{ organization }}
+          Node: <span class="font-mono text-emerald-400">{{ kiosk_id }}</span> ({{ station }}) &bull; Tenant: {{ organization }}
         </p>
       </div>
       <!-- Mode Badges -->
@@ -184,8 +164,8 @@
             <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold">MISSING KEY</span>
             {% endif %}
           </div>
-          <p class="text-lg font-bold text-white">Display OCR & LLM</p>
-          <p class="text-xs text-slate-400 mt-1">Powers chiller screen OCR & intent routing.</p>
+          <p class="text-lg font-bold text-white">Cognitive Gateway</p>
+          <p class="text-xs text-slate-400 mt-1">Powers intent routing, OCR & stochastic reasoning.</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
           <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Configure / Test Key →</a>
@@ -204,7 +184,7 @@
             {% endif %}
           </div>
           <p class="text-lg font-bold text-white">Field Messaging</p>
-          <p class="text-xs text-slate-400 mt-1">Handles operator selfie check-ins & link generation.</p>
+          <p class="text-xs text-slate-400 mt-1">Handles conversational webhooks and notification outbox.</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
           <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Configure WhatsApp →</a>
@@ -238,7 +218,7 @@
             <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">SHA-256</span>
           </div>
           <p class="text-lg font-bold text-white">#{{ last_audit_sequence or 0 }} Events</p>
-          <p class="text-xs text-slate-400 mt-1 font-mono truncate">Hash: {{ last_audit_hash[:16] }}...</p>
+          <p class="text-xs text-slate-400 mt-1 font-mono truncate">Hash: {{ (last_audit_hash or "")[:16] }}...</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
           <a href="/health" target="_blank" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">View Telemetry →</a>
@@ -250,64 +230,18 @@
     <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Action Launchpad</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
       
-      <!-- Action 1: Fleet Roster -->
-      <a href="/admin/apps/temperature-marker/fleet"
-         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
-        <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">🚚</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Fleet Roster & Map</h3>
-        </div>
-        <p class="text-xs text-slate-400">Inspect registered CaneBot kiosks across Pune, Mumbai, and Bangalore, with geofence radii.</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Open Fleet Dashboard →</p>
-      </a>
-
-      <!-- Action 2: Operator Approvals -->
-      <a href="/admin/apps/temperature-marker/approvals"
-         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
-        <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">👥</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Operator Approval Gate</h3>
-        </div>
-        <p class="text-xs text-slate-400">Review pending factory floor operators, approve duty credentials, or reject unauthorized submissions.</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Open Approval Queue →</p>
-      </a>
-
-      <!-- Action 3: 1-Click GPS Check-in -->
-      <a href="/loc" target="_blank"
-         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
-        <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">📍</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">1-Click Geolocation Link</h3>
-        </div>
-        <p class="text-xs text-slate-400">Test the mobile-optimized GPS check-in page sent to field operators via WhatsApp.</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Test Location Check-in ↗</p>
-      </a>
-
-      <!-- Action 4: Mail Organizer Triage -->
-      {% if 'mail_organizer' in enabled_applications %}
-      <a href="/admin/apps/mail-organizer/dashboard"
-         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
-        <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">📥</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Email & PM Task Triage</h3>
-        </div>
-        <p class="text-xs text-slate-400">View LangGraph email classification breakdown, VIP alerts, and dispatch tasks to Jira and Linear.</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Open Mail Dashboard →</p>
-      </a>
-      {% endif %}
-
-      <!-- Action 5: Live Settings & Disk Sync -->
+      <!-- Core Action 1: Live Settings & Disk Sync -->
       <a href="/settings"
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-2xl">⚙️</span>
           <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Settings & Key Manager</h3>
         </div>
-        <p class="text-xs text-slate-400">Set and test Gemini API keys, WhatsApp access tokens, Cloudflare tunnels, and manage configuration backups.</p>
+        <p class="text-xs text-slate-400">Configure LLM providers, WhatsApp webhooks, Cloudflare tunnels, and manage configuration backups.</p>
         <p class="text-xs text-emerald-400 font-medium mt-3">Configure System →</p>
       </a>
 
-      <!-- Action 6: API Keys -->
+      <!-- Core Action 2: API Keys -->
       <a href="/admin/api-keys"
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
@@ -317,6 +251,38 @@
         <p class="text-xs text-slate-400">Generate scoped, rate-limited SHA-256 API keys for field tablets, MCP agents, and external integrations.</p>
         <p class="text-xs text-emerald-400 font-medium mt-3">Manage Keys →</p>
       </a>
+
+      <!-- Core Action 3: Diagnostics Console -->
+      <a href="/settings"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">📡</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Diagnostics Console</h3>
+        </div>
+        <p class="text-xs text-slate-400">Run live port checks, NTP time synchronisation audits, and inspect skill health statuses.</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Open Console →</p>
+      </a>
+
+      <!-- Dynamic Application Cartridge Cards -->
+      {% for nav in nav_apps %}
+      <a href="{{ nav.url }}"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">📦</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">{{ nav.label }}</h3>
+        </div>
+        <p class="text-xs text-slate-400">{{ nav.description or "Active domain cartridge." }}</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Open Cartridge Dashboard →</p>
+      </a>
+      {% endfor %}
+
+      {% if not nav_apps %}
+      <div class="col-span-full bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 text-center">
+        <p class="text-slate-300 font-medium">📦 Pure Microkernel Mode — No Application Cartridges Installed</p>
+        <p class="text-xs text-slate-400 mt-1">Core platform is fully operational. Install cartridges (e.g. <code>pip install release100-cartridge-temperature-marker</code>) to enable business workflows.</p>
+      </div>
+      {% endif %}
+
     </div>
 
     <!-- 3. Recent Cryptographic Audit Activity -->
@@ -358,9 +324,9 @@
       <h2 class="text-base font-semibold text-white mb-2">Create Scoped API Key</h2>
       <p class="text-xs text-slate-400 mb-4">Keys are hashed with SHA-256 before storage. Raw keys are shown once upon creation.</p>
       <form method="post" action="/admin/api-keys" class="grid grid-cols-1 md:grid-cols-4 gap-4" id="create-key-form">
-        <input name="label" type="text" required placeholder="Key Label (e.g. Field Tablet Pune)"
+        <input name="label" type="text" required placeholder="Key Label (e.g. Field Tablet)"
                class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
-        <input name="permitted_apps_csv" type="text" placeholder="Apps CSV (e.g. temperature_marker)"
+        <input name="permitted_apps_csv" type="text" placeholder="Apps CSV (e.g. * or specific app)"
                class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
         <input name="roles_csv" type="text" value="field_operator" placeholder="Roles CSV (e.g. field_operator)"
                class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>

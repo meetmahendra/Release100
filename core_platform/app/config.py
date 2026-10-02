@@ -35,11 +35,11 @@ class PlatformSettings(BaseSettings):
         extra="ignore",
     )
 
-    # Operational Identity & Multi-Kiosk Defaults
-    ORGANIZATION_NAME: str = Field(default="Canectar Foods Pvt Ltd", description="Client organization name")
-    STATION_NAME: str = Field(default="Kiosk #04 (Phoenix Mall)", description="Friendly station display name")
-    KIOSK_ID: str = Field(default="CANEBOT-PUNE-04", description="Unique physical kiosk fleet identifier")
-    TENANT_ID: str = Field(default="canectar_foods", description="Multi-tenant identifier")
+    # Operational Identity & Multi-Kiosk Defaults (Domain-neutral core defaults)
+    ORGANIZATION_NAME: str = Field(default="Release100 Organization", description="Client organization name")
+    STATION_NAME: str = Field(default="Release100 Node #01", description="Friendly station display name")
+    KIOSK_ID: str = Field(default="NODE-01", description="Unique physical kiosk fleet identifier")
+    TENANT_ID: str = Field(default="default_tenant", description="Multi-tenant identifier")
 
     # Safety & Execution Modes (GEES v1.0 Section 2.3)
     # Starts in Shadow Mode (DRY_RUN=True) by default for fail-safe verification
