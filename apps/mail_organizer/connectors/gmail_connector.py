@@ -23,6 +23,7 @@ and draft reply staging.
 import asyncio
 import base64
 from email.message import EmailMessage
+import html
 import json
 import logging
 import re
@@ -37,28 +38,60 @@ from apps.mail_organizer.connectors.auth_manager import GoogleAuthManager
 logger = logging.getLogger("mail_organizer.gmail_connector")
 
 
+def _clean_html(html_content: str) -> str:
+    """Convert raw HTML markup to clean, compact plain text without prompt bloat."""
+    if not html_content:
+        return ""
+    # Strip <style>, <script>, <head> blocks completely
+    cleaned = re.sub(r"<(script|style|head)[^>]*>[\s\S]*?</\1>", "", html_content, flags=re.IGNORECASE)
+    # Replace block/break tags with newlines
+    cleaned = re.sub(r"(?i)<(br|p|div|tr|li|h[1-6])[^>]*>", "\n", cleaned)
+    # Strip all remaining HTML tags
+    cleaned = re.sub(r"<[^>]+>", "", cleaned)
+    # Unescape HTML entities (&amp;, &lt;, &gt;, &nbsp;, etc.)
+    cleaned = html.unescape(cleaned)
+    # Normalize multiple consecutive empty lines and whitespace
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    cleaned = re.sub(r"\n\s*\n\s*\n+", "\n\n", cleaned)
+    return cleaned.strip()
+
+
 def _extract_body(payload: Dict[str, Any]) -> str:
-    """Recursively extract plain-text body from a Gmail message payload."""
-    text = ""
-    if "parts" in payload and isinstance(payload["parts"], list):
-        for part in payload["parts"]:
-            if part.get("mimeType") == "text/plain":
-                data = part.get("body", {}).get("data")
-                if data:
-                    try:
-                        text += base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
-                    except Exception:
-                        pass
-            else:
-                text += _extract_body(part)
-    else:
-        data = payload.get("body", {}).get("data")
-        if data:
+    """Recursively extract plain-text body from a Gmail message payload.
+
+    Prefers text/plain MIME parts. If an email is HTML-only, strips all HTML markup,
+    style tags, scripts, and entities before returning clean plain text.
+    """
+    plain_text = ""
+    html_text = ""
+
+    def _traverse(part: Dict[str, Any]) -> None:
+        nonlocal plain_text, html_text
+        mime_type = part.get("mimeType", "")
+        body_data = part.get("body", {}).get("data")
+
+        if mime_type == "text/plain" and body_data:
             try:
-                text += base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
+                plain_text += base64.urlsafe_b64decode(body_data).decode("utf-8", errors="replace") + "\n"
             except Exception:
                 pass
-    return text
+        elif mime_type == "text/html" and body_data:
+            try:
+                html_text += base64.urlsafe_b64decode(body_data).decode("utf-8", errors="replace") + "\n"
+            except Exception:
+                pass
+
+        if "parts" in part and isinstance(part["parts"], list):
+            for subpart in part["parts"]:
+                _traverse(subpart)
+
+    _traverse(payload)
+
+    if plain_text.strip():
+        return plain_text.strip()
+    elif html_text.strip():
+        return _clean_html(html_text)
+    return ""
 
 
 def _parse_email_addrs(val: str) -> List[str]:
