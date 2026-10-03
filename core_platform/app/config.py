@@ -59,7 +59,7 @@ class PlatformSettings(BaseSettings):
     # TypeSafe AI / Jev System 1 Decision Engine Settings
     TYPESAFE_API_KEY: str = Field(default="", description="TypeSafe AI API key for fast decision & routing models")
     TYPESAFE_BASE_URL: str = Field(default="https://api.typesafe.ai/v1", description="TypeSafe AI API base URL")
-    TYPESAFE_MODEL: str = Field(default="jev-1", description="Default TypeSafe decision model (e.g. jev-1)")
+    TYPESAFE_MODEL: str = Field(default="jev-latest", description="Default TypeSafe decision model (e.g. jev-latest, jev-1)")
 
     # Server Ports
     ORCHESTRATOR_PORT: int = Field(default=8002, description="Main FastAPI host and admin shell port")

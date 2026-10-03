@@ -270,12 +270,12 @@ def test_verifier_typesafe() -> None:
         res_ok = verify_typesafe(api_key="mock_jev_test_key_12345", base_url="https://api.typesafe.ai/v1")
         assert res_ok["status"] == "ok"
         assert res_ok["selected_choice"] == "@Action"
-        assert res_ok["model"] == "jev-1"
+        assert res_ok["model"] == "jev-latest"
         assert res_ok["latency_ms"] >= 0
 
     # 3. Mocked HTTPError
     err = urllib.error.HTTPError(
-        url="https://api.typesafe.ai/v1/classify",
+        url="https://api.typesafe.ai/v1/systemone",
         code=401,
         msg="Unauthorized",
         hdrs=MagicMock(),

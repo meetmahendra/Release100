@@ -131,7 +131,7 @@ class ConversationMemory:
                         """SELECT role, content, intent, timestamp_utc
                            FROM conversation_turns
                            WHERE sender_phone = ?
-                           ORDER BY timestamp_utc DESC
+                           ORDER BY timestamp_utc DESC, id DESC
                            LIMIT ?""",
                         (sender_phone, limit),
                     ).fetchall()

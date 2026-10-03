@@ -168,7 +168,8 @@ def verify_typesafe(
     key = (api_key or getattr(settings, "TYPESAFE_API_KEY", "") or "").strip()
     raw_url = (base_url or getattr(settings, "TYPESAFE_BASE_URL", "https://api.typesafe.ai/v1") or "https://api.typesafe.ai/v1").strip()
     url = raw_url.rstrip("/")
-    jev_model = (model or getattr(settings, "TYPESAFE_MODEL", "jev-1") or "jev-1").strip()
+    raw_model = (model or getattr(settings, "TYPESAFE_MODEL", "jev-latest") or "jev-latest").strip()
+    jev_model = "jev-latest" if raw_model in ("jev-1", "jev", "jev_1", "") else raw_model
 
     is_local = "localhost" in url or "127.0.0.1" in url
     if _is_placeholder(key) and not is_local:
@@ -178,12 +179,21 @@ def verify_typesafe(
             "latency_ms": 0,
         }
 
-    endpoint = f"{url}/classify"
+    endpoint = url if url.endswith("/systemone") else f"{url}/systemone"
     payload = {
         "model": jev_model,
-        "input": "Subject: Urgent: Quarterly Production Report\nBody: Please find attached the report.",
-        "choices": ["@Action", "@Promotions", "@Urgent"],
-        "context": "Executive email triage probe",
+        "state": "Subject: Urgent: Quarterly Production Report\nBody: Please find attached the report.",
+        "questions": {
+            "category": {
+                "type": "choice",
+                "instructions": "Executive email triage probe",
+                "criteria": {
+                    "@Action": "Actionable task or email requiring response",
+                    "@Promotions": "Marketing or promotional email",
+                    "@Urgent": "Critical or urgent operational priority",
+                },
+            }
+        },
     }
     data = json.dumps(payload).encode("utf-8")
     headers = {
@@ -206,8 +216,28 @@ def verify_typesafe(
             if code == 200:
                 raw = resp.read().decode("utf-8")
                 res_data = json.loads(raw)
-                chosen = str(res_data.get("selected_choice") or res_data.get("choice") or "classified")
-                conf = float(res_data.get("confidence", 1.0))
+                answers = res_data.get("answers")
+                ans_obj: Dict[str, Any] = {}
+                if isinstance(answers, dict) and answers:
+                    ans_obj = answers.get("category") or next(iter(answers.values()), {})
+                elif isinstance(res_data, dict):
+                    ans_obj = res_data
+
+                chosen = str(
+                    ans_obj.get("choice")
+                    or ans_obj.get("selection")
+                    or ans_obj.get("selected_choice")
+                    or res_data.get("selected_choice")
+                    or res_data.get("choice")
+                    or "classified"
+                )
+                prob = ans_obj.get("probability")
+                if prob is None:
+                    prob = ans_obj.get("confidence")
+                if prob is None:
+                    prob = res_data.get("confidence", 1.0)
+                conf = float(prob)
+
                 return {
                     "status": "ok",
                     "message": f"TypeSafe / Jev API is valid and responsive ({latency}ms). Result: '{chosen}' (confidence: {conf:.2f}). Model: {jev_model}",

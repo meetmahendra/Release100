@@ -100,6 +100,9 @@ async def test_full_workflow_zero_deletion_promo(workflow):
 
 @pytest.mark.asyncio
 async def test_full_workflow_urgent_meeting(workflow):
+    from unittest.mock import patch, AsyncMock
+    from core_platform.app.llm.base import DecisionResult
+
     state: MailOrganizerState = {
         "gmail_id": "msg_meet_01",
         "thread_id": "th_meet_01",
@@ -109,6 +112,14 @@ async def test_full_workflow_urgent_meeting(workflow):
         "body": "Can we meet tomorrow at 10 AM to finalize the agreement terms?",
         "execution_mode": "shadow",
     }
-    final_state = await workflow.execute(state)
-    assert final_state["category"] in ("@Meeting", "@Urgent", "@Action")
-    assert final_state.get("safety_override") is False
+    mock_decision = DecisionResult(
+        selected_choice="@Meeting",
+        confidence=0.96,
+        reasoning="Contract discussion meeting scheduled",
+        latency_ms=15.0,
+    )
+    with patch("core_platform.app.llm.gateway.LLMGateway.classify", new_callable=AsyncMock) as mock_classify:
+        mock_classify.return_value = mock_decision
+        final_state = await workflow.execute(state)
+        assert final_state["category"] in ("@Meeting", "@Urgent", "@Action")
+        assert final_state.get("safety_override") is False

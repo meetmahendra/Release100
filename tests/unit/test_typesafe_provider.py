@@ -57,14 +57,21 @@ async def test_typesafe_provider_classify_success() -> None:
     provider = TypeSafeProvider(
         api_key="mock_typesafe_test_key_abc",
         base_url="https://api.typesafe.ai/v1",
-        default_model="jev-1",
+        default_model="jev-latest",
     )
 
     mock_json = {
-        "selected_choice": "temperature_marker",
-        "confidence": 0.98,
-        "reasoning": "Detected temperature check inquiry",
-        "scores": {"temperature_marker": 0.98, "mail_organizer": 0.02},
+        "model": "jev-latest",
+        "answers": {
+            "decision": {
+                "type": "choice",
+                "choice": "temperature_marker",
+                "probability": 0.98,
+                "scores": {"temperature_marker": 0.98, "mail_organizer": 0.02},
+                "reasoning": "Detected temperature check inquiry",
+            }
+        },
+        "usage": {"input_tokens": 40, "output_tokens": 5},
     }
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
@@ -83,6 +90,34 @@ async def test_typesafe_provider_classify_success() -> None:
         assert result.reasoning == "Detected temperature check inquiry"
         assert result.raw_scores == {"temperature_marker": 0.98, "mail_organizer": 0.02}
         assert result.latency_ms >= 0.0
+
+
+@pytest.mark.anyio
+async def test_typesafe_provider_classify_legacy_flat_format() -> None:
+    """Test backward compatibility with legacy flat JSON response."""
+    provider = TypeSafeProvider(
+        api_key="mock_typesafe_test_key_abc",
+        base_url="https://api.typesafe.ai/v1",
+    )
+
+    mock_json = {
+        "selected_choice": "mail_organizer",
+        "confidence": 0.94,
+        "reasoning": "Triage request",
+        "scores": {"mail_organizer": 0.94, "temperature_marker": 0.06},
+    }
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = _build_mock_response(200, mock_json)
+
+        result = await provider.classify(
+            text="Sort my unread emails",
+            choices=["temperature_marker", "mail_organizer"],
+        )
+
+        assert result is not None
+        assert result.selected_choice == "mail_organizer"
+        assert result.confidence == 0.94
 
 
 @pytest.mark.anyio
