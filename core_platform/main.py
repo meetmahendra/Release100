@@ -301,7 +301,7 @@ async def root_redirect(request: Request) -> RedirectResponse:
     if not token:
         return RedirectResponse(url="/admin/login", status_code=302)
     if loaded_apps:
-        first_app = next(iter(loaded_apps.values()))
+        first_app = loaded_apps.get("temperature_marker") or next(iter(loaded_apps.values()))
         dash_url = getattr(first_app, "dashboard_url", None)
         if dash_url:
             return RedirectResponse(url=dash_url, status_code=302)

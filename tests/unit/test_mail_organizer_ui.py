@@ -14,6 +14,8 @@
 
 """Unit tests for Mail Organizer FastAPI Admin UI routes and simulator."""
 
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 import pytest
 from fastapi.testclient import TestClient
 from core_platform.app.auth.jwt_utils import create_jwt_token

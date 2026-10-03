@@ -45,6 +45,9 @@ from core_platform.main import app
 @pytest.fixture
 def client() -> TestClient:
     """Provide authenticated TestClient instance."""
+    from core_platform.main import plugin_loader
+    if not plugin_loader.get_all_applications():
+        plugin_loader.load_all()
     c = TestClient(app)
     token = create_jwt_token("admin", ["admin"], ["all"])
     c.cookies.set("admin_token", token)

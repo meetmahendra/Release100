@@ -93,8 +93,9 @@ class TemperatureMarkerApplication(BaseApplication):
             self.db_service.bind_engine(engine)
 
     keywords: List[str] = [
-        "attendance", "check-in", "checkin", "punch", "kiosk",
+        "attendance", "check-in", "checkin", "punch", "kiosk", "duty",
         "chiller", "temperature", "temp", "canebot", "selfie", "photo", "face",
+        "hello", "hi", "namaste", "register", "status", "start", "help",
     ]
 
 

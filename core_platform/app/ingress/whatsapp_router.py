@@ -229,16 +229,26 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
             target_app = app_inst
             break
 
-    # Priority 2: If image submitted, default to first vision/attendance cartridge
+    # Priority 2: If sender is a registered employee in workforce cartridge
+    if not target_app and "temperature_marker" in loaded_apps:
+        try:
+            tm = loaded_apps["temperature_marker"]
+            if hasattr(tm, "db_service") and tm.db_service is not None:
+                if tm.db_service.get_employee_by_phone(sender_phone) is not None:
+                    target_app = tm
+        except Exception:
+            pass
+
+    # Priority 3: If image submitted, default to first vision/attendance cartridge
     if not target_app and is_image:
         for app_inst in loaded_apps.values():
             if "temperature_marker" in getattr(app_inst, "app_id", "") or "photo" in getattr(app_inst, "keywords", []):
                 target_app = app_inst
                 break
 
-    # Priority 3: First loaded application fallback
+    # Priority 4: Primary kiosk app or first loaded application fallback
     if not target_app and loaded_apps:
-        target_app = next(iter(loaded_apps.values()))
+        target_app = loaded_apps.get("temperature_marker") or next(iter(loaded_apps.values()))
 
     # Delegate execution to matched cartridge handler
     if target_app is not None:
