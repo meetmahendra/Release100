@@ -89,6 +89,18 @@ class SkillExecutionError(PlatformException):
     pass
 
 
+class LLMProviderError(PlatformException):
+    """Raised when an LLM or decision provider encounters an unrecoverable failure."""
+
+    def __init__(
+        self,
+        message: str,
+        code: PlatformErrorCode = PlatformErrorCode.LLM_PROVIDER_UNREACHABLE,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        super().__init__(message=message, code=code, context=context)
+
+
 class DownstreamSyncError(PlatformException):
     """Raised when a downstream gateway fails to transmit data."""
 

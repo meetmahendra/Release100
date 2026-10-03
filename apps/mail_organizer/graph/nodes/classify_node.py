@@ -96,43 +96,74 @@ async def classify_node(state: MailOrganizerState) -> MailOrganizerState:
             is_scheduling_request=False,
         )
 
-    # Step 2: Live Platform LLM Gateway with clamped temperature (0.0)
+    # Step 2: System 1 / Live Platform LLM Gateway with clamped temperature (0.0)
     if llm_result is None:
         try:
             from core_platform.app.llm.gateway import get_platform_llm_gateway
 
             gateway = get_platform_llm_gateway()
-            org_block = build_org_context_block(sender, subject, body)
-            org_prompt_section = f"{org_block}\n\n" if org_block else ""
-            prompt = (
-                "You are an executive email triage and categorization assistant. "
-                "Analyze the following email and categorize it into exactly one of: "
-                "@Action, @Urgent, @Meeting, @WaitingOn, @Promotions, @Financial, @ProjectTask.\n\n"
-                f"{org_prompt_section}"
-                f"From: {sender}\n"
-                f"Subject: {subject}\n"
-                f"Body:\n{body[:2000]}\n\n"
-                "Return a single JSON object conforming strictly to this schema:\n"
-                "{\n"
-                '  "category": "@Action" | "@Urgent" | "@Meeting" | "@WaitingOn" | "@Promotions" | "@Financial" | "@ProjectTask",\n'
-                '  "urgency_score": int (1 to 10),\n'
-                '  "confidence_score": float (0.0 to 1.0),\n'
-                '  "reasoning": "brief explanation",\n'
-                '  "context_tags": ["tag1", "tag2"],\n'
-                '  "is_reply_necessary": bool,\n'
-                '  "reply_necessity_reason": "string or null",\n'
-                '  "is_scheduling_request": bool\n'
-                "}"
+            valid_categories = [
+                "@Action",
+                "@Urgent",
+                "@Meeting",
+                "@WaitingOn",
+                "@Promotions",
+                "@Financial",
+                "@ProjectTask",
+            ]
+
+            # Fast System 1 Classification Path (TypeSafe / Jev)
+            decision = await gateway.classify(
+                text=f"Subject: {subject}\nBody: {body[:500]}",
+                choices=valid_categories,
+                task="fast_classification",
+                context=f"Executive email triage. Sender: {sender}",
+                operation_id=f"classify_s1_{state.get('gmail_id', 'unknown')}",
             )
-            parsed = await gateway.generate(
-                task="text_generation",
-                prompt=prompt,
-                temperature=0.0,
-                response_mime_type="application/json",
-                operation_id=f"classify_{state.get('gmail_id', 'unknown')}",
-            )
-            if parsed and isinstance(parsed, dict) and "category" in parsed:
-                llm_result = EmailClassificationOutput(**parsed)
+            if decision and decision.selected_choice in valid_categories:
+                urgency = 9 if decision.selected_choice == "@Urgent" else (8 if decision.selected_choice == "@Action" else 5)
+                llm_result = EmailClassificationOutput(
+                    category=decision.selected_choice,
+                    urgency_score=urgency,
+                    confidence_score=decision.confidence,
+                    reasoning=decision.reasoning or f"System 1 classified in {decision.latency_ms:.1f}ms",
+                    context_tags=["system1_triaged"],
+                    is_reply_necessary=decision.selected_choice in ("@Action", "@Urgent", "@Meeting"),
+                    is_scheduling_request=decision.selected_choice == "@Meeting" or any(kw in content_lower for kw in ["meet", "schedule"]),
+                )
+            else:
+                # System 2 Deep Generative Path (Gemini / Claude)
+                org_block = build_org_context_block(sender, subject, body)
+                org_prompt_section = f"{org_block}\n\n" if org_block else ""
+                prompt = (
+                    "You are an executive email triage and categorization assistant. "
+                    "Analyze the following email and categorize it into exactly one of: "
+                    "@Action, @Urgent, @Meeting, @WaitingOn, @Promotions, @Financial, @ProjectTask.\n\n"
+                    f"{org_prompt_section}"
+                    f"From: {sender}\n"
+                    f"Subject: {subject}\n"
+                    f"Body:\n{body[:2000]}\n\n"
+                    "Return a single JSON object conforming strictly to this schema:\n"
+                    "{\n"
+                    '  "category": "@Action" | "@Urgent" | "@Meeting" | "@WaitingOn" | "@Promotions" | "@Financial" | "@ProjectTask",\n'
+                    '  "urgency_score": int (1 to 10),\n'
+                    '  "confidence_score": float (0.0 to 1.0),\n'
+                    '  "reasoning": "brief explanation",\n'
+                    '  "context_tags": ["tag1", "tag2"],\n'
+                    '  "is_reply_necessary": bool,\n'
+                    '  "reply_necessity_reason": "string or null",\n'
+                    '  "is_scheduling_request": bool\n'
+                    "}"
+                )
+                parsed = await gateway.generate(
+                    task="text_generation",
+                    prompt=prompt,
+                    temperature=0.0,
+                    response_mime_type="application/json",
+                    operation_id=f"classify_{state.get('gmail_id', 'unknown')}",
+                )
+                if parsed and isinstance(parsed, dict) and "category" in parsed:
+                    llm_result = EmailClassificationOutput(**parsed)
         except Exception as exc:
             logger.debug("[ClassifyNode] LLM gateway failed: %s", exc)
 

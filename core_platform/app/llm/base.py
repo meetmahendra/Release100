@@ -22,6 +22,60 @@ Guarantees vendor-neutral task-based dispatch from application cartridges.
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field
+
+
+class DecisionResult(BaseModel):
+    """Structured result from a System 1 decision/classification model."""
+
+    selected_choice: str = Field(description="Selected choice label or enum variant name")
+    confidence: float = Field(ge=0.0, le=1.0, description="Calibrated confidence score (0.0 - 1.0)")
+    reasoning: str = Field(default="", description="Brief explanation or decision trace")
+    latency_ms: float = Field(default=0.0, description="Decision latency in milliseconds")
+    raw_scores: Optional[Dict[str, float]] = Field(
+        default=None, description="Per-choice probability distribution if available"
+    )
+
+
+class BaseDecisionProvider(ABC):
+    """Vendor-neutral abstract interface for System 1 fast decision and classification models (e.g. TypeSafe / Jev)."""
+
+    provider_name: str = "base_decision"
+
+    @abstractmethod
+    async def classify(
+        self,
+        text: str,
+        choices: List[str],
+        *,
+        context: Optional[str] = None,
+        model: Optional[str] = None,
+    ) -> Optional[DecisionResult]:
+        """Classify input text against a schema-constrained list of choices.
+
+        Args:
+            text: Input text/query to classify.
+            choices: Valid categorical target choices.
+            context: Optional contextual guidance or metadata.
+            model: Optional model override.
+
+        Returns:
+            DecisionResult with selected_choice and confidence, or None on failure.
+        """
+        ...
+
+    @abstractmethod
+    def is_available(self) -> bool:
+        """Return True if this decision provider is configured and available."""
+        ...
+
+    def get_provider_info(self) -> Dict[str, Any]:
+        """Return human-readable metadata for /health endpoint."""
+        return {
+            "provider_name": self.provider_name,
+            "available": self.is_available(),
+            "tier": "system_1",
+        }
 
 
 class BaseLLMProvider(ABC):

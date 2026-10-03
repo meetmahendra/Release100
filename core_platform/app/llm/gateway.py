@@ -40,14 +40,15 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from core_platform.app.llm.base import BaseLLMProvider
+from core_platform.app.llm.base import BaseDecisionProvider, BaseLLMProvider, DecisionResult
 from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
 
 logger = logging.getLogger("core_platform.llm.gateway")
 
-# Task → provider name mapping.  Overridable via config at startup.
+# Task → provider name mapping. Overridable via config at startup.
 _DEFAULT_TASK_PROVIDER: Dict[str, str] = {
-    "intent_routing": "gemini",
+    "intent_routing": "typesafe",
+    "fast_classification": "typesafe",
     "vision_processing": "gemini",
     "text_generation": "gemini",
     "private_local_logs": "ollama",
@@ -276,6 +277,99 @@ class LLMGateway:
 
         return result
 
+    async def classify(
+        self,
+        text: str,
+        choices: List[str],
+        *,
+        task: str = "intent_routing",
+        context: Optional[str] = None,
+        model: Optional[str] = None,
+        operation_id: Optional[str] = None,
+    ) -> Optional[DecisionResult]:
+        """Classify input text against candidate choices using System 1 decision engine.
+
+        If System 1 (TypeSafe / Jev) is unavailable or fails, automatically falls back
+        to System 2 (Gemini / Claude) via structured JSON prompt.
+
+        Args:
+            text: Inbound message or query string.
+            choices: Valid target choice labels or cartridge IDs.
+            task: Task identifier string (e.g. 'intent_routing', 'fast_classification').
+            context: Optional domain context or metadata.
+            model: Optional model override.
+            operation_id: Optional correlation ID for telemetry.
+
+        Returns:
+            DecisionResult with selected_choice, confidence, latency_ms, or None.
+        """
+        if not choices:
+            return None
+
+        provider = self._get_provider(task)
+        op_id = operation_id or f"op_{uuid.uuid4().hex[:10]}"
+        interaction_id = f"ix_{uuid.uuid4().hex[:10]}"
+        start_time = time.perf_counter()
+
+        # ── Primary: Direct System 1 Decision Model (TypeSafe / Jev) ────────────
+        if isinstance(provider, BaseDecisionProvider) and provider.is_available():
+            logger.debug(
+                "[LLMGateway] System 1 classify task=%s → provider=%s choices=%s (op=%s)",
+                task,
+                provider.provider_name,
+                choices,
+                op_id,
+            )
+            result = await provider.classify(text, choices, context=context, model=model)
+            if result is not None:
+                # Record System 1 metric (~5 tokens per query)
+                get_llm_cost_tracker().record_interaction(
+                    interaction_id=interaction_id,
+                    operation_id=op_id,
+                    task=task,
+                    provider=provider.provider_name,
+                    model=model or getattr(provider, "_default_model", "jev-1"),
+                    prompt_tokens=max(1, len(text) // 4 + len(str(choices)) // 4),
+                    completion_tokens=5,
+                    latency_ms=result.latency_ms,
+                    success=True,
+                    error_message=None,
+                )
+                return result
+
+        # ── Secondary: System 2 Generative Fallback (Gemini / Claude) ──────────
+        logger.debug(
+            "[LLMGateway] Falling back to System 2 generative classification for task=%s (op=%s)",
+            task,
+            op_id,
+        )
+        choices_json = json.dumps(choices)
+        prompt = (
+            "You are a schema-constrained decision classifier. "
+            f"Classify the following text into exactly ONE of these choices: {choices_json}.\n\n"
+            f"Context: {context or 'None'}\n"
+            f"Input text: {text[:500]}\n\n"
+            "Return a single JSON object with exactly these keys: "
+            '{"selected_choice": "<one_of_choices>", "confidence": <0.0-1.0>, "reasoning": "<brief explanation>"}'
+        )
+
+        gen_result = await self.generate(
+            task="text_generation",
+            prompt=prompt,
+            temperature=0.0,
+            operation_id=op_id,
+        )
+        if gen_result and "selected_choice" in gen_result and str(gen_result["selected_choice"]) in choices:
+            latency_ms = (time.perf_counter() - start_time) * 1000.0
+            return DecisionResult(
+                selected_choice=str(gen_result["selected_choice"]),
+                confidence=float(gen_result.get("confidence", 0.85)),
+                reasoning=str(gen_result.get("reasoning", "System 2 generative fallback")),
+                latency_ms=latency_ms,
+            )
+
+        return None
+
     def get_health(self) -> List[Dict[str, Any]]:
         """Return health metadata for all registered providers.
 
@@ -321,8 +415,14 @@ def _build_gateway() -> LLMGateway:
     from core_platform.app.llm.gemini_provider import GeminiProvider
     from core_platform.app.llm.ollama_provider import OllamaProvider
     from core_platform.app.llm.openai_provider import OpenAIProvider
+    from core_platform.app.llm.typesafe_provider import TypeSafeProvider
 
     providers: Dict[str, BaseLLMProvider] = {
+        "typesafe": TypeSafeProvider(
+            api_key=getattr(settings, "TYPESAFE_API_KEY", ""),
+            base_url=getattr(settings, "TYPESAFE_BASE_URL", "https://api.typesafe.ai/v1"),
+            default_model=getattr(settings, "TYPESAFE_MODEL", "jev-1"),
+        ),
         "gemini": GeminiProvider(
             api_key=settings.GEMINI_API_KEY,
             default_model=settings.GEMINI_MODEL,
@@ -344,14 +444,20 @@ def _build_gateway() -> LLMGateway:
     gateway = LLMGateway(providers)
 
     # Apply per-task provider preferences from settings if specified.
+    default_decision: str = getattr(settings, "DEFAULT_DECISION_PROVIDER", "typesafe")
+    if default_decision:
+        for task in ("intent_routing", "fast_classification"):
+            gateway.configure_task(task, default_decision)
+
     default_provider: str = getattr(settings, "DEFAULT_LLM_PROVIDER", "gemini")
     if default_provider and default_provider != "gemini":
-        for task in ("intent_routing", "text_generation"):
+        for task in ("text_generation", "vision_processing"):
             gateway.configure_task(task, default_provider)
 
     logger.info(
-        "[LLMGateway] Initialised with providers: %s | default_provider=%s",
+        "[LLMGateway] Initialised with providers: %s | default_decision=%s | default_provider=%s",
         list(providers.keys()),
+        default_decision,
         default_provider,
     )
     return gateway

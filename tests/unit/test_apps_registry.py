@@ -32,7 +32,7 @@ def test_apps_registry_discovery() -> None:
 
     # Check active status reflects ENABLED_APPLICATIONS
     for a in apps:
-        if a.app_name in settings.ENABLED_APPLICATIONS:
+        if settings.ENABLED_APPLICATIONS is None or a.app_name in settings.ENABLED_APPLICATIONS:
             assert a.is_active is True
             assert a.to_dict()["status"] == "ACTIVE"
 

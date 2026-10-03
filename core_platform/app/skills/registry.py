@@ -27,10 +27,13 @@ import threading
 
 from core_platform.app.errors import PlatformErrorCode, SkillExecutionError
 from core_platform.app.skills.base import BaseSkill
+from core_platform.app.skills.display_ocr import DisplayOCRSkill
+from core_platform.app.skills.entity_extractor import EntityExtractorSkill
+from core_platform.app.skills.face_recognizer import FaceRecognizerSkill
 from core_platform.app.skills.geofencing import GeofencingSkill
 from core_platform.app.skills.image_enhancer import ImageEnhancerSkill
-from core_platform.app.skills.display_ocr import DisplayOCRSkill
-from core_platform.app.skills.face_recognizer import FaceRecognizerSkill
+from core_platform.app.skills.intent_classifier import IntentClassifierSkill
+from core_platform.app.skills.sentiment_urgency import SentimentUrgencySkill
 
 
 class SkillRegistry:
@@ -55,6 +58,9 @@ class SkillRegistry:
             "image_enhancer": ImageEnhancerSkill,
             "display_ocr": DisplayOCRSkill,
             "face_recognizer": FaceRecognizerSkill,
+            "intent_classifier": IntentClassifierSkill,
+            "sentiment_urgency": SentimentUrgencySkill,
+            "entity_extractor": EntityExtractorSkill,
         }
 
     def register_skill(self, skill_name: str, skill_instance: BaseSkill) -> None:

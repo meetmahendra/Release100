@@ -20,9 +20,10 @@ Adheres strictly to GEES v1.0 (with mocked HTTP boundaries).
 import io
 import json
 from typing import Any, Dict
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
+from core_platform.app.llm.base import DecisionResult
 from core_platform.app.llm.claude_provider import ClaudeProvider
 from core_platform.app.llm.gateway import LLMGateway, get_platform_llm_gateway
 from core_platform.app.llm.gemini_provider import GeminiProvider
@@ -302,14 +303,14 @@ async def test_semantic_router_multi_app_and_fallback() -> None:
     register_app_descriptor("app_a", "Handles sales and invoices.")
     register_app_descriptor("app_b", "Handles customer support.")
 
-    # 1. LLM routing success
-    mock_routing_res = {
-        "selected_app": "temperature_marker",
-        "confidence": 0.88,
-        "reasoning": "User mentioned chiller temperature check",
-        "intent_category": "attendance",
-    }
-    with patch("core_platform.app.llm.gateway.LLMGateway.generate", return_value=mock_routing_res):
+    # 1. System 1 / LLM routing success
+    mock_decision = DecisionResult(
+        selected_choice="temperature_marker",
+        confidence=0.88,
+        reasoning="User mentioned chiller temperature check",
+        latency_ms=15.0,
+    )
+    with patch("core_platform.app.llm.gateway.LLMGateway.classify", new_callable=AsyncMock, return_value=mock_decision):
         decision = await SemanticRouter.route(
             text_content="Check temperature at kiosk 1",
             candidate_apps=["temperature_marker", "mail_organizer"],
@@ -318,14 +319,14 @@ async def test_semantic_router_multi_app_and_fallback() -> None:
         assert decision.confidence == 0.88
         assert decision.requires_disambiguation is False
 
-    # 2. LLM routing with low confidence triggers disambiguation
-    mock_low_conf = {
-        "selected_app": "temperature_marker",
-        "confidence": 0.60,
-        "reasoning": "Unclear intent",
-        "intent_category": "ambiguous",
-    }
-    with patch("core_platform.app.llm.gateway.LLMGateway.generate", return_value=mock_low_conf):
+    # 2. Routing with low confidence triggers disambiguation
+    mock_low_conf = DecisionResult(
+        selected_choice="temperature_marker",
+        confidence=0.60,
+        reasoning="Unclear intent",
+        latency_ms=18.0,
+    )
+    with patch("core_platform.app.llm.gateway.LLMGateway.classify", new_callable=AsyncMock, return_value=mock_low_conf):
         decision2 = await SemanticRouter.route(
             text_content="Help me with something",
             candidate_apps=["temperature_marker", "mail_organizer"],

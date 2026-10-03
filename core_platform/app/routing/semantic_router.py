@@ -130,45 +130,36 @@ class SemanticRouter:
                 requires_disambiguation=False,
             )
 
-        # Build app descriptor block for the LLM prompt.
+        # Build app descriptor block for contextual guidance.
         descriptor_lines = []
         for app_id in candidate_apps:
             desc = _APP_DESCRIPTORS.get(app_id) or cls._descriptor_from_loader(app_id) or app_id
-            descriptor_lines.append(f'  "{app_id}": "{desc}"')
-        descriptors_block = "{\n" + ",\n".join(descriptor_lines) + "\n}"
+            descriptor_lines.append(f'"{app_id}": "{desc}"')
+        descriptors_context = f"Applications: {', '.join(descriptor_lines)} | Channel: {channel}"
 
-        prompt = (
-            "You are a request router for a multi-application platform. "
-            "Your task is to determine which application should handle the following message.\n\n"
-            f"Applications available:\n{descriptors_block}\n\n"
-            f"Channel: {channel}\n"
-            f"Message: {text[:500]}\n\n"
-            "Return a single JSON object with exactly these keys:\n"
-            '{ "selected_app": "<app_id>", "confidence": <0.0-1.0>, '
-            '"reasoning": "<brief explanation>", "intent_category": "<category>" }'
-        )
-
-        result: Optional[Dict[str, Any]] = None
         try:
             gateway = get_platform_llm_gateway()
-            result = await gateway.generate(task="intent_routing", prompt=prompt, temperature=0.0)
-        except Exception as exc:
-            logger.warning("[SemanticRouter] LLM call failed: %s", exc)
-
-        if result and "selected_app" in result and result["selected_app"] in candidate_apps:
-            confidence = float(result.get("confidence", 0.0))
-            needs_disambig = confidence < cls._CONFIDENCE_THRESHOLD
-            return RoutingDecision(
-                selected_app=str(result["selected_app"]),
-                confidence=confidence,
-                reasoning=str(result.get("reasoning", "")),
-                intent_category=str(result.get("intent_category", "llm_routed")),
-                requires_disambiguation=needs_disambig,
+            decision = await gateway.classify(
+                text=text,
+                choices=candidate_apps,
+                task="intent_routing",
+                context=descriptors_context,
             )
+            if decision and decision.selected_choice in candidate_apps:
+                needs_disambig = decision.confidence < cls._CONFIDENCE_THRESHOLD
+                return RoutingDecision(
+                    selected_app=decision.selected_choice,
+                    confidence=decision.confidence,
+                    reasoning=decision.reasoning or f"System 1 routed in {decision.latency_ms:.1f}ms",
+                    intent_category="system1_routed",
+                    requires_disambiguation=needs_disambig,
+                )
+        except Exception as exc:
+            logger.warning("[SemanticRouter] Decision gateway routing failed: %s", exc)
 
         # ── Deterministic fallback ────────────────────────────────────────────
         logger.warning(
-            "[SemanticRouter] LLM routing failed or returned invalid app — "
+            "[SemanticRouter] Routing model offline or returned invalid app — "
             "using keyword fallback for sender=%s",
             sender_id,
         )
