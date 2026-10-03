@@ -44,6 +44,22 @@ def test_store_and_retrieve_email(db_service):
     assert recent[0]["subject"] == "Sprint Review Meeting"
 
 
+def test_get_recent_emails_multiple(db_service):
+    """Verify get_recent_emails returns all stored records, not just the last one."""
+    for i in range(15):
+        db_service.store_email(
+            gmail_id=f"test_msg_{i:03d}",
+            thread_id=f"thread_{i:03d}",
+            subject=f"Email Subject {i}",
+            sender=f"sender_{i}@company.com",
+            body=f"Body content {i}",
+        )
+    recent = db_service.get_recent_emails(limit=50)
+    assert len(recent) == 15
+    assert recent[0]["gmail_id"] == "test_msg_014"  # Most recent first
+    assert recent[-1]["gmail_id"] == "test_msg_000"
+
+
 def test_store_classification_and_metrics(db_service):
     db_service.store_email(
         gmail_id="test_msg_002",

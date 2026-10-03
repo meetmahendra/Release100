@@ -82,7 +82,7 @@ async def view_dashboard(request: Request) -> HTMLResponse:
     metrics = _db_service.get_triage_metrics()
     pending_tasks = _db_service.get_pending_pm_tasks()
     drafts = _db_service.get_all_drafts()
-    recent_emails = _db_service.get_recent_emails(limit=10)
+    recent_emails = _db_service.get_recent_emails(limit=50)
 
     return templates.TemplateResponse(
         request=request,

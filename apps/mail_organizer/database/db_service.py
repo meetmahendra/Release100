@@ -409,47 +409,47 @@ class MailDatabaseService:
                         "raw_facts_returned": ["Found 3 available 30-min slots tomorrow (10 AM, 2 PM, 4 PM)"],
                     })
 
-            total_duration_ms: float = 0.0
-            for pt in pipeline_trace:
-                if isinstance(pt, dict):
-                    dur_val = pt.get("duration_ms")
-                    if isinstance(dur_val, (int, float, str)):
-                        try:
-                            total_duration_ms += float(dur_val)
-                        except (ValueError, TypeError):
-                            pass
+                total_duration_ms: float = 0.0
+                for pt in pipeline_trace:
+                    if isinstance(pt, dict):
+                        dur_val = pt.get("duration_ms")
+                        if isinstance(dur_val, (int, float, str)):
+                            try:
+                                total_duration_ms += float(dur_val)
+                            except (ValueError, TypeError):
+                                pass
 
-            results.append({
-                "id": email.id,
-                "gmail_id": email.gmail_id,
-                "thread_id": email.thread_id,
-                "subject": email.subject or "(No Subject)",
-                "sender": email.sender,
-                "to_recipients": to_recips,
-                "cc_recipients": cc_recips,
-                "snippet": email.snippet,
-                "body": email.body or email.snippet or "(Empty body)",
-                "labels_applied": email.labels_applied,
-                "received_at": email.received_at.isoformat() if email.received_at else "",
-                "entry_point": "Simulator" if email.gmail_id.startswith("msg_") or email.gmail_id.startswith("sim-") else "Gmail Ingestion",
-                "category": cat,
-                "urgency_score": urg,
-                "confidence_score": conf,
-                "confidence": conf,
-                "reasoning": reason,
-                "recipient_role": role,
-                "safety_override": (conf < 0.85) if cls else False,
-                "suggested_reply": draft_body,
-                "context_tags": context_tags_list,
-                "is_reply_necessary": cls.is_reply_necessary if cls else False,
-                "reply_necessity_reason": cls.reply_necessity_reason if cls else None,
-                "draft": draft_body,
-                "pm_tasks": pm_tasks_list,
-                "pipeline_trace": pipeline_trace,
-                "llm_communications": llm_communications,
-                "connector_communications": connector_communications,
-                "execution_time_seconds": round(total_duration_ms / 1000.0, 3),
-            })
+                results.append({
+                    "id": email.id,
+                    "gmail_id": email.gmail_id,
+                    "thread_id": email.thread_id,
+                    "subject": email.subject or "(No Subject)",
+                    "sender": email.sender,
+                    "to_recipients": to_recips,
+                    "cc_recipients": cc_recips,
+                    "snippet": email.snippet,
+                    "body": email.body or email.snippet or "(Empty body)",
+                    "labels_applied": email.labels_applied,
+                    "received_at": email.received_at.isoformat() if email.received_at else "",
+                    "entry_point": "Simulator" if email.gmail_id.startswith("msg_") or email.gmail_id.startswith("sim-") else "Gmail Ingestion",
+                    "category": cat,
+                    "urgency_score": urg,
+                    "confidence_score": conf,
+                    "confidence": conf,
+                    "reasoning": reason,
+                    "recipient_role": role,
+                    "safety_override": (conf < 0.85) if cls else False,
+                    "suggested_reply": draft_body,
+                    "context_tags": context_tags_list,
+                    "is_reply_necessary": cls.is_reply_necessary if cls else False,
+                    "reply_necessity_reason": cls.reply_necessity_reason if cls else None,
+                    "draft": draft_body,
+                    "pm_tasks": pm_tasks_list,
+                    "pipeline_trace": pipeline_trace,
+                    "llm_communications": llm_communications,
+                    "connector_communications": connector_communications,
+                    "execution_time_seconds": round(total_duration_ms / 1000.0, 3),
+                })
             return results
 
     def get_all_rules(self, rule_type: Optional[str] = None) -> List[MailRule]:
