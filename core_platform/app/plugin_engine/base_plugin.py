@@ -110,6 +110,17 @@ class BaseApplication(ABC):
         """
         pass
 
+    def has_active_session(self, sender_id: str) -> bool:
+        """Return True if this application cartridge has an active interactive triage/conversation session for sender.
+
+        Args:
+            sender_id: Normalized sender identifier (e.g. phone number or email address).
+
+        Returns:
+            True if the cartridge has an open, unresolved session for this sender.
+        """
+        return False
+
     def get_whatsapp_handler(self) -> Optional[Any]:
         """Return the domain-specific WhatsApp message handler for this cartridge.
 

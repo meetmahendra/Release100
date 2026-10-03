@@ -147,6 +147,17 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
     if data.get("event") == "connected":
         return {"status": "RELAY_CONNECTED", "message": data.get("message", "Worker ready")}
 
+    # Cloud Relay wrapper unwrap: {"event": "whatsapp_message", "body": {...}}
+    if "body" in data:
+        inner_body = data["body"]
+        if isinstance(inner_body, str):
+            try:
+                inner_body = json.loads(inner_body)
+            except Exception:
+                pass
+        if isinstance(inner_body, dict):
+            data = inner_body
+
     if "entry" not in data or not data["entry"]:
         return {"status": "NO_ENTRY"}
 
@@ -221,15 +232,45 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
 
     target_app: Optional[Any] = None
 
-    # Priority 1: Match intent / keywords against active cartridges
-    cmd_lower = text_content.lower()
+    # Priority 0: Active interactive triage/conversation session check
     for app_id, app_inst in loaded_apps.items():
-        app_keywords = getattr(app_inst, "keywords", [])
-        if any(kw.lower() in cmd_lower for kw in app_keywords):
+        if hasattr(app_inst, "has_active_session") and app_inst.has_active_session(sender_phone):
             target_app = app_inst
             break
 
-    # Priority 2: If sender is a registered employee in workforce cartridge
+    # Priority 1: Match intent / keywords against active cartridges
+    if not target_app:
+        cmd_lower = text_content.lower()
+        for app_id, app_inst in loaded_apps.items():
+            app_keywords = getattr(app_inst, "keywords", [])
+            if any(kw.lower() in cmd_lower for kw in app_keywords):
+                target_app = app_inst
+                break
+
+    # Priority 2: Use SemanticRouter for natural language queries across cartridges (confident routes only)
+    if not target_app and text_content and len(loaded_apps) > 1:
+        try:
+            from core_platform.app.routing.semantic_router import SemanticRouter
+            route_decision = await SemanticRouter.route(
+                text_content=text_content,
+                candidate_apps=list(loaded_apps.keys()),
+                sender_id=sender_phone,
+            )
+            if (
+                route_decision
+                and route_decision.selected_app in loaded_apps
+                and not route_decision.requires_disambiguation
+            ):
+                target_app = loaded_apps[route_decision.selected_app]
+                logger.info(
+                    "[WhatsApp Ingress] SemanticRouter directed query to '%s' (conf: %.2f)",
+                    route_decision.selected_app,
+                    route_decision.confidence,
+                )
+        except Exception as ex:
+            logger.warning("[WhatsApp Ingress] SemanticRouter routing attempt failed: %s", ex)
+
+    # Priority 3: If sender is a registered employee in workforce cartridge
     if not target_app and "temperature_marker" in loaded_apps:
         try:
             tm = loaded_apps["temperature_marker"]
@@ -239,14 +280,14 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # Priority 3: If image submitted, default to first vision/attendance cartridge
+    # Priority 4: If image submitted, default to first vision/attendance cartridge
     if not target_app and is_image:
         for app_inst in loaded_apps.values():
             if "temperature_marker" in getattr(app_inst, "app_id", "") or "photo" in getattr(app_inst, "keywords", []):
                 target_app = app_inst
                 break
 
-    # Priority 4: Primary kiosk app or first loaded application fallback
+    # Priority 5: Primary kiosk app or first loaded application fallback
     if not target_app and loaded_apps:
         target_app = loaded_apps.get("temperature_marker") or next(iter(loaded_apps.values()))
 

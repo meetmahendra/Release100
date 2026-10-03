@@ -96,6 +96,7 @@ class TemperatureMarkerApplication(BaseApplication):
         "attendance", "check-in", "checkin", "punch", "kiosk", "duty",
         "chiller", "temperature", "temp", "canebot", "selfie", "photo", "face",
         "hello", "hi", "namaste", "register", "status", "start", "help",
+        "station", "cups", "supply", "fleet",
     ]
 
 
@@ -132,6 +133,15 @@ class TemperatureMarkerApplication(BaseApplication):
             return len(self.db_service.get_pending_outbox_items(limit=100))
         except Exception:
             return 0
+
+    def has_active_session(self, sender_id: str) -> bool:
+        """Check if manager or operator has an active interactive triage session in queue."""
+        try:
+            from apps.temperature_marker.services.internal_dispatch import ManagerTriageSessionManager
+            mgr = ManagerTriageSessionManager.get_instance()
+            return mgr.get_active_message_id(sender_id) is not None
+        except Exception:
+            return False
 
     def get_whatsapp_handler(self) -> Any:
         """Return the domain-specific WhatsApp message handler for Temperature Marker."""

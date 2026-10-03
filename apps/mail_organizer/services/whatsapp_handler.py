@@ -94,18 +94,35 @@ class MailOrganizerWhatsAppHandler:
             return "Usage: reject <TASK-ID>"
 
         # 3. Pending PM Tasks Queue Command
-        if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["tasks", "pm", "pending"]):
+        if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["tasks", "pm", "pending", "action items"]):
             return self._handle_pending_tasks(base_url)
 
-        # 4. Triage Dashboard Link & Greeting
+        # 4. Staged Drafts Command
+        if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["drafts", "draft", "replies"]):
+            return self._handle_staged_drafts(base_url)
+
+        # 5. Active Rules Command
+        if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["rules", "vip", "whitelist"]):
+            return self._handle_rules_list()
+
+        # 6. Conversational AI Q&A over Inbox & Calendar State
+        if len(text_content.strip()) > 3 and not cmd_lower.startswith("help"):
+            conversational_reply = await self._handle_conversational_query(text_content, base_url)
+            if conversational_reply:
+                return conversational_reply
+
+        # 7. Triage Dashboard Link & Help Menu
         return (
             f"📬 *AI Email & Calendar Triage Assistant*\n\n"
             f"Available Commands:\n"
             f"• *summary* — Get latest high-priority inbox briefing\n"
             f"• *tasks* — View extracted PM tasks awaiting approval\n"
+            f"• *drafts* — View staged contextual email replies\n"
             f"• *approve <ID>* — Export task to Jira / Linear / PM Queue\n"
-            f"• *reject <ID>* — Reject and dismiss a task\n\n"
-            f"🔗 Full Dashboard: {base_url}/mail/"
+            f"• *reject <ID>* — Reject and dismiss a task\n"
+            f"• *rules* — Show active VIP senders and triage rules\n"
+            f"• Or ask any natural question about your inbox & schedule!\n\n"
+            f"🔗 Full Dashboard: {base_url}/admin/apps/mail-organizer/dashboard"
         )
 
     def _handle_inbox_summary(self, base_url: str) -> str:
@@ -116,7 +133,7 @@ class MailOrganizerWhatsAppHandler:
                 "📬 *AI Mail & Calendar Summary*\n\n"
                 "Status: All Clear\n"
                 "No pending or unread emails requiring immediate triage.\n\n"
-                f"Interactive Dashboard: {base_url}/mail/"
+                f"Interactive Dashboard: {base_url}/admin/apps/mail-organizer/dashboard"
             )
 
         lines = ["📬 *AI Mail & Calendar Summary (Top Priority)*:\n"]
@@ -127,7 +144,7 @@ class MailOrganizerWhatsAppHandler:
             sender = email.get("sender", "Unknown")
             lines.append(f"{idx}. *[{category} - Urgency {urgency}/10]* {subject}\n   From: {sender}")
 
-        lines.append(f"\nVisit {base_url}/mail/ for full interactive triage & reply drafting.")
+        lines.append(f"\nVisit {base_url}/admin/apps/mail-organizer/dashboard for interactive triage & reply drafting.")
         return "\n".join(lines)
 
     def _handle_pending_tasks(self, base_url: str) -> str:
@@ -143,5 +160,85 @@ class MailOrganizerWhatsAppHandler:
             dest = task.destination or "sqlite_queue"
             lines.append(f"• *{t_id}*: {title} (Target: {dest})\n  Reply: `approve {t_id}`")
 
-        lines.append(f"\nReview all tasks at: {base_url}/mail/")
+        lines.append(f"\nReview all tasks at: {base_url}/admin/apps/mail-organizer/dashboard")
         return "\n".join(lines)
+
+    def _handle_staged_drafts(self, base_url: str) -> str:
+        """List staged non-destructive draft email replies."""
+        drafts = self.db_service.get_all_drafts()[:5]
+        if not drafts:
+            return "✍️ No staged email drafts at this time."
+
+        lines = ["✍️ *Staged Contextual Drafts*:\n"]
+        for idx, d in enumerate(drafts, 1):
+            recipient = d.recipient or "Recipient"
+            subj = d.subject or "Subject"
+            snippet = (d.body[:80] + "...") if len(d.body or "") > 80 else (d.body or "")
+            lines.append(f"{idx}. *To: {recipient}* ({subj})\n   \"{snippet}\"")
+
+        lines.append(f"\nReview and edit drafts at: {base_url}/admin/apps/mail-organizer/drafts")
+        return "\n".join(lines)
+
+    def _handle_rules_list(self) -> str:
+        """List active deterministic VIP and routing rules."""
+        rules = self.db_service.get_all_rules()
+        if not rules:
+            return "⚙️ No custom routing rules registered. Default executive heuristics active."
+
+        lines = ["⚙️ *Active Triage & VIP Rules*:\n"]
+        for r in rules[:8]:
+            lines.append(f"• [{r.rule_type.upper()}] `{r.pattern}` ➔ `{r.action}`")
+        return "\n".join(lines)
+
+    async def _handle_conversational_query(self, query: str, base_url: str) -> Optional[str]:
+        """Answer natural language inquiries using live inbox context and LLM."""
+        try:
+            from core_platform.app.llm.gateway import get_platform_llm_gateway
+            gateway = get_platform_llm_gateway()
+
+            recent = self.db_service.get_recent_emails(limit=5)
+            pending_tasks = self.db_service.get_pending_pm_tasks()[:4]
+            drafts = self.db_service.get_all_drafts()[:3]
+
+            context_items = []
+            if recent:
+                context_items.append("Recent Emails:\n" + "\n".join(
+                    f"- [{e.get('category')}] {e.get('subject')} from {e.get('sender')} (Urgency: {e.get('urgency_score')}/10)"
+                    for e in recent
+                ))
+            if pending_tasks:
+                context_items.append("Pending PM Tasks:\n" + "\n".join(
+                    f"- {t.task_id}: {t.summary} (Priority: {t.priority})"
+                    for t in pending_tasks
+                ))
+            if drafts:
+                context_items.append("Staged Drafts:\n" + "\n".join(
+                    f"- To {d.recipient}: {d.subject}"
+                    for d in drafts
+                ))
+
+            ctx_text = "\n\n".join(context_items) if context_items else "No current emails or tasks in database."
+
+            prompt = (
+                f"You are the executive AI Email & Calendar Assistant on WhatsApp.\n"
+                f"Answer the user's question concisely using the following inbox/calendar context.\n"
+                f"Use bullet points and emojis where helpful. Keep response within 3-4 paragraphs.\n\n"
+                f"Context:\n{ctx_text}\n\n"
+                f"User Question: {query}\n\n"
+                f"Dashboard URL: {base_url}/admin/apps/mail-organizer/dashboard"
+            )
+
+            res = await gateway.generate(
+                task="conversational_chat",
+                prompt=prompt,
+                system_instruction="You are a professional executive email and scheduling coordinator.",
+            )
+            if res and isinstance(res, dict):
+                # Check for answer text or raw text
+                text_ans = res.get("text") or res.get("response") or res.get("result") or res.get("reply")
+                if text_ans:
+                    return str(text_ans).strip()
+        except Exception as exc:
+            logger.warning("[MailOrganizerWhatsAppHandler] Conversational query error: %s", exc)
+
+        return None
