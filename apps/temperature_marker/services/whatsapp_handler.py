@@ -29,19 +29,22 @@ from apps.temperature_marker.database.db_service import DatabaseService
 from apps.temperature_marker.graph.state import TemperatureMarkerState
 from apps.temperature_marker.graph.state_graph import TemperatureMarkerWorkflow
 from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
-from core_platform.app.common.timezone import to_local_ist
-from core_platform.app.config import settings
-from core_platform.app.ingress.intent_router import (
+from apps.temperature_marker.services.conversational_agent import generate_conversational_response
+from apps.temperature_marker.services.intent_router import (
     IngressIntent,
     classify_ingress_intent,
     infer_message_priority_and_category,
 )
-from core_platform.app.messaging.internal_dispatch import (
+from apps.temperature_marker.services.internal_dispatch import (
+    ManagerTriageSessionManager,
     build_fleet_executive_digest,
     build_top10_digest,
     handle_manager_navigation,
     handle_manager_reply,
+    send_whatsapp_raw_message,
 )
+from core_platform.app.common.timezone import to_local_ist
+from core_platform.app.config import settings
 from core_platform.app.skills.face_recognizer import get_platform_face_recognizer
 
 logger = logging.getLogger("apps.temperature_marker.whatsapp_handler")
@@ -204,7 +207,6 @@ class TemperatureMarkerWhatsAppHandler:
             }
 
         # 7. Intent Inference & Direct Routing
-        from core_platform.app.messaging.internal_dispatch import ManagerTriageSessionManager
         session_mgr = ManagerTriageSessionManager.get_instance()
         has_active_triage = bool(session_mgr.get_active_message_id(sender_phone))
         has_quoted_reply = bool(msg.get("context", {}).get("id"))
@@ -244,7 +246,6 @@ class TemperatureMarkerWhatsAppHandler:
                 db_service=self.db_service,
             )
             if op_phone and op_msg:
-                from core_platform.app.messaging.internal_dispatch import send_whatsapp_raw_message
                 await send_whatsapp_raw_message(to_phone=op_phone, text=op_msg)
             return {"reply_message": mgr_confirm, "kiosk_id": kiosk_id}
 
@@ -271,7 +272,6 @@ class TemperatureMarkerWhatsAppHandler:
         if classification.intent == IngressIntent.OPERATOR_QUERY:
             # Procedural question answering check
             if any(q in cmd_lower for q in ["temperature range", "what is", "how to", "why", "haccp", "procedure", "limit", "degrees", "range"]) or "?" in text_content:
-                from core_platform.app.ingress.conversational_agent import generate_conversational_response
                 conv_reply = await generate_conversational_response(
                     sender_phone=sender_phone,
                     user_text=text_content,
@@ -305,7 +305,6 @@ class TemperatureMarkerWhatsAppHandler:
                 priority=prio,
             )
 
-            from core_platform.app.messaging.internal_dispatch import send_whatsapp_raw_message
             mgr_push_text = (
                 f"🔔 *New Operator Message*\n"
                 f"From: {emp.full_name} ({kiosk_id})\n"
@@ -366,7 +365,6 @@ class TemperatureMarkerWhatsAppHandler:
             }
 
         # Fallback to conversational agent
-        from core_platform.app.ingress.conversational_agent import generate_conversational_response
         reply = await generate_conversational_response(
             sender_phone=sender_phone,
             user_text=text_content,

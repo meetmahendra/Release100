@@ -106,7 +106,7 @@ async def dispatch_critical_hazard_alert(
     )
 
     from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
-    from core_platform.app.messaging.internal_dispatch import send_urgent_meta_template_alert
+    from apps.temperature_marker.services.internal_dispatch import send_urgent_meta_template_alert
 
     # Async background delivery
     try:

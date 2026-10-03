@@ -13,20 +13,21 @@
 # limitations under the License.
 
 """
-Ingress Intent Inference Engine.
+Ingress Intent Inference Engine for Temperature & Attendance Marker Cartridge.
 
-Adheres strictly to GEES v1.0 and Plan 02 v1.3.
-Classifies inbound WhatsApp interactions without relying on @tagging:
+Adheres strictly to GEES v2.0 Microkernel Architecture (Rule 3).
+Classifies inbound WhatsApp interactions for kiosk operations:
 - ATTENDANCE_CHECKIN: Shift check-in photos, selfies, and chiller gauge logs.
 - OPERATOR_QUERY: Machine issues, supply requests, and notes for reporting manager.
+- OPERATOR_GREETING: Self-service shift status dashboard greeting.
 - MANAGER_GREETING: Supervisor/manager typing 'hi' or checking queue digest.
 - MANAGER_REPLY: Supervisor replying to an operator's open inquiry.
-- SYSTEM_COMMAND: Built-in commands (help, kiosk, register, location, mail).
+- SYSTEM_COMMAND: Built-in commands (help, kiosk, register, location).
 """
 
 from enum import Enum
 import re
-from typing import Optional
+from typing import Tuple
 from pydantic import BaseModel, Field
 
 
@@ -87,8 +88,7 @@ _OPERATOR_GREETING_WORDS = {
 }
 
 
-
-def infer_message_priority_and_category(text: str) -> tuple[int, str]:
+def infer_message_priority_and_category(text: str) -> Tuple[int, str]:
     """Determine message priority and category from content keywords.
 
     Returns:

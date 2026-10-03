@@ -20,7 +20,7 @@ from starlette.testclient import TestClient
 
 from apps.temperature_marker.database.db_service import DatabaseService
 from core_platform.app.config import settings
-from core_platform.app.messaging.internal_dispatch import (
+from apps.temperature_marker.services.internal_dispatch import (
     ManagerTriageSessionManager,
     build_top10_digest,
     handle_manager_navigation,

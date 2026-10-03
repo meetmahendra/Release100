@@ -18,7 +18,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from apps.temperature_marker.database.db_service import DatabaseService
-from core_platform.app.ingress.intent_router import (
+from apps.temperature_marker.services.intent_router import (
     IngressIntent,
     classify_ingress_intent,
     infer_message_priority_and_category,

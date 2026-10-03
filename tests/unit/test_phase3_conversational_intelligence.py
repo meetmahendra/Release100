@@ -24,7 +24,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 from apps.temperature_marker.database.db_service import DatabaseService
 from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
-from core_platform.app.ingress.conversational_agent import generate_conversational_response
+from apps.temperature_marker.services.conversational_agent import generate_conversational_response
 from core_platform.app.ingress.whatsapp_router import dispatch_whatsapp_payload
 from core_platform.app.messaging.conversation_memory import ConversationMemory
 

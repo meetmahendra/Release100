@@ -13,19 +13,14 @@
 # limitations under the License.
 
 """
-Internal Message Dispatcher, Manager Triage & Two-Way Quoted Reply Relay.
+Internal Message Dispatcher, Manager Triage & Two-Way Quoted Reply Relay for Temperature Marker.
 
-Adheres strictly to GEES v1.0 and Plan 02 v1.3:
+Adheres strictly to GEES v2.0 Microkernel Architecture (Rule 3).
 1. Top-10 prioritized single-screen digest for managers on 'Hi' / greeting.
 2. Step-by-step interactive 1-by-1 drill-down.
 3. Two-way message relay attributing original operator note with 'Re: [quote]' context.
 4. Meta Template Message bypass for critical emergencies / Tier 1 hazards.
 5. Zero arbitrary @tagging.
-
-Design Note: All domain-specific database operations are injected via the
-``db_service`` parameter. This module contains zero direct imports from
-application cartridges (``apps.*``). The caller (e.g. the TM WhatsApp handler)
-is responsible for providing the correct DatabaseService instance.
 """
 
 from datetime import datetime, timezone
@@ -36,7 +31,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from core_platform.app.config import settings
 
-logger = logging.getLogger("core_platform.messaging.internal_dispatch")
+logger = logging.getLogger("apps.temperature_marker.internal_dispatch")
 
 try:
     import httpx
@@ -368,8 +363,7 @@ def handle_manager_reply(
         if 0 <= num_idx < len(pending):
             target_msg = pending[num_idx]
 
-    # 3. Active message in triage session — use db_service.get_message_by_id() to avoid
-    #    importing InternalMessageQueue model directly in this core_platform module.
+    # 3. Active message in triage session
     if not target_msg:
         active_id = session_mgr.get_active_message_id(manager_phone) if session_mgr else None
         if active_id and hasattr(db_service, "get_message_by_id"):

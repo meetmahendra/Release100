@@ -27,7 +27,7 @@ from starlette.testclient import TestClient
 from apps.temperature_marker.database.db_service import DatabaseService
 from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
 from apps.temperature_marker.graph.nodes.layer0_location_node import layer0_location_node
-from core_platform.app.ingress.intent_router import IngressIntent, classify_ingress_intent
+from apps.temperature_marker.services.intent_router import IngressIntent, classify_ingress_intent
 from core_platform.app.ingress.whatsapp_router import dispatch_whatsapp_payload
 from core_platform.main import app
 
@@ -152,7 +152,7 @@ async def test_issue008_manager_push_notification_and_triage_flow() -> None:
 
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_http:
         mock_http.return_value = MagicMock(is_success=True, json=lambda: {"messages": [{"id": "MSG-TEST"}]})
-        with patch("core_platform.app.messaging.internal_dispatch.send_whatsapp_raw_message", new_callable=AsyncMock) as mock_push:
+        with patch("apps.temperature_marker.services.whatsapp_handler.send_whatsapp_raw_message", new_callable=AsyncMock) as mock_push:
             res_op = await dispatch_whatsapp_payload(op_payload)
             assert res_op["status"] == "EVENT_RECEIVED"
             assert "Message Dispatched to Fleet Lead Vikram" in res_op["reply_message"]

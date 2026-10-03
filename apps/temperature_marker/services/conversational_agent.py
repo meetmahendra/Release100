@@ -13,9 +13,9 @@
 # limitations under the License.
 
 """
-Conversational Fleet Coordinator Agent.
+Conversational Fleet Coordinator Agent for Temperature & Attendance Marker Cartridge.
 
-Adheres strictly to GEES v1.0 (Pillar 1 - Multi-Layered Safety Architecture).
+Adheres strictly to GEES v2.0 Microkernel Architecture (Rule 3).
 Addresses ISSUE-002 and ISSUE-004: Multi-turn conversational intelligence for WhatsApp ingress.
 Constrains LLM reasoning to clamped temperature (0.1) with live kiosk state grounding.
 """
@@ -27,7 +27,7 @@ from core_platform.app.config import settings
 from core_platform.app.llm.gateway import get_platform_llm_gateway
 from core_platform.app.messaging.conversation_memory import ConversationMemory
 
-logger = logging.getLogger("core_platform.ingress.conversational_agent")
+logger = logging.getLogger("apps.temperature_marker.conversational_agent")
 
 
 async def generate_conversational_response(

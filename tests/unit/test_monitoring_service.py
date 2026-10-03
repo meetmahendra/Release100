@@ -24,8 +24,8 @@ from apps.temperature_marker.services.alert_dispatcher import (
     reset_alert_cooldown,
     should_dispatch_alert,
 )
-from core_platform.app.ingress.intent_router import IngressIntent, classify_ingress_intent
-from core_platform.app.messaging.internal_dispatch import build_fleet_executive_digest
+from apps.temperature_marker.services.intent_router import IngressIntent, classify_ingress_intent
+from apps.temperature_marker.services.internal_dispatch import build_fleet_executive_digest
 
 
 @pytest.fixture
