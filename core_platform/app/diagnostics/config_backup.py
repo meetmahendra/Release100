@@ -166,6 +166,12 @@ def reload_settings_from_env(env_path: Optional[Path] = None) -> None:
             else:
                 setattr(settings, k, v)
 
+    try:
+        from core_platform.app.llm.gateway import reset_platform_llm_gateway
+        reset_platform_llm_gateway()
+    except Exception:
+        pass
+
 
 def _format_env_value(val: str) -> str:
     """Format a setting value safely for .env storage."""

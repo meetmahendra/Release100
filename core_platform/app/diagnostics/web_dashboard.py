@@ -52,6 +52,7 @@ from core_platform.app.diagnostics.verifier import (
     verify_gemini,
     verify_hmac_secret,
     verify_ports,
+    verify_typesafe,
     verify_webhook_ingress,
     verify_whatsapp,
 )
@@ -72,6 +73,8 @@ class VerifyRequest(BaseModel):
     app_secret: Optional[str] = None
     recipient_phone: Optional[str] = None
     message: Optional[str] = None
+    base_url: Optional[str] = None
+    model: Optional[str] = None
 
 
 class SaveConfigRequest(BaseModel):
@@ -102,7 +105,9 @@ async def api_diagnostics_verify(
     """Test a single credential or service endpoint without modifying disk."""
     svc = req.service.lower().strip()
 
-    if svc == "gemini":
+    if svc in ("typesafe", "jev"):
+        return verify_typesafe(api_key=req.key, base_url=req.base_url, model=req.model)
+    elif svc == "gemini":
         return verify_gemini(api_key=req.key)
     elif svc == "whatsapp":
         return verify_whatsapp(access_token=req.token, phone_number_id=req.phone_id)
@@ -235,6 +240,10 @@ async def view_settings_dashboard(
 
     # Read live on-disk values so nothing is lost
     env_data = read_env_dict()
+    typesafe_key = env_data.get("TYPESAFE_API_KEY", getattr(settings, "TYPESAFE_API_KEY", "") or "")
+    typesafe_url = env_data.get("TYPESAFE_BASE_URL", getattr(settings, "TYPESAFE_BASE_URL", "https://api.typesafe.ai/v1") or "https://api.typesafe.ai/v1")
+    typesafe_model = env_data.get("TYPESAFE_MODEL", getattr(settings, "TYPESAFE_MODEL", "jev-1") or "jev-1")
+    default_decision = env_data.get("DEFAULT_DECISION_PROVIDER", getattr(settings, "DEFAULT_DECISION_PROVIDER", "typesafe") or "typesafe")
     gemini_key = env_data.get("GEMINI_API_KEY", settings.GEMINI_API_KEY or "")
     gemini_model = env_data.get("GEMINI_MODEL", settings.GEMINI_MODEL or "gemini-2.5-flash")
     wa_phone = env_data.get("WHATSAPP_PHONE_NUMBER_ID", settings.WHATSAPP_PHONE_NUMBER_ID or "")
@@ -495,7 +504,44 @@ async def view_settings_dashboard(
                 Test real credentials and endpoints on the fly. You can paste keys here to verify them before saving to disk.
             </p>
 
-            <!-- 1. Gemini Ping -->
+            <!-- 1. TypeSafe AI / Jev System 1 Decision Engine -->
+            <div class="card" style="border-left: 4px solid #38bdf8;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 16px; color: #38bdf8;">⚡ TypeSafe AI / Jev System 1 Decision Engine</h4>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;">
+                            Non-autoregressive decision engine delivering sub-100ms email triage, intent routing, and cognitive skill parsing.
+                        </p>
+                    </div>
+                    <span class="badge" style="background: {'rgba(16,185,129,0.2); color:#34d399;' if typesafe_key else 'rgba(239,68,68,0.2); color:#f87171;'}">
+                        {'KEY CONFIGURED' if typesafe_key else 'NO KEY'}
+                    </span>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600;">TypeSafe API Key (TYPESAFE_API_KEY)</label>
+                    <div style="display: flex; gap: 8px; margin-top: 4px;">
+                        <input type="password" id="test-typesafe-key" value="{typesafe_key}" placeholder="Paste TypeSafe AI / Jev API Key" class="input-control field-flex">
+                        <button class="btn btn-outline" type="button" onclick="toggleVisibility('test-typesafe-key')">👁️</button>
+                    </div>
+                </div>
+                <div class="field-row" style="margin-bottom: 10px;">
+                    <div class="field-flex">
+                        <label style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600;">Base URL (TYPESAFE_BASE_URL)</label>
+                        <input type="text" id="test-typesafe-url" value="{typesafe_url}" placeholder="https://api.typesafe.ai/v1" class="input-control">
+                    </div>
+                    <div class="field-flex">
+                        <label style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600;">Decision Model (TYPESAFE_MODEL)</label>
+                        <input type="text" id="test-typesafe-model" value="{typesafe_model}" placeholder="jev-1" class="input-control">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-primary" onclick="runVerifyTypeSafe()">⚡ Test Jev Decision</button>
+                    <button class="btn btn-blue" onclick="quickSaveTypeSafe()">💾 Save to .env</button>
+                </div>
+                <div id="res-typesafe" class="diag-result"></div>
+            </div>
+
+            <!-- 2. Gemini Ping -->
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                     <div>
@@ -634,14 +680,39 @@ async def view_settings_dashboard(
                 <button class="btn btn-primary" onclick="saveAllConfig()">💾 Save All Settings to .env</button>
             </div>
 
-            <!-- 1. AI & LLM -->
+            <!-- 1. AI, LLM & Decision Engines -->
             <div class="card">
                 <h3 style="margin-top: 0; font-size: 17px; border-bottom: 1px solid var(--border); padding-bottom: 8px; color: #38bdf8;">
-                    🧠 AI & LLM Gateway
+                    🧠 AI, LLM & Decision Engines
                 </h3>
                 <div class="input-group">
+                    <label>⚡ TypeSafe AI / Jev API Key (TYPESAFE_API_KEY)</label>
+                    <p>Obtained from TypeSafe AI. Used for sub-100ms System 1 email triage and intent routing.</p>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="password" id="cfg-typesafe-key" value="{typesafe_key}" placeholder="Paste TypeSafe API Key" class="input-control field-flex">
+                        <button class="btn btn-outline" type="button" onclick="toggleVisibility('cfg-typesafe-key')">👁️</button>
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div class="input-group field-flex">
+                        <label>TypeSafe Base URL (TYPESAFE_BASE_URL)</label>
+                        <input type="text" id="cfg-typesafe-url" value="{typesafe_url}" placeholder="https://api.typesafe.ai/v1" class="input-control">
+                    </div>
+                    <div class="input-group field-flex">
+                        <label>TypeSafe Model (TYPESAFE_MODEL)</label>
+                        <input type="text" id="cfg-typesafe-model" value="{typesafe_model}" placeholder="jev-1" class="input-control">
+                    </div>
+                    <div class="input-group field-flex">
+                        <label>Decision Provider</label>
+                        <select id="cfg-decision-provider" class="input-control">
+                            <option value="typesafe" {'selected' if default_decision == 'typesafe' else ''}>TypeSafe / Jev (Fast System 1)</option>
+                            <option value="gemini" {'selected' if default_decision == 'gemini' else ''}>Gemini (System 2 Fallback)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group">
                     <label>Google Gemini API Key (GEMINI_API_KEY)</label>
-                    <p>Obtained from Google AI Studio. Used for Display OCR and semantic reasoning.</p>
+                    <p>Obtained from Google AI Studio. Used for Display OCR and generative System 2 reasoning.</p>
                     <div style="display: flex; gap: 8px;">
                         <input type="password" id="cfg-gemini-key" value="{gemini_key}" placeholder="AIzaSy..." class="input-control field-flex">
                         <button class="btn btn-outline" type="button" onclick="toggleVisibility('cfg-gemini-key')">👁️</button>
@@ -807,6 +878,45 @@ async def view_settings_dashboard(
             prev.innerText = 'Effective WebSocket: ' + formatted;
         }}
         updateRelayPreview();
+
+        async function runVerifyTypeSafe() {{
+            const key = document.getElementById('test-typesafe-key').value.trim();
+            const url = document.getElementById('test-typesafe-url').value.trim();
+            const model = document.getElementById('test-typesafe-model').value.trim();
+            const el = document.getElementById('res-typesafe');
+            el.style.display = 'block';
+            el.className = 'diag-result';
+            el.innerText = 'Testing TypeSafe AI / Jev decision probe...';
+            try {{
+                const res = await fetch('/api/diagnostics/verify', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ service: 'typesafe', key: key, base_url: url, model: model }})
+                }});
+                const data = await res.json();
+                el.className = data.status === 'ok' ? 'diag-result diag-ok' : (data.status === 'warning' ? 'diag-result diag-warn' : 'diag-result diag-err');
+                el.innerText = data.message;
+            }} catch (err) {{
+                el.className = 'diag-result diag-err';
+                el.innerText = 'TypeSafe test failed: ' + err;
+            }}
+        }}
+
+        async function quickSaveTypeSafe() {{
+            const key = document.getElementById('test-typesafe-key').value.trim();
+            const url = document.getElementById('test-typesafe-url').value.trim();
+            const model = document.getElementById('test-typesafe-model').value.trim();
+            if (!key && !url.includes('localhost') && !url.includes('127.0.0.1')) {{
+                alert('Please enter a TypeSafe API Key first.');
+                return;
+            }}
+            await saveMultiSettings({{
+                TYPESAFE_API_KEY: key,
+                TYPESAFE_BASE_URL: url,
+                TYPESAFE_MODEL: model,
+                DEFAULT_DECISION_PROVIDER: 'typesafe'
+            }}, 'TypeSafe AI / Jev settings saved to .env!');
+        }}
 
         async function runVerifyGemini() {{
             const key = document.getElementById('test-gemini-key').value.trim();
@@ -990,6 +1100,10 @@ async def view_settings_dashboard(
         async function saveAllConfig() {{
             const payload = {{
                 settings: {{
+                    TYPESAFE_API_KEY: document.getElementById('cfg-typesafe-key').value.trim(),
+                    TYPESAFE_BASE_URL: document.getElementById('cfg-typesafe-url').value.trim(),
+                    TYPESAFE_MODEL: document.getElementById('cfg-typesafe-model').value.trim(),
+                    DEFAULT_DECISION_PROVIDER: document.getElementById('cfg-decision-provider').value,
                     GEMINI_API_KEY: document.getElementById('cfg-gemini-key').value.trim(),
                     GEMINI_MODEL: document.getElementById('cfg-model').value.trim(),
                     WHATSAPP_PHONE_NUMBER_ID: document.getElementById('cfg-wa-phone').value.trim(),

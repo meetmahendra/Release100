@@ -34,6 +34,7 @@ from core_platform.app.diagnostics.verifier import (
     verify_gemini,
     verify_hmac_secret,
     verify_ports,
+    verify_typesafe,
     verify_webhook_ingress,
     verify_whatsapp,
 )
@@ -68,6 +69,8 @@ def test_settings_html_dashboard_endpoint(client: TestClient) -> None:
     assert "Active Applications" in text
     assert "Live Diagnostics & Testing" in text
     assert "Configuration & Backups" in text
+    assert "TypeSafe AI / Jev System 1 Decision Engine" in text
+    assert "TYPESAFE_API_KEY" in text
 
 
 def test_diagnostics_status_api(client: TestClient) -> None:
@@ -87,6 +90,16 @@ def test_diagnostics_verify_api_services(client: TestClient) -> None:
     res_ports = client.post("/api/diagnostics/verify", json={"service": "ports"})
     assert res_ports.status_code == 200
     assert res_ports.json()["status"] in ("ok", "warning")
+
+    # Test typesafe placeholder
+    res_ts = client.post("/api/diagnostics/verify", json={"service": "typesafe", "key": "placeholder"})
+    assert res_ts.status_code == 200
+    assert res_ts.json()["status"] == "warning"
+
+    # Test jev alias placeholder
+    res_jev = client.post("/api/diagnostics/verify", json={"service": "jev", "key": "placeholder"})
+    assert res_jev.status_code == 200
+    assert res_jev.json()["status"] == "warning"
 
     # Test hmac ping
     res_hmac = client.post("/api/diagnostics/verify", json={"service": "hmac", "app_secret": "test_secret_12345678"})
@@ -203,7 +216,7 @@ def test_verifier_mocked_success() -> None:
         assert "latency_ms" in res
 
     # Mock Gemini HTTPError
-    err = urllib.error.HTTPError("url", 403, "Forbidden", {}, BytesIO(b'{"error": "invalid"}'))
+    err = urllib.error.HTTPError("url", 403, "Forbidden", MagicMock(), BytesIO(b'{"error": "invalid"}'))
     with patch("urllib.request.urlopen", side_effect=err):
         res_err = verify_gemini(api_key="AIzaSy_InvalidKey123456789012")
         assert res_err["status"] == "error"
@@ -235,6 +248,46 @@ def test_verifier_mocked_success() -> None:
     full_status = get_full_status()
     assert "applications" in full_status
     assert "credentials" in full_status
+    assert "typesafe_configured" in full_status["credentials"]
+
+
+def test_verifier_typesafe() -> None:
+    """Test verify_typesafe with placeholder, mocked success, and error branches."""
+    # 1. Placeholder key
+    res_warn = verify_typesafe(api_key="placeholder")
+    assert res_warn["status"] == "warning"
+
+    # 2. Mocked 200 OK success
+    mock_resp = MagicMock()
+    mock_resp.status = 200
+    mock_resp.read.return_value = b'{"selected_choice": "@Action", "confidence": 0.99, "reasoning": "Fast test"}'
+    mock_resp.__enter__.return_value = mock_resp
+
+    with patch("urllib.request.urlopen", return_value=mock_resp):
+        res_ok = verify_typesafe(api_key="mock_jev_test_key_12345", base_url="https://api.typesafe.ai/v1")
+        assert res_ok["status"] == "ok"
+        assert res_ok["selected_choice"] == "@Action"
+        assert res_ok["model"] == "jev-1"
+        assert res_ok["latency_ms"] >= 0
+
+    # 3. Mocked HTTPError
+    err = urllib.error.HTTPError(
+        url="https://api.typesafe.ai/v1/classify",
+        code=401,
+        msg="Unauthorized",
+        hdrs=MagicMock(),
+        fp=BytesIO(b'{"error": "Invalid API key"}'),
+    )
+    with patch("urllib.request.urlopen", side_effect=err):
+        res_err = verify_typesafe(api_key="mock_jev_test_key_12345")
+        assert res_err["status"] == "error"
+        assert "401" in res_err["message"]
+
+    # 4. Mocked Connection Exception
+    with patch("urllib.request.urlopen", side_effect=ConnectionResetError("Connection reset")):
+        res_ex = verify_typesafe(api_key="mock_jev_test_key_12345")
+        assert res_err["status"] == "error"
+        assert "Failed to connect" in res_ex["message"]
 
 
 def test_verifier_whatsapp_error_branches() -> None:

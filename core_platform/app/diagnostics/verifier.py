@@ -159,6 +159,88 @@ def verify_gemini(api_key: Optional[str] = None) -> Dict[str, Any]:
         }
 
 
+def verify_typesafe(
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    model: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Test TypeSafe AI / Jev API key and endpoint responsiveness."""
+    key = (api_key or getattr(settings, "TYPESAFE_API_KEY", "") or "").strip()
+    raw_url = (base_url or getattr(settings, "TYPESAFE_BASE_URL", "https://api.typesafe.ai/v1") or "https://api.typesafe.ai/v1").strip()
+    url = raw_url.rstrip("/")
+    jev_model = (model or getattr(settings, "TYPESAFE_MODEL", "jev-1") or "jev-1").strip()
+
+    is_local = "localhost" in url or "127.0.0.1" in url
+    if _is_placeholder(key) and not is_local:
+        return {
+            "status": "warning",
+            "message": "TYPESAFE_API_KEY is not configured or using placeholder value.",
+            "latency_ms": 0,
+        }
+
+    endpoint = f"{url}/classify"
+    payload = {
+        "model": jev_model,
+        "input": "Subject: Urgent: Quarterly Production Report\nBody: Please find attached the report.",
+        "choices": ["@Action", "@Promotions", "@Urgent"],
+        "context": "Executive email triage probe",
+    }
+    data = json.dumps(payload).encode("utf-8")
+    headers = {
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "User-Agent": "Release100-Diagnostics/2.0",
+    }
+    req = urllib.request.Request(
+        endpoint,
+        data=data,
+        headers=headers,
+        method="POST",
+    )
+
+    t0 = time.time()
+    try:
+        with _urlopen_with_fallback(req, timeout=6.0) as resp:
+            latency = round((time.time() - t0) * 1000, 1)
+            code = resp.status
+            if code == 200:
+                raw = resp.read().decode("utf-8")
+                res_data = json.loads(raw)
+                chosen = str(res_data.get("selected_choice") or res_data.get("choice") or "classified")
+                conf = float(res_data.get("confidence", 1.0))
+                return {
+                    "status": "ok",
+                    "message": f"TypeSafe / Jev API is valid and responsive ({latency}ms). Result: '{chosen}' (confidence: {conf:.2f}). Model: {jev_model}",
+                    "latency_ms": latency,
+                    "model": jev_model,
+                    "selected_choice": chosen,
+                }
+            return {
+                "status": "error",
+                "message": f"Unexpected HTTP status {code} from TypeSafe API.",
+                "latency_ms": latency,
+            }
+    except urllib.error.HTTPError as err:
+        latency = round((time.time() - t0) * 1000, 1)
+        err_body = ""
+        try:
+            err_body = err.read().decode("utf-8", errors="replace")[:200]
+        except Exception:
+            pass
+        return {
+            "status": "error",
+            "message": f"TypeSafe API Error {err.code}: {err.reason}. {err_body}",
+            "latency_ms": latency,
+        }
+    except Exception as exc:
+        latency = round((time.time() - t0) * 1000, 1)
+        return {
+            "status": "error",
+            "message": f"Failed to connect to TypeSafe AI endpoint ({endpoint}): {exc}",
+            "latency_ms": latency,
+        }
+
+
 def verify_whatsapp(
     access_token: Optional[str] = None,
     phone_number_id: Optional[str] = None,
@@ -446,6 +528,7 @@ def get_full_status() -> Dict[str, Any]:
         "organization_name": settings.ORGANIZATION_NAME,
         "applications": app_summary,
         "credentials": {
+            "typesafe_configured": not _is_placeholder(getattr(settings, "TYPESAFE_API_KEY", "")),
             "gemini_configured": not _is_placeholder(settings.GEMINI_API_KEY),
             "whatsapp_configured": not _is_placeholder(settings.WHATSAPP_ACCESS_TOKEN),
             "cloud_relay_configured": bool(settings.RELAY_WS_URL),

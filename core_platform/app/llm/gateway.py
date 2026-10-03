@@ -404,6 +404,13 @@ def get_platform_llm_gateway() -> LLMGateway:
     return _gateway_instance
 
 
+def reset_platform_llm_gateway() -> None:
+    """Reset the LLMGateway singleton so updated config is loaded on next access."""
+    global _gateway_instance
+    with _gateway_lock:
+        _gateway_instance = None
+
+
 def _build_gateway() -> LLMGateway:
     """Build and configure the LLMGateway from platform settings.
 
