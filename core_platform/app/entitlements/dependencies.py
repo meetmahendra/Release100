@@ -36,6 +36,8 @@ from core_platform.app.rbac.permissions import get_web_security_context
 _gate: Optional[EntitlementGate] = None
 _registry: Optional[EntitlementRegistry] = None
 _off_gate: Optional[EntitlementGate] = None
+_repository: Optional[EntitlementRepository] = None
+
 
 
 def set_gate(gate: Optional[EntitlementGate]) -> None:
@@ -48,6 +50,20 @@ def set_registry(registry: Optional[EntitlementRegistry]) -> None:
     """Install (or clear) the process-wide registry."""
     global _registry
     _registry = registry
+
+
+def set_repository(repository: Optional[EntitlementRepository]) -> None:
+    """Install (or clear) the process-wide repository."""
+    global _repository
+    _repository = repository
+
+
+def get_repository() -> EntitlementRepository:
+    """Return the installed repository, creating the default one lazily."""
+    global _repository
+    if _repository is None:
+        _repository = EntitlementRepository()
+    return _repository
 
 
 def get_registry() -> EntitlementRegistry:
@@ -118,6 +134,8 @@ __all__: list[str] = [
     "get_gate",
     "set_registry",
     "get_registry",
+    "set_repository",
+    "get_repository",
     "authorize_action",
     "require_action",
 ]

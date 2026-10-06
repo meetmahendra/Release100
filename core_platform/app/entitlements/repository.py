@@ -445,6 +445,11 @@ class EntitlementRepository:
             ).all()
             return [_binding_dto(r) for r in rows]
 
+    def all_active_bindings(self) -> List[BindingDTO]:
+        """Return active bindings of every tenant (startup drift audit only)."""
+        with self._session_factory() as session:
+            rows = session.scalars(select(BindingRow).where(BindingRow.revoked_at.is_(None))).all()
+            return [_binding_dto(r) for r in rows]
     def bindings_for_group(self, tenant_id: str, group_id: str) -> List[BindingDTO]:
         """Return active bindings of one group."""
         return self.active_bindings_for_groups(tenant_id, [group_id])

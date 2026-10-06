@@ -28,7 +28,7 @@ import time
 from typing import Any, AsyncGenerator, Callable, Dict
 import uuid
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from core_platform.app.auth.models import SecurityContext
@@ -217,6 +217,31 @@ from core_platform.app.routing.semantic_router import register_app_descriptor
 loaded_apps = plugin_loader.load_all()
 plugin_loader.mount_all(app)
 
+# -- Decentralized Entitlement Architecture (Plan 10): registry, repository, gate --
+# Failures here must never block boot; with no gate installed everything behaves as mode "off".
+try:
+    from core_platform.app.admin_shell.entitlements_routes import emit_startup_audits
+    from core_platform.app.entitlements import dependencies as _ent_deps
+    from core_platform.app.entitlements.audit import EntitlementAuditor as _EntAuditor
+    from core_platform.app.entitlements.evaluator import EntitlementEvaluator as _EntEvaluator
+    from core_platform.app.entitlements.gate import EntitlementGate as _EntGate
+
+    _ent_registry = _ent_deps.get_registry()
+    plugin_loader.register_entitlements(_ent_registry)
+    _ent_repo = _ent_deps.get_repository()
+    _ent_auditor = _EntAuditor()
+    _ent_deps.set_gate(
+        _EntGate(
+            _EntEvaluator(_ent_repo, _ent_registry),
+            _ent_repo,
+            _ent_auditor,
+            _ent_registry,
+            lambda: settings.ENTITLEMENT_ENFORCEMENT_MODE,
+        )
+    )
+    emit_startup_audits(_ent_registry, _ent_repo, _ent_auditor)
+except Exception as _ent_exc:  # noqa: BLE001
+    logger.error("[Main] Entitlement subsystem failed to initialise (mode off): %s", _ent_exc)
 # Register semantic descriptors dynamically from loaded cartridges
 for app_id, app_instance in loaded_apps.items():
     desc = getattr(app_instance, "description", "") or app_instance.name
@@ -249,9 +274,23 @@ async def admin_settings_redirect() -> RedirectResponse:
     """Redirect shortcut /admin/settings to diagnostics and configuration console."""
     return RedirectResponse(url="/settings")
 
+
+@app.get("/ui-gallery", response_class=HTMLResponse)
+async def ui_gallery_preview() -> HTMLResponse:
+    """Interactive visual screenshot catalog and design system preview for mobile and desktop."""
+    art_path = Path(r"C:\Users\depali Gurav\.gemini\antigravity\brain\5dcee49a-51c8-4a1f-aa91-489aba7c34ba\ui_design_system_preview.html")
+    if art_path.exists():
+        return HTMLResponse(content=art_path.read_text(encoding="utf-8"))
+    return HTMLResponse(content="<h1>UI Gallery not found</h1>", status_code=404)
+
 # Mount WhatsApp Cloud API Ingress Webhook
 from core_platform.app.ingress.whatsapp_router import router as wa_router
 app.include_router(wa_router)
+
+# Mount Google OAuth Magic Link Public Ingress Gateway
+from core_platform.app.ingress.oauth_router import router as oauth_router
+app.include_router(oauth_router)
+
 
 # Mount MCP Server Host (port-multiplexed on same app, /mcp/ prefix)
 from core_platform.app.mcp_server.server import router as mcp_router
@@ -267,10 +306,32 @@ if mcp_tools:
 # Mount Central Admin Shell (login, logout, dashboard, API key management)
 from core_platform.app.admin_shell.routes import router as admin_router
 app.include_router(admin_router)
+from core_platform.app.admin_shell.entitlements_routes import router as entitlements_router
+app.include_router(entitlements_router)
 
 # Mount Edge-to-Cloud State Sync Router (Plan 09 / Phase 4)
 from core_platform.app.ingress.sync_router import sync_router
 app.include_router(sync_router)
+
+# Mount DevOps Super-Admin Control Plane
+try:
+    from ops_control_plane.super_admin.routes import router as ops_router
+    app.include_router(ops_router)
+    
+    # Aliases for super-admin / devops routes
+    @app.get("/super-admin/tenants", response_class=RedirectResponse, include_in_schema=False)
+    @app.get("/super-admin", response_class=RedirectResponse, include_in_schema=False)
+    @app.get("/devops/tenants", response_class=RedirectResponse, include_in_schema=False)
+    @app.get("/devops", response_class=RedirectResponse, include_in_schema=False)
+    async def super_admin_tenants_alias() -> RedirectResponse:
+        return RedirectResponse(url="/ops/tenants", status_code=302)
+
+    @app.get("/super-admin/audit", response_class=RedirectResponse, include_in_schema=False)
+    @app.get("/devops/audit", response_class=RedirectResponse, include_in_schema=False)
+    async def super_admin_audit_alias() -> RedirectResponse:
+        return RedirectResponse(url="/ops/audit", status_code=302)
+except ImportError:
+    pass
 
 
 
@@ -296,13 +357,37 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException) ->
 
 @app.get("/", response_class=RedirectResponse)
 async def root_redirect(request: Request) -> RedirectResponse:
-    """Redirect platform root dynamically to first active application dashboard or admin shell."""
+    """Redirect platform root dynamically to DevOps control plane or customer workspace."""
     token = request.cookies.get("admin_token")
     if not token:
         return RedirectResponse(url="/admin/login", status_code=302)
-    if loaded_apps:
-        first_app = loaded_apps.get("temperature_marker") or next(iter(loaded_apps.values()))
-        dash_url = getattr(first_app, "dashboard_url", None)
-        if dash_url:
-            return RedirectResponse(url=dash_url, status_code=302)
+
+    host = request.headers.get("host", "").split(":")[0].strip().lower()
+    req_tenant = getattr(request.state, "tenant_id", "public")
+    is_customer_domain = False
+    if "." in host and not host.replace(".", "").isdigit() and "localhost" not in host:
+        parts = host.split(".")
+        if len(parts) >= 3 and parts[0] not in ("www", "api", "app", "public", "ops", "ops-admin", "admin"):
+            is_customer_domain = True
+    if req_tenant not in ("public", "default", "default_tenant", "platform", "system", "ops"):
+        is_customer_domain = True
+
+    from core_platform.app.auth.jwt_utils import verify_jwt_token
+    ctx = verify_jwt_token(token)
+    if ctx and not is_customer_domain and (
+        ctx.principal_id in ("devops_admin", "master_admin", "system")
+        or (ctx.principal_id == "admin" and ctx.tenant_id in ("default_tenant", "public", "system", None))
+        or "super_admin" in ctx.user_roles
+        or "devops_admin" in ctx.user_roles
+    ):
+        return RedirectResponse(url="/ops/tenants", status_code=302)
+
     return RedirectResponse(url="/admin/", status_code=302)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(settings.ORCHESTRATOR_PORT)
+    print(f"[Release100] Starting web server on http://127.0.0.1:{port}")
+    uvicorn.run("core_platform.main:app", host="127.0.0.1", port=port, reload=True)
+
