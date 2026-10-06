@@ -1,0 +1,411 @@
+{
+  "suite_name": "Entitlement (DEA) Live Benchmark",
+  "version": "1.0",
+  "domain": "entitlements",
+  "scenarios": [
+    {
+      "id": "ENT-001",
+      "name": "Tenant scope grant allows action",
+      "category": "functional",
+      "description": "Tenant scope grant allows action",
+      "is_safety_critical": false,
+      "input": {
+        "groups": [
+          {
+            "name": "g1",
+            "kind": "USER",
+            "members": [
+              "alice"
+            ],
+            "bindings": [
+              {
+                "app_id": "mail_organizer",
+                "bundle_id": "inbox_user",
+                "scope": "TENANT",
+                "unit": null,
+                "confirm": false
+              }
+            ]
+          }
+        ],
+        "principal": "alice",
+        "action_id": "mail:inbox:view"
+      },
+      "expected": {
+        "allowed": true,
+        "reason": "ALLOWED"
+      }
+    },
+    {
+      "id": "ENT-002",
+      "name": "Unit scope allows resource in child unit",
+      "category": "functional",
+      "description": "Unit scope allows resource in child unit",
+      "is_safety_critical": false,
+      "input": {
+        "units": [
+          {
+            "name": "east"
+          },
+          {
+            "name": "east_dock",
+            "parent": "east"
+          }
+        ],
+        "groups": [
+          {
+            "name": "g1",
+            "kind": "USER",
+            "members": [
+              "alice"
+            ],
+            "bindings": [
+              {
+                "app_id": "temperature_marker",
+                "bundle_id": "shift_supervisor",
+                "scope": "UNIT",
+                "unit": "east",
+                "confirm": false
+              }
+            ]
+          }
+        ],
+        "principal": "alice",
+        "action_id": "temperature:fleet:view",
+        "resource": {
+          "unit": "east_dock"
+        }
+      },
+      "expected": {
+        "allowed": true,
+        "reason": "ALLOWED"
+      }
+    },
+    {
+      "id": "ENT-003",
+      "name": "Self scope allows own resource",
+      "category": "functional",
+      "description": "Self scope allows own resource",
+      "is_safety_critical": false,
+      "input": {
+        "groups": [
+          {
+            "name": "g1",
+            "kind": "USER",
+            "members": [
+              "alice"
+            ],
+            "bindings": [
+              {
+                "app_id": "temperature_marker",
+                "bundle_id": "field_operator",
+                "scope": "SELF",
+                "unit": null,
+                "confirm": false
+              }
+            ]
+          }
+        ],
+        "principal": "alice",
+        "action_id": "temperature:telemetry:record",
+        "resource": {
+          "owner": "alice"
+        }
+      },
+      "expected": {
+        "allowed": true,
+        "reason": "ALLOWED"
+      }
+    },
+    {
+      "id": "ENT-004",
+      "name": "Cross-tenant request is denied",
+      "category": "tenant_isolation",
+      "description": "Cross-tenant request is denied",
+      "is_safety_critical": true,
+      "input": {
+        "tenant_id": "bench_tenant_a",
+        "groups": [
+          {
+            "name": "g_a",
+            "kind": "USER",
+            "members": [
+              "bob"
+            ],
+            "bindings": [
+              {
+                "app_id": "mail_organizer",
+                "bundle_id": "inbox_user",
+                "scope": "TENANT",
+                "unit": null,
+                "confirm": false
+              }
+            ]
+          },
+          {
+            "name": "g_b",
+            "kind": "USER",
+            "members": [
+              "alice"
+            ],
+            "bindings": [
+              {
+                "app_id": "mail_organizer",
+                "bundle_id": "inbox_user",
+                "scope": "TENANT",
+                "unit": null,
+                "confirm": false
+              }
+            ],
+            "tenant_id": "bench_tenant_b"
+          }
+        ],
+        "principal": "alice",
+        "request_tenant_id": "bench_tenant_a",
+        "action_id": "mail:inbox:view"
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "NO_MATCHING_BINDING"
+      }
+    },
+    {
+      "id": "ENT-005",
+      "name": "Self scope denies another principal's resource",
+      "category": "scope",
+      "description": "Self scope denies another principal's resource",
+      "is_safety_critical": true,
+      "input": {
+        "groups": [
+          {
+            "name": "g1",
+            "kind": "USER",
+            "members": [
+              "alice"
+            ],
+            "bindings": [
+              {
+                "app_id": "temperature_marker",
+                "bundle_id": "field_operator",
+                "scope": "SELF",
+                "unit": null,
+                "confirm": false
+              }
+            ]
+          }
+        ],
+        "principal": "alice",
+        "action_id": "temperature:telemetry:record",
+        "resource": {
+          "owner": "bob"
+        }
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "SCOPE_MISMATCH"
+      }
+    },
+    {
+      "id": "ENT-006",
+      "name": "Unit scope denies sibling unit",
+      "category": "scope",
+      "description": "Unit scope denies sibling unit",
+      "is_safety_critical": true,
+      "input": {
+        "units": [
+          {
+            "name": "east"
+          },
+          {
+            "name": "west"
+          }
+        ],
+        "groups": [
+          {
+            "name": "g1",
+            "kind": "USER",
+            "members": [
+              "alice"
+            ],
+            "bindings": [
+              {
+                "app_id": "temperature_marker",
+                "bundle_id": "shift_supervisor",
+                "scope": "UNIT",
+                "unit": "east",
+                "confirm": false
+              }
+            ]
+          }
+        ],
+        "principal": "alice",
+        "action_id": "temperature:fleet:view",
+        "resource": {
+          "unit": "west"
+        }
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "SCOPE_MISMATCH"
+      }
+    },
+    {
+      "id": "ENT-007",
+      "name": "High-risk bind without confirmation is rejected",
+      "category": "risk",
+      "description": "High-risk bind without confirmation is rejected",
+      "is_safety_critical": true,
+      "input": {
+        "operation": "bind_unconfirmed",
+        "app_id": "mail_organizer",
+        "bundle_id": "mailbox_admin",
+        "confirm": false
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "HIGH_RISK_CONFIRMATION_REQUIRED"
+      }
+    },
+    {
+      "id": "ENT-008",
+      "name": "Evaluator failure under enforce is denied",
+      "category": "fail_closed",
+      "description": "Evaluator failure under enforce is denied",
+      "is_safety_critical": true,
+      "input": {
+        "operation": "evaluator_error",
+        "groups": [
+          {
+            "name": "g1",
+            "kind": "USER",
+            "members": [
+              "alice"
+            ],
+            "bindings": [
+              {
+                "app_id": "mail_organizer",
+                "bundle_id": "inbox_user",
+                "scope": "TENANT",
+                "unit": null,
+                "confirm": false
+              }
+            ]
+          }
+        ],
+        "principal": "alice",
+        "action_id": "mail:inbox:view",
+        "mode": "enforce"
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "EVALUATION_ERROR"
+      }
+    },
+    {
+      "id": "ENT-009",
+      "name": "Tenant without bindings falls back to legacy",
+      "category": "rollout",
+      "description": "Tenant without bindings falls back to legacy",
+      "is_safety_critical": true,
+      "input": {
+        "principal": "alice",
+        "action_id": "mail:inbox:view",
+        "mode": "enforce",
+        "legacy_allowed": true
+      },
+      "expected": {
+        "allowed": true,
+        "reason": "TENANT_NOT_ONBOARDED"
+      }
+    },
+    {
+      "id": "ENT-010",
+      "name": "Service group cannot hold high-risk bundle",
+      "category": "risk",
+      "description": "Service group cannot hold high-risk bundle",
+      "is_safety_critical": true,
+      "input": {
+        "operation": "bind_unconfirmed",
+        "kind": "SERVICE",
+        "app_id": "temperature_marker",
+        "bundle_id": "fleet_engineer",
+        "confirm": true
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "SERVICE_GROUP_CANNOT_HOLD_HIGH_RISK"
+      }
+    },
+    {
+      "id": "ENT-011",
+      "name": "API key does not inherit a human's grants",
+      "category": "service_principal",
+      "description": "API key does not inherit a human's grants",
+      "is_safety_critical": true,
+      "input": {
+        "groups": [
+          {
+            "name": "g1",
+            "kind": "USER",
+            "members": [
+              "alice"
+            ],
+            "bindings": [
+              {
+                "app_id": "mail_organizer",
+                "bundle_id": "inbox_user",
+                "scope": "TENANT",
+                "unit": null,
+                "confirm": false
+              }
+            ]
+          }
+        ],
+        "principal": "alice",
+        "auth_strategy": "api_key",
+        "action_id": "mail:inbox:view",
+        "mode": "enforce"
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "NO_MATCHING_BINDING"
+      }
+    },
+    {
+      "id": "ENT-012",
+      "name": "Unmapped MCP tool denied under enforce when onboarded",
+      "category": "mcp",
+      "description": "Unmapped MCP tool denied under enforce when onboarded",
+      "is_safety_critical": true,
+      "input": {
+        "operation": "unmapped_tool",
+        "tool": "unlisted_tool",
+        "groups": [
+          {
+            "name": "g1",
+            "kind": "USER",
+            "members": [
+              "alice"
+            ],
+            "bindings": [
+              {
+                "app_id": "mail_organizer",
+                "bundle_id": "inbox_user",
+                "scope": "TENANT",
+                "unit": null,
+                "confirm": false
+              }
+            ]
+          }
+        ],
+        "principal": "alice",
+        "auth_strategy": "api_key",
+        "mode": "enforce"
+      },
+      "expected": {
+        "allowed": false,
+        "reason": "UNKNOWN_ACTION"
+      }
+    }
+  ]
+}

@@ -35,6 +35,7 @@ from apps.temperature_marker.graph.state import TemperatureMarkerState
 from apps.temperature_marker.graph.state_graph import TemperatureMarkerWorkflow
 from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
 from core_platform.app.telemetry.audit_engine import AuditEngine
+from tests.live_benchmark.entitlement_scenarios import EntitlementScenarioRunner
 
 
 class LiveBenchmarkEvaluator:
@@ -57,7 +58,14 @@ class LiveBenchmarkEvaluator:
 
         self.audit_engine = AuditEngine(audit_dir=self.temp_dir / "audit_logs")
 
-        if self.domain == "mail_organizer":
+        self.ent_runner: Optional[EntitlementScenarioRunner] = None
+        if self.domain == "entitlements":
+            self.ent_runner = EntitlementScenarioRunner(self.temp_dir, self.audit_engine)
+            self.mail_db_service = None
+            self.mail_workflow = None
+            self.tm_db_service = None
+            self.tm_workflow = None
+        elif self.domain == "mail_organizer":
             db_file = self.temp_dir / "live_mail.db"
             self.mail_db_service = MailDatabaseService(db_url=f"sqlite:///{db_file}")
             # Seed VIP rules
@@ -89,6 +97,8 @@ class LiveBenchmarkEvaluator:
 
     def close(self) -> None:
         """Dispose database connections and release resources."""
+        if self.ent_runner:
+            self.ent_runner.close()
         if self.tm_db_service:
             self.tm_db_service.close()
 
@@ -100,7 +110,7 @@ class LiveBenchmarkEvaluator:
             emp_code="EMP-1042",
             full_name="Rajesh Pawar",
             phone_number="+919800011122",
-            assigned_kiosk_id="CANEBOT-PUNE-04",
+            assigned_kiosk_id="NODE-PUNE-04",
             status="ACTIVE",
         )
         # Mumbai Operator (Active)
@@ -108,7 +118,7 @@ class LiveBenchmarkEvaluator:
             emp_code="EMP-2088",
             full_name="Sunil Patil",
             phone_number="+919800022233",
-            assigned_kiosk_id="CANEBOT-MUMBAI-08",
+            assigned_kiosk_id="NODE-MUMBAI-08",
             status="ACTIVE",
         )
         # Bangalore Operator (Active)
@@ -116,7 +126,7 @@ class LiveBenchmarkEvaluator:
             emp_code="EMP-3012",
             full_name="Kiran Kumar",
             phone_number="+919800033344",
-            assigned_kiosk_id="CANEBOT-BLR-02",
+            assigned_kiosk_id="NODE-BLR-02",
             status="ACTIVE",
         )
         # Pending Operator (Awaiting Approval)
@@ -124,7 +134,7 @@ class LiveBenchmarkEvaluator:
             emp_code="EMP-9999",
             full_name="Amit Sharma",
             phone_number="+919800044455",
-            assigned_kiosk_id="CANEBOT-PUNE-04",
+            assigned_kiosk_id="NODE-PUNE-04",
             status="PENDING_APPROVAL",
         )
         # Unchecked-in Active Operator (For No-GPS Prompt Scenarios)
@@ -132,7 +142,7 @@ class LiveBenchmarkEvaluator:
             emp_code="EMP-4050",
             full_name="Deepak Mane",
             phone_number="+919800055566",
-            assigned_kiosk_id="CANEBOT-PUNE-04",
+            assigned_kiosk_id="NODE-PUNE-04",
             status="ACTIVE",
         )
 
@@ -153,12 +163,15 @@ class LiveBenchmarkEvaluator:
 
         start_time = time.perf_counter()
 
-        if self.domain == "mail_organizer":
+        if self.domain == "entitlements":
+            assert self.ent_runner is not None
+            final_state: Dict[str, Any] = self.ent_runner.run(inp)
+        elif self.domain == "mail_organizer":
             mail_state: MailOrganizerState = {
                 "gmail_id": inp.get("gmail_id", f"msg_{scenario_id}"),
                 "thread_id": inp.get("thread_id", f"thread_{scenario_id}"),
                 "sender": inp.get("sender", "user@company.com"),
-                "to_recipients": inp.get("to_recipients", ["depali@company.com"]),
+                "to_recipients": inp.get("to_recipients", ["user@company.com"]),
                 "cc_recipients": inp.get("cc_recipients", []),
                 "subject": inp.get("subject", ""),
                 "body": inp.get("body", ""),
@@ -201,7 +214,7 @@ class LiveBenchmarkEvaluator:
             initial_state: TemperatureMarkerState = {
                 "correlation_id": inp.get("correlation_id", f"corr-{scenario_id}"),
                 "sender_phone": inp.get("sender_phone", ""),
-                "kiosk_id": inp.get("kiosk_id", "CANEBOT-PUNE-04"),
+                "kiosk_id": inp.get("kiosk_id", "NODE-PUNE-04"),
                 "user_coords": user_coords_tuple,  # type: ignore
                 "raw_image_bytes": raw_bytes,
             }
