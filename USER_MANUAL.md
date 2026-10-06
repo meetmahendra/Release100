@@ -83,7 +83,7 @@ Send any of the following text commands to WhatsApp:
 | `help` or `/help` | Displays the platform command menu and active applications. | `help` |
 | `status` | Checks kiosk status, active shift, and connectivity. | `status` |
 | `mail <text>` | Forwards email subject & body into the AI triage engine. | `mail Urgent: Motor replacement quotes required` |
-| `#email <text>` | Alternative trigger for email triage. | `#email Client feedback on CaneBot Batch 4` |
+| `#email <text>` | Alternative trigger for email triage. | `#email Client feedback on Chiller Node Batch 4` |
 | `approve <task_id>` | Approves a proposed PM task or urgent email action. | `approve TASK-104` |
 | `reject <task_id>` | Rejects or dismisses a proposed PM task. | `reject TASK-104` |
 
@@ -150,5 +150,20 @@ Release100 follows strict safety guidelines to prevent mistakes:
 ## 7. Support & Escalation
 
 * **Depot Support Hotline:** Contact your local site IT or Plant Automation team.
-* **Platform Administration:** Platform Operations Team (`ops@canebot.internal`)
+* **Platform Administration:** Platform Operations Team (`ops@kiosk.internal`)
 * **Feedback & Feature Requests:** Submit via the Admin Dashboard feedback modal.
+
+---
+
+## 8. Managing Access with Groups and Bundles (Customer Admin)
+
+Open **Admin > Entitlements** (`/admin/entitlements`).
+
+1. **Org units** model your structure (for example a site and its sub-sites).
+2. **Groups** hold people. Use a *User* group for staff and a *Service* group for API keys.
+3. **Bundles** are ready-made sets of permissions supplied by each application. Each shows a plain-language summary, what it *cannot* do, and a **risk badge** (LOW, MEDIUM, HIGH).
+4. **Scope** limits where a bundle applies: whole company, one org unit (and its children), or only the person's own records.
+5. HIGH-risk bundles ask you to confirm before saving. Service groups cannot receive them.
+6. **Effective access** shows what one person can do and which group gives it.
+
+**Shadow vs enforce:** new tenants start in *shadow*. Nothing changes for users; the system only records where the new rules would differ from today's. Your operator switches to *enforce* after reviewing those differences. Until you have created your first assignment, the old rules still apply.

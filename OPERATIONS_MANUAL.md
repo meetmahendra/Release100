@@ -114,9 +114,9 @@ Configuration parameters are managed via environment variables or a local `.env`
 # ==============================================================================
 
 # Core Identity
-TENANT_ID="canebot-enterprise"
+TENANT_ID="apex-enterprise"
 KIOSK_ID="kiosk-pune-hub-01"
-ORGANIZATION_NAME="CaneBot Automated Systems"
+ORGANIZATION_NAME="Apex Automated Systems"
 STATION_NAME="Pune Chilled Processing Depot"
 ENVIRONMENT="production"
 DRY_RUN=false
@@ -127,7 +127,7 @@ ORCHESTRATOR_PORT=8000
 
 # Zero-Inbound Cloud Relay (Outbound WebSocket)
 # Set to your Cloudflare Worker or Render deployment URL
-RELAY_WS_URL="wss://relay.canebot.internal/ws/{kiosk_id}"
+RELAY_WS_URL="wss://relay.kiosk.internal/ws/{kiosk_id}"
 RELAY_RECONNECT_INTERVAL_SECONDS=5
 
 # Active Applications (JSON Array of strings)
@@ -183,14 +183,14 @@ Example Output:
   "status": "healthy",
   "timestamp_utc": "2026-09-15T18:40:00.000Z",
   "uptime_seconds": 3612.4,
-  "tenant_id": "canebot-enterprise",
+  "tenant_id": "apex-enterprise",
   "kiosk_id": "kiosk-pune-hub-01",
-  "organization_name": "CaneBot Automated Systems",
+  "organization_name": "Apex Automated Systems",
   "station_name": "Pune Chilled Processing Depot",
   "enabled_apps": ["temperature_marker", "mail_organizer"],
   "cloud_relay": {
     "enabled": true,
-    "relay_url": "wss://relay.canebot.internal/ws/kiosk-pune-hub-01",
+    "relay_url": "wss://relay.kiosk.internal/ws/kiosk-pune-hub-01",
     "connected": true,
     "messages_received": 142,
     "connection_attempts": 1,
@@ -317,3 +317,13 @@ pyinstaller --clean deployment/packaging_windows/Kiosk_Retail_Edition.spec
 * Omits Mail Organizer, reducing installer size and isolating the attack surface.
 * Defaults to `PORT=8002` with `ENABLED_APPLICATIONS=["temperature_marker"]`.
 
+
+---
+
+## 11. Entitlement Rollout (DEA)
+
+- **Setting:** `ENTITLEMENT_ENFORCEMENT_MODE` in `.env`: `off`, `shadow` (default) or `enforce`.
+- **Read shadow results:** search the audit logs (`.jsonl` or the HTML dashboard) for `ENTITLEMENT_SHADOW_DIFF`. Each record shows the principal, action, legacy result and new result. A diff where legacy allowed and the new rules deny means a missing assignment. Fix it in `/admin/entitlements`.
+- **Promote:** when diffs are explained for a tenant, set `ENTITLEMENT_ENFORCEMENT_MODE=enforce` and restart. Tenants with no active assignments keep legacy behavior (audited once).
+- **Rollback:** set `ENTITLEMENT_ENFORCEMENT_MODE=off` and restart. No data migration is needed.
+- **Verify:** `python run_live_benchmark.py --domain=entitlements --quality-gate`.

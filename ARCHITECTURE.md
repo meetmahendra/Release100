@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary & Architectural Philosophy
 
-**Release100** is an enterprise-grade, edge-deployable artificial intelligence host designed to bridge cloud cognitive services with industrial factory-floor and retail kiosk hardware. Operating across physical retail locations (e.g., Canectar CaneBOT kiosks) and corporate back-office suites, Release100 unifies computer vision, sensor parsing, natural language processing, and regulatory compliance logging under a hardened, zero-trust micro-kernel.
+**Release100** is an enterprise-grade, edge-deployable artificial intelligence host designed to bridge cloud cognitive services with industrial factory-floor and retail kiosk hardware. Operating across physical retail locations (e.g., Apex KioskNode kiosks) and corporate back-office suites, Release100 unifies computer vision, sensor parsing, natural language processing, and regulatory compliance logging under a hardened, zero-trust micro-kernel.
 
 ### Core Architectural Pillars
 1. **Micro-Kernel with Pluggable Domain Cartridges:** The core platform provides zero-trust ingress, safety enforcement, LLM abstraction, and cryptographic auditing. Domain-specific business logic is isolated into pluggable application cartridges (`apps.temperature_marker`, `apps.mail_organizer`).
@@ -136,7 +136,7 @@ sequenceDiagram
     participant Meta as Meta WhatsApp Cloud API
     participant Worker as Mobile Operator
 
-    Kiosk->>Relay: Outbound WSS Connect (wss://relay.../ws/CANEBOT-PUNE-04)
+    Kiosk->>Relay: Outbound WSS Connect (wss://relay.../ws/NODE-PUNE-04)
     Note over Kiosk,Relay: Established on Port 443 (Zero Inbound Firewall Holes)
     Relay-->>Kiosk: Connection Ack (Durable Object Session Active)
 
@@ -239,7 +239,7 @@ flowchart LR
 | :--- | :--- | :--- | :--- |
 | **SAFE_RANGE** | $2.0^\circ\text{C} \le T \le 4.0^\circ\text{C}$ | Optimum chiller cooling. Standard duty attendance logged. | Standard confirmation |
 | **ACCEPTABLE_RANGE** | $4.1^\circ\text{C} \le T \le 7.0^\circ\text{C}$ | Chiller temperature slightly elevated. Monitor on next cycle. | Warning notice to operator |
-| **CRITICAL_HAZARD** | $T > 7.0^\circ\text{C}$ OR $T < 2.0^\circ\text{C}$ | Immediate sugarcane juice spoilage risk. High-priority alert. | **CRITICAL WARNING** to operator + Manager escalation |
+| **CRITICAL_HAZARD** | $T > 7.0^\circ\text{C}$ OR $T < 2.0^\circ\text{C}$ | Immediate perishable cold-chain goods spoilage risk. High-priority alert. | **CRITICAL WARNING** to operator + Manager escalation |
 
 #### Periodic Chiller Photo Exemption Logic
 Operators who have already verified attendance for the day are not prompted for facial photos or geolocation when submitting subsequent periodic 2-hour chiller checks. The system inspects `DatabaseService.has_operator_punched_in_today(emp_code)`:
@@ -264,7 +264,7 @@ erDiagram
         string emp_code UK "EMP-PUNE-001"
         string full_name "Sunil Shinde"
         string phone_number UK "+919800011122"
-        string assigned_kiosk_id FK "CANEBOT-PUNE-04"
+        string assigned_kiosk_id FK "NODE-PUNE-04"
         string status "ACTIVE | PENDING_APPROVAL"
         string role "OPERATOR | MANAGER | ADMIN"
         datetime created_at
@@ -309,7 +309,7 @@ erDiagram
 ### 7.2 Cryptographic Non-Repudiation (FDA 21 CFR Part 11)
 To ensure compliance against retroactive audit manipulation, the audit ledger maintains a mathematical hash chain:
 
-$$\text{Genesis Block Hash} = \text{SHA-256}(\text{"GENESIS\_BLOCK\_RELEASE100\_CANECTAR\_FOODS"})$$
+$$\text{Genesis Block Hash} = \text{SHA-256}(\text{"GENESIS\_BLOCK\_RELEASE100\_APEX\_FOODS"})$$
 $$\text{Record Hash}_n = \text{SHA-256}(\text{Record Hash}_{n-1} \parallel \text{Timestamp}_n \parallel \text{Payload JSON}_n)$$
 
 #### Tri-Format Contemporaneous Streaming
@@ -385,3 +385,15 @@ Adherence to GEES v1.0 is enforced by the **Dual-Engine Regime**:
 ### Static Code Analysis
 * **Engine:** `mypy --strict core_platform apps`
 * **Requirement:** 0 type errors across all 109 source files.
+
+---
+
+## Decentralized Entitlements (DEA)
+
+Each cartridge declares what it can do in `apps/<app_id>/entitlements.json`: namespaced actions (for example `mail:inbox:view`) and bundles (named groups of actions with a plain-language title, a risk level and a "cannot do" list). Core never contains domain words. It loads the manifests at start-up through `BaseApplication`, stores customer assignments in the `entitlement_*` tables (migration 002), and decides requests with `EntitlementEvaluator`.
+
+- **Customer admin model:** groups (kind USER or SERVICE) and org units are created by the tenant admin at `/admin/entitlements`. A bundle is bound to a group with a scope (TENANT, UNIT or SELF). HIGH-risk bundles need an explicit confirmation, and a SERVICE group (API keys) can never hold one.
+- **Gate:** `EntitlementGate` wraps the legacy role check. Modes come from `ENTITLEMENT_ENFORCEMENT_MODE`: `off` (legacy decides), `shadow` (legacy decides, differences are audited as `ENTITLEMENT_SHADOW_DIFF`, the default) and `enforce` (the evaluator decides once the tenant has at least one active binding; otherwise legacy applies and this is audited once).
+- **Fail closed:** an evaluator error denies under `enforce`. Unmapped MCP tools are denied under `enforce` for an onboarded tenant.
+- **Audit:** every decision event goes through `AuditEngine` (SHA-256 chained, JSONL, CSV and HTML).
+- **Boundary:** `core_platform/app/entitlements/` never imports `apps/`. See Plan 10 in `plans/10_decentralized_entitlement_architecture_v1.0.md`.
