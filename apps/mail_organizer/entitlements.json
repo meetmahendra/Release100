@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "namespace": "mail",
+  "app_title": "AI Email and Calendar Organizer",
+  "actions": [
+    {
+      "action_id": "mail:inbox:view",
+      "plain_title": "View the email dashboard, triage and drafts",
+      "plain_description": "Lets the person open the email dashboard, the triage view, the drafts list and search email threads. They can only look.",
+      "effect": "READ",
+      "risk": "LOW",
+      "touches": ["mailbox data"],
+      "mcp_tools": ["mail_search_threads", "mail_get_thread_context", "mail_check_calendar_availability"]
+    },
+    {
+      "action_id": "mail:inbox:triage",
+      "plain_title": "Run AI triage on an email",
+      "plain_description": "Lets the person ask the assistant to sort a sample email and see how it would be labelled. Nothing is sent to anyone.",
+      "effect": "WRITE",
+      "risk": "LOW",
+      "touches": ["AI model"]
+    },
+    {
+      "action_id": "mail:draft:stage",
+      "plain_title": "Prepare a draft reply for review",
+      "plain_description": "Lets the person or assistant write a draft reply and place it in the drafts folder. A human still has to review and send it.",
+      "effect": "WRITE",
+      "risk": "LOW",
+      "touches": ["drafts"],
+      "mcp_tools": ["mail_stage_draft_reply"]
+    },
+    {
+      "action_id": "mail:rules:view",
+      "plain_title": "See VIP and whitelist rules",
+      "plain_description": "Lets the person read the list of important senders and trusted contacts that the assistant follows. They cannot change it.",
+      "effect": "READ",
+      "risk": "LOW",
+      "touches": ["rules"]
+    },
+    {
+      "action_id": "mail:pm_task:view",
+      "plain_title": "See tasks waiting for approval",
+      "plain_description": "Lets the person see the follow-up tasks that the assistant found in emails and that are waiting for a decision.",
+      "effect": "READ",
+      "risk": "LOW",
+      "touches": ["task queue"],
+      "mcp_tools": ["mail_get_pending_pm_tasks"]
+    },
+    {
+      "action_id": "mail:pm_task:approve",
+      "plain_title": "Approve a task and send it to the project tool",
+      "plain_description": "Lets the person approve a proposed task. Once approved, the task is created in the connected project tool and visible to the team.",
+      "effect": "APPROVE",
+      "risk": "MEDIUM",
+      "touches": ["project tool"],
+      "mcp_tools": ["mail_approve_pm_task"]
+    },
+    {
+      "action_id": "mail:pm_task:reject",
+      "plain_title": "Reject a proposed task",
+      "plain_description": "Lets the person turn down a task proposed by the assistant so that it is not created anywhere.",
+      "effect": "APPROVE",
+      "risk": "MEDIUM",
+      "touches": ["task queue"]
+    },
+    {
+      "action_id": "mail:account:connect",
+      "plain_title": "Connect or re-authorize a mailbox",
+      "plain_description": "Lets the person link a mailbox account to the platform or renew its sign-in. This gives the platform access to that mailbox.",
+      "effect": "CONFIGURE",
+      "risk": "HIGH",
+      "touches": ["mailbox account"]
+    }
+  ],
+  "bundles": [
+    {
+      "bundle_id": "inbox_user",
+      "title": "Inbox user",
+      "summary": "Can look at the email dashboard, run triage and prepare draft replies, but cannot approve anything.",
+      "who_its_for": "Everyday staff who read and answer email with the assistant",
+      "cannot_do": [],
+      "allowed_scopes": ["SELF", "UNIT", "TENANT"],
+      "default_scope": "SELF",
+      "actions": ["mail:inbox:view", "mail:inbox:triage", "mail:draft:stage", "mail:rules:view"]
+    },
+    {
+      "bundle_id": "project_lead",
+      "title": "Project lead",
+      "summary": "Everything an inbox user can do, plus approving or rejecting tasks that go to the project tool.",
+      "who_its_for": "Team leads who decide which email follow-ups become real tasks",
+      "cannot_do": ["Connect or change mailboxes", "Change VIP or whitelist rules"],
+      "allowed_scopes": ["UNIT", "TENANT"],
+      "default_scope": "UNIT",
+      "actions": [
+        "mail:inbox:view", "mail:inbox:triage", "mail:draft:stage", "mail:rules:view",
+        "mail:pm_task:view", "mail:pm_task:approve", "mail:pm_task:reject"
+      ]
+    },
+    {
+      "bundle_id": "mailbox_admin",
+      "title": "Mailbox administrator",
+      "summary": "Can connect and re-authorize mailboxes. This gives the platform access to email accounts.",
+      "who_its_for": "A small number of trusted administrators who manage mailbox connections",
+      "cannot_do": ["Approve or reject project tasks"],
+      "allowed_scopes": ["TENANT"],
+      "default_scope": "TENANT",
+      "actions": ["mail:account:connect", "mail:inbox:view"]
+    }
+  ]
+}

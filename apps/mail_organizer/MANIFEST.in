@@ -7,3 +7,4 @@ recursive-include pm *.py
 recursive-include services *.py
 recursive-include ui *.py
 recursive-include ui/templates *.html
+include entitlements.json
