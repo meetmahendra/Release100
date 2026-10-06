@@ -37,12 +37,14 @@ from apps.mail_organizer.database.db_service import MailDatabaseService
 from apps.mail_organizer.graph.state import MailOrganizerState
 from apps.mail_organizer.graph.state_graph import MailOrganizerWorkflow
 from apps.mail_organizer.pm.task_manager import PMTaskManager
-from core_platform.app.rbac.permissions import get_web_security_context
+from core_platform.app.entitlements.dependencies import require_action
+from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+from core_platform.app.rbac.permissions import get_web_security_context, require_app
 
 router = APIRouter(
     prefix="/admin/apps/mail-organizer",
     tags=["Mail Organizer Admin"],
-    dependencies=[Depends(get_web_security_context)],
+    dependencies=[Depends(require_app("mail_organizer"))],
 )
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -76,19 +78,24 @@ async def mail_admin_root() -> RedirectResponse:
     return RedirectResponse(url="/admin/apps/mail-organizer/dashboard")
 
 
-@router.get("/dashboard", response_class=HTMLResponse)
+@router.get("/dashboard", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:inbox:view"))])
 async def view_dashboard(request: Request) -> HTMLResponse:
     """Render interactive Mail Organizer Dashboard."""
-    metrics = _db_service.get_triage_metrics()
-    pending_tasks = _db_service.get_pending_pm_tasks()
-    drafts = _db_service.get_all_drafts()
-    recent_emails = _db_service.get_recent_emails(limit=50)
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    metrics = _db_service.get_triage_metrics(tenant_id=tenant_id)
+    pending_tasks = _db_service.get_pending_pm_tasks(tenant_id=tenant_id)
+    drafts = _db_service.get_all_drafts(tenant_id=tenant_id)
+    recent_emails = _db_service.get_recent_emails(limit=50, tenant_id=tenant_id)
 
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
         context={
             "active_tab": "dashboard",
+            "tenant_id": tenant_id,
+            "organization": org_name,
+            "tenant_name": org_name,
+            "active_tenant": active_tenant,
             "metrics": metrics,
             "pending_tasks": pending_tasks,
             "drafts": drafts,
@@ -97,21 +104,26 @@ async def view_dashboard(request: Request) -> HTMLResponse:
     )
 
 
-@router.get("/triage", response_class=HTMLResponse)
+@router.get("/triage", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:inbox:view"))])
 async def view_triage(request: Request) -> HTMLResponse:
     """Render Triage Simulator."""
-    emails = _db_service.get_recent_emails(limit=25)
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    emails = _db_service.get_recent_emails(limit=25, tenant_id=tenant_id)
     return templates.TemplateResponse(
         request=request,
         name="triage.html",
         context={
             "active_tab": "triage",
+            "tenant_id": tenant_id,
+            "organization": org_name,
+            "tenant_name": org_name,
+            "active_tenant": active_tenant,
             "emails": emails,
         },
     )
 
 
-@router.post("/api/simulate")
+@router.post("/api/simulate", dependencies=[Depends(require_action("mail:inbox:triage"))])
 async def run_email_simulation(req: EmailSimulationRequest) -> Dict[str, Any]:
     """Execute email processing through the complete LangGraph workflow."""
     thread_id = req.thread_id or f"thread_{uuid.uuid4().hex[:8]}"
@@ -121,7 +133,7 @@ async def run_email_simulation(req: EmailSimulationRequest) -> Dict[str, Any]:
         "gmail_id": email_id,
         "thread_id": thread_id,
         "sender": req.sender,
-        "to_recipients": req.recipients or ["depali@company.com"],
+        "to_recipients": req.recipients or ["user@company.com"],
         "cc_recipients": req.cc,
         "subject": req.subject,
         "body": req.body,
@@ -172,21 +184,26 @@ async def run_email_simulation(req: EmailSimulationRequest) -> Dict[str, Any]:
     }
 
 
-@router.get("/pm-queue", response_class=HTMLResponse)
+@router.get("/pm-queue", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:pm_task:view"))])
 async def view_pm_queue(request: Request) -> HTMLResponse:
     """Render Human-in-the-Loop PM Action Queue."""
-    pending_tasks = _db_service.get_pending_pm_tasks()
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    pending_tasks = _db_service.get_pending_pm_tasks(tenant_id=tenant_id)
     return templates.TemplateResponse(
         request=request,
         name="pm_queue.html",
         context={
             "active_tab": "pm-queue",
+            "tenant_id": tenant_id,
+            "organization": org_name,
+            "tenant_name": org_name,
+            "active_tenant": active_tenant,
             "tasks": pending_tasks,
         },
     )
 
 
-@router.post("/api/pm-tasks/{task_id}/approve")
+@router.post("/api/pm-tasks/{task_id}/approve", dependencies=[Depends(require_action("mail:pm_task:approve"))])
 async def approve_task_api(task_id: int, req: TaskApprovalRequest) -> Dict[str, Any]:
     """Approve and sync a staged PM task to Jira or Linear."""
     result = await _pm_task_manager.approve_and_export(task_id=str(task_id), destination=req.sync_to)
@@ -195,7 +212,7 @@ async def approve_task_api(task_id: int, req: TaskApprovalRequest) -> Dict[str, 
     return result
 
 
-@router.post("/api/pm-tasks/{task_id}/reject")
+@router.post("/api/pm-tasks/{task_id}/reject", dependencies=[Depends(require_action("mail:pm_task:reject"))])
 async def reject_task_api(task_id: int) -> Dict[str, Any]:
     """Reject/dismiss a staged PM task."""
     success = _db_service.reject_pm_task(task_id=task_id)
@@ -204,29 +221,41 @@ async def reject_task_api(task_id: int) -> Dict[str, Any]:
     return {"success": True, "task_id": task_id, "status": "rejected"}
 
 
-@router.get("/rules", response_class=HTMLResponse)
+@router.get("/rules", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:rules:view"))])
 async def view_rules(request: Request) -> HTMLResponse:
     """Render VIP and Whitelist Rules Management."""
-    rules = _db_service.get_all_rules()
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    rules = _db_service.get_all_rules(rule_type=None)
+    if tenant_id and tenant_id not in ("platform", "*"):
+        rules = [r for r in rules if getattr(r, "tenant_id", "public") == tenant_id]
     return templates.TemplateResponse(
         request=request,
         name="rules.html",
         context={
             "active_tab": "rules",
+            "tenant_id": tenant_id,
+            "organization": org_name,
+            "tenant_name": org_name,
+            "active_tenant": active_tenant,
             "rules": rules,
         },
     )
 
 
-@router.get("/drafts", response_class=HTMLResponse)
+@router.get("/drafts", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:inbox:view"))])
 async def view_drafts(request: Request) -> HTMLResponse:
     """Render Contextual Draft Replies."""
-    drafts = _db_service.get_all_drafts()
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    drafts = _db_service.get_all_drafts(tenant_id=tenant_id)
     return templates.TemplateResponse(
         request=request,
         name="drafts.html",
         context={
             "active_tab": "drafts",
+            "tenant_id": tenant_id,
+            "organization": org_name,
+            "tenant_name": org_name,
+            "active_tenant": active_tenant,
             "drafts": drafts,
         },
     )
@@ -234,7 +263,7 @@ async def view_drafts(request: Request) -> HTMLResponse:
 
 # ── GAP-019: OAuth Accounts Management ───────────────────────────────────────
 
-@router.get("/accounts", response_class=HTMLResponse)
+@router.get("/accounts", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:inbox:view"))])
 async def view_accounts(request: Request) -> HTMLResponse:
     """Display Google Account OAuth2 status and re-authorisation controls.
 
@@ -249,6 +278,7 @@ async def view_accounts(request: Request) -> HTMLResponse:
     Returns:
         Rendered accounts.html template.
     """
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
     oauth_status: str = "not_configured"
     oauth_email: str = ""
     sync_interval: int = 60
@@ -275,6 +305,10 @@ async def view_accounts(request: Request) -> HTMLResponse:
         name="accounts.html",
         context={
             "active_tab": "accounts",
+            "tenant_id": tenant_id,
+            "organization": org_name,
+            "tenant_name": org_name,
+            "active_tenant": active_tenant,
             "oauth_status": oauth_status,
             "oauth_email": oauth_email,
             "sync_interval": sync_interval,
@@ -282,29 +316,85 @@ async def view_accounts(request: Request) -> HTMLResponse:
     )
 
 
-@router.get("/accounts/reauth")
+@router.get("/accounts/reauth", dependencies=[Depends(require_action("mail:account:connect"))])
 async def initiate_reauth(request: Request) -> RedirectResponse:
-    """Initiate Google OAuth2 re-authorisation flow.
-
-    In production this redirects to the Google OAuth2 consent page.
-    For development/shadow mode, returns a mock acknowledgement.
-
-    Args:
-        request: FastAPI request.
-
-    Returns:
-        Redirect to accounts page with status message.
-    """
+    """Initiate Google OAuth2 re-authorisation flow by redirecting to Google's consent screen."""
     try:
         from apps.mail_organizer.connectors.gmail_connector import GmailConnector
         connector = GmailConnector()
-        if hasattr(connector, "initiate_oauth_flow"):
-            auth_url = connector.initiate_oauth_flow()
-            if auth_url:
-                return RedirectResponse(url=auth_url)
+        base_url = str(request.base_url).rstrip("/")
+        callback_uri = f"{base_url}/admin/apps/mail-organizer/accounts/callback"
+        auth_url = connector.initiate_oauth_flow(redirect_uri=callback_uri)
+        if auth_url:
+            return RedirectResponse(url=auth_url)
     except Exception:
         pass
 
-    # Shadow mode / no connector: redirect back with a mock notice.
-    return RedirectResponse(url="/admin/apps/mail-organizer/accounts?reauth=initiated")
+    return RedirectResponse(url="/admin/apps/mail-organizer/accounts?reauth=failed")
+
+
+@router.get("/accounts/callback", dependencies=[Depends(require_action("mail:account:connect"))])
+async def oauth_callback(
+    request: Request,
+    code: Optional[str] = None,
+    error: Optional[str] = None,
+) -> RedirectResponse:
+    """Handle OAuth2 redirect callback from Google and persist encrypted tokens."""
+    if error or not code:
+        err_msg = error or "missing_authorization_code"
+        return RedirectResponse(url=f"/admin/apps/mail-organizer/accounts?error={err_msg}")
+
+    import json
+    import urllib.parse
+    import urllib.request
+    from datetime import datetime, timedelta, timezone
+    from apps.mail_organizer.connectors.auth_manager import GoogleAuthManager, find_client_credentials
+
+    creds = find_client_credentials()
+    if not creds:
+        return RedirectResponse(url="/admin/apps/mail-organizer/accounts?error=credentials_not_found")
+
+    client_id = creds.get("client_id")
+    client_secret = creds.get("client_secret")
+    redirect_uri = str(request.url).split("?")[0]
+
+    token_params = {
+        "code": code,
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "redirect_uri": redirect_uri,
+        "grant_type": "authorization_code",
+    }
+    req = urllib.request.Request(
+        "https://oauth2.googleapis.com/token",
+        data=urllib.parse.urlencode(token_params).encode("utf-8"),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15.0) as resp:
+            token_response: Dict[str, Any] = json.loads(resp.read().decode("utf-8"))
+
+        access_token = token_response.get("access_token")
+        refresh_token = token_response.get("refresh_token")
+        expires_in = token_response.get("expires_in", 3600)
+        expiry = datetime.now(timezone.utc) + timedelta(seconds=int(expires_in))
+
+        token_payload: Dict[str, Any] = {
+            "token": access_token,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "scopes": [
+                "https://www.googleapis.com/auth/gmail.modify",
+                "https://www.googleapis.com/auth/calendar.readonly",
+            ],
+            "expiry": expiry.isoformat(),
+        }
+        GoogleAuthManager().encrypt_and_save_token(token_payload)
+        return RedirectResponse(url="/admin/apps/mail-organizer/accounts?reauth=success")
+    except Exception:
+        return RedirectResponse(url="/admin/apps/mail-organizer/accounts?error=token_exchange_failed")
 
