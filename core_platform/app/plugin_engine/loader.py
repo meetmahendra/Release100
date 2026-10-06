@@ -34,6 +34,7 @@ from typing import Any, Dict, List, Optional, Type, cast
 
 from fastapi import FastAPI
 
+from core_platform.app.entitlements.registry import EntitlementRegistry
 from core_platform.app.plugin_engine.base_plugin import BaseApplication
 
 logger = logging.getLogger("core_platform.plugin_engine")
@@ -202,6 +203,25 @@ class PluginLoader:
             logger.warning("[PluginLoader] Centralized Kernel DDL initialization warning: %s", ddl_exc)
 
         return self._loaded
+
+    def register_entitlements(self, registry: EntitlementRegistry) -> None:
+        """Register the entitlement manifest of every loaded cartridge into ``registry``.
+
+        Each cartridge is processed in isolation: an unreadable or invalid manifest is
+        recorded in ``registry.rejected`` and never prevents other cartridges from registering.
+
+        Args:
+            registry: Target entitlement catalog.
+        """
+        for app_id, instance in self._loaded.items():
+            try:
+                payload = instance.get_entitlement_manifest()
+                if payload is None:
+                    continue
+                registry.register_raw(app_id, payload)
+            except Exception as exc:  # noqa: BLE001 - isolation boundary: log and record, never propagate
+                logger.error("[PluginLoader] Entitlement manifest error for '%s': %s", app_id, exc)
+                registry.rejected.setdefault(app_id, []).append(str(exc))
 
     def _load_single(self, app_id: str) -> Optional[BaseApplication]:
         """Import and instantiate a single application cartridge by ID.

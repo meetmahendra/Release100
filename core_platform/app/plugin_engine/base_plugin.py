@@ -26,9 +26,14 @@ This interface enforces:
   4. MCP tool manifest accessor.
 """
 
+import inspect
+import json
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 from pydantic import BaseModel
+
+from core_platform.app.config import settings
 
 
 class BaseApplication(ABC):
@@ -165,6 +170,30 @@ class BaseApplication(ABC):
             List of tool descriptor dicts with 'name', 'description', 'handler' keys.
         """
         return []
+
+    def get_entitlement_manifest(self) -> Optional[Dict[str, Any]]:
+        """Return the raw entitlement manifest shipped next to this cartridge's plugin module.
+
+        Reads ``settings.ENTITLEMENT_MANIFEST_FILENAME`` from the directory that contains
+        the module defining this cartridge class. Validation is performed by the
+        EntitlementRegistry, not here.
+
+        Returns:
+            Parsed JSON object, or None when the cartridge ships no manifest.
+
+        Raises:
+            ValueError: If the file exists but is not valid JSON or not a JSON object.
+        """
+        manifest_path = Path(inspect.getfile(type(self))).parent / settings.ENTITLEMENT_MANIFEST_FILENAME
+        if not manifest_path.is_file():
+            return None
+        try:
+            parsed = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as err:
+            raise ValueError(f"Invalid entitlement manifest at {manifest_path}: {err}") from err
+        if not isinstance(parsed, dict):
+            raise ValueError(f"Entitlement manifest at {manifest_path} must be a JSON object")
+        return parsed
 
     custom_database_url: Optional[str] = None
     """Optional custom database connection URL for cartridge-autonomous / 3rd-party persistence.
