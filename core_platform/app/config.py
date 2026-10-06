@@ -21,7 +21,7 @@ variables with safe defaults. Adheres to GEES v1.0 fail-safe defaults (DRY_RUN=T
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Literal, Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -105,7 +105,7 @@ class PlatformSettings(BaseSettings):
 
     # WhatsApp Cloud API & Ingress
     WHATSAPP_VERIFY_TOKEN: str = Field(
-        default="canectar_verify_token_2026",
+        default="apex_verify_token_2026",
         description="Meta webhook verify token",
     )
     WHATSAPP_APP_SECRET: str = Field(
@@ -168,6 +168,36 @@ class PlatformSettings(BaseSettings):
     ORCHESTRATOR_BASE_URL: str = Field(
         default="",
         description="Public base URL (e.g. 'https://node.example.com') for reverse-proxy deployments",
+    )
+
+    # Multi-Tenant Zero-Trust Identity & Magic Links (GEES v2.0)
+    WHATSAPP_REQUIRE_REGISTRATION: bool = Field(
+        default=False,
+        description="Strictly require pre-registered user record for inbound WhatsApp messages",
+    )
+    USER_ENCRYPTION_MASTER_KEY: str = Field(
+        default="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        description="Master secret for deriving per-user payload encryption keys",
+    )
+    MAGIC_LINK_EXPIRY_MINUTES: int = Field(
+        default=15,
+        description="Expiry time in minutes for WhatsApp Google OAuth Magic Links",
+    )
+
+    # Decentralized Entitlement Architecture (Plan 10)
+    ENTITLEMENT_ENFORCEMENT_MODE: Literal["off", "shadow", "enforce"] = Field(
+        default="shadow",
+        description="Entitlement enforcement: off (legacy only) | shadow (log DEA diffs, legacy decides) | enforce",
+    )
+    ENTITLEMENT_MAX_UNIT_DEPTH: int = Field(
+        default=32,
+        ge=1,
+        le=128,
+        description="Maximum organizational unit tree depth traversed during scope checks",
+    )
+    ENTITLEMENT_MANIFEST_FILENAME: str = Field(
+        default="entitlements.json",
+        description="File name of the entitlement manifest shipped inside each cartridge package",
     )
 
 
