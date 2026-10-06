@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "namespace": "temperature",
+  "app_title": "Industrial Temperature and Attendance Marker",
+  "actions": [
+    {
+      "action_id": "temperature:telemetry:record",
+      "plain_title": "Submit a duty check-in and chiller temperature reading",
+      "plain_description": "Lets a field operator report for duty and send the chiller temperature reading through the messaging check-in flow.",
+      "effect": "WRITE",
+      "risk": "LOW",
+      "touches": ["kiosk", "messaging"]
+    },
+    {
+      "action_id": "temperature:location:verify",
+      "plain_title": "Confirm their location at a kiosk",
+      "plain_description": "Lets a field operator prove they are physically at the kiosk by sharing their position when asked.",
+      "effect": "WRITE",
+      "risk": "LOW",
+      "touches": ["GPS"]
+    },
+    {
+      "action_id": "temperature:checkin:simulate",
+      "plain_title": "Try the check-in simulator",
+      "plain_description": "Lets the person run a practice check-in to see how the system would respond. No real record is created.",
+      "effect": "WRITE",
+      "risk": "LOW",
+      "touches": []
+    },
+    {
+      "action_id": "temperature:fleet:view",
+      "plain_title": "View the kiosk fleet and its status",
+      "plain_description": "Lets the person see the list of kiosks, where they are and whether they are working. They can only look.",
+      "effect": "READ",
+      "risk": "LOW",
+      "touches": ["kiosks"],
+      "mcp_tools": [
+        "temperature_get_latest_reading",
+        "temperature_check_kiosk_health",
+        "temperature_list_fleet_status"
+      ]
+    },
+    {
+      "action_id": "temperature:monitoring:view",
+      "plain_title": "View live monitoring and records",
+      "plain_description": "Lets the person see live temperature readings, attendance records and flagged items. They can only look.",
+      "effect": "READ",
+      "risk": "LOW",
+      "touches": ["records"]
+    },
+    {
+      "action_id": "temperature:operator:view",
+      "plain_title": "See operators waiting for onboarding approval",
+      "plain_description": "Lets the person see the new operators who have asked to join and are waiting for a decision.",
+      "effect": "READ",
+      "risk": "LOW",
+      "touches": ["roster"],
+      "mcp_tools": ["temperature_list_pending_onboarding_approvals"]
+    },
+    {
+      "action_id": "temperature:member:view",
+      "plain_title": "View the team member list",
+      "plain_description": "Lets the person see the list of team members, their codes and which kiosk they are assigned to.",
+      "effect": "READ",
+      "risk": "LOW",
+      "touches": ["roster"]
+    },
+    {
+      "action_id": "temperature:photo:view",
+      "plain_title": "View a team member's stored photo",
+      "plain_description": "Lets the person open the stored face photo of a team member. This is personal biometric data and should be limited.",
+      "effect": "READ",
+      "risk": "MEDIUM",
+      "touches": ["biometric data"]
+    },
+    {
+      "action_id": "temperature:operator:approve",
+      "plain_title": "Approve or reject a new operator",
+      "plain_description": "Lets the person accept or turn down a new operator who asked to join. Accepted operators can then report for duty.",
+      "effect": "APPROVE",
+      "risk": "MEDIUM",
+      "touches": ["roster"],
+      "mcp_tools": ["temperature_approve_operator"]
+    },
+    {
+      "action_id": "temperature:attendance:resolve",
+      "plain_title": "Resolve a flagged attendance or temperature record",
+      "plain_description": "Lets the person close a flagged attendance or temperature record after reviewing it. The decision is kept in the audit trail.",
+      "effect": "APPROVE",
+      "risk": "MEDIUM",
+      "touches": ["records"]
+    },
+    {
+      "action_id": "temperature:message:resolve",
+      "plain_title": "Resolve an operator's escalated message",
+      "plain_description": "Lets the person mark an escalated message from an operator as handled once it has been answered.",
+      "effect": "APPROVE",
+      "risk": "MEDIUM",
+      "touches": ["messaging"]
+    },
+    {
+      "action_id": "temperature:alert:acknowledge",
+      "plain_title": "Acknowledge a temperature alert",
+      "plain_description": "Lets the person confirm they have seen a temperature alert so that it stops being repeated to the team.",
+      "effect": "APPROVE",
+      "risk": "MEDIUM",
+      "touches": ["alerts"]
+    },
+    {
+      "action_id": "temperature:kiosk:manage",
+      "plain_title": "Add kiosks, move locations, change kiosk settings",
+      "plain_description": "Lets the person add kiosks, change where a kiosk is located and change its settings. Mistakes here affect every operator.",
+      "effect": "CONFIGURE",
+      "risk": "HIGH",
+      "touches": ["kiosks", "GPS"]
+    },
+    {
+      "action_id": "temperature:member:manage",
+      "plain_title": "Add, edit, reassign or erase a team member",
+      "plain_description": "Lets the person add team members, change their details, move them to another kiosk or erase their stored photo.",
+      "effect": "CONFIGURE",
+      "risk": "HIGH",
+      "touches": ["roster", "biometric data"]
+    }
+  ],
+  "bundles": [
+    {
+      "bundle_id": "field_operator",
+      "title": "Field operator",
+      "summary": "Can report for duty, send temperature readings and confirm their location. Cannot see anyone else's data.",
+      "who_its_for": "Staff who work at a kiosk and check in each shift",
+      "cannot_do": [],
+      "allowed_scopes": ["SELF"],
+      "default_scope": "SELF",
+      "actions": ["temperature:telemetry:record", "temperature:location:verify"]
+    },
+    {
+      "bundle_id": "shift_supervisor",
+      "title": "Shift supervisor",
+      "summary": "Watches the fleet and the team, approves new operators and resolves flagged records and alerts.",
+      "who_its_for": "Supervisors who run a shift and handle exceptions for their area",
+      "cannot_do": ["Add or change kiosks", "Add, edit or erase team members"],
+      "allowed_scopes": ["UNIT", "TENANT"],
+      "default_scope": "UNIT",
+      "conflicts_with": ["fleet_engineer"],
+      "actions": [
+        "temperature:telemetry:record",
+        "temperature:location:verify",
+        "temperature:fleet:view",
+        "temperature:monitoring:view",
+        "temperature:operator:view",
+        "temperature:member:view",
+        "temperature:photo:view",
+        "temperature:operator:approve",
+        "temperature:attendance:resolve",
+        "temperature:message:resolve",
+        "temperature:alert:acknowledge",
+        "temperature:checkin:simulate"
+      ]
+    },
+    {
+      "bundle_id": "fleet_engineer",
+      "title": "Fleet engineer",
+      "summary": "Sets up kiosks and manages the team roster. Does not approve operators or resolve records.",
+      "who_its_for": "A few trusted technical staff who configure kiosks and maintain the roster",
+      "cannot_do": ["Approve operators", "Resolve attendance or temperature records"],
+      "allowed_scopes": ["TENANT"],
+      "default_scope": "TENANT",
+      "conflicts_with": ["shift_supervisor"],
+      "actions": [
+        "temperature:fleet:view",
+        "temperature:monitoring:view",
+        "temperature:member:view",
+        "temperature:kiosk:manage",
+        "temperature:member:manage"
+      ]
+    }
+  ]
+}

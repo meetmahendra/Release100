@@ -7,3 +7,4 @@ recursive-include knowledge_graph *.py *.json
 recursive-include services *.py
 recursive-include ui *.py
 recursive-include ui/templates *.html
+include entitlements.json
