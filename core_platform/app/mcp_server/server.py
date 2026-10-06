@@ -34,6 +34,8 @@ from typing import Any, AsyncGenerator, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from core_platform.app.entitlements.contracts import EntitlementDeniedError
+from core_platform.app.entitlements.dependencies import authorize_mcp_tool
 from core_platform.app.mcp_server.tool_aggregator import get_all_tools, get_tool_handler
 from core_platform.app.rbac.permissions import get_api_security_context
 from core_platform.app.auth.models import SecurityContext
@@ -229,6 +231,13 @@ async def _handle_tools_call(params: Dict[str, Any], ctx: SecurityContext) -> Di
             "content": [{"type": "text", "text": f"Tool '{tool_name}' not found."}],
         }
 
+    # Entitlement gate (Plan 10): API-key callers are SERVICE principals. Under off/shadow this
+    # never changes the outcome; under enforce a missing grant (or unmapped tool) is forbidden.
+    try:
+        authorize_mcp_tool(ctx, tool_name)
+    except EntitlementDeniedError:
+        logger.warning("[MCPServer] Forbidden by entitlements: tool=%s principal=%s", tool_name, ctx.principal_id)
+        return {"isError": True, "content": [{"type": "text", "text": "Forbidden"}]}
     logger.info(
         "[MCPServer] tools/call: tool=%s principal=%s args=%s",
         tool_name,

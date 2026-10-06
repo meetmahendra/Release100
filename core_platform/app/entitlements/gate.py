@@ -197,3 +197,41 @@ class EntitlementGate:
         if not decision.allowed:
             raise EntitlementDeniedError(decision)
         return decision
+
+    def enforce_unmapped_tool(self, ctx: SecurityContext, tool_name: str) -> Decision:
+        """Decide a tool call whose MCP tool has no declared action (fail closed under enforce).
+
+        ``off``: allow silently. ``shadow``: allow and audit a diff. ``enforce``: deny for an
+        onboarded tenant, legacy fallback for a tenant with no bindings.
+        """
+        action_id = "unmapped_mcp_tool"
+        mode = self._mode_provider()
+        if mode == MODE_OFF:
+            return Decision(allowed=True, reason=DecisionReason.MODE_OFF, action_id=action_id)
+        if mode == MODE_SHADOW:
+            self._auditor.emit(
+                AuditEvent.ENTITLEMENT_SHADOW_DIFF.value,
+                ctx.tenant_id,
+                ctx.principal_id,
+                {"unmapped_mcp_tool": tool_name},
+                True,
+            )
+            return Decision(allowed=True, reason=DecisionReason.UNKNOWN_ACTION, action_id=action_id)
+        try:
+            onboarded = self._repo.count_active_bindings(ctx.tenant_id) > 0
+        except Exception as err:  # noqa: BLE001 - fail closed
+            logger.error("Entitlement onboarding lookup failed (denying): %s", err)
+            onboarded = True
+        if not onboarded:
+            return Decision(allowed=True, reason=DecisionReason.TENANT_NOT_ONBOARDED, action_id=action_id)
+        denied = Decision(
+            allowed=False, reason=DecisionReason.UNKNOWN_ACTION, action_id=action_id, enforced=True
+        )
+        self._auditor.emit(
+            AuditEvent.ENTITLEMENT_DENIED.value,
+            ctx.tenant_id,
+            ctx.principal_id,
+            {"unmapped_mcp_tool": tool_name, "reason": denied.reason.value},
+            True,
+        )
+        raise EntitlementDeniedError(denied)

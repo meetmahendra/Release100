@@ -99,6 +99,17 @@ def authorize_action(
     return get_gate().enforce(ctx, action_id, resource)
 
 
+def authorize_mcp_tool(ctx: SecurityContext, tool_name: str) -> Decision:
+    """Authorize an MCP tool call; raise ``EntitlementDeniedError`` on denial.
+
+    A tool mapped to an action is checked tenant-wide; an unmapped tool is decided by the gate
+    (denied under ``enforce`` for an onboarded tenant).
+    """
+    action_id = get_registry().action_for_mcp_tool(tool_name)
+    if action_id is not None:
+        return get_gate().enforce(ctx, action_id, None)
+    return get_gate().enforce_unmapped_tool(ctx, tool_name)
+
 def require_action(
     action_id: str,
     resource_resolver: Optional[Callable[[Request], ResourceRef]] = None,
@@ -137,5 +148,6 @@ __all__: list[str] = [
     "set_repository",
     "get_repository",
     "authorize_action",
+    "authorize_mcp_tool",
     "require_action",
 ]
