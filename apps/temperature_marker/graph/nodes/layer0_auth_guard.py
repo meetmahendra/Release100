@@ -14,9 +14,16 @@
 
 """Layer 0 Operator Authentication Guard Node."""
 
+import logging
+
 from apps.temperature_marker.database.db_service import DatabaseService
 from apps.temperature_marker.graph.state import TemperatureMarkerState
+from core_platform.app.auth.strategies import AuthResolver
+from core_platform.app.entitlements.contracts import EntitlementDeniedError, ResourceRef
+from core_platform.app.entitlements.dependencies import authorize_action
 from core_platform.app.errors import PlatformErrorCode
+
+logger = logging.getLogger(__name__)
 
 
 async def layer0_auth_guard_node(
@@ -33,7 +40,7 @@ async def layer0_auth_guard_node(
         state["error_code"] = PlatformErrorCode.SAFETY_UNAUTHORIZED_OPERATOR.value
         state["error_message"] = f"Phone number {phone} is not registered."
         state["reply_message"] = (
-            f"❌ Unauthorized: Phone number {phone} is not registered with CaneBot. "
+            f"❌ Unauthorized: Phone number {phone} is not registered with KioskNode. "
             "Self-registration is disabled. Please contact your Fleet Supervisor or HR administrator to provision your account."
         )
         return state
@@ -49,6 +56,30 @@ async def layer0_auth_guard_node(
         )
         return state
 
+    # Entitlement gate (Plan 10). Under mode off/shadow this never changes the outcome;
+    # under enforce for an onboarded tenant a missing grant stops the check-in here.
+    try:
+        employee_tenant = getattr(employee, "tenant_id", None)
+        gate_ctx = AuthResolver.resolve_whatsapp(
+            phone, employee_tenant if isinstance(employee_tenant, str) and employee_tenant else "public"
+        )
+        authorize_action(
+            gate_ctx,
+            "temperature:telemetry:record",
+            ResourceRef(owner_principal_id=phone, unit_id=None),
+        )
+    except EntitlementDeniedError:
+        state["operator_status"] = "NOT_ENTITLED"
+        state["layer_0_passed"] = False
+        state["error_code"] = PlatformErrorCode.SAFETY_UNAUTHORIZED_OPERATOR.value
+        state["error_message"] = f"Operator {employee.emp_code} is not permitted to submit check-ins."
+        state["reply_message"] = (
+            "Access Restricted: your account is not permitted to submit duty check-ins. "
+            "Please contact your administrator."
+        )
+        return state
+    except Exception as err:  # noqa: BLE001 - the gate fails closed itself; never break check-ins on a wiring fault
+        logger.error("Entitlement check skipped due to error: %s", err)
     state["operator_emp_code"] = employee.emp_code
     state["operator_name"] = employee.full_name
     state["operator_status"] = "ACTIVE"

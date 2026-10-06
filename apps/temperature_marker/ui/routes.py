@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-FastAPI Routes for CaneBot Admin Web Shell and Stepper Wizard.
+FastAPI Routes for KioskNode Admin Web Shell and Stepper Wizard.
 
 Provides endpoints for Fleet Map, Stepper Wizard Simulator, Operator Approvals,
 and 1-Click Mobile Web Geolocation.
@@ -33,15 +33,18 @@ from apps.temperature_marker.database.db_service import DatabaseService
 from apps.temperature_marker.graph.state import TemperatureMarkerState
 from apps.temperature_marker.graph.state_graph import TemperatureMarkerWorkflow
 from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
+from core_platform.app.auth.models import SecurityContext
 from core_platform.app.common.timezone import to_local_ist, to_local_ist_full
-from core_platform.app.rbac.permissions import get_web_security_context
+from core_platform.app.entitlements.dependencies import require_action
+from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+from core_platform.app.rbac.permissions import get_web_security_context, require_app
 from core_platform.app.skills.geofencing import GeofencingSkill
 from core_platform.app.telemetry.audit_engine import AuditEngine
 
 router = APIRouter(
     prefix="/admin/apps/temperature-marker",
     tags=["Temperature Marker Admin"],
-    dependencies=[Depends(get_web_security_context)],
+    dependencies=[Depends(require_app("temperature_marker"))],
 )
 
 # Set up Jinja2 templates directory
@@ -87,7 +90,7 @@ class LocationVerificationRequest(BaseModel):
 
 
 class CreateKioskRequest(BaseModel):
-    """Payload for registering a new CaneBot kiosk."""
+    """Payload for registering a new KioskNode kiosk."""
 
     kiosk_id: str
     site_name: str
@@ -95,7 +98,7 @@ class CreateKioskRequest(BaseModel):
     latitude: float
     longitude: float
     radius_meters: float = 100.0
-    machine_model: str = "CaneBot-Pro-X1"
+    machine_model: str = "ChillerNode-Pro-X1"
     display_type: str = "7-segment-led"
     primary_operator_phones: Optional[List[str]] = None
 
@@ -143,17 +146,25 @@ async def admin_root() -> RedirectResponse:
     return RedirectResponse(url="/admin/apps/temperature-marker/fleet")
 
 
-@router.get("/fleet", response_class=HTMLResponse)
-async def view_fleet(request: Request) -> HTMLResponse:
+@router.get("/fleet", response_class=HTMLResponse, dependencies=[Depends(require_action("temperature:fleet:view"))])
+async def view_fleet(
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Render interactive Fleet Map and Kiosk Roster with Member assignments."""
-    kiosks = _kg_service.list_all_kiosks()
-    employees = _db_service.get_all_employees()
+    eff_tenant, tenant_name, tenant_obj = resolve_effective_tenant_info(request, ctx)
+    kiosks = _kg_service.list_all_kiosks(tenant_id=eff_tenant)
+    employees = _db_service.get_all_employees(tenant_id=eff_tenant)
     managers = [e for e in employees if e.role in ("MANAGER", "SUPERVISOR") or e.emp_code.startswith("MGR")]
     return templates.TemplateResponse(
         request=request,
         name="fleet.html",
         context={
             "active_tab": "fleet",
+            "tenant_id": eff_tenant,
+            "organization": tenant_name,
+            "tenant_name": tenant_name,
+            "active_tenant": tenant_obj,
             "kiosks": kiosks,
             "employees": employees,
             "managers": managers,
@@ -161,15 +172,17 @@ async def view_fleet(request: Request) -> HTMLResponse:
     )
 
 
-@router.get("/api/fleet")
-async def get_fleet_api() -> List[Dict[str, Any]]:
-    """Return JSON list of all registered CaneBot kiosks in fleet."""
-    return _kg_service.list_all_kiosks()
+@router.get("/api/fleet", dependencies=[Depends(require_action("temperature:fleet:view"))])
+async def get_fleet_api(request: Request) -> List[Dict[str, Any]]:
+    """Return JSON list of all registered KioskNode kiosks in fleet."""
+    eff_tenant, _, _ = resolve_effective_tenant_info(request)
+    return _kg_service.list_all_kiosks(tenant_id=eff_tenant)
 
 
-@router.post("/api/kiosks")
-async def create_kiosk_api(req: CreateKioskRequest) -> Dict[str, Any]:
-    """Register a new CaneBot kiosk and site in the Knowledge Graph."""
+@router.post("/api/kiosks", dependencies=[Depends(require_action("temperature:kiosk:manage"))])
+async def create_kiosk_api(req: CreateKioskRequest, request: Request) -> Dict[str, Any]:
+    """Register a new KioskNode kiosk and site in the Knowledge Graph."""
+    eff_tenant, _, _ = resolve_effective_tenant_info(request)
     profile = _kg_service.add_kiosk(
         kiosk_id=req.kiosk_id.strip(),
         site_name=req.site_name.strip(),
@@ -180,14 +193,16 @@ async def create_kiosk_api(req: CreateKioskRequest) -> Dict[str, Any]:
         machine_model=req.machine_model,
         display_type=req.display_type,
         primary_operator_phones=req.primary_operator_phones or [],
+        tenant_id=eff_tenant,
     )
     return {"status": "SUCCESS", "kiosk_id": profile.kiosk_id}
 
 
-@router.get("/api/members")
-async def get_members_api() -> List[Dict[str, Any]]:
+@router.get("/api/members", dependencies=[Depends(require_action("temperature:member:view"))])
+async def get_members_api(request: Request) -> List[Dict[str, Any]]:
     """Return JSON list of registered operators and their assigned kiosks."""
-    employees = _db_service.get_all_employees()
+    eff_tenant, _, _ = resolve_effective_tenant_info(request)
+    employees = _db_service.get_all_employees(tenant_id=eff_tenant)
     return [
         {
             "emp_code": emp.emp_code,
@@ -203,11 +218,12 @@ async def get_members_api() -> List[Dict[str, Any]]:
     ]
 
 
-@router.post("/api/members")
-async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
+@router.post("/api/members", dependencies=[Depends(require_action("temperature:member:manage"))])
+async def create_member_api(req: CreateMemberRequest, request: Request) -> Dict[str, Any]:
     """Enroll a new operator, extract biometrics if photo provided, and update Knowledge Graph."""
     from core_platform.app.common.phone_validator import normalize_phone_number
 
+    eff_tenant, _, _ = resolve_effective_tenant_info(request)
     try:
         phone = normalize_phone_number(req.phone_number.strip())
     except Exception as exc:
@@ -258,14 +274,15 @@ async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
         status=status,
         role=req.role or "OPERATOR",
         reporting_manager_emp_code=mgr_code,
+        tenant_id=eff_tenant,
     )
-    _kg_service.assign_operator_to_kiosk(phone, kiosk_id)
+    _kg_service.assign_operator_to_kiosk(phone, kiosk_id, tenant_id=eff_tenant)
 
     # If registered without photo, send automated onboarding message on WhatsApp
     if status == "PENDING_PHOTO":
         from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
         invite_msg = (
-            f"👋 Welcome to Canectar CaneBot, {full_name}!\n\n"
+            f"👋 Welcome to Apex KioskNode, {full_name}!\n\n"
             f"You have been enrolled for {kiosk_id} (Employee ID: {emp_code}).\n"
             f"📸 Please reply to this WhatsApp chat with a clear selfie photo to activate your facial recognition check-in."
         )
@@ -281,7 +298,7 @@ async def create_member_api(req: CreateMemberRequest) -> Dict[str, Any]:
     }
 
 
-@router.post("/api/members/{emp_code}/update")
+@router.post("/api/members/{emp_code}/update", dependencies=[Depends(require_action("temperature:member:manage"))])
 async def update_member_api(emp_code: str, req: UpdateMemberRequest) -> Dict[str, Any]:
     """Update operator profile details (name, phone, kiosk, manager, status, role)."""
     from core_platform.app.common.phone_validator import normalize_phone_number
@@ -319,7 +336,7 @@ async def update_member_api(emp_code: str, req: UpdateMemberRequest) -> Dict[str
     }
 
 
-@router.post("/api/kiosks/{kiosk_id}/calibrate-location")
+@router.post("/api/kiosks/{kiosk_id}/calibrate-location", dependencies=[Depends(require_action("temperature:kiosk:manage"))])
 async def calibrate_kiosk_location_api(kiosk_id: str, req: CalibrateKioskLocationRequest) -> Dict[str, Any]:
     """Live ground-truth calibration of physical kiosk GPS coordinates."""
     kiosk = _kg_service.get_kiosk_details(kiosk_id)
@@ -343,7 +360,7 @@ async def calibrate_kiosk_location_api(kiosk_id: str, req: CalibrateKioskLocatio
     }
 
 
-@router.post("/api/members/{emp_code}/reassign")
+@router.post("/api/members/{emp_code}/reassign", dependencies=[Depends(require_action("temperature:member:manage"))])
 async def reassign_member_api(emp_code: str, req: ReassignMemberRequest) -> Dict[str, Any]:
     """Reassign an operator to a new kiosk and update knowledge graph phone mapping."""
     emp = _db_service.get_employee_by_code(emp_code)
@@ -355,7 +372,7 @@ async def reassign_member_api(emp_code: str, req: ReassignMemberRequest) -> Dict
     return {"status": "SUCCESS", "emp_code": emp_code, "new_kiosk_id": req.kiosk_id, "db_ok": db_ok, "kg_ok": kg_ok}
 
 
-@router.post("/api/members/{emp_code}/forget-photo")
+@router.post("/api/members/{emp_code}/forget-photo", dependencies=[Depends(require_action("temperature:member:manage"))])
 async def forget_member_photo_api(emp_code: str) -> Dict[str, Any]:
     """Clear an operator's stored biometric face photo/embedding and prompt re-enrollment."""
     emp = _db_service.get_employee_by_code(emp_code)
@@ -395,7 +412,7 @@ async def forget_member_photo_api(emp_code: str) -> Dict[str, Any]:
     }
 
 
-@router.get("/api/members/{emp_code}/photo")
+@router.get("/api/members/{emp_code}/photo", dependencies=[Depends(require_action("temperature:photo:view"))])
 async def get_member_photo_api(emp_code: str) -> Any:
     """Serve the stored profile enrollment photo for an operator if available."""
     from fastapi.responses import FileResponse
@@ -405,8 +422,8 @@ async def get_member_photo_api(emp_code: str) -> Any:
     raise HTTPException(status_code=404, detail=f"Photo for operator {emp_code} not found")
 
 
-@router.get("/media/{filename}")
-@router.get("/logs/media/{filename}")
+@router.get("/media/{filename}", dependencies=[Depends(require_action("temperature:photo:view"))])
+@router.get("/logs/media/{filename}", dependencies=[Depends(require_action("temperature:photo:view"))])
 async def get_checkin_photo_api(filename: str) -> Any:
     """Serve check-in captured media photo from the local media vault."""
     from fastapi.responses import FileResponse
@@ -418,23 +435,32 @@ async def get_checkin_photo_api(filename: str) -> Any:
 
 
 
-@router.get("/wizard", response_class=HTMLResponse)
-async def view_wizard(request: Request, kiosk_id: Optional[str] = None) -> HTMLResponse:
+@router.get("/wizard", response_class=HTMLResponse, dependencies=[Depends(require_action("temperature:checkin:simulate"))])
+async def view_wizard(
+    request: Request,
+    kiosk_id: Optional[str] = None,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Render Progressive Stepper Wizard for duty check-in simulation."""
-    kiosks = _kg_service.list_all_kiosks()
-    selected = kiosk_id or (kiosks[0]["kiosk_id"] if kiosks else "CANEBOT-PUNE-04")
+    eff_tenant, tenant_name, tenant_obj = resolve_effective_tenant_info(request, ctx)
+    kiosks = _kg_service.list_all_kiosks(tenant_id=eff_tenant)
+    selected = kiosk_id or (kiosks[0]["kiosk_id"] if kiosks else "NODE-PUNE-04")
     return templates.TemplateResponse(
         request=request,
         name="wizard.html",
         context={
             "active_tab": "wizard",
+            "tenant_id": eff_tenant,
+            "organization": tenant_name,
+            "tenant_name": tenant_name,
+            "active_tenant": tenant_obj,
             "kiosks": kiosks,
             "selected_kiosk": selected,
         },
     )
 
 
-@router.post("/api/simulate")
+@router.post("/api/simulate", dependencies=[Depends(require_action("temperature:checkin:simulate"))])
 async def run_simulation(req: SimulationRequest) -> Dict[str, Any]:
     """Execute duty check-in simulation through the complete safety and workflow stack."""
     if req.photo_source == "real_photo":
@@ -502,24 +528,33 @@ async def run_simulation(req: SimulationRequest) -> Dict[str, Any]:
     }
 
 
-@router.get("/approvals", response_class=HTMLResponse)
-async def view_approvals(request: Request) -> HTMLResponse:
+@router.get("/approvals", response_class=HTMLResponse, dependencies=[Depends(require_action("temperature:operator:view"))])
+async def view_approvals(
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Render Pending Operator Onboarding Queue."""
-    pending = _db_service.get_pending_approvals()
+    eff_tenant, tenant_name, tenant_obj = resolve_effective_tenant_info(request, ctx)
+    pending = _db_service.get_pending_approvals(tenant_id=eff_tenant)
     return templates.TemplateResponse(
         request=request,
         name="approvals.html",
         context={
             "active_tab": "approvals",
+            "tenant_id": eff_tenant,
+            "organization": tenant_name,
+            "tenant_name": tenant_name,
+            "active_tenant": tenant_obj,
             "pending_operators": pending,
         },
     )
 
 
-@router.get("/api/approvals")
-async def get_approvals_api() -> List[Dict[str, Any]]:
+@router.get("/api/approvals", dependencies=[Depends(require_action("temperature:operator:view"))])
+async def get_approvals_api(request: Request) -> List[Dict[str, Any]]:
     """Return JSON list of operators pending onboarding approval."""
-    pending = _db_service.get_pending_approvals()
+    eff_tenant, _, _ = resolve_effective_tenant_info(request)
+    pending = _db_service.get_pending_approvals(tenant_id=eff_tenant)
     return [
         {
             "emp_code": op.emp_code,
@@ -533,7 +568,7 @@ async def get_approvals_api() -> List[Dict[str, Any]]:
     ]
 
 
-@router.post("/api/approvals/{emp_id}/approve")
+@router.post("/api/approvals/{emp_id}/approve", dependencies=[Depends(require_action("temperature:operator:approve"))])
 async def approve_operator(emp_id: str) -> Dict[str, Any]:
     """Approve a pending operator and notify them via WhatsApp."""
     success = _db_service.approve_employee(emp_id)
@@ -547,7 +582,7 @@ async def approve_operator(emp_id: str) -> Dict[str, Any]:
         station_name = kiosk_info.get("name", emp.assigned_kiosk_id) if kiosk_info else emp.assigned_kiosk_id
         approval_msg = (
             f"✅ Profile Approved!\n"
-            f"Hello {emp.full_name}, your CaneBot operator profile for {station_name} ({emp.assigned_kiosk_id}) "
+            f"Hello {emp.full_name}, your KioskNode operator profile for {station_name} ({emp.assigned_kiosk_id}) "
             f"has been approved by the Administrator.\n\n"
             f"You are now authorized for daily duty check-ins! 🚀\n"
             f"📍 Remember to verify your location and submit your selfie with the chiller display when your shift begins."
@@ -557,7 +592,7 @@ async def approve_operator(emp_id: str) -> Dict[str, Any]:
     return {"status": "success", "employee_id": emp_id, "new_state": "ACTIVE"}
 
 
-@router.post("/api/approvals/{emp_id}/reject")
+@router.post("/api/approvals/{emp_id}/reject", dependencies=[Depends(require_action("temperature:operator:approve"))])
 async def reject_operator(emp_id: str) -> Dict[str, Any]:
     """Reject a pending operator and notify them via WhatsApp."""
     emp = _db_service.get_employee_by_code(emp_id)
@@ -569,7 +604,7 @@ async def reject_operator(emp_id: str) -> Dict[str, Any]:
         from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
         rejection_msg = (
             f"❌ Profile Review Notice\n"
-            f"Hello {emp.full_name}, your CaneBot operator profile request could not be approved at this time.\n"
+            f"Hello {emp.full_name}, your KioskNode operator profile request could not be approved at this time.\n"
             f"Please contact your Fleet Supervisor or HR administrator for assistance."
         )
         asyncio.create_task(send_whatsapp_message(emp.phone_number, rejection_msg))
@@ -577,7 +612,7 @@ async def reject_operator(emp_id: str) -> Dict[str, Any]:
     return {"status": "success", "employee_id": emp_id, "new_state": "REJECTED"}
 
 
-@router.get("/verify-location", response_class=HTMLResponse)
+@router.get("/verify-location", response_class=HTMLResponse, dependencies=[Depends(require_action("temperature:location:verify"))])
 async def view_verify_location(
     request: Request,
     kiosk_id: Optional[str] = None,
@@ -598,7 +633,7 @@ async def view_verify_location(
 
     if not resolved_kiosk_id:
         from core_platform.app.config import settings
-        resolved_kiosk_id = settings.KIOSK_ID or "CANEBOT-PUNE-05"
+        resolved_kiosk_id = settings.KIOSK_ID or "NODE-PUNE-05"
 
     kiosk_info = _kg_service.get_kiosk_details(resolved_kiosk_id)
     all_kiosks = _kg_service.list_all_kiosks()
@@ -618,7 +653,7 @@ async def view_verify_location(
     )
 
 
-@router.post("/api/verify-location")
+@router.post("/api/verify-location", dependencies=[Depends(require_action("temperature:location:verify"))])
 async def verify_location_api(req: LocationVerificationRequest) -> Dict[str, Any]:
     """Verify geolocation coordinates against kiosk geofence using GeofencingSkill."""
     _kg_service.roster = _kg_service._load_roster()
@@ -715,20 +750,24 @@ class AcknowledgeAlertRequest(BaseModel):
     ack_notes: str = Field(default="Acknowledged by manager via Web Console")
 
 
-@router.get("/monitoring", response_class=HTMLResponse)
-async def view_monitoring(request: Request) -> HTMLResponse:
+@router.get("/monitoring", response_class=HTMLResponse, dependencies=[Depends(require_action("temperature:monitoring:view"))])
+async def view_monitoring(
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Render live attendance, photo check-in, and chiller temperature monitoring console."""
-    records = _db_service.get_recent_attendance(limit=50)
-    employees = _db_service.get_all_employees()
+    eff_tenant, tenant_name, tenant_obj = resolve_effective_tenant_info(request, ctx)
+    records = _db_service.get_recent_attendance(limit=50, tenant_id=eff_tenant)
+    employees = _db_service.get_all_employees(tenant_id=eff_tenant)
     emp_map = {e.emp_code: {"full_name": e.full_name, "phone": e.phone_number} for e in employees}
 
-    kiosks = _kg_service.list_all_kiosks()
+    kiosks = _kg_service.list_all_kiosks(tenant_id=eff_tenant)
     kiosk_map = {k["kiosk_id"]: k for k in kiosks}
 
     # Enhanced fleet monitoring telemetry
-    kiosks_summary = _db_service.get_kiosk_daily_attendance_summary()
-    active_alerts = _db_service.get_active_high_alerts()
-    recent_messages = _db_service.get_recent_internal_messages(limit=50)
+    kiosks_summary = _db_service.get_kiosk_daily_attendance_summary(tenant_id=eff_tenant)
+    active_alerts = _db_service.get_active_high_alerts(tenant_id=eff_tenant)
+    recent_messages = _db_service.get_recent_internal_messages(limit=50, tenant_id=eff_tenant)
     kiosk_configs = _db_service.get_all_kiosk_configs()
 
     alert_count = len(active_alerts)
@@ -738,6 +777,10 @@ async def view_monitoring(request: Request) -> HTMLResponse:
         name="monitoring.html",
         context={
             "active_tab": "monitoring",
+            "tenant_id": eff_tenant,
+            "organization": tenant_name,
+            "tenant_name": tenant_name,
+            "active_tenant": tenant_obj,
             "records": records,
             "emp_map": emp_map,
             "kiosk_map": kiosk_map,
@@ -750,7 +793,7 @@ async def view_monitoring(request: Request) -> HTMLResponse:
     )
 
 
-@router.post("/api/records/{record_id}/resolve")
+@router.post("/api/records/{record_id}/resolve", dependencies=[Depends(require_action("temperature:attendance:resolve"))])
 async def resolve_record_api(record_id: int, req: ResolveAttendanceRequest) -> Dict[str, Any]:
     """Manually resolve or override a flagged attendance/temperature record."""
     status_val = req.resolution_status.strip()
@@ -778,7 +821,7 @@ async def resolve_record_api(record_id: int, req: ResolveAttendanceRequest) -> D
     return {"status": "SUCCESS", "record_id": record_id, "resolution_status": status_val}
 
 
-@router.post("/api/kiosks/{kiosk_id}/config")
+@router.post("/api/kiosks/{kiosk_id}/config", dependencies=[Depends(require_action("temperature:kiosk:manage"))])
 async def update_kiosk_config_api(kiosk_id: str, req: KioskConfigRequest) -> Dict[str, Any]:
     """Upsert HACCP multi-check schedule configuration for a kiosk or GLOBAL_DEFAULT."""
     updated = _db_service.upsert_kiosk_config(
@@ -803,7 +846,7 @@ async def update_kiosk_config_api(kiosk_id: str, req: KioskConfigRequest) -> Dic
     return {"status": "SUCCESS", "kiosk_id": updated.kiosk_id, "required_checks": updated.required_daily_temp_checks}
 
 
-@router.post("/api/messages/{message_id}/resolve")
+@router.post("/api/messages/{message_id}/resolve", dependencies=[Depends(require_action("temperature:message:resolve"))])
 async def resolve_internal_message_api(message_id: int, req: ResolveMessageRequest) -> Dict[str, Any]:
     """Resolve an internal message from web UI and push reply to operator's WhatsApp."""
     success, op_phone, outbound_reply = _db_service.resolve_internal_message_web(
@@ -827,7 +870,7 @@ async def resolve_internal_message_api(message_id: int, req: ResolveMessageReque
     return {"status": "SUCCESS", "message_id": message_id, "recipient": op_phone}
 
 
-@router.post("/api/alerts/{record_id}/acknowledge")
+@router.post("/api/alerts/{record_id}/acknowledge", dependencies=[Depends(require_action("temperature:alert:acknowledge"))])
 async def acknowledge_alert_api(record_id: int, req: AcknowledgeAlertRequest) -> Dict[str, Any]:
     """Acknowledge an active emergency compliance alert."""
     success = _db_service.acknowledge_alert(record_id=record_id, ack_notes=req.ack_notes.strip())
