@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Groups and Access - Release100</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+
+  <header class="h-16 bg-slate-800/90 border-b border-slate-700/60 px-6 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-4">
+      <a href="/admin/" class="text-slate-300 hover:text-white font-bold" aria-label="Back to platform dashboard">&larr; Platform Dashboard</a>
+      <span class="text-slate-500">/</span>
+      <h1 class="text-lg font-semibold text-emerald-400">Groups and Access</h1>
+    </div>
+    <div class="flex items-center gap-3 text-xs">
+      <span class="px-2.5 py-1 rounded bg-slate-700/60 text-slate-300 border border-slate-600/50">
+        Tenant: <strong class="text-white">{{ organization or tenant_name or tenant_id or 'public' }}</strong>
+        <span class="text-emerald-400 font-mono">({{ tenant_id or 'public' }})</span>
+      </span>
+      <span class="px-2.5 py-1 rounded bg-slate-700/60 text-slate-300 border border-slate-600/50">
+        Admin: <strong class="text-white">{{ principal }}</strong>
+      </span>
+    </div>
+  </header>
+
+  <input type="hidden" id="csrf" value="{{ csrf_token }}" />
+
+  <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+
+    <div id="banner" role="alert" class="hidden bg-red-900/40 border border-red-500/50 rounded-xl p-4 text-red-300 text-sm"></div>
+
+    <p class="text-sm text-slate-400">
+      Put people (or AI assistants) into groups, then give each group a ready-made <strong>access package</strong>.
+      Each package explains in plain words what it allows and what it does not.
+    </p>
+
+    <!-- 1. Groups -->
+    <section class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5" aria-labelledby="h-groups">
+      <h2 id="h-groups" class="text-base font-semibold text-white mb-3">1. Groups</h2>
+      <form id="group-form" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-2">
+        <input id="group-name" required maxlength="120" placeholder="Group name, e.g. Night shift nurses"
+               class="bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm" aria-label="Group name" />
+        <select id="group-kind" class="bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm" aria-label="Group type">
+          <option value="USER">People</option>
+          <option value="SERVICE">AI assistants and integrations</option>
+        </select>
+        <input id="group-desc" maxlength="300" placeholder="Short description (optional)"
+               class="bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm" aria-label="Group description" />
+        <button class="bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-2 text-sm font-semibold" type="submit">Create group</button>
+      </form>
+      <p id="kind-help" class="text-xs text-slate-400 mb-4">
+        People groups hold your staff (picked from your user list). AI assistants and integrations groups hold API keys
+        (shown by label only) and can never receive high-governance packages.
+      </p>
+      <div id="groups-list" class="space-y-3"></div>
+    </section>
+
+    <!-- 2. Org units -->
+    <section class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5" aria-labelledby="h-units">
+      <h2 id="h-units" class="text-base font-semibold text-white mb-3">2. Organization units</h2>
+      <form id="unit-form" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <input id="unit-name" required maxlength="120" placeholder="Unit name, e.g. Cardiology"
+               class="bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm" aria-label="Unit name" />
+        <input id="unit-label" maxlength="60" placeholder="Your word for it, e.g. Ward"
+               class="bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm" aria-label="Unit label" />
+        <select id="unit-parent" class="bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm" aria-label="Parent unit">
+          <option value="">(top level)</option>
+        </select>
+        <button class="bg-emerald-600 hover:bg-emerald-500 rounded-lg px-3 py-2 text-sm font-semibold" type="submit">Create unit</button>
+      </form>
+      <ul id="units-list" class="text-sm space-y-1"></ul>
+    </section>
+
+    <!-- 3. Bundle catalog -->
+    <section class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5" aria-labelledby="h-catalog">
+      <h2 id="h-catalog" class="text-base font-semibold text-white mb-3">3. Access packages</h2>
+      <p id="catalog-empty" class="hidden text-sm text-slate-400">No access packages are available yet. They appear when an application declares them.</p>
+      <div id="catalog" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- 4. Effective access -->
+    <section class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5" aria-labelledby="h-eff">
+      <h2 id="h-eff" class="text-base font-semibold text-white mb-3">4. What can this person do?</h2>
+      <form id="eff-form" class="flex gap-3 mb-3">
+        <input id="eff-principal" required placeholder="Phone number or key id" list="eff-options"
+               class="flex-1 bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm" aria-label="Person or key" />
+        <datalist id="eff-options"></datalist>
+        <button class="bg-sky-600 hover:bg-sky-500 rounded-lg px-3 py-2 text-sm font-semibold" type="submit">Check access</button>
+      </form>
+      <div id="eff-result" class="text-sm space-y-1"></div>
+    </section>
+  </main>
+
+  <!-- Assignment dialog -->
+  <dialog id="assign-dialog" class="bg-slate-800 text-slate-100 rounded-xl border border-slate-600 p-0 w-full max-w-lg" aria-labelledby="assign-title">
+    <form method="dialog" id="assign-form" class="p-5 space-y-3">
+      <h3 id="assign-title" class="text-base font-semibold"></h3>
+      <label class="block text-xs text-slate-400" for="assign-group">Group</label>
+      <select id="assign-group" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm"></select>
+      <label class="block text-xs text-slate-400" for="assign-scope">How far does it reach?</label>
+      <select id="assign-scope" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm"></select>
+      <div id="assign-unit-wrap" class="hidden">
+        <label class="block text-xs text-slate-400" for="assign-unit">Which unit?</label>
+        <select id="assign-unit" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm"></select>
+      </div>
+      <p id="assign-preview" class="text-sm bg-slate-900/70 border border-slate-700 rounded-lg p-3"></p>
+      <p id="assign-conflict" class="hidden text-sm text-amber-300 bg-amber-900/30 border border-amber-500/50 rounded-lg p-3"></p>
+      <p id="assign-blocked" class="hidden text-sm text-red-300 font-semibold">Not available to AI assistants</p>
+      <div id="assign-high" class="hidden bg-red-900/40 border border-red-500/60 rounded-lg p-3 text-sm">
+        <label class="flex items-start gap-2">
+          <input type="checkbox" id="assign-confirm" class="mt-1" />
+          <span>I understand this grants high-governance access</span>
+        </label>
+      </div>
+      <p id="assign-error" role="alert" class="hidden text-sm text-red-300"></p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" id="assign-cancel" class="px-3 py-2 text-sm rounded-lg bg-slate-700 hover:bg-slate-600">Cancel</button>
+        <button type="submit" id="assign-submit" class="px-3 py-2 text-sm rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold disabled:opacity-40">Assign package</button>
+      </div>
+    </form>
+  </dialog>
+
+<script>
+(function () {
+  "use strict";
+  var BASE = "/admin/entitlements/api";
+  var state = { catalog: [], groups: [], units: [], directory: { people: [], services: [] } };
+  var RISK = {
+    LOW:    { color: "bg-emerald-900/50 text-emerald-300 border-emerald-500/60", shape: "circle" },
+    MEDIUM: { color: "bg-amber-900/50 text-amber-300 border-amber-500/60", shape: "triangle" },
+    HIGH:   { color: "bg-red-900/50 text-red-300 border-red-500/60", shape: "diamond" }
+  };
+  var currentCard = null;
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) { n.className = cls; }
+    if (text !== undefined) { n.textContent = text; }
+    return n;
+  }
+  function banner(msg) {
+    var b = $("banner");
+    if (!msg) { b.classList.add("hidden"); return; }
+    b.textContent = msg; b.classList.remove("hidden");
+  }
+  function api(method, path, body) {
+    var opts = { method: method, credentials: "same-origin", headers: { "X-CSRF-Token": $("csrf").value } };
+    if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+    return fetch(BASE + path, opts).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (!r.ok) {
+          var d = data && data.detail;
+          var code = (d && d.code) ? d.code : (typeof d === "string" ? d : "REQUEST_FAILED");
+          var err = new Error(code); err.code = code; throw err;
+        }
+        return data;
+      });
+    });
+  }
+  var MESSAGES = {
+    HIGH_RISK_CONFIRMATION_REQUIRED: "Please tick the box to confirm this high-governance package.",
+    SERVICE_GROUP_CANNOT_HOLD_HIGH_RISK: "Not available to AI assistants.",
+    SCOPE_NOT_ALLOWED: "That reach is not allowed for this package.",
+    BINDING_ALREADY_EXISTS: "This group already has this package at this reach.",
+    GROUP_NOT_FOUND: "That group no longer exists.",
+    SCOPE_UNIT_REQUIRED: "Pick a unit for this reach."
+  };
+  function friendly(err) { return MESSAGES[err.code] || ("Could not complete the request (" + err.code + ")."); }
+
+  function riskBadge(card) {
+    var r = RISK[card.risk] || RISK.LOW;
+    var b = el("span", "inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-semibold " + r.color);
+    b.setAttribute("title", "Risk level: " + card.risk_label);
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("width", "10"); svg.setAttribute("height", "10"); svg.setAttribute("viewBox", "0 0 10 10");
+    svg.setAttribute("aria-hidden", "true");
+    var shape;
+    if (r.shape === "circle") { shape = document.createElementNS(svgNS, "circle"); shape.setAttribute("cx", "5"); shape.setAttribute("cy", "5"); shape.setAttribute("r", "4"); }
+    else if (r.shape === "triangle") { shape = document.createElementNS(svgNS, "polygon"); shape.setAttribute("points", "5,1 9,9 1,9"); }
+    else { shape = document.createElementNS(svgNS, "polygon"); shape.setAttribute("points", "5,0 10,5 5,10 0,5"); }
+    shape.setAttribute("fill", "currentColor");
+    svg.appendChild(shape);
+    b.appendChild(svg);
+    b.appendChild(document.createTextNode(card.risk_label));
+    return b;
+  }
+  function bulletList(items) {
+    var ul = el("ul", "list-disc list-inside text-sm text-slate-200 space-y-0.5");
+    items.forEach(function (t) { ul.appendChild(el("li", "", t)); });
+    return ul;
+  }
+
+  function renderCard(card) {
+    var box = el("article", "border border-slate-700 rounded-xl p-4 bg-slate-900/50 space-y-2");
+    var head = el("div", "flex items-start justify-between gap-2");
+    var titles = el("div");
+    titles.appendChild(el("h3", "font-semibold text-white", card.title));
+    titles.appendChild(el("p", "text-xs text-slate-400", card.app_title));
+    head.appendChild(titles);
+    head.appendChild(riskBadge(card));
+    box.appendChild(head);
+
+    var scopeRow = el("div", "flex flex-wrap gap-1");
+    card.allowed_scopes.forEach(function (s) {
+      scopeRow.appendChild(el("span", "px-2 py-0.5 rounded bg-slate-700 text-xs", "Reach: " + card.scope_labels[s]));
+    });
+    box.appendChild(scopeRow);
+    box.appendChild(el("p", "text-sm text-slate-300", card.summary));
+    box.appendChild(el("p", "text-xs text-slate-400", "Who it is for: " + card.who_its_for));
+
+    box.appendChild(el("p", "text-xs font-semibold text-emerald-300 mt-2", "They CAN"));
+    box.appendChild(bulletList(card.can_do));
+    if (card.cannot_do.length || card.risk !== "LOW") {
+      box.appendChild(el("p", "text-xs font-semibold text-red-300 mt-2", "They CANNOT"));
+      box.appendChild(bulletList(card.cannot_do));
+    }
+    if (card.touches.length) {
+      var chips = el("div", "flex flex-wrap gap-1 mt-1");
+      chips.appendChild(el("span", "text-xs text-slate-400", "Touches:"));
+      card.touches.forEach(function (t) { chips.appendChild(el("span", "px-2 py-0.5 rounded-full bg-sky-900/50 text-sky-200 text-xs", t)); });
+      box.appendChild(chips);
+    }
+    box.appendChild(el("p", "text-xs text-slate-400", "Currently assigned to " + card.assigned_group_count + " groups"));
+    if (card.drifted_binding_count > 0) {
+      box.appendChild(el("p", "text-xs text-amber-300 bg-amber-900/30 border border-amber-500/50 rounded px-2 py-1", "Changed since granted - review"));
+    }
+    if (card.conflicts_with_titles.length) {
+      box.appendChild(el("p", "text-xs text-amber-300", "Conflicts with: " + card.conflicts_with_titles.join(", ")));
+    }
+    var btn = el("button", "mt-2 px-3 py-1.5 text-sm rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold", "Assign to a group");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Assign " + card.title + " to a group");
+    btn.addEventListener("click", function () { openAssign(card); });
+    box.appendChild(btn);
+    return box;
+  }
+
+  function renderCatalog() {
+    var host = $("catalog"); host.textContent = "";
+    $("catalog-empty").classList.toggle("hidden", state.catalog.length > 0);
+    state.catalog.forEach(function (c) { host.appendChild(renderCard(c)); });
+  }
+
+  function labelFor(principal, kind) {
+    var list = kind === "SERVICE" ? state.directory.services : state.directory.people;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].principal_id === principal) { return kind === "SERVICE" ? list[i].label : (list[i].name + " (" + principal + ")"); }
+    }
+    return principal;
+  }
+  function bundleTitle(b) {
+    for (var i = 0; i < state.catalog.length; i++) {
+      var c = state.catalog[i];
+      if (c.app_id === b.app_id && c.bundle_id === b.bundle_id) { return c.title + " - " + c.scope_labels[b.scope]; }
+    }
+    return b.bundle_id + " (" + b.scope + ")";
+  }
+
+  function renderGroups() {
+    var host = $("groups-list"); host.textContent = "";
+    if (!state.groups.length) { host.appendChild(el("p", "text-sm text-slate-400", "No groups yet. Create the first one above.")); }
+    state.groups.forEach(function (entry) {
+      var g = entry.group;
+      var box = el("div", "border border-slate-700 rounded-lg p-3 bg-slate-900/50 space-y-2");
+      var head = el("div", "flex items-center justify-between");
+      head.appendChild(el("strong", "text-white", g.name));
+      head.appendChild(el("span", "text-xs px-2 py-0.5 rounded bg-slate-700", g.kind === "SERVICE" ? "AI assistants and integrations" : "People"));
+      box.appendChild(head);
+      if (g.description) { box.appendChild(el("p", "text-xs text-slate-400", g.description)); }
+
+      var mem = el("div", "flex flex-wrap gap-2");
+      entry.members.forEach(function (p) {
+        var chip = el("span", "inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-700 text-xs", labelFor(p, g.kind));
+        var x = el("button", "text-red-300 hover:text-red-200", "x");
+        x.type = "button"; x.setAttribute("aria-label", "Remove " + labelFor(p, g.kind) + " from " + g.name);
+        x.addEventListener("click", function () {
+          api("DELETE", "/groups/" + encodeURIComponent(g.id) + "/members/" + encodeURIComponent(p)).then(refresh).catch(fail);
+        });
+        chip.appendChild(x); mem.appendChild(chip);
+      });
+      box.appendChild(mem);
+
+      var add = el("div", "flex gap-2");
+      var sel = el("select", "bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs");
+      sel.setAttribute("aria-label", "Add member to " + g.name);
+      var pool = g.kind === "SERVICE" ? state.directory.services : state.directory.people;
+      sel.appendChild(el("option", "", pool.length ? "Add a member..." : "No one to add yet"));
+      sel.firstChild.value = "";
+      pool.forEach(function (p) {
+        var o = el("option", "", g.kind === "SERVICE" ? p.label : (p.name + " (" + p.principal_id + ")"));
+        o.value = p.principal_id; sel.appendChild(o);
+      });
+      var addBtn = el("button", "px-2 py-1 text-xs rounded bg-sky-700 hover:bg-sky-600", "Add");
+      addBtn.type = "button";
+      addBtn.addEventListener("click", function () {
+        if (!sel.value) { return; }
+        api("POST", "/groups/" + encodeURIComponent(g.id) + "/members", { principal_id: sel.value }).then(refresh).catch(fail);
+      });
+      add.appendChild(sel); add.appendChild(addBtn); box.appendChild(add);
+
+      if (entry.bindings.length) {
+        var bl = el("ul", "text-xs text-slate-300 space-y-1");
+        entry.bindings.forEach(function (b) {
+          var li = el("li", "flex items-center gap-2");
+          li.appendChild(el("span", "", "Package: " + bundleTitle(b)));
+          var rv = el("button", "text-red-300 hover:text-red-200 underline", "Revoke");
+          rv.type = "button"; rv.setAttribute("aria-label", "Revoke " + bundleTitle(b) + " from " + g.name);
+          rv.addEventListener("click", function () { api("POST", "/bindings/" + encodeURIComponent(b.id) + "/revoke").then(refresh).catch(fail); });
+          li.appendChild(rv); bl.appendChild(li);
+        });
+        box.appendChild(bl);
+      }
+      host.appendChild(box);
+    });
+  }
+
+  function renderUnits() {
+    var list = $("units-list"); list.textContent = "";
+    var parent = $("unit-parent");
+    parent.textContent = ""; var top = el("option", "", "(top level)"); top.value = ""; parent.appendChild(top);
+    var byParent = {};
+    state.units.forEach(function (u) { var k = u.parent_id || ""; (byParent[k] = byParent[k] || []).push(u); });
+    function walk(pid, depth) {
+      (byParent[pid] || []).forEach(function (u) {
+        var li = el("li", "", ""); li.style.paddingLeft = (depth * 16) + "px";
+        li.textContent = u.name + (u.label ? " [" + u.label + "]" : "");
+        list.appendChild(li);
+        var o = el("option", "", u.name); o.value = u.id; parent.appendChild(o);
+        walk(u.id, depth + 1);
+      });
+    }
+    walk("", 0);
+    if (!state.units.length) { list.appendChild(el("li", "text-slate-400", "No units yet. Units are optional.")); }
+  }
+
+  function renderDirectoryOptions() {
+    var dl = $("eff-options"); dl.textContent = "";
+    state.directory.people.concat(state.directory.services).forEach(function (p) {
+      var o = el("option", ""); o.value = p.principal_id; o.label = p.name || p.label; dl.appendChild(o);
+    });
+  }
+
+  // ---- assignment dialog ----
+  function selectedGroup() {
+    var id = $("assign-group").value;
+    for (var i = 0; i < state.groups.length; i++) { if (state.groups[i].group.id === id) { return state.groups[i]; } }
+    return null;
+  }
+  function sentence(list) { return list.length ? list.join(", ") : "nothing else"; }
+  function updatePreview() {
+    var card = currentCard, g = selectedGroup();
+    if (!card) { return; }
+    var scope = $("assign-scope").value;
+    var gname = g ? g.group.name : "the group";
+    $("assign-preview").textContent = "Members of " + gname + " will be able to " + sentence(card.can_do) +
+      " for " + card.scope_labels[scope] + ". They will not be able to " + sentence(card.cannot_do) + ".";
+    $("assign-unit-wrap").classList.toggle("hidden", scope !== "UNIT");
+    var blocked = !!(g && g.group.kind === "SERVICE" && card.risk === "HIGH");
+    $("assign-blocked").classList.toggle("hidden", !blocked);
+    var high = card.risk === "HIGH";
+    $("assign-high").classList.toggle("hidden", !high || blocked);
+    var conflict = $("assign-conflict");
+    var held = g ? g.bindings.map(function (b) { return bundleTitle(b).split(" - ")[0]; }) : [];
+    var clash = card.conflicts_with_titles.filter(function (t) { return held.indexOf(t) >= 0; });
+    conflict.classList.toggle("hidden", clash.length === 0);
+    if (clash.length) { conflict.textContent = "Conflicts with: " + clash.join(", "); }
+    $("assign-submit").disabled = blocked || (high && !$("assign-confirm").checked);
+    $("assign-error").classList.add("hidden");
+  }
+  function openAssign(card) {
+    currentCard = card;
+    $("assign-title").textContent = "Assign: " + card.title;
+    var gsel = $("assign-group"); gsel.textContent = "";
+    state.groups.forEach(function (e) {
+      var o = el("option", "", e.group.name + (e.group.kind === "SERVICE" ? " (AI assistants)" : "")); o.value = e.group.id; gsel.appendChild(o);
+    });
+    var ssel = $("assign-scope"); ssel.textContent = "";
+    card.allowed_scopes.forEach(function (s) { var o = el("option", "", card.scope_labels[s]); o.value = s; if (s === card.default_scope) { o.selected = true; } ssel.appendChild(o); });
+    var usel = $("assign-unit"); usel.textContent = "";
+    state.units.forEach(function (u) { var o = el("option", "", u.name); o.value = u.id; usel.appendChild(o); });
+    $("assign-confirm").checked = false;
+    if (!state.groups.length) { banner("Create a group first, then assign a package to it."); return; }
+    updatePreview();
+    $("assign-dialog").showModal();
+  }
+  ["assign-group", "assign-scope"].forEach(function (id) { $(id).addEventListener("change", updatePreview); });
+  $("assign-confirm").addEventListener("change", updatePreview);
+  $("assign-cancel").addEventListener("click", function () { $("assign-dialog").close(); });
+  $("assign-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var g = selectedGroup(); if (!g || !currentCard) { return; }
+    var scope = $("assign-scope").value;
+    var body = {
+      group_id: g.group.id, app_id: currentCard.app_id, bundle_id: currentCard.bundle_id, scope: scope,
+      scope_unit_id: scope === "UNIT" ? $("assign-unit").value : null,
+      confirm_high_risk: $("assign-confirm").checked
+    };
+    api("POST", "/bindings", body).then(function () { $("assign-dialog").close(); return refresh(); }).catch(function (err) {
+      var e = $("assign-error"); e.textContent = friendly(err); e.classList.remove("hidden");
+    });
+  });
+
+  // ---- forms ----
+  function fail(err) { banner(friendly(err)); }
+  $("group-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    api("POST", "/groups", { name: $("group-name").value, description: $("group-desc").value || null, kind: $("group-kind").value })
+      .then(function () { $("group-form").reset(); return refresh(); }).catch(fail);
+  });
+  $("unit-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    api("POST", "/units", { name: $("unit-name").value, label: $("unit-label").value, parent_id: $("unit-parent").value || null })
+      .then(function () { $("unit-form").reset(); return refresh(); }).catch(fail);
+  });
+  $("eff-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var out = $("eff-result"); out.textContent = "";
+    api("GET", "/effective-access?principal_id=" + encodeURIComponent($("eff-principal").value)).then(function (rows) {
+      if (!rows.length) { out.appendChild(el("p", "text-slate-400", "This person has no access through groups.")); return; }
+      rows.forEach(function (r) {
+        var where = r.scope_unit_name ? (" in " + r.scope_unit_name) : "";
+        out.appendChild(el("p", "", r.plain_title + " (" + r.app_title + ") - via " + r.via_group + " / " + r.via_bundle + where));
+      });
+    }).catch(fail);
+  });
+  $("group-kind").addEventListener("change", function () {
+    $("kind-help").textContent = this.value === "SERVICE"
+      ? "AI assistants and integrations are API keys. They are picked by label and can never receive high-governance packages."
+      : "People groups hold your staff, picked from your user list.";
+  });
+
+  function refresh() {
+    banner("");
+    return Promise.all([api("GET", "/catalog"), api("GET", "/groups"), api("GET", "/units"), api("GET", "/directory")])
+      .then(function (r) {
+        state.catalog = r[0]; state.groups = r[1]; state.units = r[2]; state.directory = r[3];
+        renderCatalog(); renderGroups(); renderUnits(); renderDirectoryOptions();
+      }).catch(fail);
+  }
+  refresh();
+})();
+</script>
+</body>
+</html>

@@ -24,10 +24,10 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
-from core_platform.app.auth.csrf import verify_csrf_token
+from core_platform.app.auth.csrf import generate_csrf_token, verify_csrf_token
 from core_platform.app.auth.models import SecurityContext
 from core_platform.app.config import settings
 from core_platform.app.entitlements import dependencies as deps
@@ -143,6 +143,28 @@ def _enabled_app_ids(tenant_obj: Optional[Any]) -> List[str]:
         apps &= set(allowed)
     return sorted(apps)
 
+
+# -- page -------------------------------------------------------------------------------------
+
+@router.get("", response_class=HTMLResponse, include_in_schema=False)
+@router.get("/", response_class=HTMLResponse)
+def entitlements_page(request: Request, ctx: SecurityContext = Depends(require_admin)) -> HTMLResponse:
+    """Render the groups-and-access page; data is loaded by the page from the JSON API."""
+    from core_platform.app.admin_shell.routes import templates
+
+    scoped, tenant_obj = _tenant_ctx(request, ctx)
+    tenant_name = getattr(tenant_obj, "name", None) or scoped.tenant_id
+    return templates.TemplateResponse(
+        request=request,
+        name="entitlements.html",
+        context={
+            "principal": ctx.principal_id,
+            "tenant_id": scoped.tenant_id,
+            "tenant_name": tenant_name,
+            "organization": tenant_name,
+            "csrf_token": request.cookies.get("csrf_token") or generate_csrf_token(),
+        },
+    )
 
 # -- read routes ------------------------------------------------------------------------------
 
