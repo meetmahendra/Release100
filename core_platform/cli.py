@@ -144,10 +144,10 @@ def command_seed() -> int:
         db_cls = getattr(mod, "DatabaseService")
         db = db_cls()
         seeds = [
-            ("EMP-1042", "Rajesh Pawar", "+919800011122", "CANEBOT-PUNE-04", "ACTIVE"),
-            ("EMP-2088", "Sunil Patil", "+919800022233", "CANEBOT-MUMBAI-08", "ACTIVE"),
-            ("EMP-3012", "Kiran Kumar", "+919800033344", "CANEBOT-BLR-02", "ACTIVE"),
-            ("EMP-9901", "Amit Sharma", "+919800099999", "CANEBOT-PUNE-04", "PENDING_APPROVAL"),
+            ("EMP-1042", "Rajesh Pawar", "+919800011122", "NODE-PUNE-04", "ACTIVE"),
+            ("EMP-2088", "Sunil Patil", "+919800022233", "NODE-MUMBAI-08", "ACTIVE"),
+            ("EMP-3012", "Kiran Kumar", "+919800033344", "NODE-BLR-02", "ACTIVE"),
+            ("EMP-9901", "Amit Sharma", "+919800099999", "NODE-PUNE-04", "PENDING_APPROVAL"),
         ]
         print("=" * 70)
         print("  SEEDING SAMPLE FLEET OPERATORS FOR MANUAL TESTING")
@@ -196,7 +196,7 @@ def command_seed_mail() -> int:
             gmail_id="msg_seed_001",
             thread_id="thread_seed_contract",
             sender="ceo@customer-enterprise.com",
-            to_recipients="depali@company.com",
+            to_recipients="user@company.com",
             subject="URGENT: Enterprise SLA Renewal Signature Required",
             body="Please review and sign the attached enterprise SLA amendment before 5 PM today.",
             labels_applied="INBOX, _LLM/@Urgent",
@@ -215,7 +215,7 @@ def command_seed_mail() -> int:
             gmail_id="msg_seed_002",
             thread_id="thread_seed_promo",
             sender="marketing@vendor-cloud.com",
-            to_recipients="depali@company.com",
+            to_recipients="user@company.com",
             subject="Special Offer: 40% Off Annual Database Hosting",
             body="Upgrade your cloud databases this month and save 40% on enterprise subscriptions.",
             labels_applied="_LLM/@Promotions",

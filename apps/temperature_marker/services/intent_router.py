@@ -66,7 +66,7 @@ _URGENT_KEYWORDS = {
 }
 
 _SUPPLY_KEYWORDS = {
-    "cup", "cups", "straw", "straws", "ice", "cane", "sugar",
+    "cup", "cups", "straw", "straws", "ice", "chiller", "temp",
     "syrup", "cleaning", "stock", "bags", "bottle", "bottles",
     "lid", "lids", "sanitizer", "gloves", "napkin", "napkins",
 }

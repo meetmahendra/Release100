@@ -87,7 +87,7 @@ def test_paradigm_a_multi_cartridge_coexistence(
         emp_code=emp_code,
         full_name=f"Rajesh Polyglot {unique_suffix}",
         phone_number=phone_num,
-        assigned_kiosk_id="CANEBOT-PUNE-01",
+        assigned_kiosk_id="NODE-PUNE-01",
         role="OPERATOR",
     )
     assert emp is not None
@@ -108,7 +108,7 @@ def test_paradigm_a_multi_cartridge_coexistence(
     att_rec = tm_app.db_service.record_attendance(
         correlation_id=f"corr-poly-{unique_suffix}",
         emp_code=emp_code,
-        kiosk_id="CANEBOT-PUNE-01",
+        kiosk_id="NODE-PUNE-01",
         face_confidence=0.95,
         gps_distance_meters=12.5,
         geofence_verified=True,
@@ -136,8 +136,8 @@ def test_paradigm_a_multi_cartridge_coexistence(
         gmail_id=gmail_msg_id,
         thread_id=f"th_poly_{unique_suffix}",
         subject=f"Polyglot Multi-DB Incident Alert {unique_suffix}",
-        sender="field.supervisor@canectar.com",
-        to_recipients="manager@canectar.com",
+        sender="field.supervisor@apex.com",
+        to_recipients="manager@apex.com",
         snippet="Chiller temp is 3.4C nominal.",
     )
     assert email is not None

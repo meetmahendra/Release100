@@ -42,7 +42,7 @@ def test_location_session_cache_lifecycle() -> None:
     assert cache.get_phone("non-existent") is None
 
     # 2. Bind metadata with short TTL
-    cache.bind_metadata("sess-test-1", {"phone": "+919800011122", "kiosk": "CANEBOT-PUNE-04"}, ttl_seconds=1)
+    cache.bind_metadata("sess-test-1", {"phone": "+919800011122", "kiosk": "NODE-PUNE-04"}, ttl_seconds=1)
     meta = cache.get_metadata("sess-test-1")
     assert meta is not None
     assert meta["phone"] == "+919800011122"
@@ -112,7 +112,7 @@ async def test_mail_organizer_outbox_transmitter() -> None:
     ok_draft, msg_draft = await transmitter("gmail_api", {
         "action": "create_draft",
         "thread_id": "th_1",
-        "recipient": "test@canectar.com",
+        "recipient": "test@apex.com",
         "subject": "Hi",
         "body": "Body",
     })

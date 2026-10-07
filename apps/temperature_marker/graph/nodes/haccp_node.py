@@ -22,7 +22,7 @@ async def haccp_node(
     state: TemperatureMarkerState,
     kg_service: KnowledgeGraphService,
 ) -> TemperatureMarkerState:
-    """Evaluate CaneBot juice chiller temperature against HACCP safety thresholds."""
+    """Evaluate KioskNode juice chiller temperature against HACCP safety thresholds."""
     temp_c = state.get("chiller_temp_c")
     kiosk_id = state.get("kiosk_id")
     haccp_rule = kg_service.get_haccp_limits(kiosk_id)

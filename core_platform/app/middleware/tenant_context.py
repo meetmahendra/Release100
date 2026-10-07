@@ -42,11 +42,66 @@ class TenantContext:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class UserContext:
+    """Immutable representation of the active authenticated user context."""
+    user_id: Any
+    phone_number: str
+    tenant_id: str = "default_tenant"
+    full_name: str = ""
+    role: str = "user"
+    user_secret_salt: str = ""
+    allowed_cartridges: tuple[str, ...] = ()
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
 # Asynchronous context variable tracking the active tenant
 _current_tenant_ctx: ContextVar[Optional[TenantContext]] = ContextVar(
     "current_tenant_ctx",
     default=None,
 )
+
+# Asynchronous context variable tracking the active user
+_current_user_ctx: ContextVar[Optional[UserContext]] = ContextVar(
+    "current_user_ctx",
+    default=None,
+)
+
+
+def get_current_user_context() -> Optional[UserContext]:
+    """Return the active UserContext or None if not set."""
+    return _current_user_ctx.get()
+
+
+def set_current_user_context(user_context: UserContext) -> Token[Optional[UserContext]]:
+    """Set active user context for the current async task / thread."""
+    return _current_user_ctx.set(user_context)
+
+
+def reset_user_context(token: Token[Optional[UserContext]]) -> None:
+    """Reset user context variable to previous state."""
+    _current_user_ctx.reset(token)
+
+
+@contextmanager
+def user_scope(user_context: UserContext) -> Generator[UserContext, None, None]:
+    """Context manager for scoping execution to a specific UserContext."""
+    token = set_current_user_context(user_context)
+    try:
+        yield user_context
+    finally:
+        reset_user_context(token)
+
+
+@asynccontextmanager
+async def async_user_scope(user_context: UserContext) -> AsyncGenerator[UserContext, None]:
+    """Async context manager for scoping async tasks to a specific UserContext."""
+    token = set_current_user_context(user_context)
+    try:
+        yield user_context
+    finally:
+        reset_user_context(token)
+
 
 
 def get_current_tenant_id() -> str:
@@ -142,6 +197,92 @@ def sync_tenant_scope(
         reset_tenant_context(token)
 
 
+# In-memory cache for dynamic custom domains / subdomains
+_domain_tenant_cache: Dict[str, str] = {}
+
+
+def register_domain_mapping(domain_name: str, tenant_id: str) -> None:
+    """Register or update an in-memory domain-to-tenant mapping."""
+    clean_domain = domain_name.lower().strip()
+    if clean_domain and tenant_id:
+        _domain_tenant_cache[clean_domain] = tenant_id.strip()
+
+
+def clear_domain_mappings() -> None:
+    """Clear cached domain mappings."""
+    _domain_tenant_cache.clear()
+
+
+def resolve_domain_to_tenant(domain_name: str) -> Optional[str]:
+    """Resolve a domain or host string to a tenant ID using cache or database lookup."""
+    clean_host = domain_name.lower().split(":")[0].strip()
+    if not clean_host:
+        return None
+
+    # 1. Check in-memory fast cache
+    if clean_host in _domain_tenant_cache:
+        return _domain_tenant_cache[clean_host]
+
+    # 2. Query platform_tenant_domains table
+    try:
+        from sqlalchemy import select
+        from core_platform.app.db.manager import get_db_manager
+        from core_platform.app.identity.models import TenantDomain
+
+        engine = get_db_manager().get_engine()
+        with engine.connect() as conn:
+            stmt = select(TenantDomain.tenant_id).where(
+                TenantDomain.domain_name == clean_host,
+                TenantDomain.is_verified == True,  # noqa: E712
+            ).limit(1)
+            row = conn.execute(stmt).fetchone()
+            if row:
+                tenant_id = str(row[0])
+                _domain_tenant_cache[clean_host] = tenant_id
+                return tenant_id
+    except Exception:
+        pass
+
+    return None
+
+
+def verify_tenant_exists(tenant_id: str) -> Optional[str]:
+    """Check if tenant exists in platform_tenants (supporting hyphen/underscore variants)."""
+    clean = tenant_id.lower().strip()
+    if clean in ("public", "default", "default_tenant", "platform", "system", "test"):
+        return clean
+    variants = list(dict.fromkeys([
+        clean,
+        clean.replace("-", "_"),
+        clean.replace("_", "-"),
+    ]))
+    try:
+        from sqlalchemy import or_, select
+        from core_platform.app.db.manager import get_db_manager
+        from core_platform.app.identity.models import Tenant, TenantDomain
+
+        engine = get_db_manager().get_engine()
+        with engine.connect() as conn:
+            # 1. Check Tenant.id
+            stmt = select(Tenant.id).where(Tenant.id.in_(variants)).limit(1)
+            row = conn.execute(stmt).fetchone()
+            if row:
+                return str(row[0])
+
+            # 2. Check TenantDomain.domain_name
+            dom_names = [f"{v}.release100.com" for v in variants] + variants
+            dom_stmt = select(TenantDomain.tenant_id).where(
+                TenantDomain.domain_name.in_(dom_names),
+                TenantDomain.is_verified == True,  # noqa: E712
+            ).limit(1)
+            dom_row = conn.execute(dom_stmt).fetchone()
+            if dom_row:
+                return str(dom_row[0])
+    except Exception:
+        pass
+    return None
+
+
 class TenantContextMiddleware(BaseHTTPMiddleware):
     """
     FastAPI / Starlette Middleware that resolves tenant context per HTTP request.
@@ -149,13 +290,14 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
     Resolution Order:
     1. Header: 'X-Tenant-ID' or 'X-Tenant'
     2. Query Parameter: 'tenant_id'
-    3. Host Header Subdomain (e.g. 'tenantA.platform.local' -> 'tenantA')
-    4. Fallback to settings.TENANT_ID
+    3. Custom Verified Domain / CNAME (e.g. 'mail.acme.com' -> 'acme')
+    4. Host Header Subdomain (e.g. 'acme.release100.com' -> 'acme')
+    5. Fallback Default to 'public'
     """
 
     def __init__(self, app: Any, default_tenant: Optional[str] = None) -> None:
         super().__init__(app)
-        self.default_tenant: str = str(default_tenant or getattr(settings, "TENANT_ID", "default") or "default")
+        self.default_tenant: str = str(default_tenant or getattr(settings, "TENANT_ID", "public") or "public")
 
     async def dispatch(
         self,
@@ -166,6 +308,45 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
 
         # Attach tenant ID to request state for downstream handlers
         request.state.tenant_id = tenant_id
+
+        # If tenant was explicitly requested via customer subdomain but does not exist in DB:
+        if getattr(request.state, "tenant_not_found", False):
+            path = request.url.path
+            # Allow health check, favicon, logs, static assets, UI gallery, and mock test paths to pass through
+            if not path.startswith(("/health", "/favicon.ico", "/logs", "/static", "/test", "/ui-gallery")):
+                from fastapi.responses import HTMLResponse, JSONResponse
+                unregistered = getattr(request.state, "unregistered_tenant", tenant_id)
+                accept = request.headers.get("accept", "")
+                if "text/html" in accept or not ("application/json" in accept):
+                    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenant Not Found — Release100</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }}
+        .card {{ background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 2.5rem; max-width: 500px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }}
+        h1 {{ font-size: 1.5rem; margin-bottom: 0.75rem; color: #f43f5e; }}
+        p {{ color: #94a3b8; line-height: 1.6; margin-bottom: 1.5rem; }}
+        code {{ background: #0f172a; color: #38bdf8; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9em; }}
+        .btn {{ display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 500; }}
+        .btn:hover {{ background: #2563eb; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Tenant Not Found (404)</h1>
+        <p>The organization partition <code>{unregistered}</code> does not exist or has not been registered yet on Release100.</p>
+        <p>If you are an administrator, please register this tenant from the platform operations control plane.</p>
+    </div>
+</body>
+</html>"""
+                    return HTMLResponse(content=html_content, status_code=404)
+                return JSONResponse(
+                    status_code=404,
+                    content={"detail": f"Tenant '{unregistered}' does not exist on this platform."},
+                )
 
         # Bind context variable for downstream async execution
         token = set_current_tenant_id(tenant_id)
@@ -189,12 +370,110 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         if query_tenant and query_tenant.strip():
             return query_tenant.strip()
 
-        # 3. Host Subdomain (excluding standard localhost and raw IPs)
-        host = request.headers.get("host", "").split(":")[0].strip()
-        if host and "." in host and not host.replace(".", "").isdigit() and "localhost" not in host:
-            subdomain = host.split(".")[0].strip()
-            if subdomain and subdomain not in ("www", "api", "app", "kiosk", "admin"):
-                return subdomain
+        # 3. Custom Domain / Host resolution
+        host = request.headers.get("host", "").split(":")[0].strip().lower()
+        if host:
+            resolved = resolve_domain_to_tenant(host)
+            if resolved:
+                return resolved
 
-        # 4. Fallback Default
+            # 4. Host Subdomain (requires at least 3 domain segments, e.g. 'acme.release100.com' -> 'acme')
+            tunnel_domains = ("ngrok-free.dev", "ngrok-free.app", "ngrok.app", "loca.lt", "lhr.life", "pinggy.link", "pinggy.io", "localhost.run")
+            is_tunnel = any(host.endswith(td) for td in tunnel_domains)
+            if not is_tunnel and "." in host and not host.replace(".", "").isdigit() and "localhost" not in host:
+                parts = host.split(".")
+                if len(parts) >= 3:
+                    subdomain = parts[0].strip()
+                    if subdomain in ("ops", "ops-admin"):
+                        request.state.is_ops_domain = True
+                        return self.default_tenant
+                    elif subdomain not in ("www", "api", "app", "kiosk", "admin", "public"):
+                        real_tenant = verify_tenant_exists(subdomain)
+                        if real_tenant:
+                            return real_tenant
+                        else:
+                            request.state.tenant_not_found = True
+                            request.state.unregistered_tenant = subdomain
+                            return subdomain
+
+        # 5. Session Cookie (admin_token) or Authorization Header (JWT)
+        auth_cookie = request.cookies.get("admin_token")
+        auth_header = request.headers.get("Authorization")
+        raw_jwt: Optional[str] = None
+        if auth_cookie and auth_cookie.strip():
+            raw_jwt = auth_cookie.strip()
+        elif auth_header and auth_header.startswith("Bearer "):
+            raw_jwt = auth_header[7:].strip()
+
+        if raw_jwt:
+            try:
+                from core_platform.app.auth.jwt_utils import verify_jwt_token
+                s_ctx = verify_jwt_token(raw_jwt)
+                if s_ctx and s_ctx.tenant_id and s_ctx.tenant_id.strip():
+                    return s_ctx.tenant_id.strip()
+            except Exception:
+                pass
+
+        # 6. Fallback Default to 'public'
         return self.default_tenant
+
+
+def resolve_effective_tenant_info(
+    request: Request,
+    ctx: Optional[Any] = None,
+) -> tuple[str, str, Optional[Any]]:
+    """
+    Resolve active (tenant_id, tenant_name, tenant_obj) for any request and security context.
+
+    Rules:
+    1. If security context is non-devops customer user/admin: strictly bound to ctx.tenant_id.
+    2. If security context is devops: respects ?tenant_id= query param, request.state, or ctx.tenant_id.
+    3. Resolves the Tenant database record to fetch real organization name.
+    """
+    req_tenant = getattr(request.state, "tenant_id", None)
+    user_tenant = ctx.tenant_id if (ctx and getattr(ctx, "tenant_id", None) and ctx.tenant_id not in ("default_tenant", "system", "public", "platform")) else None
+
+    is_devops = False
+    if ctx:
+        is_devops = (
+            getattr(ctx, "is_devops", False)
+            or getattr(ctx, "principal_id", "") in ("devops_admin", "master_admin", "system", "admin")
+            or "super_admin" in getattr(ctx, "user_roles", [])
+            or "devops_admin" in getattr(ctx, "user_roles", [])
+        )
+
+    # Scoping logic
+    if not is_devops and user_tenant:
+        active_slug = user_tenant
+    elif req_tenant and req_tenant not in ("public", "default", "default_tenant"):
+        active_slug = req_tenant
+    elif user_tenant:
+        active_slug = user_tenant
+    else:
+        active_slug = req_tenant or "public"
+
+    # Query Tenant record from DB (supporting hyphen/underscore variants)
+    tenant_obj = None
+    org_name = getattr(settings, "ORGANIZATION_NAME", "Release100 Organization") or "Release100 Organization"
+    try:
+        from sqlalchemy import select
+        from core_platform.app.db.manager import get_db_manager
+        from core_platform.app.identity.models import Tenant
+        db_mgr = get_db_manager()
+        with db_mgr.get_session() as session:
+            variants = list(dict.fromkeys([
+                active_slug,
+                active_slug.replace("-", "_"),
+                active_slug.replace("_", "-"),
+            ]))
+            tenant_obj = session.scalar(select(Tenant).where(Tenant.id.in_(variants)))
+            if not tenant_obj and active_slug != "public":
+                tenant_obj = session.scalar(select(Tenant).where(Tenant.id == "public"))
+            if tenant_obj and tenant_obj.name:
+                org_name = tenant_obj.name
+                active_slug = tenant_obj.id
+    except Exception:
+        pass
+
+    return (active_slug, org_name, tenant_obj)
+

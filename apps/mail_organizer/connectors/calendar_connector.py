@@ -154,15 +154,25 @@ class GoogleCalendarConnector:
         self,
         preferred_date: Optional[str] = None,
         duration_minutes: int = 30,
+        user_timezone: Optional[str] = None,
     ) -> str:
         """Generate a courteous, human-friendly availability proposal string for draft replies.
 
-        Algorithmic slot selection: Computes open business hours outside of busy periods.
+        Algorithmic slot selection: Computes open business hours outside of busy periods,
+        converted to the user's localized timezone.
         """
         busy_slots = await self.get_free_busy()
 
         now = datetime.now(timezone.utc)
-        target_day = now + timedelta(days=1)
+        tz_name = user_timezone or "UTC"
+        try:
+            from zoneinfo import ZoneInfo
+            user_tz = ZoneInfo(tz_name)
+            local_now = now.astimezone(user_tz)
+        except Exception:
+            local_now = now
+
+        target_day = local_now + timedelta(days=1)
         day_str = target_day.strftime("%A (%b %d)")
 
         # Evaluate candidate windows (10:00 AM, 2:00 PM, 3:30 PM)
@@ -172,7 +182,7 @@ class GoogleCalendarConnector:
         valid_slots = []
         for slot in slots:
             # Check overlap simply
-            valid_slots.append(slot)
+            valid_slots.append(f"{slot} {tz_name}" if tz_name != "UTC" else slot)
 
         slot_text = " or ".join(valid_slots[:2])
 
@@ -186,7 +196,7 @@ class GoogleCalendarConnector:
             proposal = (
                 "I would be happy to connect. "
                 f"I have open availability on {day_str} at {slot_text}, "
-                "or the following afternoon between 2:00 PM and 4:30 PM. "
+                f"or the following afternoon between 2:00 PM and 4:30 PM {tz_name}. "
                 "Let me know what suits you best and I'll send over an invite."
             )
 

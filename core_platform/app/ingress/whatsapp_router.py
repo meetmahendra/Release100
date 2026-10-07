@@ -194,6 +194,81 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
             "message": "Too many requests. Please wait before sending another message.",
         }
 
+    # --- Layer 0: User Identity & Entitlement Verification ---
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_phone(sender_phone)
+
+    if settings.WHATSAPP_REQUIRE_REGISTRATION and not user:
+        logger.warning("[WhatsApp Ingress] Unregistered sender %s rejected", sender_phone)
+        rejection_body = (
+            "🔒 Access Denied: Your phone number is not registered on this platform.\n"
+            "Please contact your system administrator to register your phone number."
+        )
+        clean_to = sender_phone.lstrip("+")
+        if settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_PHONE_NUMBER_ID and _HAS_HTTPX and httpx is not None:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    url = f"https://graph.facebook.com/v21.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+                    headers = {
+                        "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
+                        "Content-Type": "application/json",
+                    }
+                    outbound_body = {
+                        "messaging_product": "whatsapp",
+                        "recipient_type": "individual",
+                        "to": clean_to,
+                        "type": "text",
+                        "text": {"body": rejection_body},
+                    }
+                    await client.post(url, headers=headers, json=outbound_body)
+            except Exception as e:
+                logger.error("[WhatsApp Ingress] Outbound dispatch error: %s", e)
+        return {
+            "status": "UNREGISTERED_USER",
+            "correlation_id": correlation_id,
+            "node_id": node_id,
+            "kiosk_id": node_id,
+            "reply_message": rejection_body,
+        }
+
+    if user and user.status != "active":
+        logger.warning("[WhatsApp Ingress] Inactive user %s rejected", sender_phone)
+        suspended_body = "🔒 Access Suspended: Your account is currently inactive. Please contact your system administrator."
+        clean_to = sender_phone.lstrip("+")
+        if settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_PHONE_NUMBER_ID and _HAS_HTTPX and httpx is not None:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    url = f"https://graph.facebook.com/v21.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+                    headers = {
+                        "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
+                        "Content-Type": "application/json",
+                    }
+                    outbound_body = {
+                        "messaging_product": "whatsapp",
+                        "recipient_type": "individual",
+                        "to": clean_to,
+                        "type": "text",
+                        "text": {"body": suspended_body},
+                    }
+                    await client.post(url, headers=headers, json=outbound_body)
+            except Exception as e:
+                logger.error("[WhatsApp Ingress] Outbound dispatch error: %s", e)
+        return {
+            "status": "INACTIVE_USER",
+            "correlation_id": correlation_id,
+            "node_id": node_id,
+            "kiosk_id": node_id,
+            "reply_message": suspended_body,
+        }
+
+    # Heartbeat update for registered active user
+    if user:
+        try:
+            user_service.update_whatsapp_heartbeat(user.id)
+        except Exception as hb_err:
+            logger.warning("[WhatsApp Ingress] Heartbeat update error for user %s: %s", user.id, hb_err)
+
     # Extract text and image bytes
     text_content = ""
     is_image = "image" in msg
@@ -210,13 +285,20 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
         else f"http://localhost:{settings.ORCHESTRATOR_PORT}"
     )
 
+    user_tenant_id = user.tenant_id if user else settings.TENANT_ID
+    allowed_cartridges = user.allowed_cartridges if user else None
+
     context: Dict[str, Any] = {
         "sender_phone": sender_phone,
         "correlation_id": correlation_id,
         "base_url": base_url,
         "image_bytes": raw_image_bytes,
         "node_id": node_id,
-        "tenant_id": settings.TENANT_ID,
+        "tenant_id": user_tenant_id,
+        "user_id": user.id if user else None,
+        "user": user,
+        "user_full_name": user.full_name if user else None,
+        "allowed_cartridges": allowed_cartridges,
         "organization_name": settings.ORGANIZATION_NAME,
         "station_name": settings.STATION_NAME,
     }
@@ -230,66 +312,84 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
     except Exception:
         loaded_apps = {}
 
+    # Filter apps by user's allowed cartridges if user profile is present
+    if allowed_cartridges is not None:
+        candidate_apps = {k: v for k, v in loaded_apps.items() if k in allowed_cartridges}
+    else:
+        candidate_apps = loaded_apps
+
     target_app: Optional[Any] = None
 
-    # Priority 0: Active interactive triage/conversation session check
-    for app_id, app_inst in loaded_apps.items():
-        if hasattr(app_inst, "has_active_session") and app_inst.has_active_session(sender_phone):
-            target_app = app_inst
-            break
-
-    # Priority 1: Match intent / keywords against active cartridges
-    if not target_app:
-        cmd_lower = text_content.lower()
-        for app_id, app_inst in loaded_apps.items():
-            app_keywords = getattr(app_inst, "keywords", [])
-            if any(kw.lower() in cmd_lower for kw in app_keywords):
+    if user and len(candidate_apps) == 0:
+        logger.warning("[WhatsApp Ingress] User %s has no allowed cartridges active on this node", sender_phone)
+        reply_text = (
+            "🔒 No Entitled Applications: You do not have permissions to access any applications configured on this node.\n"
+            "Please contact your administrator to assign application entitlements."
+        )
+    elif len(candidate_apps) == 1:
+        # Single allowed cartridge direct shortcut
+        target_app = next(iter(candidate_apps.values()))
+    else:
+        # Multi-cartridge priority resolution across candidate_apps
+        # Priority 0: Active interactive triage/conversation session check
+        for app_id, app_inst in candidate_apps.items():
+            if hasattr(app_inst, "has_active_session") and app_inst.has_active_session(sender_phone):
                 target_app = app_inst
                 break
 
-    # Priority 2: Use SemanticRouter for natural language queries across cartridges (confident routes only)
-    if not target_app and text_content and len(loaded_apps) > 1:
-        try:
-            from core_platform.app.routing.semantic_router import SemanticRouter
-            route_decision = await SemanticRouter.route(
-                text_content=text_content,
-                candidate_apps=list(loaded_apps.keys()),
-                sender_id=sender_phone,
-            )
-            if (
-                route_decision
-                and route_decision.selected_app in loaded_apps
-                and not route_decision.requires_disambiguation
-            ):
-                target_app = loaded_apps[route_decision.selected_app]
-                logger.info(
-                    "[WhatsApp Ingress] SemanticRouter directed query to '%s' (conf: %.2f)",
-                    route_decision.selected_app,
-                    route_decision.confidence,
+        # Priority 1: Match intent / keywords against active cartridges
+        if not target_app:
+            cmd_lower = text_content.lower()
+            for app_id, app_inst in candidate_apps.items():
+                app_keywords = getattr(app_inst, "keywords", [])
+                if any(kw.lower() in cmd_lower for kw in app_keywords):
+                    target_app = app_inst
+                    break
+
+        # Priority 2: Use SemanticRouter for natural language queries across cartridges (confident routes only)
+        if not target_app and text_content and len(candidate_apps) > 1:
+            try:
+                from core_platform.app.routing.semantic_router import SemanticRouter
+                route_decision = await SemanticRouter.route(
+                    text_content=text_content,
+                    candidate_apps=list(candidate_apps.keys()),
+                    sender_id=sender_phone,
                 )
-        except Exception as ex:
-            logger.warning("[WhatsApp Ingress] SemanticRouter routing attempt failed: %s", ex)
+                if (
+                    route_decision
+                    and route_decision.selected_app in candidate_apps
+                    and not route_decision.requires_disambiguation
+                ):
+                    target_app = candidate_apps[route_decision.selected_app]
+                    logger.info(
+                        "[WhatsApp Ingress] SemanticRouter directed query to '%s' (conf: %.2f)",
+                        route_decision.selected_app,
+                        route_decision.confidence,
+                    )
+            except Exception as ex:
+                logger.warning("[WhatsApp Ingress] SemanticRouter routing attempt failed: %s", ex)
 
-    # Priority 3: If sender is a registered employee in workforce cartridge
-    if not target_app and "temperature_marker" in loaded_apps:
-        try:
-            tm = loaded_apps["temperature_marker"]
-            if hasattr(tm, "db_service") and tm.db_service is not None:
-                if tm.db_service.get_employee_by_phone(sender_phone) is not None:
-                    target_app = tm
-        except Exception:
-            pass
+        # Priority 3: If sender is a registered employee in workforce cartridge
+        if not target_app and "temperature_marker" in candidate_apps:
+            try:
+                tm = candidate_apps["temperature_marker"]
+                if hasattr(tm, "db_service") and tm.db_service is not None:
+                    if tm.db_service.get_employee_by_phone(sender_phone) is not None:
+                        target_app = tm
+            except Exception:
+                pass
 
-    # Priority 4: If image submitted, default to first vision/attendance cartridge
-    if not target_app and is_image:
-        for app_inst in loaded_apps.values():
-            if "temperature_marker" in getattr(app_inst, "app_id", "") or "photo" in getattr(app_inst, "keywords", []):
-                target_app = app_inst
-                break
+        # Priority 4: If image submitted, default to first vision/attendance cartridge
+        if not target_app and is_image:
+            for app_inst in candidate_apps.values():
+                if "temperature_marker" in getattr(app_inst, "app_id", "") or "photo" in getattr(app_inst, "keywords", []):
+                    target_app = app_inst
+                    break
 
-    # Priority 5: Primary kiosk app or first loaded application fallback
-    if not target_app and loaded_apps:
-        target_app = loaded_apps.get("temperature_marker") or next(iter(loaded_apps.values()))
+        # Priority 5: Primary kiosk app or first loaded application fallback
+        if not target_app and candidate_apps:
+            target_app = candidate_apps.get("temperature_marker") or next(iter(candidate_apps.values()))
+
 
     # Delegate execution to matched cartridge handler
     if target_app is not None:

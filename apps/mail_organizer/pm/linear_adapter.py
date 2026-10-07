@@ -114,7 +114,7 @@ class LinearAdapter:
             "success": True,
             "platform": "linear",
             "issue_id": fallback_id,
-            "issue_url": f"https://linear.app/canectar/issue/{fallback_id}",
+            "issue_url": f"https://linear.app/apex/issue/{fallback_id}",
             "title": title,
             "status": "Created (Mock)" if self.mock_mode else "Created (Offline Fallback)",
         }

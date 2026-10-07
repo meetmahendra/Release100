@@ -126,16 +126,16 @@ async def test_cloud_relay_client_lifecycle_and_formatting() -> None:
     """Test outbound WebSocket relay client state management and URL formatting."""
     client = CloudRelayClient(
         relay_url="https://test-relay.workers.dev",
-        kiosk_id="CANEBOT-PUNE-04",
+        kiosk_id="NODE-PUNE-04",
     )
     assert client.is_connected is False
-    assert client.relay_url == "wss://test-relay.workers.dev/ws/CANEBOT-PUNE-04"
+    assert client.relay_url == "wss://test-relay.workers.dev/ws/NODE-PUNE-04"
 
     # Test template URL
     formatted = CloudRelayClient._format_relay_url(
-        "wss://relay.com/ws/{kiosk_id}", "CANEBOT-BLR-02"
+        "wss://relay.com/ws/{kiosk_id}", "NODE-BLR-02"
     )
-    assert formatted == "wss://relay.com/ws/CANEBOT-BLR-02"
+    assert formatted == "wss://relay.com/ws/NODE-BLR-02"
 
     # Mock dispatch callback
     mock_callback = AsyncMock()

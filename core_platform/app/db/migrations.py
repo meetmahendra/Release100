@@ -63,10 +63,77 @@ class DatabaseMigrationHelper:
                 if table_name not in created_tables:
                     created_tables.append(table_name)
 
+        # Step 3: Run automatic column migrations for new attributes
+        cls_helper = DatabaseMigrationHelper
+        cls_helper.auto_migrate_columns(engine)
+
         logger.info(
             f"[DB] Initialized {len(created_tables)} tables across {len(metadata_list)} metadata collections on {dialect_name}."
         )
         return created_tables
+
+    @staticmethod
+    def auto_migrate_columns(engine: Engine) -> None:
+        """Add newly introduced columns to existing database tables if missing."""
+        try:
+            inspector = inspect(engine)
+            tables = set(inspector.get_table_names())
+            
+            with engine.connect() as conn:
+                # 1. platform_tenants.allowed_cartridges_json
+                if "platform_tenants" in tables:
+                    cols = {c["name"] for c in inspector.get_columns("platform_tenants")}
+                    if "allowed_cartridges_json" not in cols:
+                        try:
+                            conn.execute(text("ALTER TABLE platform_tenants ADD COLUMN allowed_cartridges_json TEXT DEFAULT '[\"mail_organizer\", \"temperature_marker\"]';"))
+                            conn.commit()
+                            logger.info("[DB Migration] Added missing column platform_tenants.allowed_cartridges_json")
+                        except Exception as e:
+                            logger.debug("[DB Migration] Column add skipped: %s", e)
+
+                # 2. platform_users.hashed_password & email
+                if "platform_users" in tables:
+                    cols = {c["name"] for c in inspector.get_columns("platform_users")}
+                    if "hashed_password" not in cols:
+                        try:
+                            conn.execute(text("ALTER TABLE platform_users ADD COLUMN hashed_password VARCHAR(255);"))
+                            conn.commit()
+                            logger.info("[DB Migration] Added missing column platform_users.hashed_password")
+                        except Exception as e:
+                            logger.debug("[DB Migration] Column add skipped: %s", e)
+                    if "email" not in cols:
+                        try:
+                            conn.execute(text("ALTER TABLE platform_users ADD COLUMN email VARCHAR(255);"))
+                            conn.commit()
+                            logger.info("[DB Migration] Added missing column platform_users.email")
+                        except Exception as e:
+                            logger.debug("[DB Migration] Column add skipped: %s", e)
+
+                # 3. Domain Cartridge multi-tenant isolation columns (mail_emails, mail_drafts, mail_pm_queue, mail_rules, employees, attendance_records, outbox_queue, internal_message_queue, kiosk_monitoring_configs)
+                cartridge_tables = [
+                    "mail_emails",
+                    "mail_classifications",
+                    "mail_drafts",
+                    "mail_pm_queue",
+                    "mail_rules",
+                    "employees",
+                    "attendance_records",
+                    "outbox_queue",
+                    "internal_message_queue",
+                    "kiosk_monitoring_configs",
+                ]
+                for tbl in cartridge_tables:
+                    if tbl in tables:
+                        cols = {c["name"] for c in inspector.get_columns(tbl)}
+                        if "tenant_id" not in cols:
+                            try:
+                                conn.execute(text(f"ALTER TABLE {tbl} ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';"))
+                                conn.commit()
+                                logger.info(f"[DB Migration] Added missing column {tbl}.tenant_id")
+                            except Exception as e:
+                                logger.debug(f"[DB Migration] Column add on {tbl} skipped: %s", e)
+        except Exception as exc:
+            logger.warning("[DB Migration] auto_migrate_columns check failed: %s", exc)
 
     @staticmethod
     def get_existing_table_names(engine: Engine) -> Set[str]:

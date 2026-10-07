@@ -44,7 +44,7 @@ def workflow(tmp_path: Path) -> TemperatureMarkerWorkflow:
         emp_code="EMP-1042",
         full_name="Rajesh Pawar",
         phone_number="+919800011122",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
     )
 
@@ -64,7 +64,7 @@ async def test_workflow_happy_path(workflow: TemperatureMarkerWorkflow) -> None:
     initial_state: TemperatureMarkerState = {
         "correlation_id": "corr-happy-001",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": (18.5622, 73.9169),  # ~15m from kiosk
         "raw_image_bytes": b"TEMP_READOUT_3.2C_SENSOR",
     }
@@ -87,7 +87,7 @@ async def test_workflow_unauthorized_phone_rejected(workflow: TemperatureMarkerW
     initial_state: TemperatureMarkerState = {
         "correlation_id": "corr-unauth-002",
         "sender_phone": "+910000000000",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
     }
 
     final_state = await workflow.execute(initial_state)
@@ -104,7 +104,7 @@ async def test_workflow_geofence_breach_rejected(workflow: TemperatureMarkerWork
     initial_state: TemperatureMarkerState = {
         "correlation_id": "corr-geo-003",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": (18.6000, 73.9800),  # ~8 km away
         "raw_image_bytes": b"TEMP_3.2C",
     }
@@ -123,7 +123,7 @@ async def test_workflow_critical_haccp_hazard(workflow: TemperatureMarkerWorkflo
     initial_state: TemperatureMarkerState = {
         "correlation_id": "corr-haccp-004",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": (18.5622, 73.9169),
         "raw_image_bytes": b"TEMP_8.5C",  # 8.5°C chiller reading
     }
@@ -144,7 +144,7 @@ async def test_workflow_physical_temperature_anomaly(workflow: TemperatureMarker
     initial_state: TemperatureMarkerState = {
         "correlation_id": "corr-anomaly-005",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": (18.5622, 73.9169),
         "raw_image_bytes": b"TEMP_145.0C",  # Impossibly high reading
     }
@@ -163,7 +163,7 @@ async def test_workflow_periodic_chiller_photo_bypasses_location_prompt(workflow
     first_state: TemperatureMarkerState = {
         "correlation_id": "corr-morning-001",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": (18.5621, 73.9168),
         "raw_image_bytes": b"DIGIT:3.2",
     }
@@ -175,7 +175,7 @@ async def test_workflow_periodic_chiller_photo_bypasses_location_prompt(workflow
     second_state: TemperatureMarkerState = {
         "correlation_id": "corr-periodic-002",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": None,  # GPS cache expired
         "raw_image_bytes": b"DIGIT:3.2",
     }
@@ -183,7 +183,7 @@ async def test_workflow_periodic_chiller_photo_bypasses_location_prompt(workflow
 
     # Must inherit station coordinates, bypass location prompt, and verify chiller reading
     assert res2.get("geofence_verified") is True
-    assert "Please verify CaneBot location" not in str(res2.get("reply_message"))
+    assert "Please verify KioskNode location" not in str(res2.get("reply_message"))
     assert res2.get("is_duty_checkin") is False
     assert res2.get("chiller_temp_c") == 3.2
     assert "Chiller Verified" in str(res2.get("reply_message"))
@@ -196,7 +196,7 @@ async def test_workflow_periodic_chiller_photo_no_face_exemption(workflow: Tempe
     first_state: TemperatureMarkerState = {
         "correlation_id": "corr-morning-noface-1",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": (18.5621, 73.9168),
         "raw_image_bytes": b"DIGIT:3.2",
     }
@@ -207,7 +207,7 @@ async def test_workflow_periodic_chiller_photo_no_face_exemption(workflow: Tempe
     second_state: TemperatureMarkerState = {
         "correlation_id": "corr-periodic-noface-2",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": None,
         "raw_image_bytes": b"DIGIT:3.5",
         "multimodal_analysis": {

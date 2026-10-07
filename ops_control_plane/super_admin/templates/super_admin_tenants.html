@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<!--
+Copyright 2026 Mahendra GURAV
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }} — Release100</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+
+  <!-- DevOps Top Navigation Bar -->
+  <header class="h-16 bg-slate-900/95 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-600/30">
+        ⚡
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-white text-base tracking-tight">DevOps Control Plane</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-950 text-indigo-300 border border-indigo-700">SUPER_ADMIN</span>
+        </div>
+        <p class="text-xs text-slate-400">Two-Tier Multi-Tenant SaaS Engine & Dynamic Routing</p>
+      </div>
+    </div>
+
+    <!-- Quick Switcher & User Profile -->
+    <div class="flex items-center gap-4">
+      <a href="/admin/" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition-colors flex items-center gap-1.5">
+        <span>🏢</span> Switch to Customer Admin Shell ↗
+      </a>
+      <div class="flex items-center gap-2 pl-3 border-l border-slate-800 text-xs">
+        <span class="text-slate-400 font-mono">{{ principal }}</span>
+        <a href="/admin/logout" class="px-2.5 py-1 rounded bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800 transition-colors">
+          Logout
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Body -->
+  <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+
+    <!-- Flash Messages -->
+    {% if message %}
+    <div class="p-4 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-sm flex items-center justify-between shadow-lg">
+      <div class="flex items-center gap-2 font-mono">
+        <span>✓</span> {{ message }}
+      </div>
+      <button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-white">✕</button>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="p-4 rounded-xl bg-rose-950/80 border border-rose-500/60 text-rose-300 text-sm flex items-center justify-between shadow-lg">
+      <div class="flex items-center gap-2">
+        <span>⚠️</span> {{ error }}
+      </div>
+      <button onclick="this.parentElement.remove()" class="text-rose-400 hover:text-white">✕</button>
+    </div>
+    {% endif %}
+
+    <!-- Provisioning Section -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>✨</span> Provision New Enterprise Tenant Workspace
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Automates atomic DB schema creation, DNS subdomain routing, cartridge entitlements, and initial root admin setup.</p>
+        </div>
+        <span class="px-2.5 py-1 rounded text-xs font-mono font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700">
+          ZERO-TRUST ISOLATION
+        </span>
+      </div>
+
+      <form method="POST" action="/ops/tenants/provision" class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Tenant Slug (ID) *</label>
+          <input type="text" name="slug" placeholder="e.g. acme_corp" required
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Company Display Name *</label>
+          <input type="text" name="name" placeholder="Acme Corporation" required
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Root Admin Username / Phone</label>
+          <input type="text" name="admin_phone" placeholder="e.g. acme_admin or leave blank for auto"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Root Admin Display Name</label>
+          <input type="text" name="admin_name" placeholder="e.g. Acme Enterprise Admin"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Root Admin Password (Optional)</label>
+          <input type="password" name="admin_password" placeholder="Leave blank to auto-generate"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Root Admin Email (Optional)</label>
+          <input type="email" name="admin_email" placeholder="admin@acme.com"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Database Mode *</label>
+          <select name="db_mode" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none">
+            <option value="sqlite" selected>SQLite Partition (Default)</option>
+            <option value="dedicated_postgres">Dedicated PostgreSQL / Cloud SQL</option>
+            <option value="dedicated_mysql">Dedicated MySQL / Aurora</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Database URL (Optional)</label>
+          <input type="text" name="db_url" placeholder="postgresql://user:pass@host:5432/db"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">License Tier</label>
+          <select name="license_tier" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none">
+            <option value="STANDARD">Standard</option>
+            <option value="ENTERPRISE" selected>Enterprise</option>
+            <option value="DEDICATED">Dedicated Private Cloud</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Storage Region</label>
+          <input type="text" name="storage_region" value="ap-south-1"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none font-mono" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Custom Vanity CNAME (Optional)</label>
+          <input type="text" name="custom_domain" placeholder="e.g. mail.acmeworks.com" autocomplete="off"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Max User Seats</label>
+          <input type="number" name="max_users" value="50"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none font-mono" />
+        </div>
+
+        <!-- Enabled Cartridges Multi-select -->
+        <div class="md:col-span-2 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
+          <label class="block text-xs font-semibold text-slate-300 mb-2">Enabled Applications / Cartridges *</label>
+          <div class="flex flex-wrap items-center gap-4">
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" name="cartridges" value="mail_organizer" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
+              <span class="font-medium text-white">📦 Mail Organizer</span>
+            </label>
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" name="cartridges" value="temperature_marker" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
+              <span class="font-medium text-white">🌡️ Temperature Marker</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="md:col-span-4 flex justify-end pt-2">
+          <button type="submit" class="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm text-white transition-colors shadow-lg shadow-indigo-600/20">
+            Provision Tenant & Partition
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tenants Directory Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="text-base font-semibold text-white">Enterprise Tenants Directory</h3>
+        <span class="text-xs text-slate-500 font-mono">Real-time DNS & DB Partition Routing</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-950 uppercase text-slate-400 border-b border-slate-800 font-semibold">
+            <tr>
+              <th class="px-4 py-3">Slug & Name</th>
+              <th class="px-4 py-3">Root Admin User</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3">Tier</th>
+              <th class="px-4 py-3">Cartridges</th>
+              <th class="px-4 py-3">Domains & Routing</th>
+              <th class="px-4 py-3">Credential Vault</th>
+              <th class="px-4 py-3">Region & DB</th>
+              <th class="px-4 py-3 text-right">Lifecycle Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60">
+            {% for item in tenants %}
+            {% set t = item.tenant %}
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="px-4 py-3">
+                <p class="font-bold text-white text-sm">{{ t.name }}</p>
+                <p class="font-mono text-slate-500 text-[11px]">{{ t.id }}</p>
+              </td>
+              <td class="px-4 py-3">
+                {% if item.admin %}
+                <div class="space-y-0.5">
+                  <p class="font-mono font-semibold text-emerald-400 text-xs flex items-center gap-1">
+                    <span>👤</span> {{ item.admin.phone_number }}
+                  </p>
+                  <p class="text-slate-300 text-[11px]">{{ item.admin.full_name }}</p>
+                  {% if item.admin.email %}
+                  <p class="text-slate-500 text-[10px] font-mono">{{ item.admin.email }}</p>
+                  {% endif %}
+                </div>
+                {% else %}
+                <span class="text-slate-500 italic text-[11px]">No admin user</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                {% if t.status == 'ACTIVE' %}
+                <span class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-semibold">ACTIVE</span>
+                {% elif t.status == 'ARCHIVED' %}
+                <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-600 text-slate-400 font-semibold">ARCHIVED</span>
+                {% elif t.status == 'SUSPENDED' %}
+                <span class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-semibold">SUSPENDED</span>
+                {% else %}
+                <span class="px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 font-semibold">{{ t.status }}</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-slate-200">{{ t.license_tier }}</span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex flex-wrap gap-1">
+                  {% for c in t.allowed_cartridges %}
+                  <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 border border-slate-700 text-indigo-300">
+                    {{ c }}
+                  </span>
+                  {% endfor %}
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="space-y-1">
+                  {% for dom in item.domains %}
+                  <p class="font-mono text-indigo-300 flex items-center gap-1">
+                    <span>🌐</span> {{ dom.domain_name }}
+                  </p>
+                  {% else %}
+                  <p class="font-mono text-slate-500">{{ t.id }}.release100.com</p>
+                  {% endfor %}
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                {% if item.credential_mode == 'CUSTOMER_BYOK' %}
+                <span class="px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 font-semibold">CUSTOMER_BYOK</span>
+                {% else %}
+                <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-600 text-sky-300 font-semibold">PLATFORM_MANAGED</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 font-mono text-[11px] text-slate-400">
+                <p>{{ t.storage_region }}</p>
+                <p class="text-slate-500">{{ t.db_mode }}</p>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-1.5">
+                  <!-- Primary Inspect & Manage Trigger -->
+                  <button type="button" onclick="openInspectModal('{{ t.id }}', '{{ t.name }}', '{{ t.status }}', '{{ t.license_tier }}', '{{ t.storage_region }}', '{{ t.db_mode }}', '{{ item.credential_mode }}', '{% if item.domains %}{{ item.domains[0].domain_name }}{% else %}{{ t.id }}.release100.com{% endif %}', '{% for c in t.allowed_cartridges %}{{ c }}{% if not loop.last %},{% endif %}{% endfor %}', '{% if item.admin %}{{ item.admin.phone_number }}{% endif %}', '{% if item.admin %}{{ item.admin.full_name }}{% endif %}', '{% if item.admin %}{{ item.admin.email or '' }}{% endif %}')" class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm transition-colors flex items-center gap-1">
+                    <span>🔍</span> Inspect
+                  </button>
+
+                  <!-- Edit Tenant Trigger -->
+                  <button type="button" onclick="openEditModal('{{ t.id }}', '{{ t.name }}', '{{ t.license_tier }}', '{{ t.status }}', '{{ t.max_users }}', '{% if item.admin %}{{ item.admin.phone_number }}{% endif %}', '{% if item.admin %}{{ item.admin.full_name }}{% endif %}', '{% if item.admin %}{{ item.admin.email or '' }}{% endif %}')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100 font-medium transition-colors">
+                    ✏️ Edit
+                  </button>
+
+                  <!-- BYOK Modal Trigger -->
+                  <button type="button" onclick="openVaultModal('{{ t.id }}', '{{ item.credential_mode }}')" class="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-700 font-medium transition-colors">
+                    🔑 BYOK
+                  </button>
+
+                  <!-- Clone Trigger -->
+                  <button type="button" onclick="openCloneModal('{{ t.id }}', '{{ t.name }}')" class="px-2 py-1 rounded bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 font-medium transition-colors">
+                    📋 Clone
+                  </button>
+
+                  <!-- Transfer Trigger -->
+                  <button type="button" onclick="openTransferModal('{{ t.id }}', '{{ t.storage_region }}')" class="px-2 py-1 rounded bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-700 font-medium transition-colors">
+                    🚚 Transfer
+                  </button>
+
+                  <!-- Audit Link -->
+                  <a href="/ops/tenants/{{ t.id }}/audit" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium transition-colors">
+                    Audit
+                  </a>
+
+                  <!-- Delete Trigger -->
+                  <button type="button" onclick="openDeleteModal('{{ t.id }}', '{{ t.name }}')" class="px-2 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700 font-medium transition-colors">
+                    🗑️ Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="9" class="px-4 py-8 text-center text-slate-500 italic">No enterprise tenants provisioned yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODALS CONTAINER (All Modals as Direct Children of Body for High-Z-Index Clarity) -->
+
+  <!-- 1. BYOK Modal -->
+  <div id="vaultModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>🔑</span> Configure DevOps Vault & BYOK Keys
+        </h3>
+        <button type="button" onclick="closeVaultModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <form id="vaultForm" method="POST" class="space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Credential Mode</label>
+          <select name="credential_mode" id="vaultCredMode" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none">
+            <option value="PLATFORM_MANAGED">PLATFORM_MANAGED (Central DevOps Keys)</option>
+            <option value="CUSTOMER_BYOK">CUSTOMER_BYOK (Customer-Dedicated Keys)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Gemini API Key (AES-256-GCM Encrypted)</label>
+          <input type="password" name="gemini_api_key" placeholder="AIzaSy..."
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">OpenAI API Key (Optional)</label>
+          <input type="password" name="openai_api_key" placeholder="sk-..."
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">WhatsApp Cloud API Access Token</label>
+          <input type="password" name="waba_access_token" placeholder="EAA..."
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">WhatsApp Phone Number ID</label>
+          <input type="text" name="waba_phone_number_id" placeholder="1029384756..."
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeVaultModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 font-semibold text-white text-xs">Save Vault Keys</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Clone Modal -->
+  <div id="cloneModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>📋</span> Deep-Clone Tenant & Data Snapshot
+        </h3>
+        <button type="button" onclick="closeCloneModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <form id="cloneForm" method="POST" class="space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Target Tenant Slug (New ID) *</label>
+          <input type="text" name="target_slug" placeholder="e.g. acme_staging" required
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Target Display Name</label>
+          <input type="text" name="target_name" id="cloneTargetName" placeholder="Acme Staging"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none" />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeCloneModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-semibold text-white text-xs">Execute Deep-Clone</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Transfer Modal -->
+  <div id="transferModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>🚚</span> Migrate Tenant Database & Region
+        </h3>
+        <button type="button" onclick="closeTransferModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <form id="transferForm" method="POST" class="space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Target Region Code</label>
+          <input type="text" name="target_region" id="transferRegion" placeholder="eu-central-1"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Target Database Connection String (Optional)</label>
+          <input type="text" name="target_db_url" placeholder="postgresql://user:pass@db-eu:5432/tenant_db"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeTransferModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 font-semibold text-white text-xs">Cutover Transfer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Cartridges Management Modal -->
+  <div id="cartridgesModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>🎯</span> Configure Tenant Cartridges
+        </h3>
+        <button type="button" onclick="closeCartridgesModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <form id="cartridgesForm" method="POST" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        
+        <p class="text-xs text-slate-400">Select which application cartridges are enabled for this tenant workspace:</p>
+        
+        <div class="space-y-2 bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs">
+          <label class="flex items-center gap-2.5 text-slate-200 cursor-pointer">
+            <input type="checkbox" name="cartridges" id="cMailOrganizer" value="mail_organizer" class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
+            <span class="font-semibold text-white">📦 Mail Organizer</span>
+            <span class="text-slate-500 text-[11px]">(Email Ingestion & Triage)</span>
+          </label>
+          <label class="flex items-center gap-2.5 text-slate-200 cursor-pointer">
+            <input type="checkbox" name="cartridges" id="cTemperatureMarker" value="temperature_marker" class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
+            <span class="font-semibold text-white">🌡️ Temperature Marker</span>
+            <span class="text-slate-500 text-[11px]">(KioskNode Fleet & Cold-Chain)</span>
+          </label>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeCartridgesModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-semibold text-white text-xs">Save Cartridges</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. Comprehensive Inspect & Manage Modal -->
+  <div id="inspectModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-2xl w-full space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🏢</span>
+          <div>
+            <h3 id="inspectTitle" class="text-base font-bold text-white">Tenant Inspection</h3>
+            <p id="inspectSlug" class="text-xs font-mono text-slate-400">slug</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeInspectModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <p class="text-slate-400 uppercase font-semibold">Status</p>
+          <p id="inspectStatus" class="text-sm font-bold text-emerald-400 mt-1">ACTIVE</p>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <p class="text-slate-400 uppercase font-semibold">License Tier</p>
+          <p id="inspectTier" class="text-sm font-bold text-indigo-400 mt-1">ENTERPRISE</p>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <p class="text-slate-400 uppercase font-semibold">Region</p>
+          <p id="inspectRegion" class="text-sm font-mono text-white mt-1">us-east-1</p>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <p class="text-slate-400 uppercase font-semibold">Storage Dialect</p>
+          <p id="inspectDbMode" class="text-sm font-mono text-sky-400 mt-1">sqlite</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 font-semibold">Custom Vanity Domain / CNAME:</span>
+          <span id="inspectDomain" class="font-mono text-indigo-300">domain</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 font-semibold">Credential Mode:</span>
+          <span id="inspectCredMode" class="px-2 py-0.5 rounded font-mono font-semibold bg-sky-950 text-sky-300 border border-sky-600">PLATFORM_MANAGED</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 font-semibold">Enabled Cartridges:</span>
+          <span id="inspectCartridges" class="font-mono text-emerald-400 font-semibold">mail_organizer, temperature_marker</span>
+        </div>
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800">
+          <span class="text-slate-400 font-semibold">Root Admin Username:</span>
+          <span id="inspectAdminUser" class="font-mono text-emerald-300 font-bold">admin</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 font-semibold">Root Admin Name:</span>
+          <span id="inspectAdminName" class="text-slate-200">Admin</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 font-semibold">Root Admin Email:</span>
+          <span id="inspectAdminEmail" class="font-mono text-slate-400">-</span>
+        </div>
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800">
+          <span class="text-slate-400 font-semibold">Customer Workspace URL:</span>
+          <a id="inspectWorkspaceUrl" href="/admin/login" target="_blank" class="text-indigo-400 hover:underline font-mono">http://127.0.0.1:8000/admin/login ↗</a>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-800 pt-4 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <button id="inspectEditBtn" type="button" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors">
+            ✏️ Edit Profile & Password
+          </button>
+          <button id="inspectCartridgesBtn" type="button" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs transition-colors">
+            🎯 Cartridges
+          </button>
+          <button id="inspectByokBtn" type="button" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition-colors">
+            🔑 BYOK Keys
+          </button>
+          <button id="inspectCloneBtn" type="button" class="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors">
+            📋 Clone
+          </button>
+          <button id="inspectTransferBtn" type="button" class="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition-colors">
+            🚚 Transfer
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <a id="inspectAuditLink" href="#" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs transition-colors">
+            🔍 Audit Trail
+          </a>
+          <button id="inspectDeleteBtn" type="button" class="px-3 py-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700 font-medium text-xs transition-colors">
+            🗑️ Delete
+          </button>
+          <button type="button" onclick="closeInspectModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white text-xs">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Edit Tenant Profile & Reset Password Modal -->
+  <div id="editModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>✏️</span> Edit Tenant & Admin Account
+        </h3>
+        <button type="button" onclick="closeEditModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <form id="editForm" method="POST" class="space-y-3 text-xs">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+
+        <div>
+          <label class="block font-medium text-slate-400 mb-1">Company Display Name *</label>
+          <input type="text" name="name" id="editName" required
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-500" />
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block font-medium text-slate-400 mb-1">Status</label>
+            <select name="status" id="editStatus" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-sm text-slate-100 outline-none">
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="SUSPENDED">SUSPENDED</option>
+              <option value="ARCHIVED">ARCHIVED</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-400 mb-1">License Tier</label>
+            <select name="license_tier" id="editTier" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-sm text-slate-100 outline-none">
+              <option value="STANDARD">Standard</option>
+              <option value="ENTERPRISE">Enterprise</option>
+              <option value="DEDICATED">Dedicated</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-400 mb-1">Max Users</label>
+            <input type="number" name="max_users" id="editMaxUsers" value="10"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-sm text-slate-100 outline-none font-mono" />
+          </div>
+        </div>
+
+        <div class="border-t border-slate-800 pt-3 space-y-2.5">
+          <p class="font-semibold text-emerald-400">Root Admin Identity & Credentials</p>
+          <div>
+            <label class="block font-medium text-slate-400 mb-1">Root Admin Username / Identifier</label>
+            <input type="text" name="admin_username" id="editAdminUsername"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-medium text-slate-400 mb-1">Root Admin Display Name</label>
+              <input type="text" name="admin_name" id="editAdminName"
+                     class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none" />
+            </div>
+            <div>
+              <label class="block font-medium text-slate-400 mb-1">Root Admin Email</label>
+              <input type="email" name="admin_email" id="editAdminEmail"
+                     class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-400 mb-1">Reset Root Admin Password</label>
+            <input type="password" name="admin_password" id="editAdminPassword" placeholder="Leave blank to keep existing password"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none focus:border-emerald-500" />
+            <p class="text-[11px] text-slate-500 mt-1">Enter a new password here to instantly override and reset the root admin's login credential.</p>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+          <button type="button" onclick="closeEditModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-semibold text-white text-xs">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 7. Delete Tenant Confirmation Modal -->
+  <div id="deleteModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-rose-900/50 rounded-xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-rose-900/40 pb-3">
+        <h3 class="text-base font-bold text-rose-400 flex items-center gap-2">
+          <span>⚠️</span> Permanent Tenant Deletion
+        </h3>
+        <button type="button" onclick="closeDeleteModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <form id="deleteForm" method="POST" class="space-y-4 text-xs">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        
+        <p class="text-slate-300 leading-relaxed">
+          Are you sure you want to permanently delete tenant <span id="deleteTenantName" class="font-bold text-white">Acme</span> (<code id="deleteTenantSlug" class="font-mono text-rose-300">slug</code>)?
+        </p>
+        <p class="text-rose-400 bg-rose-950/40 p-2.5 rounded border border-rose-800/40 text-[11px]">
+          ⚠️ This action is irreversible. All tenant database records, registered users, domains, encryption vaults, and audit logs will be permanently deleted.
+        </p>
+
+        <div>
+          <label class="block font-medium text-slate-400 mb-1">Type tenant slug to confirm:</label>
+          <input type="text" name="confirm_slug" id="deleteConfirmSlug" placeholder="tenant slug" required
+                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none focus:border-rose-500" />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeDeleteModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 font-semibold text-white text-xs">Permanently Delete Tenant</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openInspectModal(slug, name, status, tier, region, dbMode, credMode, domain, cartridges, adminUser, adminName, adminEmail) {
+      document.getElementById('inspectTitle').textContent = name;
+      document.getElementById('inspectSlug').textContent = 'Tenant ID: ' + slug;
+      document.getElementById('inspectStatus').textContent = status;
+      document.getElementById('inspectTier').textContent = tier;
+      document.getElementById('inspectRegion').textContent = region;
+      document.getElementById('inspectDbMode').textContent = dbMode;
+      document.getElementById('inspectDomain').textContent = domain;
+      document.getElementById('inspectCredMode').textContent = credMode;
+      document.getElementById('inspectCartridges').textContent = cartridges || 'mail_organizer, temperature_marker';
+      document.getElementById('inspectAdminUser').textContent = adminUser || 'Not configured';
+      document.getElementById('inspectAdminName').textContent = adminName || '-';
+      document.getElementById('inspectAdminEmail').textContent = adminEmail || '-';
+      document.getElementById('inspectAuditLink').href = '/ops/tenants/' + slug + '/audit';
+
+      var cleanDomain = (domain || '').split(':')[0].trim();
+      var hostUrl = cleanDomain ? ('http://' + cleanDomain + ':8000/admin/login') : '/admin/login';
+      document.getElementById('inspectWorkspaceUrl').href = hostUrl;
+      document.getElementById('inspectWorkspaceUrl').textContent = hostUrl + ' ↗';
+
+      document.getElementById('inspectEditBtn').onclick = function() {
+        closeInspectModal();
+        openEditModal(slug, name, tier, status, 10, adminUser, adminName, adminEmail);
+      };
+      document.getElementById('inspectCartridgesBtn').onclick = function() {
+        closeInspectModal();
+        openCartridgesModal(slug, cartridges);
+      };
+      document.getElementById('inspectByokBtn').onclick = function() {
+        closeInspectModal();
+        openVaultModal(slug, credMode);
+      };
+      document.getElementById('inspectCloneBtn').onclick = function() {
+        closeInspectModal();
+        openCloneModal(slug, name);
+      };
+      document.getElementById('inspectTransferBtn').onclick = function() {
+        closeInspectModal();
+        openTransferModal(slug, region);
+      };
+      document.getElementById('inspectDeleteBtn').onclick = function() {
+        closeInspectModal();
+        openDeleteModal(slug, name);
+      };
+
+      document.getElementById('inspectModal').classList.remove('hidden');
+    }
+    function closeInspectModal() {
+      document.getElementById('inspectModal').classList.add('hidden');
+    }
+
+    function openEditModal(slug, name, tier, status, maxUsers, adminUser, adminName, adminEmail) {
+      document.getElementById('editForm').action = '/ops/tenants/' + slug + '/update';
+      document.getElementById('editName').value = name || '';
+      document.getElementById('editTier').value = (tier || 'ENTERPRISE').toUpperCase();
+      document.getElementById('editStatus').value = (status || 'ACTIVE').toUpperCase();
+      document.getElementById('editMaxUsers').value = maxUsers || 10;
+      document.getElementById('editAdminUsername').value = adminUser || ('admin_' + slug);
+      document.getElementById('editAdminName').value = adminName || (name + ' Admin');
+      document.getElementById('editAdminEmail').value = adminEmail || ('admin@' + slug + '.release100.com');
+      document.getElementById('editAdminPassword').value = '';
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+    }
+
+    function openDeleteModal(slug, name) {
+      document.getElementById('deleteForm').action = '/ops/tenants/' + slug + '/delete';
+      document.getElementById('deleteTenantName').textContent = name;
+      document.getElementById('deleteTenantSlug').textContent = slug;
+      document.getElementById('deleteConfirmSlug').value = '';
+      document.getElementById('deleteConfirmSlug').placeholder = slug;
+      document.getElementById('deleteModal').classList.remove('hidden');
+    }
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+    }
+
+    function openCartridgesModal(slug, currentCartridges) {
+      document.getElementById('cartridgesForm').action = '/ops/tenants/' + slug + '/cartridges';
+      var list = (currentCartridges || '').split(',');
+      document.getElementById('cMailOrganizer').checked = list.includes('mail_organizer') || !currentCartridges;
+      document.getElementById('cTemperatureMarker').checked = list.includes('temperature_marker') || !currentCartridges;
+      document.getElementById('cartridgesModal').classList.remove('hidden');
+    }
+    function closeCartridgesModal() {
+      document.getElementById('cartridgesModal').classList.add('hidden');
+    }
+
+    function openVaultModal(slug, currentMode) {
+      document.getElementById('vaultForm').action = '/ops/tenants/' + slug + '/vault';
+      document.getElementById('vaultCredMode').value = currentMode;
+      document.getElementById('vaultModal').classList.remove('hidden');
+    }
+    function closeVaultModal() {
+      document.getElementById('vaultModal').classList.add('hidden');
+    }
+
+    function openCloneModal(slug, name) {
+      document.getElementById('cloneForm').action = '/ops/tenants/' + slug + '/clone';
+      document.getElementById('cloneTargetName').value = name + ' (Clone)';
+      document.getElementById('cloneModal').classList.remove('hidden');
+    }
+    function closeCloneModal() {
+      document.getElementById('cloneModal').classList.add('hidden');
+    }
+
+    function openTransferModal(slug, currentRegion) {
+      document.getElementById('transferForm').action = '/ops/tenants/' + slug + '/transfer';
+      document.getElementById('transferRegion').value = currentRegion;
+      document.getElementById('transferModal').classList.remove('hidden');
+    }
+    function closeTransferModal() {
+      document.getElementById('transferModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

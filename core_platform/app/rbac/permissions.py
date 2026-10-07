@@ -28,7 +28,7 @@ Routing cases:
 import logging
 from typing import List, Optional
 
-from fastapi import Cookie, Header, HTTPException, Request, status
+from fastapi import Cookie, Depends, Header, HTTPException, Request, status
 
 from core_platform.app.auth.models import SecurityContext
 from core_platform.app.auth.strategies import AuthResolver
@@ -92,6 +92,20 @@ class RBACFilter:
                 except Exception:
                     enabled_apps = []
 
+            # If principal is scoped to a customer tenant, constrain by tenant-allowed cartridges
+            if context.tenant_id and context.tenant_id not in ("default_tenant", "system", "public", "platform"):
+                try:
+                    from sqlalchemy import select
+                    from core_platform.app.db.manager import get_db_manager
+                    from core_platform.app.identity.models import Tenant
+                    db_mgr = get_db_manager()
+                    with db_mgr.get_session() as session:
+                        tenant_obj = session.scalar(select(Tenant).where(Tenant.id == context.tenant_id))
+                        if tenant_obj and tenant_obj.allowed_cartridges is not None:
+                            enabled_apps = [a for a in enabled_apps if a in tenant_obj.allowed_cartridges]
+                except Exception:
+                    pass
+
         if not context.is_authenticated:
             return []
 
@@ -140,11 +154,14 @@ class RBACFilter:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied to application '{app_id}'. "
-                       f"Required role not held by principal '{context.principal_id}'.",
+                       f"Required role or tenant entitlement not held by principal '{context.principal_id}'.",
             )
 
 
 # ── FastAPI Dependencies ──────────────────────────────────────────────────────
+
+from typing import Callable, List, Optional
+
 
 def get_web_security_context(
     admin_token: Optional[str] = Cookie(default=None, alias="admin_token"),
@@ -194,22 +211,54 @@ def get_web_security_context(
     return ctx
 
 
+def is_devops_context(ctx: SecurityContext) -> bool:
+    """Helper to determine if SecurityContext holds DevOps Super-Admin authority."""
+    return (
+        ctx.principal_id in ("devops_admin", "master_admin", "system")
+        or (ctx.principal_id == "admin" and ctx.tenant_id in ("default_tenant", "public", "system", "platform", None))
+        or "super_admin" in ctx.user_roles
+        or "devops_admin" in ctx.user_roles
+    )
+
+
+def require_devops(
+    request: Request,
+    admin_token: Optional[str] = Cookie(default=None, alias="admin_token"),
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+    api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+) -> SecurityContext:
+    """FastAPI dependency: require DevOps Super-Admin / Platform Operator privileges."""
+    # Guard: DevOps Control Plane is strictly barred on customer tenant domains/subdomains
+    host = request.headers.get("host", "").split(":")[0].strip().lower()
+    is_customer_subdomain = False
+    if "." in host and not host.replace(".", "").isdigit() and "localhost" not in host:
+        parts = host.split(".")
+        if len(parts) >= 3 and parts[0] not in ("www", "api", "app", "public", "ops", "ops-admin", "admin"):
+            is_customer_subdomain = True
+
+    if is_customer_subdomain:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="DevOps Control Plane is not accessible on customer tenant domains.",
+        )
+
+    ctx = get_web_security_context(admin_token=admin_token, authorization=authorization, api_key=api_key)
+    if not is_devops_context(ctx):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="DevOps Super-Admin privileges required to access operational control plane or host settings.",
+        )
+    return ctx
+
+
 def require_admin(
     admin_token: Optional[str] = Cookie(default=None, alias="admin_token"),
+    authorization: Optional[str] = Header(default=None, alias="Authorization"),
+    api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
 ) -> SecurityContext:
-    """FastAPI dependency: require admin role.
-
-    Args:
-        admin_token: JWT from cookie.
-
-    Returns:
-        SecurityContext with admin role confirmed.
-
-    Raises:
-        HTTPException: 401 if not authenticated, 403 if not admin.
-    """
-    ctx = get_web_security_context(admin_token)
-    if "admin" not in ctx.user_roles:
+    """FastAPI dependency: require admin or devops role."""
+    ctx = get_web_security_context(admin_token=admin_token, authorization=authorization, api_key=api_key)
+    if not (ctx.is_admin or is_devops_context(ctx)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin role required.",
@@ -217,15 +266,15 @@ def require_admin(
     return ctx
 
 
-from typing import Callable, List, Optional
-
-def require_roles(*allowed_roles: str) -> Callable[[Optional[str]], SecurityContext]:
+def require_roles(*allowed_roles: str) -> Callable[..., SecurityContext]:
     """FastAPI dependency factory: require at least one of the specified roles (SEC-8)."""
     def _role_checker(
         admin_token: Optional[str] = Cookie(default=None, alias="admin_token"),
+        authorization: Optional[str] = Header(default=None, alias="Authorization"),
+        api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
     ) -> SecurityContext:
-        ctx = get_web_security_context(admin_token)
-        if not any(r in ctx.user_roles for r in allowed_roles):
+        ctx = get_web_security_context(admin_token=admin_token, authorization=authorization, api_key=api_key)
+        if not any(r in ctx.user_roles for r in allowed_roles) and not is_devops_context(ctx):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied. Required role: {', '.join(allowed_roles)}",
@@ -234,12 +283,14 @@ def require_roles(*allowed_roles: str) -> Callable[[Optional[str]], SecurityCont
     return _role_checker
 
 
-def require_app(app_id: str) -> Callable[[Optional[str]], SecurityContext]:
+def require_app(app_id: str) -> Callable[..., SecurityContext]:
     """FastAPI dependency factory: assert access to a specific application cartridge (SEC-8)."""
     def _app_checker(
         admin_token: Optional[str] = Cookie(default=None, alias="admin_token"),
+        authorization: Optional[str] = Header(default=None, alias="Authorization"),
+        api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
     ) -> SecurityContext:
-        ctx = get_web_security_context(admin_token)
+        ctx = get_web_security_context(admin_token=admin_token, authorization=authorization, api_key=api_key)
         RBACFilter.assert_app_access(ctx, app_id)
         return ctx
     return _app_checker

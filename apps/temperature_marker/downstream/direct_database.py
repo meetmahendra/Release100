@@ -16,7 +16,7 @@
 Direct Enterprise Database Downstream Connector.
 
 Adheres to Plan 03 v1.3 Section 7.
-Inserts verified CaneBot temperature and attendance transactions directly
+Inserts verified KioskNode temperature and attendance transactions directly
 into an external relational database (PostgreSQL, MySQL, SQL Server) via SQLAlchemy.
 """
 

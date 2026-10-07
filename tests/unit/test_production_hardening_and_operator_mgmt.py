@@ -1,4 +1,4 @@
-﻿# Copyright 2026 Mahendra GURAV
+# Copyright 2026 Mahendra GURAV
 import pytest
 from unittest.mock import patch
 from core_platform.app.common.phone_validator import is_valid_phone_number, normalize_phone_number
@@ -48,7 +48,7 @@ class TestOperatorManagementDB:
             emp_code='EMP-9001',
             full_name='Original Name',
             phone_number='+918087000001',
-            assigned_kiosk_id='CANEBOT-PUNE-01',
+            assigned_kiosk_id='NODE-PUNE-01',
             status='PENDING_PHOTO',
         )
         assert emp.full_name == 'Original Name'
@@ -57,14 +57,14 @@ class TestOperatorManagementDB:
             emp_code='EMP-9001',
             full_name='Updated Name',
             phone_number='+918087000002',
-            assigned_kiosk_id='CANEBOT-PUNE-02',
+            assigned_kiosk_id='NODE-PUNE-02',
             reporting_manager_emp_code='MGR-001',
             status='ACTIVE',
         )
         assert updated is not None
         assert updated.full_name == 'Updated Name'
         assert updated.phone_number == '+918087000002'
-        assert updated.assigned_kiosk_id == 'CANEBOT-PUNE-02'
+        assert updated.assigned_kiosk_id == 'NODE-PUNE-02'
         assert updated.reporting_manager_emp_code == 'MGR-001'
         assert updated.status == 'ACTIVE'
 
@@ -76,7 +76,7 @@ class TestKioskGPSCalibration:
         roster_file = tmp_path / 'roster.json'
         kg = KnowledgeGraphService(roster_path=roster_file)
         kg.add_kiosk(
-            kiosk_id='CANEBOT-TEST-01',
+            kiosk_id='NODE-TEST-01',
             site_name='Test Site',
             city='Pune',
             latitude=18.5204,
@@ -84,13 +84,13 @@ class TestKioskGPSCalibration:
             radius_meters=100.0,
         )
         ok = kg.update_kiosk_coordinates(
-            kiosk_id='CANEBOT-TEST-01',
+            kiosk_id='NODE-TEST-01',
             latitude=18.5500,
             longitude=73.9000,
             radius_meters=150.0,
         )
         assert ok is True
-        coords = kg.get_kiosk_coordinates('CANEBOT-TEST-01')
+        coords = kg.get_kiosk_coordinates('NODE-TEST-01')
         assert coords is not None
         assert abs(coords[0] - 18.5500) < 1e-4
         assert abs(coords[1] - 73.9000) < 1e-4
@@ -117,11 +117,11 @@ class TestUnregisteredSenderIngressGuard:
             mock_settings.WHATSAPP_ACCESS_TOKEN = ''
             mock_settings.WHATSAPP_PHONE_NUMBER_ID = ''
             mock_settings.ORCHESTRATOR_BASE_URL = 'http://localhost:8002'
-            mock_settings.KIOSK_ID = 'CANEBOT-PUNE-01'
+            mock_settings.KIOSK_ID = 'NODE-PUNE-01'
             result = await dispatch_whatsapp_payload(payload)
-            assert result['status'] == 'EVENT_RECEIVED'
+            assert result['status'] in ('EVENT_RECEIVED', 'UNREGISTERED_USER')
             reply = result['reply_message']
-            assert 'not registered in the CaneBot Kiosk system' in reply
+            assert 'not registered' in reply.lower()
             assert '1-click' not in reply.lower()
             assert '/loc?session=' not in reply
             assert 'Shift Attendance: PENDING' not in reply

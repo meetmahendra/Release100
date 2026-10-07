@@ -99,8 +99,8 @@ def test_sync_router_endpoints() -> None:
     rec_resp = client.post(
         "/api/v1/sync/reconcile",
         json={
-            "tenant_id": "canectar_foods",
-            "kiosk_id": "CANEBOT-PUNE-04",
+            "tenant_id": "apex_foods",
+            "kiosk_id": "NODE-PUNE-04",
             "client_root_hash": sample_root,
             "sample_records": sample,
         },
@@ -114,8 +114,8 @@ def test_sync_router_endpoints() -> None:
     delta_resp = client.post(
         "/api/v1/sync/push-delta",
         json={
-            "tenant_id": "canectar_foods",
-            "kiosk_id": "CANEBOT-PUNE-04",
+            "tenant_id": "apex_foods",
+            "kiosk_id": "NODE-PUNE-04",
             "records": sample,
         },
     )

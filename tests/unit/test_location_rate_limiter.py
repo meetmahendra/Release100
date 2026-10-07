@@ -61,7 +61,7 @@ async def test_layer0_location_node_rate_limiting() -> None:
     reset_prompt_dates()
     kg_service = KnowledgeGraphService()
     phone = "+919123456780"
-    kiosk_id = "CANEBOT-PUNE-05"
+    kiosk_id = "NODE-PUNE-05"
 
     state1: TemperatureMarkerState = {
         "correlation_id": "test-corr-1",

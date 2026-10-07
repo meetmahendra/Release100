@@ -115,7 +115,7 @@ def test_tenant_middleware_header_resolution() -> None:
     assert resp_query.json()["state_tenant"] == "tenant_param_88"
 
     # 3. Subdomain extraction
-    resp_subdomain = client.get("/test-tenant", headers={"Host": "franchise42.canectar.com"})
+    resp_subdomain = client.get("/test-tenant", headers={"Host": "franchise42.apex.com"})
     assert resp_subdomain.status_code == 200
     assert resp_subdomain.headers["X-Tenant-ID"] == "franchise42"
     assert resp_subdomain.json()["state_tenant"] == "franchise42"

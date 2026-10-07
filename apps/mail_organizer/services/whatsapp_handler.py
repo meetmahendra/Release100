@@ -67,11 +67,50 @@ class MailOrganizerWhatsAppHandler:
 
         cmd_lower = text_content.lower()
 
+        # 0. Google OAuth Magic Link Connect Command
+        if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["connect", "!connect", "login", "auth", "google", "reauth"]):
+            user = context.get("user")
+            user_id = context.get("user_id") or (user.id if user else None)
+            tenant_id = context.get("tenant_id") or (user.tenant_id if user else "default_tenant")
+            if user_id:
+                from core_platform.app.identity.magic_link import build_magic_link_url
+                magic_url = build_magic_link_url(
+                    user_id=str(user_id),
+                    phone_number=sender_phone,
+                    tenant_id=tenant_id,
+                    base_url=base_url,
+                )
+                return (
+                    "🔗 *Connect Your Google Account*\n\n"
+                    "Click the link below on your mobile browser to securely authorize Gmail & Calendar access:\n\n"
+                    f"{magic_url}\n\n"
+                    "⏱️ _This secure link is valid for 15 minutes._"
+                )
+            else:
+                return "🔒 Your phone number is not registered on this platform. Please contact your system administrator to register."
+
         # 1. Email Summary & Inbox Digest Commands
         if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["summary", "mail", "inbox", "emails", "digest"]):
             return self._handle_inbox_summary(base_url)
 
-        # 2. PM Task Approval / Rejection Commands
+
+        # 2. Draft 1-Click Send & Approval Commands
+        if any(cmd_lower.startswith(c) for c in ["send draft", "send_draft", "approve draft", "approve_draft", "send ", "dispatch "]):
+            tokens = text_content.split()
+            if len(tokens) >= 2:
+                draft_id = tokens[-1]
+                user = context.get("user")
+                return await self._handle_send_draft(draft_id, user)
+            return "Usage: `send <DRAFT-ID>` (e.g. `send 1` or `send DRAFT-1`)"
+
+        if any(cmd_lower.startswith(c) for c in ["discard draft", "discard_draft", "reject draft", "reject_draft", "discard "]):
+            tokens = text_content.split()
+            if len(tokens) >= 2:
+                draft_id = tokens[-1]
+                return self._handle_discard_draft(draft_id)
+            return "Usage: `discard <DRAFT-ID>` (e.g. `discard 1`)"
+
+        # 3. PM Task Approval / Rejection Commands
         if cmd_lower.startswith("approve") or cmd_lower.startswith("export"):
             tokens = text_content.split()
             if len(tokens) >= 2:
@@ -93,33 +132,35 @@ class MailOrganizerWhatsAppHandler:
                 return f"❌ Task {task_id} not found."
             return "Usage: reject <TASK-ID>"
 
-        # 3. Pending PM Tasks Queue Command
+        # 4. Pending PM Tasks Queue Command
         if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["tasks", "pm", "pending", "action items"]):
             return self._handle_pending_tasks(base_url)
 
-        # 4. Staged Drafts Command
+        # 5. Staged Drafts Command
         if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["drafts", "draft", "replies"]):
             return self._handle_staged_drafts(base_url)
 
-        # 5. Active Rules Command
+        # 6. Active Rules Command
         if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["rules", "vip", "whitelist"]):
             return self._handle_rules_list()
 
-        # 6. Conversational AI Q&A over Inbox & Calendar State
+        # 7. Conversational AI Q&A over Inbox & Calendar State
         if len(text_content.strip()) > 3 and not cmd_lower.startswith("help"):
             conversational_reply = await self._handle_conversational_query(text_content, base_url)
             if conversational_reply:
                 return conversational_reply
 
-        # 7. Triage Dashboard Link & Help Menu
+        # 8. Triage Dashboard Link & Help Menu
         return (
             f"📬 *AI Email & Calendar Triage Assistant*\n\n"
             f"Available Commands:\n"
             f"• *summary* — Get latest high-priority inbox briefing\n"
+            f"• *drafts* — View staged email draft replies\n"
+            f"• *send <DRAFT-ID>* — Approve & send draft immediately over Gmail\n"
+            f"• *discard <DRAFT-ID>* — Discard staged draft\n"
             f"• *tasks* — View extracted PM tasks awaiting approval\n"
-            f"• *drafts* — View staged contextual email replies\n"
-            f"• *approve <ID>* — Export task to Jira / Linear / PM Queue\n"
-            f"• *reject <ID>* — Reject and dismiss a task\n"
+            f"• *approve <TASK-ID>* — Export task to Jira / Linear / PM Queue\n"
+            f"• *reject <TASK-ID>* — Reject and dismiss a task\n"
             f"• *rules* — Show active VIP senders and triage rules\n"
             f"• Or ask any natural question about your inbox & schedule!\n\n"
             f"🔗 Full Dashboard: {base_url}/admin/apps/mail-organizer/dashboard"
@@ -164,20 +205,72 @@ class MailOrganizerWhatsAppHandler:
         return "\n".join(lines)
 
     def _handle_staged_drafts(self, base_url: str) -> str:
-        """List staged non-destructive draft email replies."""
-        drafts = self.db_service.get_all_drafts()[:5]
+        """List staged non-destructive draft email replies with 1-click action commands."""
+        all_drafts = self.db_service.get_all_drafts()
+        drafts = [d for d in all_drafts if d.status == "STAGED"][:5]
         if not drafts:
-            return "✍️ No staged email drafts at this time."
+            return "✍️ No staged email drafts awaiting review at this time."
 
-        lines = ["✍️ *Staged Contextual Drafts*:\n"]
+        lines = ["✍️ *Staged Contextual Drafts Awaiting Review*:\n"]
         for idx, d in enumerate(drafts, 1):
             recipient = d.recipient or "Recipient"
             subj = d.subject or "Subject"
-            snippet = (d.body[:80] + "...") if len(d.body or "") > 80 else (d.body or "")
-            lines.append(f"{idx}. *To: {recipient}* ({subj})\n   \"{snippet}\"")
+            snippet = (d.body[:120] + "...") if len(d.body or "") > 120 else (d.body or "")
+            lines.append(
+                f"• *[Draft #{d.id}]* To: {recipient}\n"
+                f"  *Subject:* {subj}\n"
+                f"  *Preview:* \"{snippet}\"\n"
+                f"  ➡️ Reply: `send {d.id}` to dispatch or `discard {d.id}` to discard\n"
+            )
 
-        lines.append(f"\nReview and edit drafts at: {base_url}/admin/apps/mail-organizer/drafts")
+        lines.append(f"Full details: {base_url}/admin/apps/mail-organizer/drafts")
         return "\n".join(lines)
+
+    async def _handle_send_draft(self, draft_id: str, user: Optional[Any] = None) -> str:
+        """Approve and dispatch a staged draft email live via Gmail."""
+        salt = user.user_secret_salt if user else None
+        draft = self.db_service.get_draft(draft_id, decrypt_salt=salt)
+        if not draft:
+            return f"❌ Draft '{draft_id}' not found."
+
+        if draft.get("status") == "SENT":
+            return f"⚠️ Draft '{draft_id}' has already been sent."
+
+        from apps.mail_organizer.connectors.gmail_connector import GmailConnector
+        from apps.mail_organizer.connectors.auth_manager import get_user_access_token
+
+        user_token = get_user_access_token(user) if user else None
+        connector = GmailConnector(access_token_override=user_token)
+
+        try:
+            res = await connector.send_message(
+                recipient=draft.get("recipient", ""),
+                subject=draft.get("subject", ""),
+                body=draft.get("body", ""),
+                thread_id=draft.get("thread_id"),
+            )
+            self.db_service.update_draft_status(draft_id, "SENT")
+            return (
+                f"✅ *Email Sent Successfully!*\n\n"
+                f"• *To:* {draft.get('recipient')}\n"
+                f"• *Subject:* {draft.get('subject')}\n"
+                f"• *Message ID:* {res.get('id', 'N/A')}\n"
+                f"• *Status:* Dispatched via Google Workspace"
+            )
+        except Exception as err:
+            logger.error("[MailOrganizerWhatsAppHandler] Failed to send draft %s: %s", draft_id, err)
+            return f"❌ Failed to send draft {draft_id}: {str(err)}"
+
+    def _handle_discard_draft(self, draft_id: str) -> str:
+        """Discard a staged draft email."""
+        draft = self.db_service.get_draft(draft_id)
+        if not draft:
+            return f"❌ Draft '{draft_id}' not found."
+
+        success = self.db_service.update_draft_status(draft_id, "DISCARDED")
+        if success:
+            return f"🗑️ Draft '{draft_id}' has been discarded."
+        return f"❌ Could not discard draft '{draft_id}'."
 
     def _handle_rules_list(self) -> str:
         """List active deterministic VIP and routing rules."""

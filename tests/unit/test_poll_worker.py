@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 import threading
 import time
+from unittest.mock import MagicMock, patch
 import pytest
 
 from apps.mail_organizer.connectors.gmail_connector import GmailConnector
@@ -89,9 +90,13 @@ async def test_mail_poll_worker_poll_once(tmp_path: Path) -> None:
         gmail_connector=gmail,
     )
 
-    count = await worker.poll_once()
-    assert count == 1
-    assert worker.emails_processed == 1
+    mock_identity = MagicMock()
+    mock_identity.list_users.return_value = []
+
+    with patch("core_platform.app.identity.service.get_user_identity_service", return_value=mock_identity):
+        count = await worker.poll_once()
+        assert count == 1
+        assert worker.emails_processed == 1
 
 
 def test_mail_poller_manager_lifecycle(tmp_path: Path) -> None:

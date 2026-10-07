@@ -24,7 +24,7 @@ def test_plugin_initialization(tmp_path: Path) -> None:
     app = TemperatureMarkerApplication(db_url=f"sqlite:///{db_file}")
 
     assert app.app_id == "temperature_marker"
-    assert app.name == "Canectar CaneBot Temperature & Attendance Marker"
+    assert app.name == "Apex Industrial Temperature & Attendance Marker"
     assert app.version == "1.3.0"
     assert app.config_schema == TemperatureMarkerConfig
     assert "operator" in app.required_roles

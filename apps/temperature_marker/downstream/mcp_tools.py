@@ -13,13 +13,13 @@
 # limitations under the License.
 
 """
-Model Context Protocol (MCP) Tool Suite for CaneBot Temperature & Attendance Marker.
+Model Context Protocol (MCP) Tool Suite for Industrial Temperature & Attendance Marker.
 
 Adheres strictly to Plan 03 v1.3 Section 7.
 Exposes standardized MCP tools for external AI agents (Cursor, Claude Desktop, local LLMs):
 - temperature_get_latest_reading: Query latest chiller reading & HACCP compliance.
 - temperature_check_kiosk_health: Verify kiosk coordinates, safe limits, and online status.
-- temperature_list_fleet_status: Full fleet overview of all CaneBot kiosks.
+- temperature_list_fleet_status: Full fleet overview of all KioskNode kiosks.
 - temperature_list_pending_onboarding_approvals: Fetch pending operator enrollments.
 - temperature_approve_operator: Approve operator onboarding for duty.
 """
@@ -31,7 +31,7 @@ from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphServic
 
 
 class TemperatureMarkerMCPTools:
-    """Tool provider class exporting CaneBot domain tools to the core platform MCP server."""
+    """Tool provider class exporting KioskNode domain tools to the core platform MCP server."""
 
     def __init__(
         self,
@@ -50,7 +50,7 @@ class TemperatureMarkerMCPTools:
         """Query latest verified chiller temperature and attendance record.
 
         Args:
-            kiosk_id: CaneBot kiosk identifier (e.g. 'CANEBOT-PUNE-04').
+            kiosk_id: KioskNode kiosk identifier (e.g. 'NODE-PUNE-04').
             emp_code: Unique employee code (e.g. 'EMP-1042').
 
         Returns:
@@ -85,10 +85,10 @@ class TemperatureMarkerMCPTools:
         }
 
     async def temperature_check_kiosk_health(self, kiosk_id: str) -> Dict[str, Any]:
-        """Inspect CaneBot kiosk configuration, HACCP limits, and assigned operators.
+        """Inspect KioskNode kiosk configuration, HACCP limits, and assigned operators.
 
         Args:
-            kiosk_id: CaneBot kiosk identifier (e.g. 'CANEBOT-PUNE-04').
+            kiosk_id: KioskNode kiosk identifier (e.g. 'NODE-PUNE-04').
 
         Returns:
             Kiosk health metrics, permissible temperature bounds, and GPS coordinates.
@@ -105,7 +105,7 @@ class TemperatureMarkerMCPTools:
             "kiosk_id": kiosk.get("kiosk_id", kiosk_id),
             "name": kiosk.get("name"),
             "location_name": kiosk.get("city", kiosk.get("name")),
-            "machine_type": kiosk.get("machine_model", "CaneBot-Pro"),
+            "machine_type": kiosk.get("machine_model", "ChillerNode-Pro"),
             "status": "ACTIVE" if kiosk.get("is_active", True) else "INACTIVE",
             "haccp_limits": {
                 "min_safe_temp": haccp.min_safe_temp,
@@ -120,7 +120,7 @@ class TemperatureMarkerMCPTools:
         }
 
     async def temperature_list_fleet_status(self) -> List[Dict[str, Any]]:
-        """List all active CaneBot sugarcane juice kiosks across fleet locations."""
+        """List all active Industrial cold-chain kiosks across fleet locations."""
         return self.kg_service.list_all_kiosks()
 
     async def temperature_list_pending_onboarding_approvals(self) -> List[Dict[str, Any]]:
@@ -150,7 +150,7 @@ class TemperatureMarkerMCPTools:
         return {
             "emp_code": emp_code,
             "approved": success,
-            "message": f"Operator '{emp_code}' approved for CaneBot duty." if success else f"Operator '{emp_code}' not found.",
+            "message": f"Operator '{emp_code}' approved for KioskNode duty." if success else f"Operator '{emp_code}' not found.",
         }
 
 
@@ -164,11 +164,11 @@ def get_temperature_marker_mcp_tools(
     return [
         {
             "name": "temperature_get_latest_reading",
-            "description": "Query latest verified CaneBot chiller temperature and attendance record.",
+            "description": "Query latest verified KioskNode chiller temperature and attendance record.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "kiosk_id": {"type": "string", "description": "Optional CaneBot machine ID (e.g. 'CANEBOT-PUNE-04')"},
+                    "kiosk_id": {"type": "string", "description": "Optional KioskNode machine ID (e.g. 'NODE-PUNE-04')"},
                     "emp_code": {"type": "string", "description": "Optional employee code (e.g. 'EMP-1042')"},
                 },
             },
@@ -176,11 +176,11 @@ def get_temperature_marker_mcp_tools(
         },
         {
             "name": "temperature_check_kiosk_health",
-            "description": "Inspect CaneBot kiosk configuration, HACCP limits, and assigned operators.",
+            "description": "Inspect KioskNode kiosk configuration, HACCP limits, and assigned operators.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "kiosk_id": {"type": "string", "description": "CaneBot kiosk ID (e.g. 'CANEBOT-PUNE-04')"},
+                    "kiosk_id": {"type": "string", "description": "KioskNode kiosk ID (e.g. 'NODE-PUNE-04')"},
                 },
                 "required": ["kiosk_id"],
             },
@@ -188,7 +188,7 @@ def get_temperature_marker_mcp_tools(
         },
         {
             "name": "temperature_list_fleet_status",
-            "description": "List all active CaneBot sugarcane juice kiosks across fleet locations.",
+            "description": "List all active Industrial cold-chain kiosks across fleet locations.",
             "parameters": {"type": "object", "properties": {}},
             "handler": provider.temperature_list_fleet_status,
         },

@@ -31,12 +31,12 @@ from core_platform.app.skills.display_ocr import (
 def test_extract_visual_timestamp_patterns() -> None:
     """Regex extracts valid camera watermark timestamps and ignores GPS/branding/logos."""
     # 1. Standard ISO format surrounded by device branding and GPS strings
-    raw_text = "Shot on OnePlus 2026-09-20 10:15:30 Lat: 18.5204 Lon: 73.8567 CaneBot-Pune-05"
+    raw_text = "Shot on OnePlus 2026-09-20 10:15:30 Lat: 18.5204 Lon: 73.8567 KioskNode-Pune-05"
     ts = extract_visual_timestamp_from_text(raw_text)
     assert ts == "2026-09-20 10:15:30"
 
     # 2. DD/MM/YYYY European/Indian date format
-    raw_text_2 = "20/09/2026 14:30 CaneBot Chiller Display"
+    raw_text_2 = "20/09/2026 14:30 KioskNode Chiller Display"
     ts2 = extract_visual_timestamp_from_text(raw_text_2)
     assert ts2 == "20/09/2026 14:30"
 
@@ -51,7 +51,7 @@ def test_extract_visual_timestamp_patterns() -> None:
     assert ts4 == "16-Sept-2026 10:14:29 am"
 
     # 5. Hyphenated month format with Sep (e.g. 13-Sep-2026 10:30:20)
-    raw_text_5 = "Chiller Display 13-Sep-2026 10:30:20 CaneBot-Pune-04"
+    raw_text_5 = "Chiller Display 13-Sep-2026 10:30:20 KioskNode-Pune-04"
     ts5 = extract_visual_timestamp_from_text(raw_text_5)
     assert ts5 == "13-Sep-2026 10:30:20"
 
@@ -125,7 +125,7 @@ async def test_layer1_ocr_node_valid_watermark() -> None:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     state: TemperatureMarkerState = {
         "correlation_id": "test-wm-valid",
-        "kiosk_id": "CANEBOT-PUNE-05",
+        "kiosk_id": "NODE-PUNE-05",
         "sender_phone": "+919800011122",
         "watermark_timestamp": f"{today} 10:15:00",
         "ocr_confidence": 0.92,
@@ -144,7 +144,7 @@ async def test_layer1_ocr_node_stale_watermark_rejected() -> None:
     stale_date = "2025-12-31 10:15:00"
     state: TemperatureMarkerState = {
         "correlation_id": "test-wm-stale",
-        "kiosk_id": "CANEBOT-PUNE-05",
+        "kiosk_id": "NODE-PUNE-05",
         "sender_phone": "+919800011122",
         "watermark_timestamp": stale_date,
         "ocr_confidence": 0.92,
@@ -164,7 +164,7 @@ async def test_layer1_ocr_node_september_watermark_stale_rejection() -> None:
     """layer1_ocr_node specifically catches '16-Sept-2026 10:14:29 am' and clears chiller_temp_c."""
     state: TemperatureMarkerState = {
         "correlation_id": "test-wm-sept-stale",
-        "kiosk_id": "CANEBOT-PUNE-05",
+        "kiosk_id": "NODE-PUNE-05",
         "sender_phone": "+919800011122",
         "watermark_timestamp": "16-Sept-2026 10:14:29 am",
         "ocr_confidence": 0.95,

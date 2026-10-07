@@ -91,7 +91,7 @@ async def test_google_sheets_mock_mode() -> None:
     record = {
         "emp_code": "EMP-1001",
         "full_name": "Test Operator",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "chiller_temp_c": 3.5,
         "haccp_status": "COMPLIANT",
         "checkin_time_utc": "2026-09-30T04:00:00Z",
@@ -117,7 +117,7 @@ async def test_direct_database_and_erp_connectors() -> None:
 
     record = {
         "emp_code": "EMP-1001",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "chiller_temp_c": 4.0,
         "haccp_compliant": True,
     }
@@ -135,18 +135,18 @@ async def test_direct_database_and_erp_connectors() -> None:
 
 @pytest.mark.asyncio
 async def test_temperature_marker_mcp_tools(db_service: DatabaseService) -> None:
-    """Test MCP tool queries for CaneBot fleet, health, and approvals."""
+    """Test MCP tool queries for KioskNode fleet, health, and approvals."""
     kg_service = KnowledgeGraphService()
     tools = TemperatureMarkerMCPTools(db_service=db_service, kg_service=kg_service)
 
     # 1. Latest reading query (empty)
-    reading_res = await tools.temperature_get_latest_reading(kiosk_id="CANEBOT-NONEXISTENT")
+    reading_res = await tools.temperature_get_latest_reading(kiosk_id="NODE-NONEXISTENT")
     assert reading_res["found"] is False
 
     # 2. Check kiosk health for valid kiosk
-    health_res = await tools.temperature_check_kiosk_health("CANEBOT-PUNE-04")
+    health_res = await tools.temperature_check_kiosk_health("NODE-PUNE-04")
     assert health_res["found"] is True
-    assert health_res["kiosk_id"] == "CANEBOT-PUNE-04"
+    assert health_res["kiosk_id"] == "NODE-PUNE-04"
 
     # 3. List fleet status
     fleet_res = await tools.temperature_list_fleet_status()

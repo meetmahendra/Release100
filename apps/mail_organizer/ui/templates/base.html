@@ -154,16 +154,24 @@
 </head>
 <body>
     <header>
-        <a href="/admin/apps/mail-organizer/dashboard" class="brand">
-            <span class="brand-badge">MAIL</span>
-            <span class="brand-title">AI Mail & Calendar Organizer</span>
-        </a>
-        <nav>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <a href="/admin/apps/mail-organizer/dashboard" class="brand">
+                <span class="brand-badge">MAIL</span>
+                <span class="brand-title">AI Mail Organizer</span>
+            </a>
+            <span class="badge" style="background: rgba(99, 102, 241, 0.25); color: #c7d2fe; border: 1px solid #6366f1; font-family: monospace; font-size: 0.82rem; padding: 0.25rem 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <span>🏢</span>
+                <strong style="color: #ffffff;">{{ organization or tenant_name or (active_tenant.name if active_tenant else 'Public Organization') }}</strong>
+                <span style="opacity: 0.75;">({{ tenant_id or 'public' }})</span>
+            </span>
+        </div>
+        <nav style="display: flex; align-items: center; gap: 1rem;">
             <a href="/admin/apps/mail-organizer/dashboard" class="{% if active_tab == 'dashboard' %}active{% endif %}">Dashboard</a>
             <a href="/admin/apps/mail-organizer/triage" class="{% if active_tab == 'triage' %}active{% endif %}">Triage Simulator</a>
             <a href="/admin/apps/mail-organizer/pm-queue" class="{% if active_tab == 'pm-queue' %}active{% endif %}">PM Action Queue</a>
             <a href="/admin/apps/mail-organizer/drafts" class="{% if active_tab == 'drafts' %}active{% endif %}">Drafts</a>
             <a href="/admin/apps/mail-organizer/rules" class="{% if active_tab == 'rules' %}active{% endif %}">Rules & VIPs</a>
+            <a href="/admin/" style="color: #94a3b8; font-size: 0.85rem; border-left: 1px solid var(--border-color); padding-left: 0.75rem;">← Admin Shell</a>
         </nav>
     </header>
     <main>

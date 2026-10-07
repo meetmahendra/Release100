@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}CaneBot Fleet Control{% endblock %} - Release100</title>
+    <title>{% block title %}Fleet Telemetry & Operations Control{% endblock %} - Release100</title>
     <style>
         :root {
             --bg-main: #0f172a;
@@ -151,25 +151,30 @@
 </head>
 <body>
     <header>
-        <a href="/admin/apps/temperature-marker/fleet" class="brand">
-            <span class="brand-badge">CANECTAR</span>
-            <span class="brand-title">CaneBot Fleet Control Plane</span>
-        </a>
-        <nav>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <a href="/admin/apps/temperature-marker/fleet" class="brand">
+                <span class="brand-badge">APEX</span>
+                <span class="brand-title">Fleet Telemetry & Operations Control</span>
+            </a>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.25); color: #a7f3d0; border: 1px solid #10b981; font-family: monospace; font-size: 0.82rem; padding: 0.25rem 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <span>🏢</span>
+                <strong style="color: #ffffff;">{{ organization or tenant_name or (active_tenant.name if active_tenant else 'Public Organization') }}</strong>
+                <span style="opacity: 0.75;">({{ tenant_id or 'public' }})</span>
+            </span>
+        </div>
+        <nav style="display: flex; align-items: center; gap: 1rem;">
             <a href="/admin/apps/temperature-marker/monitoring" class="{% if active_tab == 'monitoring' %}active{% endif %}">📊 Live Monitoring</a>
             <a href="/admin/apps/temperature-marker/fleet" class="{% if active_tab == 'fleet' %}active{% endif %}">Fleet Map</a>
             <a href="/admin/apps/temperature-marker/wizard" class="{% if active_tab == 'wizard' %}active{% endif %}">Stepper Wizard</a>
             <a href="/admin/apps/temperature-marker/approvals" class="{% if active_tab == 'approvals' %}active{% endif %}">Operator Approvals</a>
-            <a href="/admin/llm-costs" class="{% if active_tab == 'llm_costs' %}active{% endif %}">💰 LLM Cost Monitor</a>
-            <a href="/loc" target="_blank">1-Click Geolocation</a>
-            <a href="/health" target="_blank">System Health</a>
+            <a href="/admin/" style="color: #94a3b8; font-size: 0.85rem; border-left: 1px solid var(--border-color); padding-left: 0.75rem;">← Admin Shell</a>
         </nav>
     </header>
     <main>
         {% block content %}{% endblock %}
     </main>
     <footer>
-        Release100 Industrial Automation Platform &bull; CaneBot Multi-Kiosk Fleet &bull; Apache-2.0 Copyright 2026 Mahendra GURAV
+        Release100 Industrial Automation Platform &bull; KioskNode Multi-Kiosk Fleet &bull; Apache-2.0 Copyright 2026 Mahendra GURAV
     </footer>
 </body>
 </html>

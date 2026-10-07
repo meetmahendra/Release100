@@ -16,7 +16,7 @@
 Enterprise ERP Downstream Gateway Connector (SAP / Odoo / Zoho).
 
 Adheres to Plan 03 v1.3 Section 7.
-Dispatches CaneBot duty check-ins and cold-chain temperature telemetry
+Dispatches KioskNode duty check-ins and cold-chain temperature telemetry
 into external ERP systems using Bearer token authenticated JSON REST requests.
 """
 
@@ -52,7 +52,7 @@ class ERPGatewayConnector(BaseDownstreamConnector):
         """
         super().__init__(connector_name=f"erp_{erp_type}")
         self.erp_type = erp_type
-        self.api_endpoint = api_endpoint or f"mock://{erp_type}-erp.canectar.internal/api/v1/attendance"
+        self.api_endpoint = api_endpoint or f"mock://{erp_type}-erp.apex.internal/api/v1/attendance"
         self.api_token = api_token
         if mock_mode is not None:
             self.mock_mode = mock_mode
@@ -78,7 +78,7 @@ class ERPGatewayConnector(BaseDownstreamConnector):
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_token}",
-            "X-Sensor-System": "CaneBot-Edge-V1",
+            "X-Sensor-System": "Edge-Telemetry-V1",
         }
 
         # Map to canonical ERP payload format

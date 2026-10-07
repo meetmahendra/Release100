@@ -37,7 +37,7 @@ from pydantic import BaseModel
 from core_platform.app.apps_registry import ApplicationRegistry
 from core_platform.app.auth.models import SecurityContext
 from core_platform.app.config import settings
-from core_platform.app.rbac.permissions import get_web_security_context
+from core_platform.app.rbac.permissions import get_web_security_context, require_devops
 from core_platform.app.diagnostics.config_backup import (
     list_backups,
     read_env_dict,
@@ -91,7 +91,7 @@ class RestoreRequest(BaseModel):
 
 @router.get("/api/diagnostics/status", response_class=JSONResponse)
 async def api_diagnostics_status(
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> Dict[str, Any]:
     """Return real-time verification and system health status."""
     return get_full_status()
@@ -100,7 +100,7 @@ async def api_diagnostics_status(
 @router.post("/api/diagnostics/verify", response_class=JSONResponse)
 async def api_diagnostics_verify(
     req: VerifyRequest,
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> Dict[str, Any]:
     """Test a single credential or service endpoint without modifying disk."""
     svc = req.service.lower().strip()
@@ -135,7 +135,7 @@ async def api_diagnostics_verify(
 @router.post("/api/diagnostics/save", response_class=JSONResponse)
 async def api_diagnostics_save(
     req: SaveConfigRequest,
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> Dict[str, Any]:
     """Non-destructively save configuration parameters with pre-save backup."""
     success, msg = save_master_config(req.settings)
@@ -156,7 +156,7 @@ async def api_diagnostics_save(
 @router.post("/api/diagnostics/restore", response_class=JSONResponse)
 async def api_diagnostics_restore(
     req: RestoreRequest,
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> Dict[str, Any]:
     """Restore configuration from historical backup snapshot."""
     success, msg = restore_backup(req.filename)
@@ -168,7 +168,7 @@ async def api_diagnostics_restore(
 @router.post("/api/diagnostics/poller/toggle", response_class=JSONResponse)
 async def api_diagnostics_poller_toggle(
     app_name: Optional[str] = None,
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> Dict[str, Any]:
     """Toggle background poller worker for an application cartridge with verified clean termination."""
     try:
@@ -206,7 +206,7 @@ async def api_diagnostics_poller_toggle(
 @router.post("/api/diagnostics/apps/{app_name}/toggle", response_class=JSONResponse)
 async def api_diagnostics_app_toggle(
     app_name: str,
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> Dict[str, Any]:
     """Dynamically toggle an application between active and inactive state."""
     registry = ApplicationRegistry.get_instance()
@@ -231,7 +231,7 @@ async def api_diagnostics_app_toggle(
 @router.get("/settings", response_class=HTMLResponse)
 async def view_settings_dashboard(
     request: Request,
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> HTMLResponse:
     """Render responsive, offline-safe Live Configuration & Testing Console."""
     registry = ApplicationRegistry.get_instance()
@@ -610,7 +610,7 @@ async def view_settings_dashboard(
                     </div>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="test-wa-verify" value="{wa_verify}" placeholder="Verify Token (e.g. canectar_verify_token_2026)" class="input-control field-flex">
+                    <input type="text" id="test-wa-verify" value="{wa_verify}" placeholder="Verify Token (e.g. apex_verify_token_2026)" class="input-control field-flex">
                     <button class="btn btn-primary" onclick="runVerifyWebhook()">Test Webhook Challenge</button>
                 </div>
                 <div id="res-webhook" class="diag-result"></div>
@@ -753,7 +753,7 @@ async def view_settings_dashboard(
                     </div>
                     <div class="input-group field-flex">
                         <label>Webhook Verify Token (WHATSAPP_VERIFY_TOKEN)</label>
-                        <input type="text" id="cfg-wa-verify" value="{wa_verify}" placeholder="e.g. canectar_verify_token_2026" class="input-control">
+                        <input type="text" id="cfg-wa-verify" value="{wa_verify}" placeholder="e.g. apex_verify_token_2026" class="input-control">
                     </div>
                 </div>
                 <div class="input-group">

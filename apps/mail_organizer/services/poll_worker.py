@@ -153,9 +153,63 @@ class MailPollWorker:
             logger.warning("[PollWorker] Failed to clean up sentinel: %s", err)
 
     async def poll_once(self) -> int:
-        """Execute a single cycle: fetch unread threads and process through LangGraph."""
+        """Execute a single cycle: poll unread threads across all active entitled users or default connector."""
         logger.debug("[PollWorker] Checking inbox for unread email threads...")
-        threads: List[Dict[str, Any]] = await self.gmail.fetch_unread_threads(max_results=20)
+
+        from apps.mail_organizer.connectors.auth_manager import get_user_access_token
+        from core_platform.app.identity.service import get_user_identity_service
+        from core_platform.app.middleware.tenant_context import UserContext, async_user_scope
+
+        user_service = get_user_identity_service()
+        registered_users = user_service.list_users()
+
+        # Filter active users with mail_organizer cartridge and OAuth credentials
+        entitled_users = [
+            u for u in registered_users
+            if u.status.lower() == "active"
+            and "mail_organizer" in u.allowed_cartridges
+            and bool(u.encrypted_oauth_tokens)
+        ]
+
+        if not entitled_users:
+            # Fallback to single/mock connector if no multi-tenant credentials registered
+            return await self._poll_for_target(
+                connector=self.gmail,
+                user=None,
+                user_salt=None,
+            )
+
+        total_processed = 0
+        for user in entitled_users:
+            if self.stop_event.is_set() or self.sentinel_path.exists():
+                logger.info("[PollWorker] Stop detected mid-cycle. Halting user polling.")
+                break
+            try:
+                user_token = get_user_access_token(user)
+                if not user_token:
+                    continue
+                user_connector = GmailConnector(access_token_override=user_token)
+                count = await self._poll_for_target(
+                    connector=user_connector,
+                    user=user,
+                    user_salt=user.user_secret_salt,
+                )
+                total_processed += count
+            except Exception as user_poll_err:
+                logger.error("[PollWorker] Error polling inbox for user %s: %s", user.id, user_poll_err)
+
+        return total_processed
+
+    async def _poll_for_target(
+        self,
+        connector: GmailConnector,
+        user: Optional[Any] = None,
+        user_salt: Optional[str] = None,
+    ) -> int:
+        """Process email threads for a specific user or default connector."""
+        from core_platform.app.middleware.tenant_context import UserContext, async_user_scope
+
+        threads: List[Dict[str, Any]] = await connector.fetch_unread_threads(max_results=20)
         if not threads:
             return 0
 
@@ -171,7 +225,7 @@ class MailPollWorker:
                 "gmail_id": gmail_id,
                 "thread_id": str(thread.get("thread_id", f"THREAD-{gmail_id}")),
                 "sender": str(thread.get("sender", "unknown@sender.com")),
-                "to_recipients": thread.get("to_recipients", ["me@canectar.com"]),
+                "to_recipients": thread.get("to_recipients", ["me@apex.com"]),
                 "cc_recipients": thread.get("cc_recipients", []),
                 "subject": str(thread.get("subject", "No Subject")),
                 "body": str(thread.get("body", "")),
@@ -179,20 +233,92 @@ class MailPollWorker:
             }
 
             try:
-                final_state = await self.workflow.execute(initial_state)
+                if user is not None:
+                    u_ctx = UserContext(
+                        user_id=user.id,
+                        phone_number=user.phone_number,
+                        tenant_id=user.tenant_id,
+                        full_name=user.full_name,
+                        role=user.role,
+                        user_secret_salt=user_salt or "",
+                        allowed_cartridges=tuple(user.allowed_cartridges),
+                    )
+                    async with async_user_scope(u_ctx):
+                        final_state = await self.workflow.execute(initial_state)
+                else:
+                    final_state = await self.workflow.execute(initial_state)
+
                 cat = final_state.get("category", "General")
+                urgency = final_state.get("urgency_score", 5)
                 logger.info(
-                    "[PollWorker] Processed %s -> Category: %s, SafetyOverride: %s",
+                    "[PollWorker] Processed %s -> Category: %s, Urgency: %d, User: %s",
                     gmail_id,
                     cat,
-                    final_state.get("safety_override", False),
+                    urgency,
+                    user.id if user else "default",
                 )
+
+                # WhatsApp Proactive Push for Urgent emails
+                if user is not None and (cat == "@Urgent" or urgency >= 8):
+                    await self._dispatch_urgent_whatsapp_push(user, final_state)
+
                 count += 1
                 self.emails_processed += 1
             except Exception as exc:
                 logger.error("[PollWorker] Error processing email %s: %s", gmail_id, exc)
 
         return count
+
+    async def _dispatch_urgent_whatsapp_push(self, user: Any, state: Dict[str, Any]) -> None:
+        """Dispatch proactive WhatsApp alert adhering strictly to Meta 24-hour customer care window."""
+        phone = user.phone_number
+        is_allowed = user.is_within_24h_window() if hasattr(user, "is_within_24h_window") else False
+
+        if not is_allowed:
+            logger.warning(
+                "[PollWorker] Proactive WhatsApp push suppressed for user %s (%s): outside Meta 24h customer care window",
+                user.id,
+                phone,
+            )
+            return
+
+        subject = state.get("subject", "No Subject")
+        sender = state.get("sender", "Unknown")
+        reason = state.get("reasoning", "High priority email requires your attention.")
+
+        alert_body = (
+            f"🚨 *URGENT EMAIL ALERT*\n\n"
+            f"• *From:* {sender}\n"
+            f"• *Subject:* {subject}\n"
+            f"• *Reason:* {reason}\n\n"
+            f"Reply with *drafts* to view staged response, or *summary* for full inbox overview."
+        )
+
+        clean_to = phone.lstrip("+")
+        if settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_PHONE_NUMBER_ID:
+            try:
+                import httpx
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    url = f"https://graph.facebook.com/v21.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+                    headers = {
+                        "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
+                        "Content-Type": "application/json",
+                    }
+                    payload = {
+                        "messaging_product": "whatsapp",
+                        "recipient_type": "individual",
+                        "to": clean_to,
+                        "type": "text",
+                        "text": {"body": alert_body},
+                    }
+                    resp = await client.post(url, headers=headers, json=payload)
+                    if resp.is_success:
+                        logger.info("[PollWorker] Proactive WhatsApp alert sent to %s for email %s", phone, state.get("gmail_id"))
+                    else:
+                        logger.warning("[PollWorker] WhatsApp push failed with status %d: %s", resp.status_code, resp.text)
+            except Exception as push_err:
+                logger.error("[PollWorker] Failed to dispatch WhatsApp push: %s", push_err)
+
 
     async def run_async(self) -> None:
         """Run continuous asynchronous polling loop with chunked cooperative sleeps."""

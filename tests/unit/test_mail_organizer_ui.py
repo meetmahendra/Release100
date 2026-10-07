@@ -73,7 +73,7 @@ def test_drafts_page(client):
 def test_simulate_endpoint(client):
     payload = {
         "sender": "investor@venture-capital.com",
-        "recipients": ["depali@company.com"],
+        "recipients": ["user@company.com"],
         "subject": "Follow up on seed round terms",
         "body": "Please review the updated term sheet and let us know your thoughts.",
     }

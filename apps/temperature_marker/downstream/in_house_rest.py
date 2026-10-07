@@ -36,7 +36,7 @@ class InHouseRESTConnector(BaseDownstreamConnector):
         """Initialize InHouseRESTConnector.
 
         Args:
-            endpoint_url: Target REST URL, defaults to canectar endpoint if None.
+            endpoint_url: Target REST URL, defaults to apex endpoint if None.
             mock_mode: If explicitly set, controls mock mode. If None, auto-detects from endpoint URL.
         """
         super().__init__(connector_name="in_house_rest")

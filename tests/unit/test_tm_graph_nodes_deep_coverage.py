@@ -52,31 +52,31 @@ async def test_haccp_node_branches() -> None:
     kg_service = KnowledgeGraphService()
 
     # 1. Safe range (e.g. 3.0°C)
-    s1 = {"kiosk_id": "CANEBOT-PUNE-04", "chiller_temp_c": 3.0}
+    s1 = {"kiosk_id": "NODE-PUNE-04", "chiller_temp_c": 3.0}
     r1 = await haccp_node(s1, kg_service)  # type: ignore[arg-type]
     assert r1["haccp_status"] == "SAFE_RANGE"
     assert r1["haccp_compliant"] is True
 
     # 2. Critical hazard (e.g. 15.0°C)
-    s2 = {"kiosk_id": "CANEBOT-PUNE-04", "chiller_temp_c": 15.0}
+    s2 = {"kiosk_id": "NODE-PUNE-04", "chiller_temp_c": 15.0}
     r2 = await haccp_node(s2, kg_service)  # type: ignore[arg-type]
     assert r2["haccp_status"] == "CRITICAL_HAZARD"
     assert r2["haccp_compliant"] is False
 
     # 3. Freezing hazard (e.g. -1.5°C)
-    s3 = {"kiosk_id": "CANEBOT-PUNE-04", "chiller_temp_c": -1.5}
+    s3 = {"kiosk_id": "NODE-PUNE-04", "chiller_temp_c": -1.5}
     r3 = await haccp_node(s3, kg_service)  # type: ignore[arg-type]
     assert r3["haccp_status"] == "FREEZING_HAZARD"
     assert r3["haccp_compliant"] is False
 
     # 4. Acceptable range (e.g. 5.5°C)
-    s4 = {"kiosk_id": "CANEBOT-PUNE-04", "chiller_temp_c": 5.5}
+    s4 = {"kiosk_id": "NODE-PUNE-04", "chiller_temp_c": 5.5}
     r4 = await haccp_node(s4, kg_service)  # type: ignore[arg-type]
     assert r4["haccp_status"] == "ACCEPTABLE_RANGE"
     assert r4["haccp_compliant"] is True
 
     # 5. Missing temperature reading
-    s5 = {"kiosk_id": "CANEBOT-PUNE-04", "chiller_temp_c": None, "is_duty_checkin": False}
+    s5 = {"kiosk_id": "NODE-PUNE-04", "chiller_temp_c": None, "is_duty_checkin": False}
     r5 = await haccp_node(s5, kg_service)  # type: ignore[arg-type]
     assert r5["haccp_compliant"] is False
 
@@ -126,14 +126,14 @@ async def test_layer1_face_node_and_mismatch(db_service: DatabaseService) -> Non
         emp_code="EMP-1042",
         full_name="Rajesh Pawar",
         phone_number="+919800011122",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
     )
 
     # 1. Enqueue mismatch incident directly
     state = {
         "correlation_id": "test-corr-1",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "sender_phone": "+919800011122",
     }
     _enqueue_mismatch_incident(state, db_service, emp, similarity=0.45)  # type: ignore[arg-type]

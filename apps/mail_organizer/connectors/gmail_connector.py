@@ -33,7 +33,7 @@ import urllib.parse
 import urllib.request
 import uuid
 
-from apps.mail_organizer.connectors.auth_manager import GoogleAuthManager
+from apps.mail_organizer.connectors.auth_manager import GoogleAuthManager, find_client_credentials
 
 logger = logging.getLogger("mail_organizer.gmail_connector")
 
@@ -109,18 +109,50 @@ class GmailConnector:
         self,
         auth_manager: Optional[GoogleAuthManager] = None,
         mock_mode: Optional[bool] = None,
+        access_token_override: Optional[str] = None,
     ) -> None:
         """Initialize Gmail connector with automatic live/mock determination."""
         self.auth_manager = auth_manager or GoogleAuthManager()
+        self.access_token_override = access_token_override
         if mock_mode is not None:
             self.mock_mode = mock_mode
         else:
-            self.mock_mode = not self.auth_manager.is_authenticated()
+            self.mock_mode = not (bool(self.access_token_override) or self.auth_manager.is_authenticated())
 
         self._mock_threads: List[Dict[str, Any]] = []
         self._mock_drafts: List[Dict[str, Any]] = []
         self._mock_labels_applied: Dict[str, List[str]] = {}
         self._label_cache: Dict[str, str] = {}  # name -> id
+
+
+    def get_oauth_status(self) -> Dict[str, Any]:
+        """Return OAuth connection status from the underlying auth manager."""
+        return self.auth_manager.get_oauth_status()
+
+    def initiate_oauth_flow(self, redirect_uri: Optional[str] = None) -> Optional[str]:
+        """Construct Google OAuth2 authorization URL."""
+        creds = find_client_credentials()
+        if not creds:
+            return None
+
+        client_id = str(creds.get("client_id") or "")
+        if not client_id:
+            return None
+
+        r_uri = redirect_uri or "http://localhost:8088"
+        scopes = [
+            "https://www.googleapis.com/auth/gmail.modify",
+            "https://www.googleapis.com/auth/calendar.readonly",
+        ]
+        params = {
+            "client_id": client_id,
+            "redirect_uri": r_uri,
+            "response_type": "code",
+            "scope": " ".join(scopes),
+            "access_type": "offline",
+            "prompt": "consent",
+        }
+        return "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
 
     def seed_mock_thread(
         self,
@@ -140,7 +172,7 @@ class GmailConnector:
             "subject": subject,
             "sender": sender,
             "body": body,
-            "to_recipients": to_recipients or ["user@canectar.com"],
+            "to_recipients": to_recipients or ["user@apex.com"],
             "cc_recipients": cc_recipients or [],
             "snippet": snippet or (body[:120] + "..."),
             "labels": ["INBOX", "UNREAD"],
@@ -154,9 +186,10 @@ class GmailConnector:
         token: Optional[str] = None,
     ) -> Any:
         """Execute synchronous authenticated HTTP request to Gmail REST API v1."""
-        auth_token = token or self.auth_manager.get_valid_access_token()
+        auth_token = token or self.access_token_override or self.auth_manager.get_valid_access_token()
         if not auth_token:
             raise ValueError("No active OAuth2 access token available for Gmail API call.")
+
 
         url = f"https://gmail.googleapis.com/gmail/v1/users/me/{endpoint.lstrip('/')}"
         encoded_data = json.dumps(data).encode("utf-8") if data is not None else None
@@ -372,6 +405,73 @@ class GmailConnector:
         live_draft_id = resp.get("id", draft_payload["draft_id"])
         draft_payload["draft_id"] = live_draft_id
         return draft_payload
+
+    async def send_message(
+        self,
+        recipient: str,
+        subject: str,
+        body: str,
+        thread_id: Optional[str] = None,
+        message_id_header: str = "",
+    ) -> Dict[str, Any]:
+        """Send an RFC 822 email message via live Gmail API or mock."""
+        sent_id = f"SENT-{uuid.uuid4().hex[:8]}"
+        payload = {
+            "id": sent_id,
+            "recipient": recipient,
+            "subject": subject,
+            "body": body,
+            "thread_id": thread_id,
+            "status": "SENT",
+        }
+        if self.mock_mode or not (self.access_token_override or self.auth_manager.is_authenticated()):
+            return payload
+
+        try:
+            return await asyncio.to_thread(
+                self._send_message_live,
+                recipient,
+                subject,
+                body,
+                thread_id,
+                message_id_header,
+                payload,
+            )
+        except Exception as err:
+            logger.warning("[GmailConnector] Live send failed: %s", err)
+            return payload
+
+    def _send_message_live(
+        self,
+        recipient: str,
+        subject: str,
+        body: str,
+        thread_id: Optional[str],
+        message_id_header: str,
+        payload: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Live Google API message sending using RFC 822 MIME."""
+        msg = EmailMessage()
+        msg.set_content(body)
+        msg["To"] = recipient
+        msg["From"] = "me"
+        msg["Subject"] = subject
+
+        if message_id_header:
+            msg["In-Reply-To"] = message_id_header
+            msg["References"] = message_id_header
+
+        raw_bytes = msg.as_bytes()
+        encoded = base64.urlsafe_b64encode(raw_bytes).decode("utf-8")
+
+        req_body: Dict[str, Any] = {"raw": encoded}
+        if thread_id:
+            req_body["threadId"] = thread_id
+
+        resp = self._api_request("messages/send", method="POST", data=req_body)
+        live_id = resp.get("id", payload["id"])
+        payload["id"] = live_id
+        return payload
 
     def get_applied_labels(self, gmail_id: str) -> List[str]:
         """Return recorded applied labels for an email."""

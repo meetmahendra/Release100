@@ -49,7 +49,7 @@ def test_is_valid_image_bytes():
 
 def test_generate_synthetic_gauge_jpeg():
     """Verify synthetic gauge image is a valid, readable JPEG."""
-    jpeg_bytes = generate_synthetic_gauge_jpeg(temperature=3.8, kiosk_id="CANEBOT-PUNE-04")
+    jpeg_bytes = generate_synthetic_gauge_jpeg(temperature=3.8, kiosk_id="NODE-PUNE-04")
     assert len(jpeg_bytes) > 2000
     assert jpeg_bytes.startswith(b"\xff\xd8\xff")
 

@@ -16,7 +16,7 @@
 Domain-Specific WhatsApp Ingress Handler for Temperature & Attendance Marker.
 
 Adheres strictly to GEES v2.0 Microkernel Architecture (Rule 3).
-Owns all CaneBot kiosk, station roster, attendance check-in, operator onboarding,
+Owns all KioskNode kiosk, station roster, attendance check-in, operator onboarding,
 and chiller gauge verification conversational interactions over WhatsApp.
 """
 
@@ -154,16 +154,16 @@ class TemperatureMarkerWhatsAppHandler:
             if "location" in msg:
                 return {
                     "reply_message": (
-                        f"👋 Welcome to CaneBot.\n\n"
-                        f"Your phone number ({sender_phone}) is not registered with any CaneBot kiosk in the CaneBot Kiosk system.\n"
+                        f"👋 Welcome to KioskNode.\n\n"
+                        f"Your phone number ({sender_phone}) is not registered with any KioskNode kiosk in the KioskNode Kiosk system.\n"
                         f"Please contact your supervisor to register you, or send 'register <NAME>' if authorized."
                     ),
                     "kiosk_id": kiosk_id,
                 }
             return {
                 "reply_message": (
-                    f"👋 Welcome to CaneBot.\n\n"
-                    f"Your phone number ({sender_phone}) is not registered in the CaneBot Kiosk system (not registered in the system).\n"
+                    f"👋 Welcome to KioskNode.\n\n"
+                    f"Your phone number ({sender_phone}) is not registered in the KioskNode Kiosk system (not registered in the system).\n"
                     f"Please contact your supervisor to register you, or send 'register <NAME>' if authorized."
                 ),
                 "kiosk_id": kiosk_id,
@@ -180,7 +180,7 @@ class TemperatureMarkerWhatsAppHandler:
                 station_name = kiosk_details.get("name", kiosk_id) if kiosk_details else (emp.assigned_kiosk_id or "your station")
                 return {
                     "reply_message": (
-                        f"👋 Welcome to CaneBot, {emp.full_name}!\n\n"
+                        f"👋 Welcome to KioskNode, {emp.full_name}!\n\n"
                         f"Your account setup is pending. Please reply to this chat with a clear front-facing selfie photo to complete your enrollment for {station_name} ({emp.emp_code})."
                     ),
                     "kiosk_id": kiosk_id,
@@ -200,7 +200,7 @@ class TemperatureMarkerWhatsAppHandler:
             return {
                 "reply_message": (
                     f"⛔ Account Inactive\n\n"
-                    f"Hello {emp.full_name}, your CaneBot account is currently inactive or suspended.\n"
+                    f"Hello {emp.full_name}, your KioskNode account is currently inactive or suspended.\n"
                     f"Please contact your supervisor or administrator for assistance."
                 ),
                 "kiosk_id": kiosk_id,
@@ -427,7 +427,7 @@ class TemperatureMarkerWhatsAppHandler:
             return (
                 "❌ Self-Registration Disabled\n"
                 "Operator self-registration via WhatsApp is not permitted.\n"
-                "Please contact your Fleet Supervisor or HR administrator to provision your CaneBot account."
+                "Please contact your Fleet Supervisor or HR administrator to provision your KioskNode account."
             )
         remainder = text_content.split(maxsplit=1)[1].strip() if " " in text_content.strip() else ""
         if not remainder:
@@ -538,11 +538,11 @@ class TemperatureMarkerWhatsAppHandler:
                     f"📍 Verify GPS Location (1-click):\n{loc_url}"
                 )
 
-        lines = [f"📍 CaneBot Fleet Stations (Your Active: {kiosk_id}):\n"]
+        lines = [f"📍 KioskNode Fleet Stations (Your Active: {kiosk_id}):\n"]
         for k in all_k:
             mark = " ✅ (Active)" if k["kiosk_id"] == kiosk_id else ""
             lines.append(f"• {k['kiosk_id']}: {k['name']} ({k['city']}){mark}")
-        lines.append(f"\nTo switch stations, reply: kiosk <KIOSK_ID> (e.g. 'kiosk CANEBOT-PUNE-05')")
+        lines.append(f"\nTo switch stations, reply: kiosk <KIOSK_ID> (e.g. 'kiosk NODE-PUNE-05')")
         return "\n".join(lines)
 
     def _handle_location_pin(
@@ -587,6 +587,6 @@ class TemperatureMarkerWhatsAppHandler:
                     )
 
         return (
-            f"📍 Verify CaneBot location for {station_name} (1-click):\n"
+            f"📍 Verify KioskNode location for {station_name} (1-click):\n"
             f"{base_url}/loc?session={correlation_id}&kiosk_id={kiosk_id}"
         )

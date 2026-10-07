@@ -37,7 +37,7 @@ def test_spec_and_iss_integrity() -> None:
     """Spec and Inno Setup files must contain required metadata and targets."""
     builder = WindowsInstallerBuilder()
     spec_content = builder.spec_file.read_text(encoding="utf-8")
-    assert "canebot_fleet_roster.json" in spec_content
+    assert "fleet_roster.json" in spec_content
     assert "Release100" in spec_content
     assert "hiddenimports" in spec_content
 
@@ -55,7 +55,7 @@ def test_kiosk_edition_spec_and_iss_integrity() -> None:
     assert len(missing) == 0
 
     spec_content = builder.spec_file.read_text(encoding="utf-8")
-    assert "canebot_fleet_roster.json" in spec_content
+    assert "fleet_roster.json" in spec_content
     assert "Release100_Kiosk" in spec_content
     assert "apps.mail_organizer" in spec_content  # in excludes
 

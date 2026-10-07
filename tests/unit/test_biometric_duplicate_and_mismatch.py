@@ -41,7 +41,7 @@ async def test_own_face_duplicate_attendance_suppressed(test_db: DatabaseService
         emp_code="MGR-1001",
         full_name="Rajesh Sharma",
         phone_number="+919800099999",
-        assigned_kiosk_id="CANEBOT-PUNE-05",
+        assigned_kiosk_id="NODE-PUNE-05",
         role="SUPERVISOR",
         status="ACTIVE",
     )
@@ -49,7 +49,7 @@ async def test_own_face_duplicate_attendance_suppressed(test_db: DatabaseService
         emp_code="EMP-1042",
         full_name="Mahendra Gurav",
         phone_number="+919800011122",
-        assigned_kiosk_id="CANEBOT-PUNE-05",
+        assigned_kiosk_id="NODE-PUNE-05",
         role="OPERATOR",
         reporting_manager_emp_code="MGR-1001",
         status="ACTIVE",
@@ -59,7 +59,7 @@ async def test_own_face_duplicate_attendance_suppressed(test_db: DatabaseService
     test_db.record_attendance(
         correlation_id="test-corr-init",
         emp_code="EMP-1042",
-        kiosk_id="CANEBOT-PUNE-05",
+        kiosk_id="NODE-PUNE-05",
         face_confidence=0.96,
         gps_distance_meters=12.5,
         geofence_verified=True,
@@ -74,7 +74,7 @@ async def test_own_face_duplicate_attendance_suppressed(test_db: DatabaseService
         "correlation_id": "test-dup-01",
         "operator_emp_code": "EMP-1042",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-05",
+        "kiosk_id": "NODE-PUNE-05",
         "face_confidence": 0.95,
         "chiller_temp_c": None,
     }
@@ -92,7 +92,7 @@ async def test_face_mismatch_routes_critical_incident_to_supervisor(test_db: Dat
         emp_code="MGR-1001",
         full_name="Rajesh Sharma",
         phone_number="+919800099999",
-        assigned_kiosk_id="CANEBOT-PUNE-05",
+        assigned_kiosk_id="NODE-PUNE-05",
         role="SUPERVISOR",
         status="ACTIVE",
     )
@@ -100,7 +100,7 @@ async def test_face_mismatch_routes_critical_incident_to_supervisor(test_db: Dat
         emp_code="EMP-1042",
         full_name="Mahendra Gurav",
         phone_number="+919800011122",
-        assigned_kiosk_id="CANEBOT-PUNE-05",
+        assigned_kiosk_id="NODE-PUNE-05",
         role="OPERATOR",
         reporting_manager_emp_code="MGR-1001",
         status="ACTIVE",
@@ -111,7 +111,7 @@ async def test_face_mismatch_routes_critical_incident_to_supervisor(test_db: Dat
         "correlation_id": "test-mismatch-01",
         "operator_emp_code": "EMP-1042",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-05",
+        "kiosk_id": "NODE-PUNE-05",
         "face_confidence": 0.55,
     }
 
@@ -139,7 +139,7 @@ async def test_workflow_end_to_end_mismatch_interception(test_db: DatabaseServic
         emp_code="MGR-1001",
         full_name="Rajesh Sharma",
         phone_number="+919800099999",
-        assigned_kiosk_id="CANEBOT-PUNE-05",
+        assigned_kiosk_id="NODE-PUNE-05",
         role="SUPERVISOR",
         status="ACTIVE",
     )
@@ -147,7 +147,7 @@ async def test_workflow_end_to_end_mismatch_interception(test_db: DatabaseServic
         emp_code="EMP-1042",
         full_name="Mahendra Gurav",
         phone_number="+919800011122",
-        assigned_kiosk_id="CANEBOT-PUNE-05",
+        assigned_kiosk_id="NODE-PUNE-05",
         role="OPERATOR",
         reporting_manager_emp_code="MGR-1001",
         status="ACTIVE",
@@ -160,14 +160,14 @@ async def test_workflow_end_to_end_mismatch_interception(test_db: DatabaseServic
         audit_engine=AuditEngine.get_instance(),
     )
 
-    kiosk_coords = kg.get_kiosk_coordinates("CANEBOT-PUNE-05")
+    kiosk_coords = kg.get_kiosk_coordinates("NODE-PUNE-05")
     assert kiosk_coords is not None
     user_coords = (kiosk_coords[0], kiosk_coords[1])
 
     state: TemperatureMarkerState = {
         "correlation_id": "test-wf-mismatch",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-05",
+        "kiosk_id": "NODE-PUNE-05",
         "user_coords": user_coords,
         "face_confidence": 0.40,  # Deep mismatch
     }

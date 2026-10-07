@@ -37,6 +37,7 @@ class EmailRecord(Base):
     __tablename__ = "mail_emails"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
     gmail_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     thread_id: Mapped[str] = mapped_column(String(128), index=True)
     subject: Mapped[str] = mapped_column(String(512), default="")
@@ -59,6 +60,7 @@ class EmailClassification(Base):
     __tablename__ = "mail_classifications"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
     gmail_id: Mapped[str] = mapped_column(String(128), ForeignKey("mail_emails.gmail_id"), index=True)
     category: Mapped[str] = mapped_column(String(64), index=True)
     urgency_score: Mapped[int] = mapped_column(Integer, default=5)
@@ -81,6 +83,7 @@ class PMActionQueue(Base):
     __tablename__ = "mail_pm_queue"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
     task_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     gmail_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
     email_subject: Mapped[str] = mapped_column(String(512), default="")
@@ -107,6 +110,7 @@ class MailRule(Base):
     __tablename__ = "mail_rules"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
     rule_type: Mapped[str] = mapped_column(String(64), index=True)
     pattern: Mapped[str] = mapped_column(String(255), index=True)
     action: Mapped[str] = mapped_column(String(64), default="tag_vip")
@@ -123,6 +127,7 @@ class DraftRecord(Base):
     __tablename__ = "mail_drafts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
     gmail_id: Mapped[str] = mapped_column(String(128), index=True)
     thread_id: Mapped[str] = mapped_column(String(128), index=True)
     recipient: Mapped[str] = mapped_column(String(255))

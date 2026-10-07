@@ -37,6 +37,17 @@ from apps.mail_organizer.database.models import (
     MailRule,
     PMActionQueue,
 )
+from core_platform.app.middleware.tenant_context import get_current_tenant_id, get_current_user_context
+from core_platform.app.security.user_cipher import UserPayloadCipher
+
+
+def _apply_tenant_filter_stmt(stmt: Any, model_col: Any, eff_tenant: Optional[str]) -> Any:
+    """Apply tenant isolation filter with fallback for default workspaces (SQLAlchemy 2.0 select)."""
+    if eff_tenant in ("platform", "*"):
+        return stmt
+    if eff_tenant in (None, "", "default", "default_tenant", "public"):
+        return stmt.where(model_col.in_(["default", "default_tenant", "public"]))
+    return stmt.where(model_col == eff_tenant)
 
 
 class MailDatabaseService:
@@ -117,30 +128,47 @@ class MailDatabaseService:
         snippet: str = "",
         body: str = "",
         labels_applied: str = "",
+        user_salt: Optional[str] = None,
+        tenant_id: Optional[str] = None,
     ) -> EmailRecord:
-        """Persist or update an ingested email record."""
+        """Persist or update an ingested email record with optional envelope encryption."""
+        user_ctx = get_current_user_context()
+        effective_salt = user_salt or (user_ctx.user_secret_salt if user_ctx else None)
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "public"
+
+        stored_body = body
+        stored_snippet = snippet
+        if effective_salt:
+            if body and not UserPayloadCipher.is_encrypted(body):
+                stored_body = UserPayloadCipher.encrypt_payload(body, effective_salt)
+            if snippet and not UserPayloadCipher.is_encrypted(snippet):
+                stored_snippet = UserPayloadCipher.encrypt_payload(snippet, effective_salt)
+
         with self.get_session() as session:
             stmt = select(EmailRecord).where(EmailRecord.gmail_id == gmail_id)
             existing = session.scalar(stmt)
             if existing:
                 existing.subject = subject
                 existing.sender = sender
-                existing.snippet = snippet
-                existing.body = body
+                existing.snippet = stored_snippet
+                existing.body = stored_body
                 existing.labels_applied = labels_applied
+                if effective_tenant and effective_tenant != "public":
+                    existing.tenant_id = effective_tenant
                 session.commit()
                 session.refresh(existing)
                 return existing
 
             new_email = EmailRecord(
+                tenant_id=effective_tenant,
                 gmail_id=gmail_id,
                 thread_id=thread_id,
                 subject=subject,
                 sender=sender,
                 to_recipients=to_recipients,
                 cc_recipients=cc_recipients,
-                snippet=snippet,
-                body=body,
+                snippet=stored_snippet,
+                body=stored_body,
                 labels_applied=labels_applied,
             )
             session.add(new_email)
@@ -160,10 +188,14 @@ class MailDatabaseService:
         reply_necessity_reason: Optional[str] = None,
         responsibility_role: str = "PRIMARY_ACTIONEE",
         suggested_reply: Optional[str] = None,
+        tenant_id: Optional[str] = None,
     ) -> EmailClassification:
         """Persist triage classification for an email."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "public"
         with self.get_session() as session:
             classification = EmailClassification(
+                tenant_id=effective_tenant,
                 gmail_id=gmail_id,
                 category=category,
                 urgency_score=urgency_score,
@@ -192,11 +224,15 @@ class MailDatabaseService:
         assignee: Optional[str] = None,
         due_date: Optional[str] = None,
         destination: str = "sqlite_queue",
+        tenant_id: Optional[str] = None,
     ) -> PMActionQueue:
         """Stage a project management task into the human approval queue."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "public"
         task_id = f"TASK-MO-{uuid.uuid4().hex[:8].upper()}"
         with self.get_session() as session:
             task = PMActionQueue(
+                tenant_id=effective_tenant,
                 task_id=task_id,
                 gmail_id=gmail_id,
                 email_subject=email_subject,
@@ -215,10 +251,14 @@ class MailDatabaseService:
             session.refresh(task)
             return task
 
-    def get_pending_pm_tasks(self) -> List[PMActionQueue]:
-        """Fetch all PM tasks awaiting user review."""
+    def get_pending_pm_tasks(self, tenant_id: Optional[str] = None) -> List[PMActionQueue]:
+        """Fetch all PM tasks awaiting user review for the specified or active tenant."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id if tenant_id is not None else ((user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id())
         with self.get_session() as session:
-            stmt = select(PMActionQueue).where(PMActionQueue.status == "PENDING").order_by(desc(PMActionQueue.created_at))
+            stmt = select(PMActionQueue).where(PMActionQueue.status == "PENDING")
+            stmt = _apply_tenant_filter_stmt(stmt, PMActionQueue.tenant_id, effective_tenant)
+            stmt = stmt.order_by(desc(PMActionQueue.created_at))
             return list(session.scalars(stmt).all())
 
     def update_pm_task_status(
@@ -254,10 +294,14 @@ class MailDatabaseService:
         rule_type: str,
         pattern: str,
         action: str = "tag_vip",
+        tenant_id: Optional[str] = None,
     ) -> MailRule:
         """Register a deterministic routing or VIP rule."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "public"
         with self.get_session() as session:
             rule = MailRule(
+                tenant_id=effective_tenant,
                 rule_type=rule_type,
                 pattern=pattern.lower().strip(),
                 action=action,
@@ -268,12 +312,15 @@ class MailDatabaseService:
             session.refresh(rule)
             return rule
 
-    def get_active_rules(self, rule_type: Optional[str] = None) -> List[MailRule]:
-        """Retrieve active deterministic rules."""
+    def get_active_rules(self, rule_type: Optional[str] = None, tenant_id: Optional[str] = None) -> List[MailRule]:
+        """Retrieve active deterministic rules for the specified or active tenant."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id if tenant_id is not None else ((user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id())
         with self.get_session() as session:
             stmt = select(MailRule).where(MailRule.is_active == True)  # noqa: E712
             if rule_type:
                 stmt = stmt.where(MailRule.rule_type == rule_type)
+            stmt = _apply_tenant_filter_stmt(stmt, MailRule.tenant_id, effective_tenant)
             return list(session.scalars(stmt).all())
 
     def store_draft(
@@ -283,15 +330,26 @@ class MailDatabaseService:
         recipient: str,
         subject: str,
         body: str,
+        user_salt: Optional[str] = None,
+        tenant_id: Optional[str] = None,
     ) -> DraftRecord:
-        """Stage a draft reply record."""
+        """Stage a draft reply record with optional envelope encryption."""
+        user_ctx = get_current_user_context()
+        effective_salt = user_salt or (user_ctx.user_secret_salt if user_ctx else None)
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "public"
+
+        stored_body = body
+        if effective_salt and body and not UserPayloadCipher.is_encrypted(body):
+            stored_body = UserPayloadCipher.encrypt_payload(body, effective_salt)
+
         with self.get_session() as session:
             draft = DraftRecord(
+                tenant_id=effective_tenant,
                 gmail_id=gmail_id,
                 thread_id=thread_id,
                 recipient=recipient,
                 subject=subject,
-                body=body,
+                body=stored_body,
                 status="STAGED",
             )
             session.add(draft)
@@ -299,10 +357,21 @@ class MailDatabaseService:
             session.refresh(draft)
             return draft
 
-    def get_recent_emails(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_recent_emails(
+        self,
+        limit: int = 50,
+        decrypt_salt: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """Retrieve recent processed emails with full deep trace, tags, drafts, and PM tasks."""
+        user_ctx = get_current_user_context()
+        effective_salt = decrypt_salt or (user_ctx.user_secret_salt if user_ctx else None)
+        effective_tenant = tenant_id if tenant_id is not None else ((user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id())
+
         with self.get_session() as session:
-            emails_stmt = select(EmailRecord).order_by(desc(EmailRecord.received_at)).limit(limit)
+            emails_stmt = select(EmailRecord)
+            emails_stmt = _apply_tenant_filter_stmt(emails_stmt, EmailRecord.tenant_id, effective_tenant)
+            emails_stmt = emails_stmt.order_by(desc(EmailRecord.received_at), desc(EmailRecord.id)).limit(limit)
             emails = list(session.scalars(emails_stmt).all())
             results: List[Dict[str, Any]] = []
 
@@ -350,7 +419,17 @@ class MailDatabaseService:
                 urg = cls.urgency_score if cls else 5
                 role = cls.responsibility_role if cls else "PRIMARY_ACTIONEE"
                 reason = cls.reasoning if cls else "Direct email triage"
-                draft_body = (draft.body if draft else None) or (cls.suggested_reply if cls else None)
+                raw_draft_body = (draft.body if draft else None) or (cls.suggested_reply if cls else None)
+
+                # Process payload confidentiality
+                if effective_salt:
+                    display_snippet = UserPayloadCipher.decrypt_payload(email.snippet, effective_salt)
+                    display_body = UserPayloadCipher.decrypt_payload(email.body or email.snippet or "(Empty body)", effective_salt)
+                    display_draft = UserPayloadCipher.decrypt_payload(raw_draft_body or "", effective_salt) if raw_draft_body else None
+                else:
+                    display_snippet = UserPayloadCipher.blind_payload(email.snippet) if UserPayloadCipher.is_encrypted(email.snippet) else email.snippet
+                    display_body = UserPayloadCipher.blind_payload(email.body) if UserPayloadCipher.is_encrypted(email.body) else (email.body or email.snippet or "(Empty body)")
+                    display_draft = UserPayloadCipher.blind_payload(raw_draft_body) if (raw_draft_body and UserPayloadCipher.is_encrypted(raw_draft_body)) else raw_draft_body
 
                 # Synthesize pipeline trace breadcrumbs with real timings
                 pipeline_trace = [
@@ -361,7 +440,7 @@ class MailDatabaseService:
                 ]
                 if cat == "@Meeting":
                     pipeline_trace.append({"node": "calendar_connector", "duration_ms": 45.2, "decision": "Availability Checked"})
-                if draft_body:
+                if display_draft:
                     pipeline_trace.append({"node": "draft_generator", "duration_ms": 280.0, "decision": "Draft Staged (Non-destructive)"})
                 if pm_tasks_list:
                     pipeline_trace.append({"node": "pm_extract", "duration_ms": 160.0, "decision": f"{len(pm_tasks_list)} PM Tasks Queued"})
@@ -374,18 +453,18 @@ class MailDatabaseService:
                         "model": "jev-latest",
                         "duration_ms": 140.5,
                         "system_prompt": "You are an executive email triage and categorization assistant.",
-                        "human_prompt": f"From: {email.sender}\nSubject: {email.subject}\nBody: {(email.body or email.snippet)[:300]}",
+                        "human_prompt": f"From: {email.sender}\nSubject: {email.subject}\nBody: {display_body[:300]}",
                         "raw_response": f'{{"category": "{cat}", "confidence_score": {conf:.2f}, "urgency_score": {urg}, "responsibility_role": "{role}", "reasoning": "{reason}"}}',
                     }
                 ]
-                if draft_body:
+                if display_draft:
                     llm_communications.append({
                         "step": "contextual_draft_reply",
                         "model": "gemini-2.5-flash",
                         "duration_ms": 280.0,
                         "system_prompt": "Draft a professional, concise executive reply for this email thread.",
                         "human_prompt": f"Thread Subject: {email.subject}\nSender: {email.sender}\nContext: {reason}",
-                        "raw_response": draft_body,
+                        "raw_response": display_draft,
                     })
 
                 # Synthesize connector communications
@@ -427,8 +506,8 @@ class MailDatabaseService:
                     "sender": email.sender,
                     "to_recipients": to_recips,
                     "cc_recipients": cc_recips,
-                    "snippet": email.snippet,
-                    "body": email.body or email.snippet or "(Empty body)",
+                    "snippet": display_snippet,
+                    "body": display_body,
                     "labels_applied": email.labels_applied,
                     "received_at": email.received_at.isoformat() if email.received_at else "",
                     "entry_point": "Simulator" if email.gmail_id.startswith("msg_") or email.gmail_id.startswith("sim-") else "Gmail Ingestion",
@@ -439,11 +518,11 @@ class MailDatabaseService:
                     "reasoning": reason,
                     "recipient_role": role,
                     "safety_override": (conf < 0.85) if cls else False,
-                    "suggested_reply": draft_body,
+                    "suggested_reply": display_draft,
                     "context_tags": context_tags_list,
                     "is_reply_necessary": cls.is_reply_necessary if cls else False,
                     "reply_necessity_reason": cls.reply_necessity_reason if cls else None,
-                    "draft": draft_body,
+                    "draft": display_draft,
                     "pm_tasks": pm_tasks_list,
                     "pipeline_trace": pipeline_trace,
                     "llm_communications": llm_communications,
@@ -451,6 +530,7 @@ class MailDatabaseService:
                     "execution_time_seconds": round(total_duration_ms / 1000.0, 3),
                 })
             return results
+
 
     def get_all_rules(self, rule_type: Optional[str] = None) -> List[MailRule]:
         """Retrieve registered deterministic routing rules, optionally filtered by rule_type."""
@@ -465,11 +545,68 @@ class MailDatabaseService:
         """Convenience alias for get_all_rules."""
         return self.get_all_rules(rule_type=rule_type)
 
-    def get_all_drafts(self) -> List[DraftRecord]:
-        """Retrieve all staged drafts."""
+    def get_all_drafts(self, tenant_id: Optional[str] = None) -> List[DraftRecord]:
+        """Retrieve all staged drafts for the specified or active tenant."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id if tenant_id is not None else ((user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id())
         with self.get_session() as session:
-            stmt = select(DraftRecord).order_by(desc(DraftRecord.created_at))
+            stmt = select(DraftRecord)
+            stmt = _apply_tenant_filter_stmt(stmt, DraftRecord.tenant_id, effective_tenant)
+            stmt = stmt.order_by(desc(DraftRecord.created_at))
             return list(session.scalars(stmt).all())
+
+    def get_draft(
+        self,
+        draft_id: Union[int, str],
+        decrypt_salt: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieve a single draft record by numeric ID or gmail_id, optionally decrypted."""
+        user_ctx = get_current_user_context()
+        effective_salt = decrypt_salt or (user_ctx.user_secret_salt if user_ctx else None)
+
+        with self.get_session() as session:
+            if isinstance(draft_id, int) or str(draft_id).isdigit():
+                stmt = select(DraftRecord).where(DraftRecord.id == int(draft_id))
+            else:
+                stmt = select(DraftRecord).where(
+                    or_(DraftRecord.gmail_id == str(draft_id), DraftRecord.thread_id == str(draft_id))
+                )
+            draft = session.scalar(stmt)
+            if not draft:
+                return None
+
+            raw_body = draft.body or ""
+            if effective_salt and raw_body:
+                body = UserPayloadCipher.decrypt_payload(raw_body, effective_salt)
+            else:
+                body = UserPayloadCipher.blind_payload(raw_body) if UserPayloadCipher.is_encrypted(raw_body) else raw_body
+
+            return {
+                "id": draft.id,
+                "gmail_id": draft.gmail_id,
+                "thread_id": draft.thread_id,
+                "recipient": draft.recipient,
+                "subject": draft.subject,
+                "body": body,
+                "status": draft.status,
+                "created_at": draft.created_at.isoformat() if draft.created_at else "",
+            }
+
+    def update_draft_status(self, draft_id: Union[int, str], status: str) -> bool:
+        """Update lifecycle status of a draft (e.g. STAGED, SENT, DISCARDED)."""
+        with self.get_session() as session:
+            if isinstance(draft_id, int) or str(draft_id).isdigit():
+                stmt = select(DraftRecord).where(DraftRecord.id == int(draft_id))
+            else:
+                stmt = select(DraftRecord).where(
+                    or_(DraftRecord.gmail_id == str(draft_id), DraftRecord.thread_id == str(draft_id))
+                )
+            draft = session.scalar(stmt)
+            if not draft:
+                return False
+            draft.status = status
+            session.commit()
+            return True
 
     def approve_pm_task(self, task_id: Union[int, str]) -> bool:
         """Approve a staged PM task by integer ID or string task_id."""
@@ -509,23 +646,36 @@ class MailDatabaseService:
             session.commit()
             return True
 
-    def get_dashboard_metrics(self) -> Dict[str, Any]:
-        """Aggregate triage statistics and queue counts for Admin UI."""
+    def get_dashboard_metrics(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+        """Aggregate triage statistics and queue counts for the specified or active tenant."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id if tenant_id is not None else ((user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id())
         with self.get_session() as session:
-            total_emails = session.scalar(select(func.count(EmailRecord.id))) or 0
-            pending_tasks = session.scalar(
-                select(func.count(PMActionQueue.id)).where(PMActionQueue.status == "PENDING")
-            ) or 0
-            needs_review = session.scalar(
-                select(func.count(EmailClassification.id)).where(EmailClassification.category.like("%NeedsReview%"))
-            ) or 0
-            drafts_count = session.scalar(select(func.count(DraftRecord.id))) or 0
+            # 1. Total emails
+            email_stmt = select(func.count(EmailRecord.id))
+            email_stmt = _apply_tenant_filter_stmt(email_stmt, EmailRecord.tenant_id, effective_tenant)
+            total_emails = session.scalar(email_stmt) or 0
+
+            # 2. Pending PM tasks
+            pm_stmt = select(func.count(PMActionQueue.id)).where(PMActionQueue.status == "PENDING")
+            pm_stmt = _apply_tenant_filter_stmt(pm_stmt, PMActionQueue.tenant_id, effective_tenant)
+            pending_tasks = session.scalar(pm_stmt) or 0
+
+            # 3. Needs Review
+            review_stmt = select(func.count(EmailClassification.id)).where(EmailClassification.category.like("%NeedsReview%"))
+            review_stmt = _apply_tenant_filter_stmt(review_stmt, EmailClassification.tenant_id, effective_tenant)
+            needs_review = session.scalar(review_stmt) or 0
+
+            # 4. Drafts count
+            draft_stmt = select(func.count(DraftRecord.id))
+            draft_stmt = _apply_tenant_filter_stmt(draft_stmt, DraftRecord.tenant_id, effective_tenant)
+            drafts_count = session.scalar(draft_stmt) or 0
 
             # Group by category
             cat_counts: Dict[str, int] = {}
-            cls_stmt = select(EmailClassification.category, func.count(EmailClassification.id)).group_by(
-                EmailClassification.category
-            )
+            cls_stmt = select(EmailClassification.category, func.count(EmailClassification.id))
+            cls_stmt = _apply_tenant_filter_stmt(cls_stmt, EmailClassification.tenant_id, effective_tenant)
+            cls_stmt = cls_stmt.group_by(EmailClassification.category)
             for cat, count in session.execute(cls_stmt).all():
                 if cat:
                     cat_counts[cat] = count
@@ -540,6 +690,6 @@ class MailDatabaseService:
                 "category_breakdown": cat_counts,
             }
 
-    def get_triage_metrics(self) -> Dict[str, Any]:
+    def get_triage_metrics(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
         """Alias for get_dashboard_metrics."""
-        return self.get_dashboard_metrics()
+        return self.get_dashboard_metrics(tenant_id=tenant_id)

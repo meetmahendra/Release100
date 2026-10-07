@@ -89,7 +89,7 @@ class PMTaskManager:
             result = await self.jira_adapter.create_issue(
                 summary=task.summary,
                 description=task.description or "",
-                project_key=task.project_key or "CANE",
+                project_key=task.project_key or "APEX",
                 priority=task.priority,
             )
             self.db_service.update_pm_task_status(task_id=task.task_id, status="EXECUTED", result_json=result)

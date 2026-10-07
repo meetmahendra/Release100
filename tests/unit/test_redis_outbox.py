@@ -32,7 +32,7 @@ async def test_redis_outbox_push_and_read() -> None:
 
     payload = {"kiosk_id": "KIOSK-01", "temperature": 3.8, "status": "OK"}
     msg_id = await sync.push_event(
-        tenant_id="canectar_test",
+        tenant_id="apex_test",
         stream_name="temperature_events",
         payload=payload,
         correlation_id="corr-test-123",
@@ -42,18 +42,18 @@ async def test_redis_outbox_push_and_read() -> None:
     assert len(msg_id) > 0
 
     messages = await sync.read_events(
-        tenant_id="canectar_test",
+        tenant_id="apex_test",
         stream_name="temperature_events",
         count=10,
     )
     assert len(messages) == 1
     msg = messages[0]
-    assert msg.tenant_id == "canectar_test"
+    assert msg.tenant_id == "apex_test"
     assert msg.payload["temperature"] == 3.8
     assert msg.correlation_id == "corr-test-123"
     assert len(msg.sha256_hash) == 64
 
-    length = await sync.get_stream_length("canectar_test", "temperature_events")
+    length = await sync.get_stream_length("apex_test", "temperature_events")
     assert length == 1
 
     await sync.close()

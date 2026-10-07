@@ -67,7 +67,7 @@ async def test_pm_extract_node_with_gateway_mock() -> None:
         "tasks": [
             {
                 "summary": "Fix temperature sensor at Pune",
-                "description": "Replace thermocouple in kiosk CANEBOT-PUNE-04",
+                "description": "Replace thermocouple in kiosk NODE-PUNE-04",
                 "priority": "High",
                 "due_date": "Today",
                 "assignee": "Field Tech Lead",
@@ -77,9 +77,9 @@ async def test_pm_extract_node_with_gateway_mock() -> None:
 
     state = {
         "gmail_id": "msg_pm_123",
-        "sender": "ops@canectar.com",
+        "sender": "ops@apex.com",
         "subject": "Urgent Chiller Sensor Maintenance",
-        "body": "Please replace thermocouple in kiosk CANEBOT-PUNE-04 immediately.",
+        "body": "Please replace thermocouple in kiosk NODE-PUNE-04 immediately.",
         "category": "MAINTENANCE",
     }
 
@@ -98,7 +98,7 @@ async def test_pm_extract_node_fallback_regex() -> None:
 
     state = {
         "gmail_id": "msg_pm_456",
-        "sender": "lead@canectar.com",
+        "sender": "lead@apex.com",
         "subject": "Action Required: Complete monthly fleet audit",
         "body": "Action Required: Complete monthly fleet audit by tomorrow EOD.",
         "category": "OPERATIONS",
@@ -130,7 +130,7 @@ def test_org_context_service_operations() -> None:
 
     # 4. Prompt context block builder
     prompt_block = build_org_context_for_prompt(
-        sender_raw="ops@canectar.com",
+        sender_raw="ops@apex.com",
         subject="Chiller Calibration",
         body="Reviewing temperature logs.",
     )

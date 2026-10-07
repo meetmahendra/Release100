@@ -20,22 +20,26 @@ Provides reusable, dialect-agnostic mixins for multi-tenancy, audit timestamps, 
 """
 
 from datetime import datetime, timezone
+from typing import Optional
 import uuid
-from sqlalchemy import Column, DateTime, Integer, String
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """Declarative Base class for core_platform models."""
+    pass
 
 
 class TimestampMixin:
     """Universal mixin injecting UTC creation and update timestamps."""
 
-    created_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
-    updated_at = Column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
@@ -46,7 +50,7 @@ class TimestampMixin:
 class UUIDPrimaryKeyMixin:
     """Universal mixin injecting a 36-character string UUID primary key."""
 
-    id = Column(
+    id: Mapped[str] = mapped_column(
         String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4()),
@@ -57,7 +61,7 @@ class UUIDPrimaryKeyMixin:
 class TenantIsolationMixin:
     """Universal mixin for multi-tenant isolation across SQL databases."""
 
-    tenant_id = Column(
+    tenant_id: Mapped[str] = mapped_column(
         String(64),
         index=True,
         nullable=False,

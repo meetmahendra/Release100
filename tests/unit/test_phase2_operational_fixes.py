@@ -43,7 +43,7 @@ async def test_issue006_ghost_kiosk_clean_slate_and_unregistered_location() -> N
     mock_kg.roster.kiosks = {}  # Empty roster simulation
 
     state = {
-        "kiosk_id": "CANEBOT-UNKNOWN",
+        "kiosk_id": "NODE-UNKNOWN",
         "user_coords": (18.5204, 73.8567),
         "sender_phone": "+919999988888",
     }
@@ -73,7 +73,7 @@ async def test_issue006_ghost_kiosk_clean_slate_and_unregistered_location() -> N
         mock_http.return_value = MagicMock(is_success=True, json=lambda: {"messages": [{"id": "MSG-TEST"}]})
         res = await dispatch_whatsapp_payload(payload)
         assert res["status"] == "EVENT_RECEIVED"
-        assert "not registered with any CaneBot kiosk" in res["reply_message"]
+        assert "not registered with any KioskNode kiosk" in res["reply_message"]
 
 
 @pytest.mark.anyio
@@ -121,7 +121,7 @@ async def test_issue008_manager_push_notification_and_triage_flow() -> None:
         emp_code="MGR-5001",
         full_name="Fleet Lead Vikram",
         phone_number=mgr_phone,
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
         role="MANAGER",
     )
@@ -129,7 +129,7 @@ async def test_issue008_manager_push_notification_and_triage_flow() -> None:
         emp_code="EMP-5002",
         full_name="Operator Sunil",
         phone_number=op_phone,
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
         role="OPERATOR",
         reporting_manager_emp_code="MGR-5001",
@@ -143,7 +143,7 @@ async def test_issue008_manager_push_notification_and_triage_flow() -> None:
                     "messages": [{
                         "from": "919888822222",
                         "type": "text",
-                        "text": {"body": "The sugarcane stalk bin is full"}
+                        "text": {"body": "The inventory storage bin is full"}
                     }]
                 }
             }]
@@ -162,7 +162,7 @@ async def test_issue008_manager_push_notification_and_triage_flow() -> None:
             call_args = mock_push.call_args[1]
             assert call_args["to_phone"] == mgr_phone
             assert "New Operator Message" in call_args["text"]
-            assert "sugarcane stalk bin" in call_args["text"]
+            assert "inventory storage bin" in call_args["text"]
 
     # 3. Manager sends "Hello" to triage pending messages
     mgr_payload = {
@@ -184,7 +184,7 @@ async def test_issue008_manager_push_notification_and_triage_flow() -> None:
         res_mgr = await dispatch_whatsapp_payload(mgr_payload)
         assert res_mgr["status"] == "EVENT_RECEIVED"
         assert "messages pending" in res_mgr["reply_message"]
-        assert "The sugarcane stalk bin is full" in res_mgr["reply_message"]
+        assert "The inventory storage bin is full" in res_mgr["reply_message"]
         assert "Reply to this message to answer directly" in res_mgr["reply_message"]
 
 

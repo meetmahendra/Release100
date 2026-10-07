@@ -41,10 +41,10 @@ class MailOrganizerConfig(BaseModel):
     confidence_review_threshold: float = Field(default=0.85)
     urgency_high_threshold: int = Field(default=8)
     vip_senders: List[str] = Field(
-        default_factory=lambda: ["ceo@canectar.com", "board@canectar.com", "rajesh.pawar@canectar.com"]
+        default_factory=lambda: ["ceo@apex.com", "board@apex.com", "rajesh.pawar@apex.com"]
     )
     whitelisted_domains: List[str] = Field(
-        default_factory=lambda: ["canectar.com", "partner.canectar.com"]
+        default_factory=lambda: ["apex.com", "partner.apex.com"]
     )
     critical_keywords: List[str] = Field(
         default_factory=lambda: ["urgent", "escalation", "critical", "sev1", "outage", "hazard", "immediate"]

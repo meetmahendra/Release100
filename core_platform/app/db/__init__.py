@@ -26,6 +26,7 @@ from core_platform.app.db.config import DatabaseConfig
 from core_platform.app.db.connection_factory import DatabaseConnectionFactory
 from core_platform.app.db.manager import DatabaseManager, get_db_manager
 from core_platform.app.db.migrations import DatabaseMigrationHelper
+from core_platform.app.db.tenant_provisioner import TenantSchemaProvisioner
 
 __all__ = [
     "Base",
@@ -34,6 +35,7 @@ __all__ = [
     "DatabaseManager",
     "DatabaseMigrationHelper",
     "TenantIsolationMixin",
+    "TenantSchemaProvisioner",
     "TimestampMixin",
     "UUIDPrimaryKeyMixin",
     "get_db_manager",

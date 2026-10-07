@@ -1,5 +1,5 @@
 {
-  "suite_name": "Canectar CaneBot Cold-Chain HACCP & Attendance Live Benchmark Suite",
+  "suite_name": "Apex KioskNode Cold-Chain HACCP & Attendance Live Benchmark Suite",
   "version": "1.0.0",
   "domain": "temperature_marker",
   "scenarios": [
@@ -7,12 +7,12 @@
       "id": "SCENARIO-001",
       "name": "Standard Compliant Duty Check-in (Pune Phoenix Mall)",
       "category": "standard_happy_path",
-      "description": "Active operator checks in 15m from Phoenix Mall CaneBot with compliant 3.2°C chiller reading.",
+      "description": "Active operator checks in 15m from Phoenix Mall KioskNode with compliant 3.2°C chiller reading.",
       "is_safety_critical": false,
       "input": {
         "correlation_id": "bench-001",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.5622, 73.9169],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.2C"
       },
@@ -31,12 +31,12 @@
       "id": "SCENARIO-002",
       "name": "Standard Compliant Check-in (Mumbai Seawoods Mall)",
       "category": "standard_happy_path",
-      "description": "Active operator checks in 25m from Seawoods Mall CaneBot with 2.8°C chiller reading.",
+      "description": "Active operator checks in 25m from Seawoods Mall KioskNode with 2.8°C chiller reading.",
       "is_safety_critical": false,
       "input": {
         "correlation_id": "bench-002",
         "sender_phone": "+919800022233",
-        "kiosk_id": "CANEBOT-MUMBAI-08",
+        "kiosk_id": "NODE-MUMBAI-08",
         "user_coords": [19.0217, 73.0183],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_2.8C"
       },
@@ -59,7 +59,7 @@
       "input": {
         "correlation_id": "bench-003",
         "sender_phone": "+919800033344",
-        "kiosk_id": "CANEBOT-BLR-02",
+        "kiosk_id": "NODE-BLR-02",
         "user_coords": [12.9785, 77.6409],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.5C"
       },
@@ -82,7 +82,7 @@
       "input": {
         "correlation_id": "bench-004",
         "sender_phone": "+910000099999",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.5622, 73.9169]
       },
       "expected": {
@@ -101,7 +101,7 @@
       "input": {
         "correlation_id": "bench-005",
         "sender_phone": "+919800044455",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.5622, 73.9169]
       },
       "expected": {
@@ -120,7 +120,7 @@
       "input": {
         "correlation_id": "bench-006",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.6000, 73.9800],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.2C"
       },
@@ -140,7 +140,7 @@
       "input": {
         "correlation_id": "bench-007",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.5622, 73.9169],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_-35.0C"
       },
@@ -159,7 +159,7 @@
       "input": {
         "correlation_id": "bench-008",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.5622, 73.9169],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_145.0C"
       },
@@ -178,7 +178,7 @@
       "input": {
         "correlation_id": "bench-009",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.5622, 73.9169],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_8.7C"
       },
@@ -198,7 +198,7 @@
       "input": {
         "correlation_id": "bench-010",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.5622, 73.9169],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.2C",
         "force_low_face_conf": 0.65
@@ -218,7 +218,7 @@
       "input": {
         "correlation_id": "bench-011",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.5622, 73.9169],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_4.0C"
       },
@@ -237,7 +237,7 @@
       "input": {
         "correlation_id": "bench-012",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.5622, 73.9169],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_5.2C"
       },
@@ -256,13 +256,13 @@
       "input": {
         "correlation_id": "bench-013",
         "sender_phone": "+919800055566",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": null,
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.2C"
       },
       "expected": {
         "geofence_verified": false,
-        "must_contain_reply": "Please verify CaneBot location (1-click)"
+        "must_contain_reply": "Please verify KioskNode location (1-click)"
       }
     },
     {
@@ -274,7 +274,7 @@
       "input": {
         "correlation_id": "bench-014",
         "sender_phone": "+919800011122",
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "user_coords": [18.5622, 73.9169],
         "raw_image_bytes": "MOCK_IMAGE_CHILLER_3.1C"
       },

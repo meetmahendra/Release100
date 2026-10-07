@@ -15,7 +15,7 @@
 """
 Food Temperature & Attendance Marker Application Cartridge.
 
-Operational baseline: Canectar Foods Pvt Ltd CaneBot Sugarcane Juice Machines.
+Operational baseline: Apex Cold-Chain Logistics Ltd Industrial Cold-Storage Chiller Units.
 Adheres to Plan 03 v1.3 and GEES v1.0 standard.
 """
 

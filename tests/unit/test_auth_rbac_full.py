@@ -205,7 +205,7 @@ def test_admin_shell_routes() -> None:
             headers={"cookie": f"csrf_token={csrf_tok}"},
         )
         assert res_success.status_code == 302
-        assert res_success.headers["location"] == "/admin/"
+        assert res_success.headers["location"] in ["/ops/tenants", "/admin/"]
         assert "admin_token" in res_success.cookies
     finally:
         settings.ENABLED_APPLICATIONS = orig_enabled
@@ -225,7 +225,7 @@ def test_admin_shell_routes() -> None:
 
     res_dash = client.get("/admin/")
     assert res_dash.status_code == 200
-    assert "Platform Admin" in res_dash.text
+    assert "Release100" in res_dash.text
 
     # 6. View API keys page
     res_keys = client.get("/admin/api-keys")

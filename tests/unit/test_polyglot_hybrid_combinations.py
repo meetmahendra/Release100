@@ -102,7 +102,7 @@ def test_hybrid_combinatorial_coexistence_all_paradigms(
             gmail_id="hybrid_msg_01",
             thread_id="th_hyb_01",
             subject="Hybrid Mail Check",
-            sender="admin@canectar.com",
+            sender="admin@apex.com",
         )
         cls = mail_app.db_service.store_classification(
             gmail_id="hybrid_msg_01",

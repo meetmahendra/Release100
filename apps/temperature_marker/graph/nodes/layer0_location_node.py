@@ -34,7 +34,7 @@ async def layer0_location_node(
     """Verify user coordinates against kiosk fleet geofence."""
     if kg_service.roster is None:
         kg_service.roster = kg_service._load_roster()
-    kiosk_id = state.get("kiosk_id", "CANEBOT-PUNE-05")
+    kiosk_id = state.get("kiosk_id", "NODE-PUNE-05")
     user_coords = state.get("user_coords")
 
     # Check if operator previously clicked 1-click web location link or sent WhatsApp location
@@ -99,13 +99,13 @@ async def layer0_location_node(
             if phone_str:
                 record_location_prompt(phone_str)
             state["reply_message"] = (
-                f"📍 Please verify CaneBot location (1-click) for {station_name}: "
+                f"📍 Please verify KioskNode location (1-click) for {station_name}: "
                 f"{base_url}/loc?session={corr_id}&kiosk_id={kiosk_id}"
             )
         else:
             state["reply_message"] = (
-                f"📍 CaneBot location for {station_name} requires verification. "
-                "The 'Please verify CaneBot location (1-click)' link was already shared earlier today. "
+                f"📍 KioskNode location for {station_name} requires verification. "
+                "The 'Please verify KioskNode location (1-click)' link was already shared earlier today. "
                 "Please tap that link or send 'location' to request a new link."
             )
         return state

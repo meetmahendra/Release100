@@ -15,7 +15,7 @@
 """
 Schema Definitions for Multi-Kiosk Fleet Knowledge Graph.
 
-Adheres to Plan 03 v1.3. Models CaneBot kiosk machines, locations,
+Adheres to Plan 03 v1.3. Models KioskNode kiosk machines, locations,
 GPS geofences, and HACCP cold-chain temperature thresholds.
 """
 
@@ -33,7 +33,7 @@ class HACCPRule(BaseModel):
 
 
 class LocationProfile(BaseModel):
-    """Physical retail site profile where CaneBot machines operate."""
+    """Physical retail site profile where KioskNode machines operate."""
 
     site_id: str = Field(description="Unique location identifier, e.g. 'SITE-PUNE-PHOENIX'")
     site_name: str = Field(description="Display site name, e.g. 'Phoenix Marketcity Food Court'")
@@ -43,11 +43,12 @@ class LocationProfile(BaseModel):
     geofence_radius_meters: float = Field(default=100.0, description="Permissible distance including indoor drift")
 
 
-class CaneBotMachineProfile(BaseModel):
-    """Profile of a physical CaneBot machine unit deployed in the field."""
+class KioskNodeMachineProfile(BaseModel):
+    """Profile of a physical KioskNode machine unit deployed in the field."""
 
-    kiosk_id: str = Field(description="Unique kiosk identifier, e.g. 'CANEBOT-PUNE-04'")
-    machine_model: str = Field(default="CaneBot-Pro-Chilled", description="Machine model")
+    kiosk_id: str = Field(description="Unique kiosk identifier, e.g. 'NODE-PUNE-04'")
+    tenant_id: str = Field(default="public", description="Tenant workspace identifier")
+    machine_model: str = Field(default="ChillerNode-Pro-Chilled", description="Machine model")
     display_type: str = Field(default="7_segment_led", description="Hardware display type")
     site_id: str = Field(description="Site reference identifier")
     primary_operator_phones: List[str] = Field(default_factory=list, description="Authorized operator phone numbers")
@@ -57,7 +58,7 @@ class CaneBotMachineProfile(BaseModel):
 class KioskFleetRoster(BaseModel):
     """Master fleet roster registry containing all organization kiosks and rules."""
 
-    organization_name: str = Field(default="Canectar Foods Pvt Ltd")
+    organization_name: str = Field(default="Apex Cold-Chain Logistics Ltd")
     default_haccp_rule: HACCPRule = Field(default_factory=HACCPRule)
     locations: Dict[str, LocationProfile] = Field(default_factory=dict)
-    kiosks: Dict[str, CaneBotMachineProfile] = Field(default_factory=dict)
+    kiosks: Dict[str, KioskNodeMachineProfile] = Field(default_factory=dict)

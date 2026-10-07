@@ -38,7 +38,7 @@ def test_member_lifecycle_and_approval_apis() -> None:
     create_payload = {
         "full_name": "Deep Coverage Operator",
         "phone_number": "+919988112233",
-        "assigned_kiosk_id": "CANEBOT-PUNE-04",
+        "assigned_kiosk_id": "NODE-PUNE-04",
         "emp_code": "EMP-TEST-UI-100",
         "reporting_manager_emp_code": "MGR-01",
     }
@@ -58,7 +58,7 @@ def test_member_lifecycle_and_approval_apis() -> None:
     # 3. Update member details
     update_payload = {
         "full_name": "Deep Coverage Operator Updated",
-        "assigned_kiosk_id": "CANEBOT-BLR-02",
+        "assigned_kiosk_id": "NODE-BLR-02",
         "reporting_manager_emp_code": "MGR-02",
         "status": "PENDING_APPROVAL",
     }
@@ -75,7 +75,7 @@ def test_member_lifecycle_and_approval_apis() -> None:
     assert resp_approve.json()["status"] == "success"
 
     # 5. Reassign member
-    reassign_payload = {"kiosk_id": "CANEBOT-MUMBAI-08"}
+    reassign_payload = {"kiosk_id": "NODE-MUMBAI-08"}
     resp_re = client.post("/admin/apps/temperature-marker/api/members/EMP-TEST-UI-100/reassign", json=reassign_payload)
     assert resp_re.status_code == 200
     assert resp_re.json()["status"] == "SUCCESS"
@@ -91,21 +91,21 @@ def test_kiosk_calibration_and_config_api() -> None:
 
     # 1. Calibrate location
     cal_payload = {"latitude": 18.5621, "longitude": 73.9168}
-    resp = client.post("/admin/apps/temperature-marker/api/kiosks/CANEBOT-PUNE-04/calibrate-location", json=cal_payload)
+    resp = client.post("/admin/apps/temperature-marker/api/kiosks/NODE-PUNE-04/calibrate-location", json=cal_payload)
     assert resp.status_code == 200
     assert resp.json()["status"] == "SUCCESS"
 
     # 2. Non-existent kiosk calibration
-    resp_err = client.post("/admin/apps/temperature-marker/api/kiosks/CANEBOT-UNKNOWN/calibrate-location", json=cal_payload)
+    resp_err = client.post("/admin/apps/temperature-marker/api/kiosks/NODE-UNKNOWN/calibrate-location", json=cal_payload)
     assert resp_err.status_code == 404
 
     # 3. Kiosk config update
     cfg_payload = {"min_safe_temp": 1.0, "max_safe_temp": 4.0, "critical_temp": 7.5}
-    resp_cfg = client.post("/admin/apps/temperature-marker/api/kiosks/CANEBOT-PUNE-04/config", json=cfg_payload)
+    resp_cfg = client.post("/admin/apps/temperature-marker/api/kiosks/NODE-PUNE-04/config", json=cfg_payload)
     assert resp_cfg.status_code == 200
 
     # Clean up / ensure original coordinates are preserved
-    kg.update_kiosk_coordinates("CANEBOT-PUNE-04", 18.5621, 73.9168)
+    kg.update_kiosk_coordinates("NODE-PUNE-04", 18.5621, 73.9168)
 
 
 def test_html_pages_and_views() -> None:
@@ -119,5 +119,5 @@ def test_html_pages_and_views() -> None:
     assert resp_appr.status_code == 200
 
     # 3. Location verification page
-    resp_loc = client.get("/admin/apps/temperature-marker/verify-location?kiosk=CANEBOT-PUNE-04")
+    resp_loc = client.get("/admin/apps/temperature-marker/verify-location?kiosk=NODE-PUNE-04")
     assert resp_loc.status_code == 200

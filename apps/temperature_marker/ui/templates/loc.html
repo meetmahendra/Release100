@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CaneBot 1-Click Location Verification</title>
+    <title>KioskNode 1-Click Location Verification</title>
     <style>
         :root {
             --bg-main: #0f172a;
@@ -119,10 +119,10 @@
 </head>
 <body>
     <div class="container">
-        <div class="logo-badge">CANECTAR CANEBOT</div>
+        <div class="logo-badge">APEX KIOSK</div>
         <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Kiosk Geolocation Check</h2>
         <p id="subtext" style="color: var(--text-secondary); font-size: 0.9rem;">
-            Verifying your physical proximity to CaneBot Station <span id="kioskLabel" style="color: var(--text-primary); font-weight: 600;">{{ kiosk_name or kiosk_id }}</span>.
+            Verifying your physical proximity to KioskNode Station <span id="kioskLabel" style="color: var(--text-primary); font-weight: 600;">{{ kiosk_name or kiosk_id }}</span>.
         </p>
 
         <div class="kiosk-select-container">
@@ -215,7 +215,7 @@
                             icon.innerText = '✓';
                             msg.innerText = 'Location Verified!';
                             const stationName = data.kiosk_name || kioskId;
-                            detail.innerHTML = `You are <strong>${data.distance_meters}m</strong> from CaneBot Station <strong>${stationName}</strong> (${kioskId}).<br><br>Return to WhatsApp to complete duty check-in.`;
+                            detail.innerHTML = `You are <strong>${data.distance_meters}m</strong> from KioskNode Station <strong>${stationName}</strong> (${kioskId}).<br><br>Return to WhatsApp to complete duty check-in.`;
                         } else {
                             icon.className = 'status-icon status-error';
                             icon.innerText = '✕';

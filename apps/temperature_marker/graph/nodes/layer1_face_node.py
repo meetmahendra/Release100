@@ -276,7 +276,7 @@ async def layer1_face_node(
         state["error_message"] = f"Operator '{emp_code}' has no registered biometric template."
         state["reply_message"] = (
             f"⚠️ Biometric Registration Required: Operator '{emp_code}' has no registered face template. "
-            "Please submit your onboarding selfie to your CaneBot chat for admin approval."
+            "Please submit your onboarding selfie to your KioskNode chat for admin approval."
         )
         return state
 

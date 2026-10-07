@@ -42,7 +42,7 @@ class JiraAdapter:
         mock_mode: Optional[bool] = None,
     ) -> None:
         """Initialize Jira adapter with live credential resolution."""
-        self.base_url = (base_url or os.getenv("JIRA_BASE_URL") or "https://canectar.atlassian.net").rstrip("/")
+        self.base_url = (base_url or os.getenv("JIRA_BASE_URL") or "https://apex.atlassian.net").rstrip("/")
         self.email = email or os.getenv("JIRA_AUTH_EMAIL")
         self.api_token = api_token or os.getenv("JIRA_API_TOKEN")
 
@@ -56,7 +56,7 @@ class JiraAdapter:
         self,
         summary: str,
         description: str = "",
-        project_key: str = "CANE",
+        project_key: str = "APEX",
         issue_type: str = "Task",
         priority: str = "Medium",
     ) -> Dict[str, Any]:

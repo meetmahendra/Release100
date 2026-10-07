@@ -13,7 +13,7 @@
         "gmail_id": "bench_mo_001",
         "sender": "ceo@customer-enterprise.com",
         "to_recipients": [
-          "depali@company.com"
+          "user@company.com"
         ],
         "subject": "Q3 Board Strategy & Review",
         "body": "Can you prepare the slide deck for tomorrow's board meeting?",
@@ -35,7 +35,7 @@
         "gmail_id": "bench_mo_002",
         "sender": "pagerduty@internal.io",
         "to_recipients": [
-          "depali@company.com"
+          "user@company.com"
         ],
         "subject": "CRITICAL: Database Primary Node Failover in AP-South-1",
         "body": "Database replication lag exceeded 15 seconds. Immediate action required.",
@@ -57,7 +57,7 @@
         "gmail_id": "bench_mo_003",
         "sender": "partner@globaltech.com",
         "to_recipients": [
-          "depali@company.com"
+          "user@company.com"
         ],
         "subject": "Quick sync regarding API integration timeline",
         "body": "Can we schedule a 30-minute Zoom call tomorrow morning to align on the deliverables?",
@@ -78,7 +78,7 @@
         "gmail_id": "bench_mo_004",
         "sender": "contact@unknown-source.xyz",
         "to_recipients": [
-          "depali@company.com"
+          "user@company.com"
         ],
         "subject": "low_confidence_test ambiguous message",
         "body": "Just checking on the thing we discussed earlier.",
@@ -98,7 +98,7 @@
         "gmail_id": "bench_mo_005",
         "sender": "marketing@saas-promo.com",
         "to_recipients": [
-          "depali@company.com"
+          "user@company.com"
         ],
         "subject": "Exclusive Discount: 50% off enterprise cloud hosting",
         "body": "Unsubscribe anytime. Click here to claim your limited discount coupon.",
@@ -118,7 +118,7 @@
         "gmail_id": "bench_mo_006",
         "sender": "tech-lead@internal.io",
         "to_recipients": [
-          "depali@company.com"
+          "user@company.com"
         ],
         "subject": "Action Required: Please update database connection pooling limits",
         "body": "Kindly review and verify max connections in staging before Friday.",
@@ -138,7 +138,7 @@
         "gmail_id": "bench_mo_007",
         "sender": "no-reply@github.com",
         "to_recipients": [
-          "depali@company.com"
+          "user@company.com"
         ],
         "subject": "Security notice: Dependabot alert resolved",
         "body": "Automated pull request successfully merged.",
@@ -157,12 +157,12 @@
       "is_safety_critical": true,
       "input": {
         "gmail_id": "bench_mo_008",
-        "sender": "auditor@ey.com",
+        "sender": "auditor@audit.example.com",
         "to_recipients": [
           "cfo@company.com"
         ],
         "cc_recipients": [
-          "depali@company.com"
+          "user@company.com"
         ],
         "subject": "FYI: Preliminary Audit Observations",
         "body": "Keeping you in copy on the preliminary Q2 internal controls audit findings.",
@@ -183,7 +183,7 @@
         "gmail_id": "bench_mo_009",
         "sender": "billing@aws.amazon.com",
         "to_recipients": [
-          "depali@company.com"
+          "user@company.com"
         ],
         "subject": "Monthly Invoice #INV-2026-9912",
         "body": "Your invoice for August 2026 AWS Cloud Services is now available. Total amount: $1,420.00.",
@@ -203,7 +203,7 @@
         "gmail_id": "bench_mo_010",
         "sender": "legal@partner-law.com",
         "to_recipients": [
-          "depali@company.com"
+          "user@company.com"
         ],
         "subject": "Executed NDA Document",
         "body": "Please find attached the signed non-disclosure agreement.",

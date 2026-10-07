@@ -377,7 +377,7 @@
                                 {{ r.kiosk_id }}
                             </div>
                             <div style="font-size: 0.75rem; color: #94a3b8;">
-                                {{ kiosk_map.get(r.kiosk_id, {}).get("name", "CaneBot Kiosk") }}
+                                {{ kiosk_map.get(r.kiosk_id, {}).get("name", "KioskNode Kiosk") }}
                             </div>
                         </td>
                         <td style="padding: 0.85rem 1rem;">
@@ -536,7 +536,7 @@
             ⚙️ HACCP Multi-Check Frequency & Safety Thresholds
         </h3>
         <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.5rem;">
-            Configure temperature capture frequency requirements across all CaneBot kiosks. Overdue alarms trigger automatically when interval expires without a valid photo reading.
+            Configure temperature capture frequency requirements across all KioskNode kiosks. Overdue alarms trigger automatically when interval expires without a valid photo reading.
         </p>
 
         <form onsubmit="saveGlobalConfig(event)" style="display: flex; flex-direction: column; gap: 1.25rem;">
@@ -618,7 +618,7 @@
                 <select id="resolveStatus" required style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;">
                     <option value="APPROVED_OVERRIDE">Approve & Override (Verified by Manager)</option>
                     <option value="DISPUTED_INVALID">Reject & Invalidate (Suspected Fraud / Breach)</option>
-                    <option value="MAINTENANCE_REQUIRED">Escalate to CaneBot Technician (Chiller Warning)</option>
+                    <option value="MAINTENANCE_REQUIRED">Escalate to KioskNode Technician (Chiller Warning)</option>
                     <option value="RESOLVED_MANUALLY">Resolved Manually</option>
                 </select>
             </div>

@@ -73,7 +73,7 @@ def test_classify_ingress_intent_operator() -> None:
     assert res_cmd.intent == IngressIntent.SYSTEM_COMMAND
 
     # Kiosk switch -> SYSTEM_COMMAND
-    res_kiosk = classify_ingress_intent("kiosk CANEBOT-PUNE-05", is_image=False, sender_role="OPERATOR")
+    res_kiosk = classify_ingress_intent("kiosk NODE-PUNE-05", is_image=False, sender_role="OPERATOR")
     assert res_kiosk.intent == IngressIntent.SYSTEM_COMMAND
 
 
@@ -106,7 +106,7 @@ def test_whatsapp_webhook_operator_query_routes_to_reporting_manager() -> None:
         emp_code="MGR-1042",
         full_name="Rajesh Sharma",
         phone_number="+919811224400",
-        assigned_kiosk_id="CANEBOT-PUNE-05",
+        assigned_kiosk_id="NODE-PUNE-05",
         role="SUPERVISOR",
         status="ACTIVE",
     )
@@ -116,7 +116,7 @@ def test_whatsapp_webhook_operator_query_routes_to_reporting_manager() -> None:
         emp_code="EMP-2001",
         full_name="Suresh Kumar",
         phone_number="+919811225500",
-        assigned_kiosk_id="CANEBOT-PUNE-05",
+        assigned_kiosk_id="NODE-PUNE-05",
         role="OPERATOR",
         reporting_manager_emp_code="MGR-1042",
         status="ACTIVE",
@@ -138,7 +138,7 @@ def test_whatsapp_webhook_operator_query_routes_to_reporting_manager() -> None:
                                     "from": "919811225500",
                                     "id": "wamid.op_query_1",
                                     "timestamp": "1710400000",
-                                    "text": {"body": "Need 200 cups and cane stock"},
+                                    "text": {"body": "Need 200 cups and storage stock"},
                                     "type": "text",
                                 }
                             ],
@@ -175,7 +175,7 @@ def test_whatsapp_webhook_operator_greeting_returns_self_service_status_and_does
         emp_code="MGR-9901",
         full_name="Anjali Patil",
         phone_number="+919811990001",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         role="SUPERVISOR",
         status="ACTIVE",
     )
@@ -185,7 +185,7 @@ def test_whatsapp_webhook_operator_greeting_returns_self_service_status_and_does
         emp_code="EMP-9902",
         full_name="Ganesh Jadhav",
         phone_number="+919811990002",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         role="OPERATOR",
         reporting_manager_emp_code="MGR-9901",
         status="ACTIVE",
@@ -230,7 +230,7 @@ def test_whatsapp_webhook_operator_greeting_returns_self_service_status_and_does
 
     # Verify self-service greeting content
     assert "👋 Hello Ganesh Jadhav!" in reply
-    assert "CANEBOT-PUNE-04" in reply
+    assert "NODE-PUNE-04" in reply
     assert "Shift Attendance:" in reply
     assert "Chiller Temperature:" in reply
 

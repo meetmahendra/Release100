@@ -239,7 +239,7 @@ def test_watermark_timestamp_parsing_and_validation() -> None:
 
     # Various watermark patterns
     assert extract_visual_timestamp_from_text("Shot on Kiosk 16-Sept-2026 10:14:29 am GPS 18.52") == "16-Sept-2026 10:14:29 am"
-    assert extract_visual_timestamp_from_text("2026-09-20 14:30 CaneBot Pune") == "2026-09-20 14:30"
+    assert extract_visual_timestamp_from_text("2026-09-20 14:30 KioskNode Pune") == "2026-09-20 14:30"
     assert extract_visual_timestamp_from_text("No watermark text") is None
 
     # Date parsing

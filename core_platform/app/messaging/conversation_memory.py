@@ -161,7 +161,7 @@ class ConversationMemory:
 
         formatted_lines = []
         for t in turns:
-            speaker = "Operator" if t["role"] == "user" else "CaneBot Coordinator"
+            speaker = "Operator" if t["role"] == "user" else "KioskNode Coordinator"
             formatted_lines.append(f"{speaker}: {t['content']}")
 
         return "\n".join(formatted_lines)

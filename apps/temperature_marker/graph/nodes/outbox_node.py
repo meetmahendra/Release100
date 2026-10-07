@@ -26,7 +26,7 @@ async def outbox_node(
     """Save attendance record to local SQLite and enqueue in Outbox queue."""
     correlation_id = state.get("correlation_id", "")
     emp_code = state.get("operator_emp_code", "EMP-UNKNOWN")
-    kiosk_id = state.get("kiosk_id", "CANEBOT-UNKNOWN")
+    kiosk_id = state.get("kiosk_id", "NODE-UNKNOWN")
     face_conf = state.get("face_confidence", 0.0)
     dist_m = state.get("distance_meters", 0.0)
     geo_ok = state.get("geofence_verified", False)

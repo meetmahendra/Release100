@@ -84,7 +84,7 @@ def test_20_thread_multi_cartridge_concurrency_stress(
                 gmail_id=f"msg_stress_{worker_idx}",
                 thread_id=f"th_stress_{worker_idx}",
                 subject=f"Stress Test Email {worker_idx}",
-                sender="stress@canectar.com",
+                sender="stress@apex.com",
             )
             ok = bool(att and em)
             polyglot_reporter.log_action(

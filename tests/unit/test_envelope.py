@@ -27,11 +27,11 @@ def test_interaction_envelope_creation() -> None:
         channel=ChannelType.WHATSAPP,
         sender_id="+919800011122",
         text_content="Duty check-in",
-        kiosk_id="CANEBOT-PUNE-04",
+        kiosk_id="NODE-PUNE-04",
     )
     assert env.envelope_id != ""
     assert env.session_id == f"{env.tenant_id}:whatsapp:+919800011122"
-    assert env.kiosk_id == "CANEBOT-PUNE-04"
+    assert env.kiosk_id == "NODE-PUNE-04"
     assert len(env.attachments) == 0
 
 

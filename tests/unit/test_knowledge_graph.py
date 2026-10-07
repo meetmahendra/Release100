@@ -18,17 +18,17 @@ from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphServic
 
 
 def test_knowledge_graph_service_loading() -> None:
-    """KnowledgeGraphService must load default CaneBot fleet roster."""
+    """KnowledgeGraphService must load default KioskNode fleet roster."""
     service = KnowledgeGraphService()
     assert len(service.roster.kiosks) >= 3
-    assert "CANEBOT-PUNE-04" in service.roster.kiosks
-    assert "CANEBOT-MUMBAI-08" in service.roster.kiosks
+    assert "NODE-PUNE-04" in service.roster.kiosks
+    assert "NODE-MUMBAI-08" in service.roster.kiosks
 
 
 def test_knowledge_graph_coordinates_lookup() -> None:
     """Coordinates lookup must return latitude, longitude, and geofence radius."""
     service = KnowledgeGraphService()
-    geo = service.get_kiosk_coordinates("CANEBOT-PUNE-04")
+    geo = service.get_kiosk_coordinates("NODE-PUNE-04")
     assert geo is not None
     lat, lon, radius = geo
     assert lat == 18.5621
@@ -37,9 +37,9 @@ def test_knowledge_graph_coordinates_lookup() -> None:
 
 
 def test_knowledge_graph_haccp_limits() -> None:
-    """HACCP rules must define CaneBot safe range 2.0C - 4.0C with critical 7.0C."""
+    """HACCP rules must define KioskNode safe range 2.0C - 4.0C with critical 7.0C."""
     service = KnowledgeGraphService()
-    haccp = service.get_haccp_limits("CANEBOT-PUNE-04")
+    haccp = service.get_haccp_limits("NODE-PUNE-04")
     assert haccp.min_safe_temp == 2.0
     assert haccp.max_safe_temp == 4.0
     assert haccp.critical_alert_temp == 7.0
@@ -49,7 +49,7 @@ def test_knowledge_graph_resolve_phone_to_kiosk() -> None:
     """Phone number mapping must resolve to correct physical kiosk."""
     service = KnowledgeGraphService()
     kiosk_id = service.resolve_kiosk_by_phone("+919800011122")
-    assert kiosk_id == "CANEBOT-PUNE-04"
+    assert kiosk_id == "NODE-PUNE-04"
 
     unknown = service.resolve_kiosk_by_phone("+910000000000")
     assert unknown is None

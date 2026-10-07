@@ -50,7 +50,7 @@ def test_config_backup_and_restore_cycle() -> None:
     with tempfile.TemporaryDirectory() as tmp_dir:
         root = Path(tmp_dir)
         env_file = root / ".env"
-        env_file.write_text("# Initial Configuration\nKIOSK_ID=CANEBOT-PUNE-04\nPORT=8002\n", encoding="utf-8")
+        env_file.write_text("# Initial Configuration\nKIOSK_ID=NODE-PUNE-04\nPORT=8002\n", encoding="utf-8")
         backup_dir = root / "backups"
         backup_dir.mkdir(parents=True, exist_ok=True)
 
@@ -67,7 +67,7 @@ def test_config_backup_and_restore_cycle() -> None:
 
             # 3. Read env dict
             ed = read_env_dict(env_path=env_file)
-            assert ed.get("KIOSK_ID") == "CANEBOT-PUNE-04"
+            assert ed.get("KIOSK_ID") == "NODE-PUNE-04"
 
             # 4. Save master config
             updates = {"PORT": "9000", "NEW_VAR": "TEST_VAL"}

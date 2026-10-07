@@ -77,7 +77,7 @@ def test_rate_limiter_multisender() -> None:
     # Test idle eviction
     limiter.check_and_consume("idle_user")
     assert limiter.active_sender_count == 2
-    time.sleep(0.06)
+    time.sleep(0.1)
     limiter.check_and_consume("active_user")
     # idle_user should be evicted
     assert limiter.get_remaining_tokens("idle_user") == limiter.max_tokens

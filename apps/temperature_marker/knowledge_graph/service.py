@@ -15,7 +15,7 @@
 """
 Knowledge Graph Fleet Lookup Service.
 
-Adheres strictly to Plan 03 v1.3. Provides query resolution for CaneBot
+Adheres strictly to Plan 03 v1.3. Provides query resolution for KioskNode
 kiosk profiles, locations, geofences, HACCP rules, and operator phone mappings.
 """
 
@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from apps.temperature_marker.knowledge_graph.schema import (
-    CaneBotMachineProfile,
+    KioskNodeMachineProfile,
     HACCPRule,
     KioskFleetRoster,
     LocationProfile,
@@ -43,14 +43,14 @@ class KnowledgeGraphService:
         """
         if roster_path is None:
             base = Path(os.path.dirname(os.path.abspath(__file__)))
-            roster_path = base / "canebot_fleet_roster.json"
+            roster_path = base / "fleet_roster.json"
 
         self.roster_path = Path(roster_path)
         self.roster: KioskFleetRoster = self._load_roster()
 
     def _load_roster(self) -> KioskFleetRoster:
         """Load and parse fleet roster JSON file."""
-        sample_path = self.roster_path.parent / "canebot_fleet_roster.sample.json"
+        sample_path = self.roster_path.parent / "fleet_roster.sample.json"
         if not self.roster_path.exists():
             if sample_path.exists():
                 with open(sample_path, "r", encoding="utf-8") as f:
@@ -70,19 +70,19 @@ class KnowledgeGraphService:
         return roster
 
     def _save_roster(self) -> None:
-        """Persist current fleet roster back to canebot_fleet_roster.json."""
+        """Persist current fleet roster back to fleet_roster.json."""
         self.roster_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.roster_path, "w", encoding="utf-8") as f:
             f.write(self.roster.model_dump_json(indent=2))
 
-    def get_kiosk_profile(self, kiosk_id: str) -> Optional[CaneBotMachineProfile]:
+    def get_kiosk_profile(self, kiosk_id: str) -> Optional[KioskNodeMachineProfile]:
         """Retrieve hardware and operational profile for a given kiosk ID.
 
         Args:
-            kiosk_id: Unique kiosk identifier (e.g. 'CANEBOT-PUNE-04').
+            kiosk_id: Unique kiosk identifier (e.g. 'NODE-PUNE-04').
 
         Returns:
-            CaneBotMachineProfile if found, else None.
+            KioskNodeMachineProfile if found, else None.
         """
         return self.roster.kiosks.get(kiosk_id)
 
@@ -176,7 +176,12 @@ class KnowledgeGraphService:
                 return kiosk_id
         return None
 
-    def assign_operator_to_kiosk(self, phone_number: str, kiosk_id: str) -> bool:
+    def assign_operator_to_kiosk(
+        self,
+        phone_number: str,
+        kiosk_id: str,
+        tenant_id: Optional[str] = None,
+    ) -> bool:
         """Assign or reassign an operator phone number to a specific kiosk in the roster.
 
         Args:
@@ -228,14 +233,15 @@ class KnowledgeGraphService:
         latitude: float,
         longitude: float,
         radius_meters: float = 100.0,
-        machine_model: str = "CaneBot-Pro-X1",
+        machine_model: str = "ChillerNode-Pro-X1",
         display_type: str = "7-segment-led",
         primary_operator_phones: Optional[List[str]] = None,
-    ) -> CaneBotMachineProfile:
-        """Register a new CaneBot kiosk and its site location in the knowledge graph.
+        tenant_id: str = "public",
+    ) -> KioskNodeMachineProfile:
+        """Register a new KioskNode kiosk and its site location in the knowledge graph.
 
         Args:
-            kiosk_id: Unique kiosk code (e.g. 'CANEBOT-HYD-01').
+            kiosk_id: Unique kiosk code (e.g. 'NODE-HYD-01').
             site_name: Venue or mall name.
             city: City location.
             latitude: GPS latitude.
@@ -244,9 +250,10 @@ class KnowledgeGraphService:
             machine_model: Hardware machine model.
             display_type: Display type.
             primary_operator_phones: Optional list of operator phones.
+            tenant_id: Tenant workspace slug.
 
         Returns:
-            The created CaneBotMachineProfile.
+            The created KioskNodeMachineProfile.
         """
         site_id = f"SITE-{city.upper()[:3]}-{kiosk_id[-2:]}"
         loc_profile = LocationProfile(
@@ -259,8 +266,9 @@ class KnowledgeGraphService:
         )
         self.roster.locations[site_id] = loc_profile
 
-        kiosk_profile = CaneBotMachineProfile(
+        kiosk_profile = KioskNodeMachineProfile(
             kiosk_id=kiosk_id,
+            tenant_id=tenant_id,
             machine_model=machine_model,
             site_id=site_id,
             display_type=display_type,
@@ -271,17 +279,30 @@ class KnowledgeGraphService:
         self._save_roster()
         return kiosk_profile
 
-    def list_all_kiosks(self) -> List[Dict[str, Any]]:
-        """List all kiosks in fleet with resolved location and profile metadata.
+    def list_all_kiosks(self, tenant_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all kiosks in fleet with resolved location and profile metadata for tenant.
+
+        Args:
+            tenant_id: Optional tenant slug to filter kiosks by organization.
 
         Returns:
             List of dictionaries containing kiosk metadata and coordinates.
         """
         result: List[Dict[str, Any]] = []
+        has_specific = any(getattr(p, "tenant_id", None) == tenant_id for p in self.roster.kiosks.values()) if tenant_id and tenant_id not in ("platform", "*") else False
         for kiosk_id, profile in self.roster.kiosks.items():
+            kiosk_tenant = getattr(profile, "tenant_id", "public") or "public"
+            if tenant_id and tenant_id not in ("platform", "*"):
+                if has_specific:
+                    if kiosk_tenant != tenant_id:
+                        continue
+                else:
+                    if kiosk_tenant not in (tenant_id, "public"):
+                        continue
             loc = self.roster.locations.get(profile.site_id)
             result.append({
                 "kiosk_id": kiosk_id,
+                "tenant_id": kiosk_tenant,
                 "name": loc.site_name if loc else kiosk_id,
                 "city": loc.city if loc else "Unknown",
                 "latitude": loc.latitude if loc else 0.0,
@@ -323,7 +344,7 @@ class KnowledgeGraphService:
         """Fuzzy find a kiosk identifier by code, partial name, site name, or kiosk number.
 
         Args:
-            query: User search string (e.g. '5', 'dassault', 'CANEBOT-PUNE-05', 'eka').
+            query: User search string (e.g. '5', 'dassault', 'NODE-PUNE-05', 'eka').
 
         Returns:
             Resolved kiosk_id string if found, else None.
@@ -337,7 +358,7 @@ class KnowledgeGraphService:
             if k_id.upper() == q_upper:
                 return k_id
 
-        # 2. Match trailing number (e.g. "5" -> "CANEBOT-PUNE-05")
+        # 2. Match trailing number (e.g. "5" -> "NODE-PUNE-05")
         digits = "".join(c for c in q if c.isdigit())
         if digits:
             num = int(digits)

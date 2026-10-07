@@ -38,7 +38,7 @@ def db_service(tmp_path):
 def test_kiosk_config_upsert_and_retrieval(db_service):
     """Verify KioskMonitoringConfig CRUD operations."""
     cfg = db_service.upsert_kiosk_config(
-        kiosk_id="CANEBOT-PUNE-01",
+        kiosk_id="NODE-PUNE-01",
         required_daily_temp_checks=4,
         check_interval_hours=3.5,
         min_safe_temp=2.0,
@@ -46,22 +46,22 @@ def test_kiosk_config_upsert_and_retrieval(db_service):
         critical_alert_temp=7.5,
         alert_manager_on_hazard=True,
     )
-    assert cfg.kiosk_id == "CANEBOT-PUNE-01"
+    assert cfg.kiosk_id == "NODE-PUNE-01"
     assert cfg.required_daily_temp_checks == 4
     assert cfg.check_interval_hours == 3.5
 
     # Retrieve specific
-    fetched = db_service.get_kiosk_config("CANEBOT-PUNE-01")
+    fetched = db_service.get_kiosk_config("NODE-PUNE-01")
     assert fetched is not None
     assert fetched.required_daily_temp_checks == 4
 
     # Update
     updated = db_service.upsert_kiosk_config(
-        kiosk_id="CANEBOT-PUNE-01",
+        kiosk_id="NODE-PUNE-01",
         required_daily_temp_checks=5,
     )
     assert updated.required_daily_temp_checks == 5
-    assert db_service.get_kiosk_config("CANEBOT-PUNE-01").required_daily_temp_checks == 5
+    assert db_service.get_kiosk_config("NODE-PUNE-01").required_daily_temp_checks == 5
 
 
 def test_kiosk_daily_attendance_summary(db_service):
@@ -73,7 +73,7 @@ def test_kiosk_daily_attendance_summary(db_service):
         phone_number="+919800112233",
         role="OPERATOR",
         status="ACTIVE",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
     )
     with db_service.SessionLocal() as session:
         session.add(emp)
@@ -83,7 +83,7 @@ def test_kiosk_daily_attendance_summary(db_service):
     now = datetime.now(timezone.utc)
     rec1 = AttendanceRecord(
         correlation_id="corr-test-att-01",
-        kiosk_id="CANEBOT-PUNE-04",
+        kiosk_id="NODE-PUNE-04",
         emp_code="EMP-TEST-01",
         checkin_time_utc=now,
         is_duty_checkin=True,
@@ -101,7 +101,7 @@ def test_kiosk_daily_attendance_summary(db_service):
     summaries = db_service.get_kiosk_daily_attendance_summary()
     assert len(summaries) >= 1
 
-    pune_04 = next((s for s in summaries if s["kiosk_id"] == "CANEBOT-PUNE-04"), None)
+    pune_04 = next((s for s in summaries if s["kiosk_id"] == "NODE-PUNE-04"), None)
     assert pune_04 is not None
     assert pune_04["has_checkin_today"] is True
     assert pune_04["checkin_operator_name"] == "Ramesh Pawar"
@@ -115,7 +115,7 @@ def test_active_high_alerts_and_acknowledgement(db_service):
     now = datetime.now(timezone.utc)
     hazard_rec = AttendanceRecord(
         correlation_id="corr-test-att-02",
-        kiosk_id="CANEBOT-PUNE-05",
+        kiosk_id="NODE-PUNE-05",
         emp_code="EMP-TEST-02",
         checkin_time_utc=now,
         is_duty_checkin=True,
@@ -150,10 +150,10 @@ def test_web_message_reply_and_resolution(db_service):
         sender_phone="+919811223344",
         sender_emp_code="EMP-01",
         sender_name="Suresh K",
-        kiosk_id="CANEBOT-PUNE-04",
+        kiosk_id="NODE-PUNE-04",
         recipient_emp_code="MGR-01",
         recipient_phone="+919800000000",
-        message_text="Need extra sugarcane cups today",
+        message_text="Need extra cold-chain cups today",
         priority=50,
     )
     assert msg.status == "QUEUED"
@@ -175,15 +175,15 @@ def test_alert_dispatcher_cooldown():
     reset_alert_cooldown()
 
     # First alert should be permitted
-    allowed_1 = should_dispatch_alert("CANEBOT-PUNE-04", "HACCP_HAZARD", cooldown_seconds=60.0)
+    allowed_1 = should_dispatch_alert("NODE-PUNE-04", "HACCP_HAZARD", cooldown_seconds=60.0)
     assert allowed_1 is True
 
     # Immediate second alert for same kiosk & type should be suppressed
-    allowed_2 = should_dispatch_alert("CANEBOT-PUNE-04", "HACCP_HAZARD", cooldown_seconds=60.0)
+    allowed_2 = should_dispatch_alert("NODE-PUNE-04", "HACCP_HAZARD", cooldown_seconds=60.0)
     assert allowed_2 is False
 
     # Different kiosk should be permitted
-    allowed_other_kiosk = should_dispatch_alert("CANEBOT-PUNE-05", "HACCP_HAZARD", cooldown_seconds=60.0)
+    allowed_other_kiosk = should_dispatch_alert("NODE-PUNE-05", "HACCP_HAZARD", cooldown_seconds=60.0)
     assert allowed_other_kiosk is True
 
     reset_alert_cooldown()
@@ -192,10 +192,10 @@ def test_alert_dispatcher_cooldown():
 def test_fleet_executive_digest_builder(db_service):
     """Verify build_fleet_executive_digest compiles a readable multi-kiosk summary."""
     digest = build_fleet_executive_digest(manager_name="Supervisor Ajay", db_service=db_service)
-    assert "CANECTAR FLEET EXECUTIVE STATUS" in digest
+    assert "APEX FLEET EXECUTIVE STATUS" in digest
     assert "Manager: Supervisor Ajay" in digest
     assert "Active Kiosks:" in digest
-    assert "CANEBOT-PUNE-04" in digest
+    assert "NODE-PUNE-04" in digest
 
 
 def test_ingress_intent_classification_for_fleet_commands():

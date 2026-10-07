@@ -67,7 +67,7 @@ async def test_supervisor_commands_and_assignment() -> None:
         emp_code="MGR-001",
         full_name="Fleet Supervisor Test",
         phone_number=sup_phone,
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
         role="SUPERVISOR",
     )
@@ -81,11 +81,11 @@ async def test_supervisor_commands_and_assignment() -> None:
     assert res2 is not None
 
     # 3. Assign operator to station
-    res3 = await dispatch_whatsapp_payload(_make_msg_payload(sup_phone, "assign EMP-9090 CANEBOT-BLR-02"))
+    res3 = await dispatch_whatsapp_payload(_make_msg_payload(sup_phone, "assign EMP-9090 NODE-BLR-02"))
     assert res3 is not None
 
     # 4. Unknown station error handling
-    res4 = await dispatch_whatsapp_payload(_make_msg_payload(sup_phone, "kiosk CANEBOT-UNKNOWN-99"))
+    res4 = await dispatch_whatsapp_payload(_make_msg_payload(sup_phone, "kiosk NODE-UNKNOWN-99"))
     assert res4 is not None
 
     # 5. Clean up test records
@@ -106,7 +106,7 @@ async def test_operator_restricted_commands() -> None:
         emp_code="EMP-REG-01",
         full_name="Regular Operator",
         phone_number=op_phone,
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
         role="OPERATOR",
     )
@@ -116,7 +116,7 @@ async def test_operator_restricted_commands() -> None:
     assert res1 is not None
 
     # Operator attempting station switch
-    res2 = await dispatch_whatsapp_payload(_make_msg_payload(op_phone, "switch CANEBOT-BLR-02"))
+    res2 = await dispatch_whatsapp_payload(_make_msg_payload(op_phone, "switch NODE-BLR-02"))
     assert res2 is not None
 
     # Clean up

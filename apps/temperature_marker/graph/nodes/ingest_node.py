@@ -82,7 +82,7 @@ async def ingest_node(state: TemperatureMarkerState) -> TemperatureMarkerState:
         if was_flipped:
             logger.debug("[IngestNode] Applied selfie horizontal flip correction.")
 
-        # Step C: Specular glare suppression (CaneBot acrylic panel reflections).
+        # Step C: Specular glare suppression (KioskNode acrylic panel reflections).
         image_bgr = await enhancer.suppress_panel_glare(image_bgr)
 
         # Re-encode enhanced image to JPEG bytes and store back in state.

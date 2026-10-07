@@ -396,7 +396,7 @@ def test_core_platform_health_and_redirects():
 
 @pytest.mark.asyncio
 async def test_relay_client_lifecycle():
-    client = CloudRelayClient(relay_url="wss://mock.relay.canectar.com/ws")
+    client = CloudRelayClient(relay_url="wss://mock.relay.apex.com/ws")
     client.start()
     assert client.is_running is True
     await client.stop()
@@ -434,7 +434,7 @@ async def test_layer1_face_node_with_embedding(tmp_path: Path):
 
 
 def test_knowledge_graph_service_fleet_queries() -> None:
-    """Test KnowledgeGraphService real fleet lookup and topology queries against canebot_fleet_roster.json."""
+    """Test KnowledgeGraphService real fleet lookup and topology queries against fleet_roster.json."""
     from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
 
     kg = KnowledgeGraphService()
@@ -444,7 +444,7 @@ def test_knowledge_graph_service_fleet_queries() -> None:
     assert len(all_kiosks) >= 3
 
     # Details for known kiosk
-    kiosk_id = "CANEBOT-PUNE-04"
+    kiosk_id = "NODE-PUNE-04"
     details = kg.get_kiosk_details(kiosk_id)
     assert details is not None
     assert details["kiosk_id"] == kiosk_id

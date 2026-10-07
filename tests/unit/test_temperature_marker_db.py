@@ -32,7 +32,7 @@ def test_register_and_lookup_employee(db_service: DatabaseService) -> None:
         emp_code="EMP-1042",
         full_name="Rajesh Pawar",
         phone_number="+919800011122",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
     )
     assert emp.id is not None
@@ -51,7 +51,7 @@ def test_record_attendance(db_service: DatabaseService) -> None:
     rec = db_service.record_attendance(
         correlation_id="corr-12345",
         emp_code="EMP-1042",
-        kiosk_id="CANEBOT-PUNE-04",
+        kiosk_id="NODE-PUNE-04",
         face_confidence=0.94,
         gps_distance_meters=18.4,
         geofence_verified=True,
@@ -97,7 +97,7 @@ def test_employee_role_and_manager_hierarchy(db_service: DatabaseService) -> Non
         emp_code="OP-005",
         full_name="Mahendra Gurav",
         phone_number="+918087545430",
-        assigned_kiosk_id="CANEBOT-PUNE-05",
+        assigned_kiosk_id="NODE-PUNE-05",
         role="OPERATOR",
         reporting_manager_emp_code="MGR-001",
     )
@@ -115,7 +115,7 @@ def test_internal_message_queue_priority_and_lifecycle(db_service: DatabaseServi
         sender_phone="+918087545430",
         sender_emp_code="OP-005",
         sender_name="Mahendra Gurav",
-        kiosk_id="CANEBOT-PUNE-05",
+        kiosk_id="NODE-PUNE-05",
         recipient_emp_code="MGR-001",
         recipient_phone=mgr_phone,
         message_text="Shift timing query",
@@ -128,7 +128,7 @@ def test_internal_message_queue_priority_and_lifecycle(db_service: DatabaseServi
         sender_phone="+918087545430",
         sender_emp_code="OP-005",
         sender_name="Mahendra Gurav",
-        kiosk_id="CANEBOT-PUNE-05",
+        kiosk_id="NODE-PUNE-05",
         recipient_emp_code="MGR-001",
         recipient_phone=mgr_phone,
         message_text="Juice motor vibrating loudly",
@@ -141,7 +141,7 @@ def test_internal_message_queue_priority_and_lifecycle(db_service: DatabaseServi
         sender_phone="+919800011122",
         sender_emp_code="OP-004",
         sender_name="Rahul Patil",
-        kiosk_id="CANEBOT-PUNE-04",
+        kiosk_id="NODE-PUNE-04",
         recipient_emp_code="MGR-001",
         recipient_phone=mgr_phone,
         message_text="Out of 250ml cups",

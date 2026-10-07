@@ -45,7 +45,7 @@ from core_platform.app.auth.strategies import AuthResolver
 from core_platform.app.config import settings
 from core_platform.app.ingress.rate_limiter import get_platform_rate_limiter
 from core_platform.app.llm.gateway import get_platform_llm_gateway
-from core_platform.app.rbac.permissions import get_web_security_context
+from core_platform.app.rbac.permissions import (get_web_security_context, is_devops_context, require_devops)
 from core_platform.app.ui.templating import build_templates
 
 logger = logging.getLogger("core_platform.admin_shell")
@@ -68,10 +68,17 @@ def _render_login_view(
     else:
         csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
 
+    tenant_info = getattr(request.state, "tenant_info", None)
+    if not tenant_info:
+        from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+        tenant_id, tenant_name, _ = resolve_effective_tenant_info(request)
+        if tenant_id and tenant_id not in ("public", "default", "default_tenant"):
+            tenant_info = {"id": tenant_id, "name": tenant_name}
+
     resp = templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"title": "Admin Login", "error": error, "csrf_token": csrf_token},
+        context={"title": "Admin Login", "error": error, "csrf_token": csrf_token, "tenant": tenant_info},
         status_code=status_code,
     )
     resp.set_cookie(
@@ -143,7 +150,9 @@ async def login_submit(
         )
 
     # 3. Credential validation (SEC-1)
-    ctx = AuthResolver.resolve_credentials(username, password)
+    from core_platform.app.middleware.tenant_context import get_current_tenant_id
+    req_tenant = get_current_tenant_id()
+    ctx = AuthResolver.resolve_credentials(username, password, tenant_id=req_tenant)
     if not ctx:
         return _render_login_view(
             request=request,
@@ -158,7 +167,22 @@ async def login_submit(
         permitted_apps=ctx.permitted_apps,
         tenant_id=ctx.tenant_id,
     )
-    redirect = RedirectResponse(url="/admin/", status_code=status.HTTP_302_FOUND)
+    # Determine target redirect URL based on host domain and role
+    host = request.headers.get("host", "").split(":")[0].strip().lower()
+    is_customer_domain = False
+    if "." in host and not host.replace(".", "").isdigit() and "localhost" not in host:
+        parts = host.split(".")
+        if len(parts) >= 3 and parts[0] not in ("www", "api", "app", "public", "ops", "ops-admin", "admin"):
+            is_customer_domain = True
+    if req_tenant not in ("public", "default", "default_tenant", "platform", "system", "ops"):
+        is_customer_domain = True
+
+    if ("devops_admin" in ctx.user_roles or "super_admin" in ctx.user_roles) and not is_customer_domain:
+        target_url = "/ops/tenants"
+    else:
+        target_url = "/admin/"
+
+    redirect = RedirectResponse(url=target_url, status_code=status.HTTP_302_FOUND)
     redirect.set_cookie(
         key="admin_token",
         value=token,
@@ -167,7 +191,7 @@ async def login_submit(
         secure=bool(settings.EXECUTION_MODE == "production" or getattr(settings, "COOKIE_SECURE", False)),
         max_age=8 * 3600,
     )
-    logger.info("[AdminShell] Login success: principal=%s", ctx.principal_id)
+    logger.info("[AdminShell] Login success: principal=%s tenant=%s target=%s", ctx.principal_id, ctx.tenant_id, target_url)
     return redirect
 
 
@@ -207,7 +231,29 @@ async def admin_dashboard(
     gateway = get_platform_llm_gateway()
     llm_health = gateway.get_health()
 
-    nav_apps = _build_nav_apps(ctx)
+    # Determine active tenant context
+    from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+    eff_tenant, tenant_name, active_tenant = resolve_effective_tenant_info(request, ctx)
+    active_tenant_slug = eff_tenant
+
+    is_devops = (
+        ctx.principal_id in ("devops_admin", "master_admin", "system", "admin")
+        or "super_admin" in ctx.user_roles
+        or "devops_admin" in ctx.user_roles
+    )
+
+    from sqlalchemy import func, select
+    from core_platform.app.db.manager import get_db_manager
+    from core_platform.app.identity.models import PlatformUser
+
+    db_mgr = get_db_manager()
+    total_tenant_users = 0
+    with db_mgr.get_session() as session:
+        total_tenant_users = session.scalar(
+            select(func.count(PlatformUser.id)).where(PlatformUser.tenant_id == active_tenant_slug)
+        ) or 0
+
+    nav_apps = _build_nav_apps(ctx, active_tenant)
 
     from core_platform.app.diagnostics.config_backup import read_env_dict
     from core_platform.app.telemetry.audit_engine import AuditEngine
@@ -227,14 +273,19 @@ async def admin_dashboard(
         request=request,
         name="shell.html",
         context={
-            "title": "Platform Admin",
+            "title": f"Workspace Admin — {tenant_name}",
             "principal": ctx.principal_id,
             "is_admin": ctx.is_admin,
+            "is_devops": is_devops,
+            "active_tenant": active_tenant,
+            "tenant_id": active_tenant_slug,
+            "tenant_name": tenant_name,
+            "total_tenant_users": total_tenant_users,
             "nav_apps": nav_apps,
             "enabled_applications": list(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else [a["id"] for a in nav_apps],
             "dry_run": settings.DRY_RUN,
             "execution_mode": settings.EXECUTION_MODE,
-            "organization": settings.ORGANIZATION_NAME,
+            "organization": tenant_name,
             "station": settings.STATION_NAME,
             "kiosk_id": settings.KIOSK_ID,
             "llm_providers": llm_health,
@@ -268,21 +319,26 @@ async def view_api_keys(
     if not ctx.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required.")
 
+    from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+    eff_tenant, tenant_name, active_tenant = resolve_effective_tenant_info(request, ctx)
     manager = get_api_key_manager()
     keys = manager.list_keys()
-    nav_apps = _build_nav_apps(ctx)
+    nav_apps = _build_nav_apps(ctx, active_tenant)
 
     return templates.TemplateResponse(
         request=request,
         name="shell.html",
         context={
-            "title": "API Keys",
+            "title": f"API Keys — {tenant_name}",
             "principal": ctx.principal_id,
             "is_admin": ctx.is_admin,
             "nav_apps": nav_apps,
             "api_keys": keys,
             "section": "api_keys",
-            "organization": settings.ORGANIZATION_NAME,
+            "tenant_id": eff_tenant,
+            "tenant_name": tenant_name,
+            "organization": tenant_name,
+            "active_tenant": active_tenant,
         },
     )
 
@@ -316,6 +372,19 @@ async def create_api_key(
 
     permitted_apps = [a.strip() for a in permitted_apps_csv.split(",") if a.strip()]
     roles = [r.strip() for r in roles_csv.split(",") if r.strip()]
+
+    is_devops = is_devops_context(ctx)
+    if not is_devops:
+        # Prevent customer admins from creating DevOps/Super-Admin API keys
+        roles = [r for r in roles if r not in ("devops_admin", "super_admin")]
+        if not roles:
+            roles = ["admin"]
+        # Limit permitted apps to the tenant's actual allowed cartridges
+        valid_apps = [a["id"] for a in _build_nav_apps(ctx)]
+        if permitted_apps:
+            permitted_apps = [a for a in permitted_apps if a in valid_apps]
+        if not permitted_apps:
+            permitted_apps = valid_apps
 
     manager = get_api_key_manager()
     raw_key, key_hash = manager.create_key(
@@ -363,16 +432,397 @@ async def revoke_api_key(
     return JSONResponse(content={"revoked": revoked, "key_hash": key_hash})
 
 
+# ── Multi-Tenant User Management ──────────────────────────────────────────────
+
+@router.get("/users", response_class=HTMLResponse)
+async def view_users(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    tenant_id: Optional[str] = None,
+    message: Optional[str] = None,
+    error: Optional[str] = None,
+) -> HTMLResponse:
+    """List all registered platform users within the active scoped tenant."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required.")
+
+    from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+    eff_tenant, tenant_name, tenant_obj = resolve_effective_tenant_info(request, ctx)
+
+    # Only super-admins can view or switch to cross-tenant user listings
+    is_super = ctx.principal_id in ("devops_admin", "master_admin", "system") or "super_admin" in ctx.user_roles or "devops_admin" in ctx.user_roles
+    effective_tenant = tenant_id if (tenant_id and is_super) else eff_tenant
+
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    users = user_service.list_users(tenant_id=effective_tenant if effective_tenant != "*" else None)
+    nav_apps = _build_nav_apps(ctx, tenant_obj)
+    csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
+
+    tenant_cartridges = tenant_obj.allowed_cartridges if (tenant_obj and hasattr(tenant_obj, "allowed_cartridges")) else ["mail_organizer", "temperature_marker"]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="users.html",
+        context={
+            "title": f"User Registry — {tenant_name}",
+            "principal": ctx.principal_id,
+            "is_admin": ctx.is_admin,
+            "nav_apps": nav_apps,
+            "users": users,
+            "active_tenant": effective_tenant,
+            "default_tenant_id": effective_tenant,
+            "tenant_id": effective_tenant,
+            "tenant_name": tenant_name,
+            "organization": tenant_name,
+            "tenant_cartridges": tenant_cartridges,
+            "section": "users",
+            "csrf_token": csrf_token,
+            "message": message,
+            "error": error,
+        },
+    )
+
+
+@router.post("/users")
+async def create_user(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    phone_number: str = Form(...),
+    full_name: str = Form(...),
+    tenant_id: Optional[str] = Form(None),
+    role: str = Form("user"),
+    timezone: str = Form("UTC"),
+    password: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
+    cartridges: Optional[List[str]] = Form(None),
+    cartridge_mail: Optional[str] = Form(None),
+    cartridge_temp: Optional[str] = Form(None),
+    csrf_token: Optional[str] = Form(None),
+) -> Any:
+    """Register a new platform user automatically scoped to the active tenant."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required.")
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF validation failed.")
+
+    from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+    eff_tenant, tenant_name, tenant_obj = resolve_effective_tenant_info(request, ctx)
+
+    is_super = ctx.principal_id in ("devops_admin", "master_admin", "system") or "super_admin" in ctx.user_roles or "devops_admin" in ctx.user_roles
+    effective_tenant = tenant_id if (tenant_id and is_super) else eff_tenant
+
+    allowed: List[str] = []
+    if cartridges:
+        allowed.extend(cartridges)
+    if cartridge_mail and cartridge_mail not in allowed:
+        allowed.append(cartridge_mail)
+    if cartridge_temp and cartridge_temp not in allowed:
+        allowed.append(cartridge_temp)
+
+    # Scoping guard: restrict user cartridges strictly to tenant's allowed cartridges unless super-admin
+    if tenant_obj and hasattr(tenant_obj, "allowed_cartridges") and not is_super:
+        allowed = [c for c in allowed if c in tenant_obj.allowed_cartridges]
+    if not allowed and tenant_obj and hasattr(tenant_obj, "allowed_cartridges"):
+        allowed = list(tenant_obj.allowed_cartridges)
+
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    try:
+        user_service.register_user(
+            phone_number=phone_number,
+            full_name=full_name,
+            tenant_id=effective_tenant,
+            role=role,
+            allowed_cartridges=allowed,
+            timezone=timezone,
+            password=password,
+            email=email,
+        )
+        return RedirectResponse(url="/admin/users?message=User+registered+successfully", status_code=status.HTTP_303_SEE_OTHER)
+    except Exception as exc:
+        logger.error("[AdminShell] Failed to register user: %s", exc)
+        return RedirectResponse(url=f"/admin/users?error={exc}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/users/{user_id}/status")
+async def toggle_user_status(
+    user_id: str,
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    new_status: str = Form(..., alias="status"),
+    csrf_token: Optional[str] = Form(None),
+) -> Any:
+    """Update user status with strict tenant boundary isolation."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=403, detail="Admin role required.")
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        raise HTTPException(status_code=403, detail="CSRF validation failed.")
+
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    req_tenant = getattr(request.state, "tenant_id", None)
+    user_tenant = ctx.tenant_id if ctx.tenant_id and ctx.tenant_id not in ("default_tenant", "system", "public") else None
+    if req_tenant and req_tenant not in ("public", "default", "default_tenant"):
+        active_tenant = req_tenant
+    elif user_tenant:
+        active_tenant = user_tenant
+    else:
+        active_tenant = req_tenant or "public"
+
+    is_super = ctx.principal_id in ("devops_admin", "master_admin", "system") or "super_admin" in ctx.user_roles or "devops_admin" in ctx.user_roles
+
+    if not is_super and user.tenant_id != active_tenant:
+        raise HTTPException(status_code=403, detail="Unauthorized: User does not belong to your tenant context.")
+
+    user_service.update_user_status(user_id=user_id, status=new_status)
+    return RedirectResponse(url="/admin/users?message=Status+updated", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/users/{user_id}/delete")
+async def delete_user_route(
+    user_id: str,
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    csrf_token: Optional[str] = Form(None),
+) -> Any:
+    """Delete a user record with tenant boundary enforcement."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=403, detail="Admin role required.")
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        raise HTTPException(status_code=403, detail="CSRF validation failed.")
+
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    req_tenant = getattr(request.state, "tenant_id", None)
+    user_tenant = ctx.tenant_id if ctx.tenant_id and ctx.tenant_id not in ("default_tenant", "system", "public") else None
+    if req_tenant and req_tenant not in ("public", "default", "default_tenant"):
+        active_tenant = req_tenant
+    elif user_tenant:
+        active_tenant = user_tenant
+    else:
+        active_tenant = req_tenant or "public"
+
+    is_super = ctx.principal_id in ("devops_admin", "master_admin", "system") or "super_admin" in ctx.user_roles or "devops_admin" in ctx.user_roles
+
+    if not is_super and user.tenant_id != active_tenant:
+        raise HTTPException(status_code=403, detail="Unauthorized: User does not belong to your tenant context.")
+
+    user_service.delete_user(user_id=user_id)
+    return RedirectResponse(url="/admin/users?message=User+deleted", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/users/{user_id}/magic-link", response_class=JSONResponse)
+async def generate_user_magic_link(
+    user_id: str,
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> JSONResponse:
+    """Generate ephemeral signed Magic Link URL with tenant boundary enforcement."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=403, detail="Admin role required.")
+
+    from core_platform.app.identity.magic_link import build_magic_link_url
+    from core_platform.app.identity.service import get_user_identity_service
+
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    req_tenant = getattr(request.state, "tenant_id", None)
+    user_tenant = ctx.tenant_id if ctx.tenant_id and ctx.tenant_id not in ("default_tenant", "system", "public") else None
+    if req_tenant and req_tenant not in ("public", "default", "default_tenant"):
+        active_tenant = req_tenant
+    elif user_tenant:
+        active_tenant = user_tenant
+    else:
+        active_tenant = req_tenant or "public"
+
+    is_super = ctx.principal_id in ("devops_admin", "master_admin", "system") or "super_admin" in ctx.user_roles or "devops_admin" in ctx.user_roles
+
+    if not is_super and user.tenant_id != active_tenant:
+        raise HTTPException(status_code=403, detail="Unauthorized: User does not belong to your tenant context.")
+
+    base_url = (
+        settings.ORCHESTRATOR_BASE_URL
+        if settings.ORCHESTRATOR_BASE_URL
+        else str(request.base_url).rstrip("/")
+    )
+    link = build_magic_link_url(
+        user_id=str(user.id),
+        phone_number=user.phone_number,
+        tenant_id=user.tenant_id,
+        base_url=base_url,
+    )
+    return JSONResponse(
+        content={
+            "magic_link": link,
+            "user_id": str(user.id),
+            "phone_number": user.phone_number,
+            "tenant_id": user.tenant_id,
+            "expires_in_minutes": settings.MAGIC_LINK_EXPIRY_MINUTES,
+        }
+    )
+
+
+# ── Tenant Provisioning ───────────────────────────────────────────────────────
+
+@router.get("/tenants", response_class=HTMLResponse)
+async def view_tenants(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    message: Optional[str] = None,
+    error: Optional[str] = None,
+) -> HTMLResponse:
+    """Display scoped company profile and plan settings for Customer Admin."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=403, detail="Admin role required.")
+
+    from sqlalchemy import func, select
+    from core_platform.app.db.manager import get_db_manager
+    from core_platform.app.identity.models import PlatformUser, TenantConfig, TenantDomain
+    from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+
+    # Determine active tenant
+    eff_tenant, tenant_name, active_tenant = resolve_effective_tenant_info(request, ctx)
+    active_tenant_slug = eff_tenant
+
+    is_devops = (
+        ctx.principal_id in ("devops_admin", "master_admin", "system", "admin")
+        or "super_admin" in ctx.user_roles
+        or "devops_admin" in ctx.user_roles
+    )
+
+    db_mgr = get_db_manager()
+    with db_mgr.get_session() as session:
+        config = session.scalar(select(TenantConfig).where(TenantConfig.tenant_id == active_tenant_slug))
+        custom_domains = list(session.scalars(select(TenantDomain).where(TenantDomain.tenant_id == active_tenant_slug)).all())
+        total_users = session.scalar(
+            select(func.count(PlatformUser.id)).where(PlatformUser.tenant_id == active_tenant_slug)
+        ) or 0
+
+    nav_apps = _build_nav_apps(ctx, active_tenant)
+    csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="tenants.html",
+        context={
+            "title": f"Company Profile & Settings — {tenant_name}",
+            "principal": ctx.principal_id,
+            "is_admin": ctx.is_admin,
+            "is_devops": is_devops,
+            "nav_apps": nav_apps,
+            "active_tenant": active_tenant,
+            "tenant_id": active_tenant_slug,
+            "tenant_name": tenant_name,
+            "config": config,
+            "custom_domains": custom_domains,
+            "total_users": total_users,
+            "section": "tenants",
+            "csrf_token": csrf_token,
+            "message": message,
+            "error": error,
+            "organization": tenant_name,
+        },
+    )
+
+
+@router.post("/tenants/save-byok")
+async def save_customer_byok_keys(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    gemini_api_key: Optional[str] = Form(None),
+    waba_token: Optional[str] = Form(None),
+    csrf_token: Optional[str] = Form(None),
+) -> Any:
+    """Save customer-provided BYOK keys securely into AES-256-GCM vault."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=403, detail="Admin role required.")
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        raise HTTPException(status_code=403, detail="CSRF validation failed.")
+
+    from ops_control_plane.devops_vault import DevOpsKeyVault
+    req_tenant = getattr(request.state, "tenant_id", None)
+    user_tenant = ctx.tenant_id if ctx.tenant_id and ctx.tenant_id not in ("default_tenant", "system", "public") else None
+    active_tenant_slug = req_tenant or user_tenant or "public"
+
+    vault = DevOpsKeyVault()
+    try:
+        vault.configure_tenant_credentials(
+            tenant_id=active_tenant_slug,
+            credential_mode="CUSTOMER_BYOK",
+            gemini_api_key=gemini_api_key.strip() if gemini_api_key else None,
+            waba_access_token=waba_token.strip() if waba_token else None,
+        )
+        return RedirectResponse(
+            url="/admin/tenants?message=Company+BYOK+credentials+updated+securely",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    except Exception as exc:
+        logger.error("[AdminShell] Failed to save BYOK keys: %s", exc)
+        return RedirectResponse(
+            url=f"/admin/tenants?error={exc}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+
+@router.post("/tenants/provision")
+async def provision_tenant_route(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    tenant_id: str = Form(...),
+    db_dialect: str = Form("sqlite"),
+    cartridge_mail: Optional[str] = Form(None),
+    cartridge_temp: Optional[str] = Form(None),
+    csrf_token: Optional[str] = Form(None),
+) -> Any:
+    """Provision a new tenant database (DevOps Super-Admin only)."""
+    if not is_devops_context(ctx):
+        raise HTTPException(
+            status_code=403,
+            detail="DevOps Super-Admin privileges required to provision new tenant databases.",
+        )
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        raise HTTPException(status_code=403, detail="CSRF validation failed.")
+
+    from core_platform.app.db.tenant_provisioner import provision_tenant
+
+    cartridges: List[str] = []
+    if cartridge_mail:
+        cartridges.append(cartridge_mail)
+    if cartridge_temp:
+        cartridges.append(cartridge_temp)
+
+    try:
+        provision_tenant(tenant_id=tenant_id, db_dialect=db_dialect, cartridges=cartridges)
+        return RedirectResponse(url="/admin/tenants?message=Tenant+provisioned+successfully", status_code=status.HTTP_303_SEE_OTHER)
+    except Exception as exc:
+        logger.error("[AdminShell] Failed to provision tenant %s: %s", tenant_id, exc)
+        return RedirectResponse(url=f"/admin/tenants?error={exc}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _build_nav_apps(ctx: SecurityContext) -> List[Dict[str, str]]:
+def _build_nav_apps(ctx: SecurityContext, tenant: Optional[Any] = None) -> List[Dict[str, str]]:
     """Build the sidebar navigation app links for the shell template dynamically.
 
     Args:
         ctx: Authenticated SecurityContext.
+        tenant: Optional active Tenant entity to filter tenant-entitled cartridges.
 
     Returns:
-        List of nav app dicts with 'id', 'label', and 'url'.
+        List of nav app dicts with 'id', 'label', 'description', and 'url'.
     """
     try:
         from core_platform.main import plugin_loader
@@ -381,14 +831,36 @@ def _build_nav_apps(ctx: SecurityContext) -> List[Dict[str, str]]:
         all_apps = {}
 
     enabled = set(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else set(all_apps.keys())
+    if tenant and hasattr(tenant, "allowed_cartridges") and tenant.allowed_cartridges is not None:
+        enabled = enabled.intersection(set(tenant.allowed_cartridges))
+
+    # If principal is scoped to a customer tenant and tenant entity wasn't passed directly, resolve from DB
+    if not tenant and ctx.tenant_id and ctx.tenant_id not in ("default_tenant", "system", "public", "platform"):
+        try:
+            from sqlalchemy import select
+            from core_platform.app.db.manager import get_db_manager
+            from core_platform.app.identity.models import Tenant
+            db_mgr = get_db_manager()
+            with db_mgr.get_session() as session:
+                t_obj = session.scalar(select(Tenant).where(Tenant.id == ctx.tenant_id))
+                if t_obj and t_obj.allowed_cartridges is not None:
+                    enabled = enabled.intersection(set(t_obj.allowed_cartridges))
+        except Exception:
+            pass
+
     permitted = set(ctx.permitted_apps) if ctx.permitted_apps else enabled
+    if "*" not in permitted and "all" not in permitted:
+        permitted = permitted.intersection(enabled)
+    else:
+        permitted = enabled
 
     nav_apps = []
     for app_id, app_inst in all_apps.items():
-        if app_id in enabled and app_id in permitted:
+        if app_id in permitted:
             nav_apps.append({
                 "id": app_id,
-                "label": app_inst.name,
+                "label": getattr(app_inst, "name", app_id),
+                "description": getattr(app_inst, "description", "Active domain cartridge."),
                 "url": getattr(app_inst, "dashboard_url", "") or f"/admin/apps/{app_id.replace('_', '-')}/",
             })
     return nav_apps
@@ -399,7 +871,7 @@ def _build_nav_apps(ctx: SecurityContext) -> List[Dict[str, str]]:
 @router.get("/logs", response_class=HTMLResponse)
 async def view_logs(
     request: Request,
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> HTMLResponse:
     """Render the live log observability console."""
     nav_apps = _build_nav_apps(ctx)
@@ -422,7 +894,7 @@ async def view_logs(
 async def tail_logs(
     request: Request,
     lines: int = 250,
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> JSONResponse:
     """Return the last N lines from logs/platform.log."""
     log_path = Path("logs") / "platform.log"
@@ -442,7 +914,7 @@ async def tail_logs(
 @router.get("/api/logs/download")
 async def download_logs(
     format: str = "log",
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> Response:
     """Download the complete platform log file (.log or .jsonl)."""
     filename = "platform.jsonl" if format == "jsonl" else "platform.log"
@@ -463,7 +935,7 @@ async def download_logs(
 @router.get("/llm-costs", response_class=HTMLResponse)
 async def llm_costs_page(
     request: Request,
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> HTMLResponse:
     """Render the LLM Token Consumption and Cost Monitoring console."""
     from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
@@ -493,7 +965,7 @@ async def llm_costs_page(
 
 @router.get("/api/llm-costs", response_class=JSONResponse)
 async def get_llm_costs_api(
-    ctx: SecurityContext = Depends(get_web_security_context),
+    ctx: SecurityContext = Depends(require_devops),
 ) -> JSONResponse:
     """Return JSON payload of aggregated LLM costs and operations breakdown."""
     from core_platform.app.llm.cost_tracker import get_llm_cost_tracker

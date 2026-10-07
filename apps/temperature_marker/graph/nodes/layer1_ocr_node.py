@@ -25,7 +25,7 @@ logger = logging.getLogger("apps.temperature_marker.ocr")
 
 
 async def layer1_ocr_node(state: TemperatureMarkerState) -> TemperatureMarkerState:
-    """Extract CaneBot chiller temperature readout using Dual-Engine OCR.
+    """Extract KioskNode chiller temperature readout using Dual-Engine OCR.
 
     Adheres strictly to GEES v1.0. If no image is provided, fails cleanly and diverts
     to review (Zero synthetic fallback injections).
@@ -75,7 +75,7 @@ async def layer1_ocr_node(state: TemperatureMarkerState) -> TemperatureMarkerSta
             state["layer_2_disposition"] = "diverted_to_review"
             state["error_code"] = PlatformErrorCode.OCR_READING_UNREADABLE.value
             state["error_message"] = (
-                "No chiller display image provided. Please submit a clear photo of the CaneBot temperature display."
+                "No chiller display image provided. Please submit a clear photo of the KioskNode temperature display."
             )
             state["reply_message"] = (
                 "⚠️ Missing Chiller Photo: Please submit a clear photo showing the chiller temperature display."

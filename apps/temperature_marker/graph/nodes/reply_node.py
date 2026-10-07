@@ -27,7 +27,7 @@ async def reply_node(state: TemperatureMarkerState) -> TemperatureMarkerState:
 
     emp_name = state.get("operator_name", "Operator")
     emp_code = state.get("operator_emp_code", "")
-    kiosk_id = state.get("kiosk_id", "CaneBot")
+    kiosk_id = state.get("kiosk_id", "KioskNode")
     temp_c = state.get("chiller_temp_c")
     dist_m = state.get("distance_meters", 0.0)
     seq_num = state.get("audit_sequence_number", 1)
@@ -53,7 +53,7 @@ async def reply_node(state: TemperatureMarkerState) -> TemperatureMarkerState:
             f"🚨 CRITICAL CHILLER WARNING! 🚨\n"
             f"Machine: {kiosk_id}\n"
             f"Chiller Temperature: {temp_c:.1f}°C (Exceeds critical limit 7.0°C!)\n"
-            f"Fresh sugarcane juice spoilage hazard. Kiosk Supervisor has been notified immediately.\n"
+            f"Fresh perishable cold-chain goods spoilage hazard. Kiosk Supervisor has been notified immediately.\n"
             f"🔒 Audit Trail: #{seq_num} ({hash_short})"
         )
     elif haccp_status == "FREEZING_HAZARD" and temp_c is not None:

@@ -31,10 +31,10 @@ from core_platform.app.telemetry.audit_engine import AuditEngine
 
 
 class TemperatureMarkerConfig(BaseModel):
-    """Configuration settings for CaneBot Temperature & Attendance Marker."""
+    """Configuration settings for Industrial Temperature & Attendance Marker."""
 
-    organization_name: str = Field(default="Canectar Foods Pvt Ltd")
-    default_machine_type: str = Field(default="CaneBot Sugarcane Crushing Machine")
+    organization_name: str = Field(default="Apex Cold-Chain Logistics Ltd")
+    default_machine_type: str = Field(default="Industrial Cold-Storage Chiller Unit")
     safe_min_temp: float = Field(default=2.0)
     safe_max_temp: float = Field(default=4.0)
     critical_alert_temp: float = Field(default=7.0)
@@ -50,7 +50,7 @@ class TemperatureMarkerApplication(BaseApplication):
     """Plugin cartridge instance representing the Temperature Marker application."""
 
     app_id: str = "temperature_marker"
-    name: str = "Canectar CaneBot Temperature & Attendance Marker"
+    name: str = "Apex Industrial Temperature & Attendance Marker"
     version: str = "1.3.0"
     description: str = "Factory floor attendance and chiller temperature recording via selfie photo and OCR."
     config_schema = TemperatureMarkerConfig
@@ -94,7 +94,7 @@ class TemperatureMarkerApplication(BaseApplication):
 
     keywords: List[str] = [
         "attendance", "check-in", "checkin", "punch", "kiosk", "duty",
-        "chiller", "temperature", "temp", "canebot", "selfie", "photo", "face",
+        "chiller", "temperature", "temp", "kiosk", "selfie", "photo", "face",
         "hello", "hi", "namaste", "register", "status", "start", "help",
         "station", "cups", "supply", "fleet",
     ]

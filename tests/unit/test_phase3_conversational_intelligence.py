@@ -52,7 +52,7 @@ def test_conversation_memory_crud_and_fifo(tmp_path: Path) -> None:
 
     prompt_ctx = mem.format_history_for_prompt(phone)
     assert "Operator: What is the chiller limit?" in prompt_ctx
-    assert "CaneBot Coordinator: Chiller temperature must be between 2°C and 8°C." in prompt_ctx
+    assert "KioskNode Coordinator: Chiller temperature must be between 2°C and 8°C." in prompt_ctx
 
     # Clear history
     mem.clear_history(phone)
@@ -70,12 +70,12 @@ async def test_conversational_agent_grounded_response() -> None:
         emp_code="EMP-7001",
         full_name="Anil Jadhav",
         phone_number=phone,
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
     )
 
     # Test with mocked LLM response
-    mock_llm_res = {"text": "Yes, 4.5°C is well within the required 2.0°C to 8.0°C HACCP range for CaneBOT Pune."}
+    mock_llm_res = {"text": "Yes, 4.5°C is well within the required 2.0°C to 8.0°C HACCP range for KioskNode Pune."}
     with patch("core_platform.app.llm.gateway.LLMGateway.generate", new_callable=AsyncMock) as mock_gen:
         mock_gen.return_value = mock_llm_res
 
@@ -83,7 +83,7 @@ async def test_conversational_agent_grounded_response() -> None:
             sender_phone=phone,
             user_text="Is 4.5 C okay for chiller?",
             emp=emp,
-            kiosk_id="CANEBOT-PUNE-04",
+            kiosk_id="NODE-PUNE-04",
             kg_service=kg,
             db_service=db,
         )
@@ -94,7 +94,7 @@ async def test_conversational_agent_grounded_response() -> None:
         # Verify system instruction included operator and kiosk grounding
         call_args = mock_gen.call_args[1]
         assert "Anil Jadhav" in call_args["system_instruction"]
-        assert "CANEBOT-PUNE-04" in call_args["system_instruction"]
+        assert "NODE-PUNE-04" in call_args["system_instruction"]
 
 
 @pytest.mark.anyio
@@ -107,7 +107,7 @@ async def test_whatsapp_operator_procedural_question_routing() -> None:
         emp_code="EMP-7002",
         full_name="Kavita Shinde",
         phone_number=phone,
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
     )
 

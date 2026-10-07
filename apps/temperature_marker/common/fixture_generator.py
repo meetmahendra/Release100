@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Fixture generator providing valid synthetic and real CaneBot photos for live testing."""
+"""Fixture generator providing valid synthetic and real KioskNode photos for live testing."""
 
 from __future__ import annotations
 
@@ -30,9 +30,9 @@ logger = logging.getLogger("apps.temperature_marker.fixtures")
 def generate_synthetic_gauge_jpeg(
     temperature: float,
     timestamp: Optional[str] = None,
-    kiosk_id: str = "CANEBOT-PUNE-04",
+    kiosk_id: str = "NODE-PUNE-04",
 ) -> bytes:
-    """Generate a realistic, lightweight CaneBot digital chiller gauge JPEG.
+    """Generate a realistic, lightweight KioskNode digital chiller gauge JPEG.
 
     Renders an industrial digital readout with the target temperature in Celsius
     and an imprinted camera watermark timestamp.
@@ -56,7 +56,7 @@ def generate_synthetic_gauge_jpeg(
     draw.rectangle([(40, 40), (width - 40, height - 55)], fill=(0, 15, 5), outline=(0, 230, 60), width=2)
 
     # Top brand / monitor header
-    draw.text((45, 20), f"CaneBot Industrial HACCP Monitor [{kiosk_id}]", fill=(170, 185, 200))
+    draw.text((45, 20), f"Industrial HACCP Cold-Chain Monitor [{kiosk_id}]", fill=(170, 185, 200))
 
     # Center digital reading
     temp_text = f"{temperature:+.1f} °C" if temperature < 0 else f"{temperature:.1f} °C"
@@ -73,7 +73,7 @@ def generate_synthetic_gauge_jpeg(
 
 
 def get_real_kiosk_fixture(name: str = "checkin") -> bytes:
-    """Load a curated CaneBot kiosk photo fixture from disk.
+    """Load a curated KioskNode kiosk photo fixture from disk.
 
     Args:
         name: Name of fixture ('checkin', 'enrollment', 'checkin2', etc.).

@@ -274,7 +274,7 @@ def build_fleet_executive_digest(
     total_kiosks = len(kiosks)
 
     lines: List[str] = [
-        f"📊 *CANECTAR FLEET EXECUTIVE STATUS*",
+        f"📊 *APEX FLEET EXECUTIVE STATUS*",
         f"Manager: {manager_name}",
         f"Active Kiosks: {checked_in_count}/{total_kiosks} Checked-in",
         "========================================",

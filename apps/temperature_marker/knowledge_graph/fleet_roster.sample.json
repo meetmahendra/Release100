@@ -1,5 +1,5 @@
 {
-  "organization_name": "Canectar Foods Pvt Ltd",
+  "organization_name": "Apex Cold-Chain Logistics Ltd",
   "default_haccp_rule": {
     "min_safe_temp": 2.0,
     "max_safe_temp": 4.0,
@@ -49,9 +49,9 @@
     }
   },
   "kiosks": {
-    "CANEBOT-PUNE-04": {
-      "kiosk_id": "CANEBOT-PUNE-04",
-      "machine_model": "CaneBot-Pro-Chilled",
+    "NODE-PUNE-04": {
+      "kiosk_id": "NODE-PUNE-04",
+      "machine_model": "ChillerNode-Pro-Chilled",
       "display_type": "7_segment_led",
       "site_id": "SITE-PUNE-PHOENIX",
       "primary_operator_phones": [
@@ -63,9 +63,9 @@
       ],
       "is_active": true
     },
-    "CANEBOT-PUNE-05": {
-      "kiosk_id": "CANEBOT-PUNE-05",
-      "machine_model": "CaneBot-Pro-Chilled",
+    "NODE-PUNE-05": {
+      "kiosk_id": "NODE-PUNE-05",
+      "machine_model": "ChillerNode-Pro-Chilled",
       "display_type": "7_segment_led",
       "site_id": "SITE-PUNE-DASSAULT-SKY",
       "primary_operator_phones": [
@@ -73,9 +73,9 @@
       ],
       "is_active": true
     },
-    "CANEBOT-PUNE-06": {
-      "kiosk_id": "CANEBOT-PUNE-06",
-      "machine_model": "CaneBot-Pro-Chilled",
+    "NODE-PUNE-06": {
+      "kiosk_id": "NODE-PUNE-06",
+      "machine_model": "ChillerNode-Pro-Chilled",
       "display_type": "7_segment_led",
       "site_id": "SITE-PUNE-EKA-ELITAS",
       "primary_operator_phones": [
@@ -84,9 +84,9 @@
       ],
       "is_active": true
     },
-    "CANEBOT-MUMBAI-08": {
-      "kiosk_id": "CANEBOT-MUMBAI-08",
-      "machine_model": "CaneBot-Pro-Chilled",
+    "NODE-MUMBAI-08": {
+      "kiosk_id": "NODE-MUMBAI-08",
+      "machine_model": "ChillerNode-Pro-Chilled",
       "display_type": "7_segment_led",
       "site_id": "SITE-MUMBAI-SEAWOODS",
       "primary_operator_phones": [
@@ -94,9 +94,9 @@
       ],
       "is_active": true
     },
-    "CANEBOT-BLR-02": {
-      "kiosk_id": "CANEBOT-BLR-02",
-      "machine_model": "CaneBot-Lite-Compact",
+    "NODE-BLR-02": {
+      "kiosk_id": "NODE-BLR-02",
+      "machine_model": "KioskNode-Lite-Compact",
       "display_type": "lcd_screen",
       "site_id": "SITE-BLR-INDIRANAGAR",
       "primary_operator_phones": [

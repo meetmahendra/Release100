@@ -38,7 +38,7 @@
     <div class="card" style="margin-bottom: 0;">
         <div style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">HACCP Safe Window</div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green); margin-top: 0.5rem;">2.0°C – 4.0°C</div>
-        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">Sugarcane anti-fermentation</div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">Cold-chain preservation & HACCP compliance</div>
     </div>
     <div class="card" style="margin-bottom: 0;">
         <div style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Audit Hash Chaining</div>
@@ -47,10 +47,10 @@
     </div>
 </div>
 
-<!-- Section 1: Registered CaneBot Station Roster -->
+<!-- Section 1: Registered KioskNode Station Roster -->
 <div class="card" style="margin-bottom: 2rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2 style="font-size: 1.25rem; font-weight: 600;">Registered CaneBot Station Roster</h2>
+        <h2 style="font-size: 1.25rem; font-weight: 600;">Registered KioskNode Station Roster</h2>
         <span style="font-size: 0.85rem; color: var(--text-secondary);">Knowledge Graph Topology</span>
     </div>
     <div style="overflow-x: auto;">
@@ -216,13 +216,13 @@
 <div id="kioskModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
     <div class="card" style="width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; background: #1e293b; border: 1px solid #334155;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 700; color: white;">+ Register New CaneBot Kiosk</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: white;">+ Register New KioskNode Kiosk</h3>
             <button onclick="closeModal('kioskModal')" style="background: none; border: none; color: #94a3b8; font-size: 1.25rem; cursor: pointer;">✕</button>
         </div>
         <form onsubmit="submitNewKiosk(event)" style="display: flex; flex-direction: column; gap: 1rem;">
             <div>
                 <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Kiosk ID *</label>
-                <input id="newKioskId" required placeholder="e.g. CANEBOT-HYD-01"
+                <input id="newKioskId" required placeholder="e.g. NODE-HYD-01"
                        style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white; font-family: monospace;" />
             </div>
             <div>
@@ -258,7 +258,7 @@
                 </div>
                 <div>
                     <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Machine Model</label>
-                    <input id="newModel" value="CaneBot-Pro-X1"
+                    <input id="newModel" value="ChillerNode-Pro-X1"
                            style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
                 </div>
             </div>

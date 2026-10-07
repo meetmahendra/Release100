@@ -39,17 +39,6 @@
         Overview Dashboard
       </a>
 
-      <!-- Settings & Credentials -->
-      <a href="/settings"
-         class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
-        Settings & Credentials
-      </a>
-
       <!-- Section: Dynamic Installed Applications -->
       <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Applications</p>
       {% for nav in nav_apps %}
@@ -62,9 +51,21 @@
       <p class="px-3 py-1.5 text-xs text-slate-500 italic">No cartridges installed</p>
       {% endfor %}
 
-      <!-- Admin & Security -->
+      <!-- Workspace & Security -->
       {% if is_admin %}
-      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Security & Keys</p>
+      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Workspace & Access</p>
+      <a href="/admin/users"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
+                {% if section == 'users' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
+        <span>👥</span>
+        <span>Users & Team</span>
+      </a>
+      <a href="/admin/tenants"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
+                {% if section == 'tenants' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
+        <span>🏢</span>
+        <span>Company Profile & Vault</span>
+      </a>
       <a href="/admin/api-keys"
          class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
                 {% if section == 'api_keys' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
@@ -75,10 +76,18 @@
         </svg>
         API Keys
       </a>
+      {% if is_devops %}
+      <a href="/ops/tenants"
+         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-amber-300 hover:bg-amber-900/30 transition-colors">
+        <span>⚡</span>
+        <span class="font-semibold text-amber-400">DevOps Control Plane</span>
+      </a>
+      {% endif %}
       {% endif %}
 
-      <!-- Diagnostics -->
-      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Diagnostics</p>
+      <!-- DevOps Diagnostics -->
+      {% if is_devops %}
+      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">DevOps Diagnostics</p>
       <a href="/admin/llm-costs"
          class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
                 {% if section == 'llm_costs' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
@@ -91,12 +100,13 @@
       </a>
       <a href="/settings"
          class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <span>📡</span> Diagnostics Console
+        <span>📡</span> Master Settings & Keys
       </a>
       <a href="/health" target="_blank"
          class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
         <span>💓</span> Live Health JSON ↗
       </a>
+      {% endif %}
     </nav>
 
     <!-- User & Logout -->
@@ -126,7 +136,7 @@
       <div>
         <h1 class="text-2xl font-bold text-white">{{ title }}</h1>
         <p class="text-xs text-slate-400 mt-1">
-          Node: <span class="font-mono text-emerald-400">{{ kiosk_id }}</span> ({{ station }}) &bull; Tenant: {{ organization }}
+          Node: <span class="font-mono text-emerald-400">{{ kiosk_id }}</span> ({{ station }}) &bull; 🏢 Tenant: <strong class="text-slate-200">{{ organization }}</strong> <span class="text-emerald-400 font-mono">({{ tenant_id }})</span>
         </p>
       </div>
       <!-- Mode Badges -->
@@ -168,7 +178,11 @@
           <p class="text-xs text-slate-400 mt-1">Powers intent routing, OCR & stochastic reasoning.</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
+          {% if is_devops %}
           <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Configure / Test Key →</a>
+          {% else %}
+          <a href="/admin/tenants" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Tenant BYOK Keys →</a>
+          {% endif %}
         </div>
       </div>
 
@@ -187,7 +201,11 @@
           <p class="text-xs text-slate-400 mt-1">Handles conversational webhooks and notification outbox.</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
+          {% if is_devops %}
           <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Configure WhatsApp →</a>
+          {% else %}
+          <a href="/admin/tenants" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Configure WhatsApp BYOK →</a>
+          {% endif %}
         </div>
       </div>
 
@@ -206,7 +224,11 @@
           <p class="text-xs text-slate-400 mt-1 truncate">Target: {{ relay_url or "Local Simulator" }}</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
+          {% if is_devops %}
           <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Cloudflare Tunnel Info →</a>
+          {% else %}
+          <span class="text-xs text-slate-500">Platform Managed</span>
+          {% endif %}
         </div>
       </div>
 
@@ -221,7 +243,11 @@
           <p class="text-xs text-slate-400 mt-1 font-mono truncate">Hash: {{ (last_audit_hash or "")[:16] }}...</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
+          {% if is_devops %}
           <a href="/health" target="_blank" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">View Telemetry →</a>
+          {% else %}
+          <span class="text-xs text-emerald-400">Tamper-Proof Ledger</span>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -230,18 +256,30 @@
     <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Action Launchpad</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
       
-      <!-- Core Action 1: Live Settings & Disk Sync -->
+      {% if is_devops %}
+      <!-- DevOps Action 1: Live Settings & Disk Sync -->
       <a href="/settings"
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-2xl">⚙️</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Settings & Key Manager</h3>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Settings & Master Keys</h3>
         </div>
         <p class="text-xs text-slate-400">Configure LLM providers, WhatsApp webhooks, Cloudflare tunnels, and manage configuration backups.</p>
         <p class="text-xs text-emerald-400 font-medium mt-3">Configure System →</p>
       </a>
 
-      <!-- Core Action 2: API Keys -->
+      <!-- DevOps Action 2: Multi-Tenant Control Plane -->
+      <a href="/ops/tenants"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-amber-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">⚡</span>
+          <h3 class="text-base font-semibold text-amber-300 group-hover:text-amber-400">DevOps Control Plane</h3>
+        </div>
+        <p class="text-xs text-slate-400">Provision tenant databases, deep-clone partitions, cutover geo-regions, and audit hash chains.</p>
+        <p class="text-xs text-amber-400 font-medium mt-3">Open Operations →</p>
+      </a>
+
+      <!-- DevOps Action 3: API Keys -->
       <a href="/admin/api-keys"
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
@@ -251,17 +289,40 @@
         <p class="text-xs text-slate-400">Generate scoped, rate-limited SHA-256 API keys for field tablets, MCP agents, and external integrations.</p>
         <p class="text-xs text-emerald-400 font-medium mt-3">Manage Keys →</p>
       </a>
-
-      <!-- Core Action 3: Diagnostics Console -->
-      <a href="/settings"
+      {% else %}
+      <!-- Customer Admin Action 1: Company Profile & BYOK Vault -->
+      <a href="/admin/tenants"
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
-          <span class="text-2xl">📡</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Diagnostics Console</h3>
+          <span class="text-2xl">🏢</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Company Profile & BYOK Vault</h3>
         </div>
-        <p class="text-xs text-slate-400">Run live port checks, NTP time synchronisation audits, and inspect skill health statuses.</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Open Console →</p>
+        <p class="text-xs text-slate-400">Configure company WhatsApp integration, custom Gemini API keys, and custom domain CNAME records.</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Manage Profile & Keys →</p>
       </a>
+
+      <!-- Customer Admin Action 2: User Registry -->
+      <a href="/admin/users"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">👥</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Users & Team Directory</h3>
+        </div>
+        <p class="text-xs text-slate-400">Invite and manage team members, assign cartridge permissions, and generate instant 1-click magic links.</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Manage Users →</p>
+      </a>
+
+      <!-- Customer Admin Action 3: API Keys -->
+      <a href="/admin/api-keys"
+         class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-2xl">🎟️</span>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Scoped API Keys</h3>
+        </div>
+        <p class="text-xs text-slate-400">Issue secure API keys scoped specifically to your organization's entitled applications.</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">Issue Keys →</p>
+      </a>
+      {% endif %}
 
       <!-- Dynamic Application Cartridge Cards -->
       {% for nav in nav_apps %}

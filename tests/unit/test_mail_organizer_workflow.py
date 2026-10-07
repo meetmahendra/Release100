@@ -72,7 +72,7 @@ async def test_layer_2_guardrail_diverts_sub_threshold():
 async def test_ownership_node_observer_role():
     state: MailOrganizerState = {
         "to_recipients": ["manager@company.com"],
-        "cc_recipients": ["depali@company.com"],
+        "cc_recipients": ["user@company.com"],
         "body": "FYI keeping you in the loop on this update.",
     }
     res = await ownership_node(state)
@@ -86,7 +86,7 @@ async def test_full_workflow_zero_deletion_promo(workflow):
         "gmail_id": "msg_promo_01",
         "thread_id": "th_promo_01",
         "sender": "marketing@newsletter.com",
-        "to_recipients": ["depali@company.com"],
+        "to_recipients": ["user@company.com"],
         "subject": "Discount Sale 50% Off Everything Today!",
         "body": "Unsubscribe anytime. Click here for 50% discount.",
         "execution_mode": "shadow",
@@ -107,7 +107,7 @@ async def test_full_workflow_urgent_meeting(workflow):
         "gmail_id": "msg_meet_01",
         "thread_id": "th_meet_01",
         "sender": "ceo@customer.com",
-        "to_recipients": ["depali@company.com"],
+        "to_recipients": ["user@company.com"],
         "subject": "URGENT: Contract discussion meeting tomorrow morning",
         "body": "Can we meet tomorrow at 10 AM to finalize the agreement terms?",
         "execution_mode": "shadow",

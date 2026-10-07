@@ -40,7 +40,7 @@ from core_platform.app.telemetry.audit_engine import AuditEngine
 
 
 class TemperatureMarkerWorkflow:
-    """Executes the deterministic state-driven workflow for CaneBot attendance & chiller checks."""
+    """Executes the deterministic state-driven workflow for KioskNode attendance & chiller checks."""
 
     def __init__(
         self,

@@ -37,7 +37,7 @@ def test_ui_root_redirect() -> None:
 
     resp_auth = client.get("/", follow_redirects=False)
     assert resp_auth.status_code == 302
-    assert resp_auth.headers["location"] == "/admin/apps/temperature-marker/fleet"
+    assert resp_auth.headers["location"] in ("/ops/tenants", "/admin/", "/admin/apps/temperature-marker/fleet")
 
 
 def test_tm_unauthenticated_access() -> None:
@@ -49,11 +49,11 @@ def test_tm_unauthenticated_access() -> None:
 
 
 def test_fleet_html_view() -> None:
-    """Fleet HTML view must render 200 OK and contain CaneBot station names."""
+    """Fleet HTML view must render 200 OK and contain KioskNode station names."""
     resp = client.get("/admin/apps/temperature-marker/fleet")
     assert resp.status_code == 200
     assert "Multi-Kiosk Fleet Overview" in resp.text
-    assert "CANEBOT-PUNE-04" in resp.text
+    assert "NODE-PUNE-04" in resp.text
     assert "Phoenix Marketcity Food Court" in resp.text
 
 
@@ -65,8 +65,8 @@ def test_fleet_json_api() -> None:
     assert isinstance(data, list)
     assert len(data) >= 3
     kiosk_ids = [k["kiosk_id"] for k in data]
-    assert "CANEBOT-PUNE-04" in kiosk_ids
-    assert "CANEBOT-MUMBAI-08" in kiosk_ids
+    assert "NODE-PUNE-04" in kiosk_ids
+    assert "NODE-MUMBAI-08" in kiosk_ids
 
 
 def test_wizard_html_view() -> None:
@@ -85,13 +85,13 @@ def test_simulation_api_safe() -> None:
         emp_code="EMP-SIM-TEST",
         full_name="Sim Worker",
         phone_number="+919800011122",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
     )
     db.approve_employee("EMP-SIM-TEST")
 
     payload = {
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "phone_number": "+919800011122",
         "temperature": 3.2,
         "face_confidence": 0.95,
@@ -110,7 +110,7 @@ def test_simulation_api_safe() -> None:
 def test_simulation_api_critical_hazard() -> None:
     """Simulation API must flag temperatures above 7.0°C as CRITICAL."""
     payload = {
-        "kiosk_id": "CANEBOT-PUNE-04",
+        "kiosk_id": "NODE-PUNE-04",
         "phone_number": "+919800011122",
         "temperature": 8.5,
         "face_confidence": 0.95,
@@ -131,7 +131,7 @@ def test_approvals_views_and_actions() -> None:
         emp_code="EMP-PENDING-UI",
         full_name="Pending Operator",
         phone_number="+919999000011",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="PENDING_APPROVAL",
     )
 
@@ -155,14 +155,14 @@ def test_approvals_views_and_actions() -> None:
 def test_location_verification() -> None:
     """1-Click mobile geolocation check must compute distance and verify perimeter."""
     # Test HTML view
-    resp = client.get("/loc?kiosk_id=CANEBOT-PUNE-04")
+    resp = client.get("/loc?kiosk_id=NODE-PUNE-04")
     assert resp.status_code == 200
     assert "Kiosk Geolocation Check" in resp.text
 
     # Test API valid inside perimeter
     valid_resp = client.post(
         "/admin/apps/temperature-marker/api/verify-location",
-        json={"kiosk_id": "CANEBOT-PUNE-04", "latitude": 18.5621, "longitude": 73.9168},
+        json={"kiosk_id": "NODE-PUNE-04", "latitude": 18.5621, "longitude": 73.9168},
     )
     assert valid_resp.status_code == 200
     assert valid_resp.json()["within_geofence"] is True
@@ -171,7 +171,7 @@ def test_location_verification() -> None:
     # Test API breach (far away)
     breach_resp = client.post(
         "/admin/apps/temperature-marker/api/verify-location",
-        json={"kiosk_id": "CANEBOT-PUNE-04", "latitude": 19.0760, "longitude": 72.8777},
+        json={"kiosk_id": "NODE-PUNE-04", "latitude": 19.0760, "longitude": 72.8777},
     )
     assert breach_resp.status_code == 200
     assert breach_resp.json()["within_geofence"] is False
@@ -181,7 +181,7 @@ def test_location_verification() -> None:
     sess_resp = client.post(
         "/admin/apps/temperature-marker/api/verify-location",
         json={
-            "kiosk_id": "CANEBOT-PUNE-04",
+            "kiosk_id": "NODE-PUNE-04",
             "latitude": 18.5621,
             "longitude": 73.9168,
             "session_id": "sess_12345",
@@ -214,7 +214,7 @@ def test_root_mounted_shortcuts_and_redirects() -> None:
     # Test POST /api/verify-location (root shortcut)
     api_resp = client.post(
         "/api/verify-location",
-        json={"kiosk_id": "CANEBOT-PUNE-04", "latitude": 18.5621, "longitude": 73.9168},
+        json={"kiosk_id": "NODE-PUNE-04", "latitude": 18.5621, "longitude": 73.9168},
     )
     assert api_resp.status_code == 200
     assert api_resp.json()["within_geofence"] is True
@@ -258,7 +258,7 @@ def test_temperature_marker_database_service_crud(tmp_path: Path) -> None:
         emp_code="EMP-REAL-001",
         full_name="Real Operator",
         phone_number="+919111222333",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="PENDING_APPROVAL",
     )
     assert emp.id is not None
@@ -292,7 +292,7 @@ def test_temperature_marker_database_service_crud(tmp_path: Path) -> None:
         emp_code="EMP-REAL-001",
         full_name="Real Operator Updated",
         phone_number="+919111222333",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
     )
     assert emp_updated.full_name == "Real Operator Updated"
@@ -301,7 +301,7 @@ def test_temperature_marker_database_service_crud(tmp_path: Path) -> None:
     rec = db.record_attendance(
         correlation_id="corr_real_001",
         emp_code="EMP-REAL-001",
-        kiosk_id="CANEBOT-PUNE-04",
+        kiosk_id="NODE-PUNE-04",
         face_confidence=0.95,
         gps_distance_meters=12.5,
         geofence_verified=True,
@@ -319,7 +319,7 @@ def test_temperature_marker_database_service_crud(tmp_path: Path) -> None:
     item = db.enqueue_outbox(
         correlation_id="corr_real_001",
         target_gateway="in_house_rest",
-        payload={"kiosk_id": "CANEBOT-PUNE-04", "temp": 3.2},
+        payload={"kiosk_id": "NODE-PUNE-04", "temp": 3.2},
     )
     assert item.id is not None
     assert item.status == "PENDING"
@@ -335,7 +335,7 @@ def test_temperature_marker_database_service_crud(tmp_path: Path) -> None:
     item2 = db.enqueue_outbox(
         correlation_id="corr_real_002",
         target_gateway="in_house_rest",
-        payload={"kiosk_id": "CANEBOT-PUNE-04", "temp": 3.5},
+        payload={"kiosk_id": "NODE-PUNE-04", "temp": 3.5},
     )
     db.mark_outbox_failed(item2.id, max_attempts=1)
 

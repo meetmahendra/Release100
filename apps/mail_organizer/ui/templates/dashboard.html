@@ -305,7 +305,7 @@
                 <!-- Tab 1: Email Packet -->
                 <div id="{{ cid }}_packet" class="tab-pane active">
                     <div class="meta-row"><span class="meta-label">From:</span><span><strong>{{ em.sender }}</strong></span></div>
-                    <div class="meta-row"><span class="meta-label">To:</span><span>{{ em.to_recipients|join(', ') or 'depali@canectar.com' }}</span></div>
+                    <div class="meta-row"><span class="meta-label">To:</span><span>{{ em.to_recipients|join(', ') or 'depali@apex.com' }}</span></div>
                     <div class="meta-row"><span class="meta-label">Cc:</span><span>{{ em.cc_recipients|join(', ') or 'None' }}</span></div>
                     <div class="meta-row"><span class="meta-label">Subject:</span><span><strong>{{ em.subject }}</strong></span></div>
                     <div class="meta-row"><span class="meta-label">Received At:</span><span>{{ em.received_at }}</span></div>

@@ -46,6 +46,7 @@ class Employee(Base):
     __tablename__ = "employees"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
     emp_code: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     phone_number: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
@@ -63,6 +64,7 @@ class AttendanceRecord(Base):
     __tablename__ = "attendance_records"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
     correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     emp_code: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     kiosk_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
@@ -96,6 +98,7 @@ class OutboxItem(Base):
     __tablename__ = "outbox_queue"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
     correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     target_gateway: Mapped[str] = mapped_column(String(64), nullable=False)  # in_house_rest, direct_db, google_sheets, erp_mcp
     payload_json: Mapped[str] = mapped_column(Text, nullable=False)
@@ -111,6 +114,7 @@ class InternalMessageQueue(Base):
     __tablename__ = "internal_message_queue"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
     correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     sender_phone: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     sender_emp_code: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
@@ -141,6 +145,7 @@ class KioskMonitoringConfig(Base):
     __tablename__ = "kiosk_monitoring_configs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
     kiosk_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     required_daily_temp_checks: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
     check_interval_hours: Mapped[float] = mapped_column(Float, default=4.0, nullable=False)

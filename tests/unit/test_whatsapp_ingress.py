@@ -55,7 +55,7 @@ def test_whatsapp_webhook_message_processing() -> None:
         emp_code="EMP-1042",
         full_name="Rajesh Pawar",
         phone_number="+919800011122",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="ACTIVE",
     )
 
@@ -92,7 +92,7 @@ def test_whatsapp_webhook_message_processing() -> None:
     data = resp.json()
     assert data["status"] == "EVENT_RECEIVED"
     assert "reply_message" in data
-    assert data["kiosk_id"] == "CANEBOT-PUNE-04"
+    assert data["kiosk_id"] == "NODE-PUNE-04"
 
 
 def test_whatsapp_webhook_status_receipt_ignored() -> None:
@@ -419,13 +419,13 @@ def test_operator_greeting_ist_time_and_clean_chiller_status() -> None:
     db = DatabaseService.get_instance()
     emp = db.get_employee_by_code("EMP-1042")
     if not emp:
-        db.register_employee("EMP-1042", "Rahul Sharma", "+919800011122", "CANEBOT-PUNE-04", status="ACTIVE")
+        db.register_employee("EMP-1042", "Rahul Sharma", "+919800011122", "NODE-PUNE-04", status="ACTIVE")
 
     # Record attendance with 0.0°C and PENDING_CHILLER_PHOTO
     db.record_attendance(
         correlation_id="test_att_rec_1",
         emp_code="EMP-1042",
-        kiosk_id="CANEBOT-PUNE-04",
+        kiosk_id="NODE-PUNE-04",
         face_confidence=0.95,
         gps_distance_meters=10.0,
         geofence_verified=True,
@@ -490,7 +490,7 @@ def test_operator_greeting_messages_filter_suppresses_own_inquiries() -> None:
         sender_phone="+919800011122",
         sender_emp_code="EMP-1042",
         sender_name="Rahul Sharma",
-        kiosk_id="CANEBOT-PUNE-04",
+        kiosk_id="NODE-PUNE-04",
         recipient_emp_code="EMP-MGR-01",
         recipient_phone="+919800099999",
         message_text="Need cups refill",
@@ -594,7 +594,7 @@ def test_operator_onboarding_photo_bypasses_geofence(tmp_path) -> None:
         emp_code="EMP-TEST-99",
         full_name="Pooja Kadam",
         phone_number="+918888800099",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="PENDING_PHOTO",
     )
 
@@ -662,7 +662,7 @@ def test_operator_in_pending_photo_sends_text_prompted_for_selfie() -> None:
         emp_code="EMP-TEST-98",
         full_name="Vijay Shinde",
         phone_number="+918888800098",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="PENDING_PHOTO",
     )
 
@@ -682,7 +682,7 @@ def test_operator_in_pending_photo_sends_text_prompted_for_selfie() -> None:
                                     "id": "wamid.pending_text_test_1",
                                     "timestamp": "1710400000",
                                     "type": "text",
-                                    "text": {"body": "hello CaneBot"},
+                                    "text": {"body": "hello KioskNode"},
                                 }
                             ],
                         },
@@ -711,7 +711,7 @@ def test_operator_in_pending_approval_cannot_punch_in() -> None:
         emp_code="EMP-TEST-97",
         full_name="Sunita Deshmukh",
         phone_number="+918888800097",
-        assigned_kiosk_id="CANEBOT-PUNE-04",
+        assigned_kiosk_id="NODE-PUNE-04",
         status="PENDING_APPROVAL",
     )
 

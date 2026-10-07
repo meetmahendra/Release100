@@ -170,12 +170,13 @@ class LocalJWTStrategy:
     """
 
     @staticmethod
-    def authenticate(username: str, password: str) -> Optional[SecurityContext]:
-        """Validate credentials and return a SecurityContext.
+    def authenticate(username: str, password: str, tenant_id: Optional[str] = None) -> Optional[SecurityContext]:
+        """Validate credentials for DevOps super-admin or tenant customer-admin.
 
         Args:
-            username: Plain-text username from the login form.
+            username: Plain-text username, phone number, or email.
             password: Plain-text password from the login form.
+            tenant_id: Optional active tenant workspace slug.
 
         Returns:
             SecurityContext if credentials match, None otherwise.
@@ -188,29 +189,47 @@ class LocalJWTStrategy:
             "09a90aa59b326bd017f7ab55d475269d0f3f38ae7426ace6a3fb007ee2c09790",
         )
 
-        if username != admin_username:
-            return None
+        # 1. Platform Master DevOps Admin Check
+        if username == admin_username and verify_password(password, admin_pwd_hash):
+            permitted_apps = list(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else []
+            if not permitted_apps:
+                try:
+                    from core_platform.main import plugin_loader
+                    permitted_apps = list(plugin_loader.get_all_applications().keys())
+                except Exception:
+                    permitted_apps = ["mail_organizer", "temperature_marker"]
 
-        if not verify_password(password, admin_pwd_hash):
-            logger.warning("[LocalJWTStrategy] Invalid password attempt for user=%s", username)
-            return None
+            return SecurityContext(
+                principal_id=username,
+                tenant_id="platform",
+                user_roles=["admin", "devops_admin"],
+                permitted_apps=permitted_apps,
+                auth_strategy="local_jwt",
+                is_authenticated=True,
+            )
 
-        permitted_apps = list(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else []
-        if not permitted_apps:
-            try:
-                from core_platform.main import plugin_loader
-                permitted_apps = list(plugin_loader.get_all_applications().keys())
-            except Exception:
-                permitted_apps = []
+        # 2. Multi-Tenant Customer Admin / User Lookup
+        try:
+            from core_platform.app.identity.service import get_user_identity_service
+            user_service = get_user_identity_service()
+            user = user_service.find_user_for_auth(username, tenant_id=tenant_id)
+            if user and user.status.lower() == "active" and user.hashed_password:
+                if verify_password(password, user.hashed_password):
+                    user_roles = [user.role.lower()]
+                    cartridges = user.allowed_cartridges or ["mail_organizer"]
+                    return SecurityContext(
+                        principal_id=user.phone_number,
+                        tenant_id=user.tenant_id,
+                        user_roles=user_roles,
+                        permitted_apps=cartridges,
+                        auth_strategy="local_jwt",
+                        is_authenticated=True,
+                    )
+        except Exception as e:
+            logger.warning("[LocalJWTStrategy] Customer admin auth exception: %s", e)
 
-        return SecurityContext(
-            principal_id=username,
-            tenant_id=settings.TENANT_ID,
-            user_roles=["admin"],
-            permitted_apps=permitted_apps,
-            auth_strategy="local_jwt",
-            is_authenticated=True,
-        )
+        logger.warning("[LocalJWTStrategy] Invalid login attempt for user=%s", username)
+        return None
 
     @staticmethod
     def authenticate_token(token: str) -> Optional[SecurityContext]:
@@ -292,17 +311,18 @@ class AuthResolver:
         return ScopedAPIKeyStrategy.authenticate(raw_key)
 
     @staticmethod
-    def resolve_credentials(username: str, password: str) -> Optional[SecurityContext]:
+    def resolve_credentials(username: str, password: str, tenant_id: Optional[str] = None) -> Optional[SecurityContext]:
         """Resolve auth for web admin login form submission.
 
         Args:
-            username: Admin username.
+            username: Admin username, phone, or email.
             password: Plain-text password.
+            tenant_id: Optional tenant workspace slug.
 
         Returns:
             SecurityContext if credentials are valid, None otherwise.
         """
-        return LocalJWTStrategy.authenticate(username, password)
+        return LocalJWTStrategy.authenticate(username, password, tenant_id=tenant_id)
 
 
 # ── Helper ────────────────────────────────────────────────────────────────────

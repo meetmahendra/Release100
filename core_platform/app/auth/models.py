@@ -55,6 +55,15 @@ class SecurityContext(BaseModel):
         """Return True when the principal holds the admin role."""
         return "admin" in self.user_roles
 
+    @property
+    def is_devops(self) -> bool:
+        """Return True if the principal holds devops_admin or super_admin role."""
+        return (
+            "devops_admin" in self.user_roles
+            or "super_admin" in self.user_roles
+            or self.principal_id in ("devops_admin", "master_admin", "system")
+        )
+
     @classmethod
     def unauthenticated(cls) -> "SecurityContext":
         """Return a minimal unauthenticated SecurityContext."""

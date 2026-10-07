@@ -28,6 +28,7 @@ from sqlalchemy import create_engine, or_
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from core_platform.app.middleware.tenant_context import get_current_tenant_id
 from apps.temperature_marker.database.models import (
     AttendanceRecord,
     Base,
@@ -36,6 +37,15 @@ from apps.temperature_marker.database.models import (
     KioskMonitoringConfig,
     OutboxItem,
 )
+
+
+def _apply_tenant_filter(query: Any, model_col: Any, eff_tenant: Optional[str]) -> Any:
+    """Apply tenant isolation filter with fallback for default workspaces."""
+    if eff_tenant in ("platform", "*"):
+        return query
+    if eff_tenant in (None, "", "default", "default_tenant", "public"):
+        return query.filter(model_col.in_(["default", "default_tenant", "public"]))
+    return query.filter(model_col == eff_tenant)
 
 
 class DatabaseService:
@@ -108,6 +118,7 @@ class DatabaseService:
         status: str = "ACTIVE",
         role: str = "OPERATOR",
         reporting_manager_emp_code: Optional[str] = None,
+        tenant_id: Optional[str] = None,
     ) -> Employee:
         """Register or update an employee in the kiosk database.
 
@@ -115,15 +126,17 @@ class DatabaseService:
             emp_code: Unique employee code (e.g. 'EMP-1042').
             full_name: Operator name.
             phone_number: Normalized E.164 phone number.
-            assigned_kiosk_id: Kiosk code (e.g. 'CANEBOT-PUNE-04').
+            assigned_kiosk_id: Kiosk code (e.g. 'NODE-PUNE-04').
             encrypted_face_embedding: AES-256-GCM encrypted base64 vector.
             status: 'ACTIVE' or 'PENDING_APPROVAL'.
             role: 'OPERATOR', 'SUPERVISOR', 'MANAGER', or 'TECHNICIAN'.
             reporting_manager_emp_code: Optional reporting supervisor employee code.
+            tenant_id: Optional tenant slug.
 
         Returns:
             The created Employee instance.
         """
+        eff_tenant = tenant_id or get_current_tenant_id() or "public"
         with self.SessionLocal() as session:
             existing = session.query(Employee).filter(
                 or_(Employee.emp_code == emp_code, Employee.phone_number == phone_number)
@@ -135,6 +148,8 @@ class DatabaseService:
                 existing.assigned_kiosk_id = assigned_kiosk_id
                 existing.status = status
                 existing.role = role
+                if eff_tenant and eff_tenant != "public":
+                    existing.tenant_id = eff_tenant
                 if reporting_manager_emp_code:
                     existing.reporting_manager_emp_code = reporting_manager_emp_code
                 if encrypted_face_embedding:
@@ -144,6 +159,7 @@ class DatabaseService:
                 return existing
 
             new_emp = Employee(
+                tenant_id=eff_tenant,
                 emp_code=emp_code,
                 full_name=full_name,
                 phone_number=phone_number,
@@ -273,14 +289,28 @@ class DatabaseService:
         with self.SessionLocal() as session:
             return session.query(Employee).filter(Employee.emp_code == emp_code).first()
 
-    def get_all_employees(self) -> List[Employee]:
-        """Retrieve all registered employees across all kiosks.
+    def get_all_employees(self, tenant_id: Optional[str] = None) -> List[Employee]:
+        """Retrieve all registered employees for the specified or active tenant.
+
+        Args:
+            tenant_id: Optional tenant slug.
 
         Returns:
-            List of all Employee records.
+            List of Employee records.
         """
+        eff_tenant = tenant_id if tenant_id is not None else get_current_tenant_id()
         with self.SessionLocal() as session:
-            return session.query(Employee).order_by(Employee.id.asc()).all()
+            q = session.query(Employee)
+            q = _apply_tenant_filter(q, Employee.tenant_id, eff_tenant)
+            return q.order_by(Employee.id.asc()).all()
+
+    def get_active_employees(self, tenant_id: Optional[str] = None) -> List[Employee]:
+        """Retrieve all active registered employees for the specified or active tenant."""
+        eff_tenant = tenant_id if tenant_id is not None else get_current_tenant_id()
+        with self.SessionLocal() as session:
+            q = session.query(Employee).filter(Employee.status == "ACTIVE")
+            q = _apply_tenant_filter(q, Employee.tenant_id, eff_tenant)
+            return q.order_by(Employee.id.asc()).all()
 
     def get_supervisor_for_kiosk(self, kiosk_id: str) -> Optional[Employee]:
         """Fetch active supervisor assigned to a specific kiosk or fallback supervisor.
@@ -338,6 +368,7 @@ class DatabaseService:
         phone_number: str,
         assigned_kiosk_id: str,
         status: str = "ACTIVE",
+        tenant_id: Optional[str] = None,
     ) -> Employee:
         """Create or update an operator profile from the administrative console."""
         return self.register_employee(
@@ -346,22 +377,24 @@ class DatabaseService:
             phone_number=phone_number,
             assigned_kiosk_id=assigned_kiosk_id,
             status=status,
+            tenant_id=tenant_id,
         )
 
 
-    def get_pending_approvals(self) -> List[Employee]:
-        """Retrieve all employees waiting for admin onboarding approval.
+    def get_pending_approvals(self, tenant_id: Optional[str] = None) -> List[Employee]:
+        """Retrieve all employees waiting for admin onboarding approval for tenant.
+
+        Args:
+            tenant_id: Optional tenant slug.
 
         Returns:
             List of pending Employee records.
         """
+        eff_tenant = tenant_id if tenant_id is not None else get_current_tenant_id()
         with self.SessionLocal() as session:
-            return (
-                session.query(Employee)
-                .filter(Employee.status.in_(["PENDING_APPROVAL", "PENDING_PHOTO"]))
-                .order_by(Employee.id.desc())
-                .all()
-            )
+            q = session.query(Employee).filter(Employee.status.in_(["PENDING_APPROVAL", "PENDING_PHOTO"]))
+            q = _apply_tenant_filter(q, Employee.tenant_id, eff_tenant)
+            return q.order_by(Employee.id.desc()).all()
 
     def approve_employee(self, emp_code: str) -> bool:
         """Approve a pending operator for duty.
@@ -431,6 +464,7 @@ class DatabaseService:
         ocr_engine_used: str = "local_onnx",
         is_duty_checkin: bool = True,
         photo_path: Optional[str] = None,
+        tenant_id: Optional[str] = None,
     ) -> AttendanceRecord:
         """Persist a verified attendance and temperature check-in record.
 
@@ -447,12 +481,15 @@ class DatabaseService:
             ocr_engine_used: 'local_onnx' or 'cloud_gemini_vision'.
             is_duty_checkin: True for first shift checkin, False for periodic chiller checks.
             photo_path: Path to captured check-in JPEG.
+            tenant_id: Optional tenant slug.
 
         Returns:
             Saved AttendanceRecord instance.
         """
+        eff_tenant = tenant_id or get_current_tenant_id() or "public"
         with self.SessionLocal() as session:
             record = AttendanceRecord(
+                tenant_id=eff_tenant,
                 correlation_id=correlation_id,
                 emp_code=emp_code,
                 kiosk_id=kiosk_id,
@@ -544,19 +581,22 @@ class DatabaseService:
                 return True
             return False
 
-    def get_recent_attendance(self, limit: int = 20) -> List[AttendanceRecord]:
-        """Fetch recent attendance records.
+    def get_recent_attendance(self, limit: int = 20, tenant_id: Optional[str] = None) -> List[AttendanceRecord]:
+        """Fetch recent attendance records for the specified or active tenant.
 
         Args:
             limit: Maximum records to return.
+            tenant_id: Optional tenant slug.
 
         Returns:
             List of recent AttendanceRecord instances.
         """
+        eff_tenant = tenant_id if tenant_id is not None else get_current_tenant_id()
         with self.SessionLocal() as session:
+            q = session.query(AttendanceRecord)
+            q = _apply_tenant_filter(q, AttendanceRecord.tenant_id, eff_tenant)
             return (
-                session.query(AttendanceRecord)
-                .order_by(AttendanceRecord.id.desc())
+                q.order_by(AttendanceRecord.id.desc())
                 .limit(limit)
                 .all()
             )
@@ -566,6 +606,7 @@ class DatabaseService:
         correlation_id: str,
         target_gateway: str,
         payload: Dict[str, Any],
+        tenant_id: Optional[str] = None,
     ) -> OutboxItem:
         """Enqueue payload for downstream synchronization.
 
@@ -575,12 +616,15 @@ class DatabaseService:
             correlation_id: Distributed trace ID.
             target_gateway: Connector identifier ('in_house_rest', 'direct_db', etc.).
             payload: Structured dictionary data.
+            tenant_id: Optional tenant slug.
 
         Returns:
             Created OutboxItem.
         """
+        eff_tenant = tenant_id or get_current_tenant_id() or "public"
         with self.SessionLocal() as session:
             item = OutboxItem(
+                tenant_id=eff_tenant,
                 correlation_id=correlation_id,
                 target_gateway=target_gateway,
                 payload_json=json.dumps(payload),
@@ -651,6 +695,7 @@ class DatabaseService:
         message_text: str = "",
         media_path: Optional[str] = None,
         priority: int = 50,
+        tenant_id: Optional[str] = None,
         **kwargs: Any,
     ) -> InternalMessageQueue:
         """Enqueue an operational note or alert for a supervisor/manager.
@@ -667,9 +712,11 @@ class DatabaseService:
         m_text = message_text or kwargs.get("message_text", "")
         m_path = media_path or kwargs.get("media_path")
         prio = kwargs.get("priority", priority)
+        eff_tenant = tenant_id or kwargs.get("tenant_id") or get_current_tenant_id() or "public"
 
         with self.SessionLocal() as session:
             msg = InternalMessageQueue(
+                tenant_id=eff_tenant,
                 correlation_id=cid,
                 sender_phone=s_phone,
                 sender_emp_code=s_emp,
@@ -692,6 +739,7 @@ class DatabaseService:
         self,
         recipient_phone: str,
         limit: int = 10,
+        tenant_id: Optional[str] = None,
     ) -> List[InternalMessageQueue]:
         """Retrieve prioritized pending messages awaiting review by recipient.
 
@@ -700,13 +748,15 @@ class DatabaseService:
         Args:
             recipient_phone: Manager phone number.
             limit: Maximum items to return (default 10 for single-screen digest).
+            tenant_id: Optional tenant slug.
 
         Returns:
             List of pending InternalMessageQueue items.
         """
+        eff_tenant = tenant_id if tenant_id is not None else get_current_tenant_id()
         clean_phone = recipient_phone.replace("+", "").replace(" ", "").strip()
         with self.SessionLocal() as session:
-            return (
+            q = (
                 session.query(InternalMessageQueue)
                 .filter(
                     or_(
@@ -716,7 +766,10 @@ class DatabaseService:
                     ),
                     InternalMessageQueue.status == "QUEUED",
                 )
-                .order_by(
+            )
+            q = _apply_tenant_filter(q, InternalMessageQueue.tenant_id, eff_tenant)
+            return (
+                q.order_by(
                     InternalMessageQueue.priority.desc(),
                     InternalMessageQueue.created_at_utc.asc(),
                 )
@@ -724,11 +777,12 @@ class DatabaseService:
                 .all()
             )
 
-    def count_pending_messages_for_recipient(self, recipient_phone: str) -> int:
+    def count_pending_messages_for_recipient(self, recipient_phone: str, tenant_id: Optional[str] = None) -> int:
         """Count total unresolved messages for recipient."""
+        eff_tenant = tenant_id if tenant_id is not None else get_current_tenant_id()
         clean_phone = recipient_phone.replace("+", "").replace(" ", "").strip()
         with self.SessionLocal() as session:
-            return (
+            q = (
                 session.query(InternalMessageQueue)
                 .filter(
                     or_(
@@ -738,8 +792,9 @@ class DatabaseService:
                     ),
                     InternalMessageQueue.status == "QUEUED",
                 )
-                .count()
             )
+            q = _apply_tenant_filter(q, InternalMessageQueue.tenant_id, eff_tenant)
+            return q.count()
 
     def bind_outbound_wamid(self, message_id: int, wamid: str) -> None:
         """Bind outbound WhatsApp message ID (wamid) to queue item for swipe-to-reply matching."""
@@ -819,18 +874,22 @@ class DatabaseService:
         self,
         limit: int = 50,
         status_filter: Optional[str] = None,
+        tenant_id: Optional[str] = None,
     ) -> List[InternalMessageQueue]:
         """Retrieve recent internal communications across all kiosks.
 
         Args:
             limit: Maximum items to return.
             status_filter: Optional status ('QUEUED', 'RESOLVED', etc.).
+            tenant_id: Optional tenant slug.
 
         Returns:
             List of InternalMessageQueue records ordered newest first.
         """
+        eff_tenant = tenant_id if tenant_id is not None else get_current_tenant_id()
         with self.SessionLocal() as session:
             q = session.query(InternalMessageQueue)
+            q = _apply_tenant_filter(q, InternalMessageQueue.tenant_id, eff_tenant)
             if status_filter:
                 q = q.filter(InternalMessageQueue.status == status_filter.upper())
             return q.order_by(InternalMessageQueue.id.desc()).limit(limit).all()
@@ -930,11 +989,14 @@ class DatabaseService:
             all_cfgs = session.query(KioskMonitoringConfig).all()
             return {c.kiosk_id: c for c in all_cfgs}
 
-    def get_kiosk_daily_attendance_summary(self) -> List[Dict[str, Any]]:
+    def get_kiosk_daily_attendance_summary(self, tenant_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Compute real-time operational summary matrix for all registered kiosks.
 
         Integrates KnowledgeGraphService roster, today's attendance records,
         temperature check progress against required daily target, and overdue alerts.
+
+        Args:
+            tenant_id: Optional tenant slug.
 
         Returns:
             List of kiosk summary dictionaries.
@@ -942,8 +1004,9 @@ class DatabaseService:
         from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
         from core_platform.app.common.timezone import to_local_ist
 
+        eff_tenant = tenant_id if tenant_id is not None else get_current_tenant_id()
         kg = KnowledgeGraphService()
-        all_kiosks = kg.list_all_kiosks()
+        all_kiosks = kg.list_all_kiosks(tenant_id=eff_tenant)
         configs = self.get_all_kiosk_configs()
         global_cfg = configs.get("GLOBAL_DEFAULT")
 
@@ -964,23 +1027,24 @@ class DatabaseService:
                 interval_hours = cfg.check_interval_hours if cfg else 4.0
 
                 # Assigned operators for this kiosk
-                assigned_emps = (
+                emp_q = (
                     session.query(Employee)
                     .filter(Employee.assigned_kiosk_id == k_id, Employee.status == "ACTIVE")
-                    .all()
                 )
+                emp_q = _apply_tenant_filter(emp_q, Employee.tenant_id, eff_tenant)
+                assigned_emps = emp_q.all()
                 op_names = [e.full_name for e in assigned_emps]
 
                 # Attendance records today for this kiosk
-                records_today = (
+                att_q = (
                     session.query(AttendanceRecord)
                     .filter(
                         AttendanceRecord.kiosk_id == k_id,
                         AttendanceRecord.checkin_time_utc >= start_of_today,
                     )
-                    .order_by(AttendanceRecord.id.asc())
-                    .all()
                 )
+                att_q = _apply_tenant_filter(att_q, AttendanceRecord.tenant_id, eff_tenant)
+                records_today = att_q.order_by(AttendanceRecord.id.asc()).all()
 
                 # 1. Duty Check-in Status
                 duty_rec = next((r for r in records_today if r.is_duty_checkin), None)
@@ -1051,21 +1115,25 @@ class DatabaseService:
 
         return summaries
 
-    def get_active_high_alerts(self) -> List[Dict[str, Any]]:
+    def get_active_high_alerts(self, tenant_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Retrieve unresolved critical safety and compliance alerts from today.
+
+        Args:
+            tenant_id: Optional tenant slug.
 
         Returns:
             List of alert event dictionaries.
         """
         from core_platform.app.common.timezone import to_local_ist
 
+        eff_tenant = tenant_id if tenant_id is not None else get_current_tenant_id()
         now = datetime.now(timezone.utc)
         start_of_today = datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=timezone.utc)
         alerts: List[Dict[str, Any]] = []
 
         with self.SessionLocal() as session:
             # 1. Critical HACCP hazards or tamper from AttendanceRecord
-            crit_recs = (
+            crit_q = (
                 session.query(AttendanceRecord)
                 .filter(
                     AttendanceRecord.checkin_time_utc >= start_of_today,
@@ -1076,9 +1144,9 @@ class DatabaseService:
                     ),
                     AttendanceRecord.manual_resolution_status == None,  # noqa: E711
                 )
-                .order_by(AttendanceRecord.id.desc())
-                .all()
             )
+            crit_q = _apply_tenant_filter(crit_q, AttendanceRecord.tenant_id, eff_tenant)
+            crit_recs = crit_q.order_by(AttendanceRecord.id.desc()).all()
 
             for r in crit_recs:
                 alert_type = "HACCP Hazard"
@@ -1101,16 +1169,16 @@ class DatabaseService:
                 })
 
             # 2. Critical unresolved operator messages
-            crit_msgs = (
+            msg_q = (
                 session.query(InternalMessageQueue)
                 .filter(
                     InternalMessageQueue.created_at_utc >= start_of_today,
                     InternalMessageQueue.priority >= 100,
                     InternalMessageQueue.status != "RESOLVED",
                 )
-                .order_by(InternalMessageQueue.id.desc())
-                .all()
             )
+            msg_q = _apply_tenant_filter(msg_q, InternalMessageQueue.tenant_id, eff_tenant)
+            crit_msgs = msg_q.order_by(InternalMessageQueue.id.desc()).all()
 
             for m in crit_msgs:
                 alerts.append({

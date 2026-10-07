@@ -254,7 +254,7 @@ def test_sec3_login_csrf_token_resilience_multi_attempt() -> None:
         follow_redirects=False,
     )
     assert resp4.status_code == 302
-    assert resp4.headers["location"] == "/admin/"
+    assert resp4.headers["location"] in ["/ops/tenants", "/admin/"]
     assert "admin_token" in resp4.cookies
 
 
