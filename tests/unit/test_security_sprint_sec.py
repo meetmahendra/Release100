@@ -421,7 +421,7 @@ def test_admin_shell_observability_endpoints(tmp_path: Path) -> None:
     # 4. LLM Costs page & API
     res_costs_page = client.get("/admin/llm-costs")
     assert res_costs_page.status_code == 200
-    assert "LLM Token & Cost Consumption" in res_costs_page.text
+    assert "LLM Token & Cost Consumption" in res_costs_page.text or "LLM Token &amp; Cost Consumption" in res_costs_page.text
 
     res_costs_api = client.get("/admin/api/llm-costs")
     assert res_costs_api.status_code == 200
