@@ -1,0 +1,93 @@
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{#- Component macros (Plan 11, T13). Import with context so t() sees the request locale:
+      {% from "components/macros.html" import kpi_card, data_table with context %}
+    Every visible string is a catalog key; values are escaped by autoescape. -#}
+
+{% macro empty_state(title_key="core.component.empty_title", body_key="core.component.empty_body", action_key=none, action_href=none) %}
+<div class="ui-empty rounded-xl border border-dashed border-line p-8 text-center" role="note">
+  <p class="font-semibold text-ink">{{ t(title_key) }}</p>
+  <p class="mt-1 text-sm text-muted">{{ t(body_key) }}</p>
+  {% if action_key and action_href %}
+  <a class="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-sm font-semibold text-page" href="{{ action_href }}">{{ t(action_key) }}</a>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro kpi_card(label_key, value, hint_key=none) %}
+<div class="ui-kpi rounded-xl border border-line bg-card p-4">
+  <div class="text-sm text-muted">{{ t(label_key) }}</div>
+  <div class="mt-1 text-3xl font-semibold text-ink">{{ value }}</div>
+  {% if hint_key %}<div class="mt-1 text-xs text-muted">{{ t(hint_key) }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro badge(code, app_id=none) %}{{ status_badge(code, app_id) }}{% endmacro %}
+
+{% macro data_table(columns, rows, caption_key=none, empty_title_key="core.component.empty_title", empty_body_key="core.component.empty_body") %}
+{% if rows %}
+<div class="overflow-x-auto rounded-xl border border-line">
+  <table class="ui-table min-w-full text-sm">
+    {% if caption_key %}<caption class="ui-sr-only">{{ t(caption_key) }}</caption>{% endif %}
+    <thead class="bg-card text-left text-muted">
+      <tr>{% for col in columns %}<th scope="col" class="px-4 py-2 font-medium">{{ t(col) }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody class="divide-y divide-line">
+      {% for row in rows %}
+      <tr>{% for cell in row %}<td class="px-4 py-2">{{ cell }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+{{ empty_state(empty_title_key, empty_body_key) }}
+{% endif %}
+{% endmacro %}
+
+{% macro form_field(name, label_key, type="text", value="", placeholder_key=none, help_key=none, error=none, required=false) %}
+{%- set field_id = "f-" ~ name -%}
+<div class="ui-field mb-4">
+  <label for="{{ field_id }}" class="block text-sm font-medium text-ink">
+    {{ t(label_key) }}{% if required %} <span class="text-danger" title="{{ t('core.component.required') }}" aria-hidden="true">*</span>{% endif %}
+  </label>
+  <input id="{{ field_id }}" name="{{ name }}" type="{{ type }}" value="{{ value }}"
+         {% if placeholder_key %}placeholder="{{ t(placeholder_key) }}"{% endif %}
+         {% if required %}required aria-required="true"{% endif %}
+         {% if help_key or error %}aria-describedby="{{ field_id }}-note"{% endif %}
+         {% if error %}aria-invalid="true"{% endif %}
+         class="mt-1 block w-full rounded-md border {% if error %}border-danger{% else %}border-line{% endif %} bg-page px-3 py-2 text-ink">
+  {% if help_key or error %}
+  <p id="{{ field_id }}-note" class="mt-1 text-xs {% if error %}text-danger{% else %}text-muted{% endif %}">{% if error %}{{ error }}{% else %}{{ t(help_key) }}{% endif %}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro alert(tone="info", message_key=none, message=none) %}
+<div class="ui-alert ui-alert--{{ tone }} mb-3 rounded-md border px-4 py-3 text-sm {% if tone == 'danger' %}border-danger text-danger{% elif tone == 'warning' %}border-preview text-preview{% elif tone == 'success' %}border-primary text-primary{% else %}border-info text-info{% endif %}"
+     role="{% if tone == 'danger' %}alert{% else %}status{% endif %}">
+  {% if message_key %}{{ t(message_key) }}{% else %}{{ message }}{% endif %}
+</div>
+{% endmacro %}
+
+{% macro modal(id, title_key) %}
+<div id="{{ id }}" class="ui-modal hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="{{ id }}-title">
+  <div class="w-full max-w-lg rounded-xl border border-line bg-card p-6">
+    <h2 id="{{ id }}-title" class="text-lg font-semibold text-ink">{{ t(title_key) }}</h2>
+    <div class="mt-4">{{ caller() }}</div>
+    <div class="mt-6 text-right"><button type="button" class="rounded-md border border-line px-4 py-2 text-sm" data-ui-close="{{ id }}">{{ t('common.close') }}</button></div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro confirm_dialog(id, body_key, confirm_key="core.component.confirm_yes", cancel_key="core.component.confirm_no", title_key="core.component.confirm_title", action=none, method="post") %}
+<div id="{{ id }}" class="ui-modal hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="alertdialog" aria-modal="true" aria-labelledby="{{ id }}-title" aria-describedby="{{ id }}-body">
+  <form class="w-full max-w-md rounded-xl border border-line bg-card p-6" method="{{ method }}" {% if action %}action="{{ action }}"{% endif %}>
+    <h2 id="{{ id }}-title" class="text-lg font-semibold text-ink">{{ t(title_key) }}</h2>
+    <p id="{{ id }}-body" class="mt-2 text-sm text-muted">{{ t(body_key) }}</p>
+    {{ caller() if caller else "" }}
+    <div class="mt-6 flex justify-end gap-3">
+      <button type="button" class="rounded-md border border-line px-4 py-2 text-sm" data-ui-close="{{ id }}">{{ t(cancel_key) }}</button>
+      <button type="submit" class="rounded-md bg-danger px-4 py-2 text-sm font-semibold text-page">{{ t(confirm_key) }}</button>
+    </div>
+  </form>
+</div>
+{% endmacro %}

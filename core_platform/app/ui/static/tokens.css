@@ -39,3 +39,19 @@ body.ui-shell {
   outline: none;
   box-shadow: var(--ui-focus);
 }
+
+/* Status badges rendered by the status_badge() Jinja global (text plus icon, never colour alone). */
+.ui-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.6rem; border-radius: 999px; border: 1px solid var(--ui-border); font-size: 0.75rem; }
+.ui-badge__icon::before { content: "\25CF"; }
+.ui-badge__icon[data-icon="check"]::before { content: "\2713"; }
+.ui-badge__icon[data-icon="clock"]::before { content: "\25F4"; }
+.ui-badge__icon[data-icon="alert"]::before { content: "\26A0"; }
+.ui-badge__icon[data-icon="x"]::before { content: "\2715"; }
+.ui-badge--success { color: var(--ui-primary); border-color: var(--ui-primary); }
+.ui-badge--warning { color: var(--ui-preview); border-color: var(--ui-preview); }
+.ui-badge--danger { color: var(--ui-danger); border-color: var(--ui-danger); }
+.ui-badge--info { color: var(--ui-info); border-color: var(--ui-info); }
+.ui-badge--neutral { color: var(--ui-text-muted); }
+
+.ui-modal.hidden { display: none; }
+.ui-badge__icon[data-icon="minus"]::before { content: "\2212"; }

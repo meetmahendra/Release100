@@ -52,6 +52,14 @@
     },
     "locale": {
       "en_us": "English (US)"
+    },
+    "component": {
+      "empty_title": "Nothing here yet",
+      "empty_body": "When there is something to show, it will appear here.",
+      "required": "required",
+      "confirm_title": "Please confirm",
+      "confirm_yes": "Yes, continue",
+      "confirm_no": "No, go back"
     }
   }
 }
