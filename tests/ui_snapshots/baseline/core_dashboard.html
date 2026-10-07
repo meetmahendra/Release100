@@ -1,0 +1,378 @@
+STATUS 200
+<html lang="en">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<title>
+  Workspace Admin — Release# Organization — Release#
+</title>
+<script src="https://cdn.tailwindcss.com">
+</script>
+</head>
+<body class="min-h-screen bg-slate-# text-slate-# flex">
+<aside class="w-# shrink-# bg-slate-#/# border-r border-slate-#/# flex flex-col">
+<div class="px-# py-# border-b border-slate-#/#">
+<div class="flex items-center gap-#">
+<div class="w-# h-# rounded-lg bg-emerald-# flex items-center justify-center shrink-# shadow-lg shadow-emerald-#/#">
+<svg class="w-# h-# text-white" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #l# # #-#m#.#-#.#A#.# #.# # # #.#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+</div>
+<div>
+<p class="text-sm font-bold text-white leading-tight">
+  Release#
+</p>
+<p class="text-xs text-slate-# truncate max-w-[#px]">
+  Release# Organization
+</p>
+</div>
+</div>
+</div>
+<nav class="flex-# px-# py-# space-y-# overflow-y-auto text-sm">
+<a class="flex items-center gap-# px-# py-# rounded-lg font-medium transition-colors bg-emerald-#/# text-emerald-# font-semibold" href="/admin/">
+<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #l#-#m# #l#-# # #M# #v#a# # # # #h#m#-#l# #m-#-#v#a# # # #-# #h-#m-# #a# # # #-#v-#a# # # #-#h#a# # # # #v#a# # # # #m-# #h#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+  Overview Dashboard
+</a>
+<p class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-slate-#">
+  Applications
+</p>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/apps/mail-organizer/dashboard">
+<span>
+  📦
+</span>
+<span class="truncate">
+  AI Email & Calendar Organizer
+</span>
+</a>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/apps/temperature-marker/fleet">
+<span>
+  📦
+</span>
+<span class="truncate">
+  Apex Industrial Temperature & Attendance Marker
+</span>
+</a>
+<p class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-slate-#">
+  Workspace & Access
+</p>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/users">
+<span>
+  👥
+</span>
+<span>
+  Users & Team
+</span>
+</a>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/tenants">
+<span>
+  🏢
+</span>
+<span>
+  Company Profile & Vault
+</span>
+</a>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/api-keys">
+<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #a# # # # #m# #a# # # #-#.# #.#L# #H#v#H#v#H#a# # # #-#-#v-#.# a# # # #.#-.#l#.#-#.#A# # # # #z" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+  API Keys
+</a>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-amber-# hover:bg-amber-#/# transition-colors" href="/ops/tenants">
+<span>
+  ⚡
+</span>
+<span class="font-semibold text-amber-#">
+  DevOps Control Plane
+</span>
+</a>
+<p class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-slate-#">
+  DevOps Diagnostics
+</p>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/llm-costs">
+<span>
+  💰
+</span>
+  LLM Costs & Tokens
+</a>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/logs">
+<span>
+  📑
+</span>
+  Live System Logs
+</a>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/settings">
+<span>
+  📡
+</span>
+  Master Settings & Keys
+</a>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/health" target="_blank">
+<span>
+  💓
+</span>
+  Live Health JSON ↗
+</a>
+</nav>
+<div class="px-# py-# border-t border-slate-#/# bg-slate-#/#">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-# min-w-#">
+<div class="w-# h-# rounded-full bg-emerald-# flex items-center justify-center text-xs font-bold text-white shrink-#">
+  A
+</div>
+<span class="text-sm font-medium text-slate-# truncate">
+  admin
+</span>
+</div>
+<a class="text-slate-# hover:text-red-# transition-colors p-#" href="/admin/logout" title="Logout">
+<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #l#-#m# #l-#-#m# #H#m# #v#a# # # #-# #H#a# # # #-#-#V#a# # # #-#h#a# # # # #v#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+</a>
+</div>
+</div>
+</aside>
+<main class="flex-# overflow-auto p-# bg-slate-#">
+<div class="mb-# flex items-center justify-between">
+<div>
+<h1 class="text-#xl font-bold text-white">
+  Workspace Admin — Release# Organization
+</h1>
+<p class="text-xs text-slate-# mt-#">
+  Node:
+<span class="font-mono text-emerald-#">
+  NODE-#
+</span>
+  (Release# Node ##) • 🏢 Tenant:
+<strong class="text-slate-#">
+  Release# Organization
+</strong>
+<span class="text-emerald-# font-mono">
+  (default_tenant)
+</span>
+</p>
+</div>
+<div class="flex items-center gap-#">
+<span class="px-# py-# rounded-full bg-amber-#/# text-amber-# text-xs font-semibold border border-amber-#/#">
+  🔶 SHADOW (DRY RUN)
+</span>
+<span class="px-# py-# rounded-full bg-slate-# text-slate-# text-xs font-medium border border-slate-#">
+  Mode: shadow
+</span>
+</div>
+</div>
+<h2 class="text-sm font-semibold text-slate-# uppercase tracking-wider mb-#">
+  Service & Credential Readiness
+</h2>
+<div class="grid grid-cols-# md:grid-cols-# gap-# mb-#">
+<div class="bg-slate-#/# border border-slate-# rounded-xl p-# flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-#">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-#">
+  Google Gemini AI
+</span>
+<span class="px-# py-#.# rounded-full bg-emerald-#/# text-emerald-# text-xs font-bold">
+  READY
+</span>
+</div>
+<p class="text-lg font-bold text-white">
+  Cognitive Gateway
+</p>
+<p class="text-xs text-slate-# mt-#">
+  Powers intent routing, OCR & stochastic reasoning.
+</p>
+</div>
+<div class="mt-# pt-# border-t border-slate-#/#">
+<a class="text-xs text-emerald-# hover:text-emerald-# font-medium" href="/settings">
+  Configure / Test Key →
+</a>
+</div>
+</div>
+<div class="bg-slate-#/# border border-slate-# rounded-xl p-# flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-#">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-#">
+  WhatsApp Ingress
+</span>
+<span class="px-# py-#.# rounded-full bg-emerald-#/# text-emerald-# text-xs font-bold">
+  CONFIGURED
+</span>
+</div>
+<p class="text-lg font-bold text-white">
+  Field Messaging
+</p>
+<p class="text-xs text-slate-# mt-#">
+  Handles conversational webhooks and notification outbox.
+</p>
+</div>
+<div class="mt-# pt-# border-t border-slate-#/#">
+<a class="text-xs text-emerald-# hover:text-emerald-# font-medium" href="/settings">
+  Configure WhatsApp →
+</a>
+</div>
+</div>
+<div class="bg-slate-#/# border border-slate-# rounded-xl p-# flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-#">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-#">
+  Outbound Relay
+</span>
+<span class="px-# py-#.# rounded-full bg-blue-#/# text-blue-# text-xs font-bold">
+  WSS TUNNEL
+</span>
+</div>
+<p class="text-lg font-bold text-white">
+  Zero Inbound
+</p>
+<p class="text-xs text-slate-# mt-# truncate">
+  Target: https://whatsapp-cloud-relay.myvirtualsecretory.workers.dev
+</p>
+</div>
+<div class="mt-# pt-# border-t border-slate-#/#">
+<a class="text-xs text-emerald-# hover:text-emerald-# font-medium" href="/settings">
+  Cloudflare Tunnel Info →
+</a>
+</div>
+</div>
+<div class="bg-slate-#/# border border-slate-# rounded-xl p-# flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-#">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-#">
+  Audit Ledger
+</span>
+<span class="px-# py-#.# rounded-full bg-emerald-#/# text-emerald-# text-xs font-bold">
+  SHA-#
+</span>
+</div>
+<p class="text-lg font-bold text-white">
+  ## Events
+</p>
+<p class="text-xs text-slate-# mt-# font-mono truncate">
+  Hash: <HEX>...
+</p>
+</div>
+<div class="mt-# pt-# border-t border-slate-#/#">
+<a class="text-xs text-emerald-# hover:text-emerald-# font-medium" href="/health" target="_blank">
+  View Telemetry →
+</a>
+</div>
+</div>
+</div>
+<h2 class="text-sm font-semibold text-slate-# uppercase tracking-wider mb-#">
+  Quick Action Launchpad
+</h2>
+<div class="grid grid-cols-# md:grid-cols-# gap-# mb-#">
+<a class="bg-slate-#/# border border-slate-# rounded-xl p-# hover:bg-slate-# hover:border-emerald-#/# transition-all duration-# group" href="/settings">
+<div class="flex items-center gap-# mb-#">
+<span class="text-#xl">
+  ⚙️
+</span>
+<h3 class="text-base font-semibold text-white group-hover:text-emerald-#">
+  Settings & Master Keys
+</h3>
+</div>
+<p class="text-xs text-slate-#">
+  Configure LLM providers, WhatsApp webhooks, Cloudflare tunnels, and manage configuration backups.
+</p>
+<p class="text-xs text-emerald-# font-medium mt-#">
+  Configure System →
+</p>
+</a>
+<a class="bg-slate-#/# border border-slate-# rounded-xl p-# hover:bg-slate-# hover:border-amber-#/# transition-all duration-# group" href="/ops/tenants">
+<div class="flex items-center gap-# mb-#">
+<span class="text-#xl">
+  ⚡
+</span>
+<h3 class="text-base font-semibold text-amber-# group-hover:text-amber-#">
+  DevOps Control Plane
+</h3>
+</div>
+<p class="text-xs text-slate-#">
+  Provision tenant databases, deep-clone partitions, cutover geo-regions, and audit hash chains.
+</p>
+<p class="text-xs text-amber-# font-medium mt-#">
+  Open Operations →
+</p>
+</a>
+<a class="bg-slate-#/# border border-slate-# rounded-xl p-# hover:bg-slate-# hover:border-emerald-#/# transition-all duration-# group" href="/admin/api-keys">
+<div class="flex items-center gap-# mb-#">
+<span class="text-#xl">
+  🎟️
+</span>
+<h3 class="text-base font-semibold text-white group-hover:text-emerald-#">
+  Provision API Keys
+</h3>
+</div>
+<p class="text-xs text-slate-#">
+  Generate scoped, rate-limited SHA-# API keys for field tablets, MCP agents, and external integrations.
+</p>
+<p class="text-xs text-emerald-# font-medium mt-#">
+  Manage Keys →
+</p>
+</a>
+<a class="bg-slate-#/# border border-slate-# rounded-xl p-# hover:bg-slate-# hover:border-emerald-#/# transition-all duration-# group" href="/admin/apps/mail-organizer/dashboard">
+<div class="flex items-center gap-# mb-#">
+<span class="text-#xl">
+  📦
+</span>
+<h3 class="text-base font-semibold text-white group-hover:text-emerald-#">
+  AI Email & Calendar Organizer
+</h3>
+</div>
+<p class="text-xs text-slate-#">
+  Email triage, meeting scheduling, and PM task extraction for executives.
+</p>
+<p class="text-xs text-emerald-# font-medium mt-#">
+  Open Cartridge Dashboard →
+</p>
+</a>
+<a class="bg-slate-#/# border border-slate-# rounded-xl p-# hover:bg-slate-# hover:border-emerald-#/# transition-all duration-# group" href="/admin/apps/temperature-marker/fleet">
+<div class="flex items-center gap-# mb-#">
+<span class="text-#xl">
+  📦
+</span>
+<h3 class="text-base font-semibold text-white group-hover:text-emerald-#">
+  Apex Industrial Temperature & Attendance Marker
+</h3>
+</div>
+<p class="text-xs text-slate-#">
+  Factory floor attendance and chiller temperature recording via selfie photo and OCR.
+</p>
+<p class="text-xs text-emerald-# font-medium mt-#">
+  Open Cartridge Dashboard →
+</p>
+</a>
+</div>
+<h2 class="text-sm font-semibold text-slate-# uppercase tracking-wider mb-#">
+  Recent Audit Trail Activity (SHA-# Hash Chain)
+</h2>
+<div class="bg-slate-#/# border border-slate-# rounded-xl overflow-hidden mb-#">
+<table class="w-full text-sm">
+<thead>
+<tr class="border-b border-slate-# bg-slate-# text-slate-# text-xs uppercase">
+<th class="px-# py-# text-left">
+  Seq #
+</th>
+<th class="px-# py-# text-left">
+  Timestamp (UTC)
+</th>
+<th class="px-# py-# text-left">
+  Action / Event
+</th>
+<th class="px-# py-# text-left">
+  Actor / User
+</th>
+<th class="px-# py-# text-left">
+  Cryptographic Hash
+</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-#/#">
+...
+</tbody>
+</table>
+</div>
+</main>
+</body>
+</html>

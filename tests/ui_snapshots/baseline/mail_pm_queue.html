@@ -1,0 +1,265 @@
+STATUS 200
+<html lang="en">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<title>
+  PM Action Queue - Release#
+</title>
+<style>
+  :root {
+  --bg-main: ##b#f#;
+  --bg-card: ##d#f;
+  --bg-card-hover: ##e#b;
+  --border-color: ##f;
+  --text-primary: #f#fafc;
+  --text-secondary: ##a#b#;
+  --accent-primary: ##f#;
+  --accent-green: ##b#;
+  --accent-amber: #f#e#b;
+  --accent-red: #ef#;
+  --accent-purple: ##b#cf#;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * {
+  box-sizing: border-box;
+  margin: #;
+  padding: #;
+  }
+  body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  min-height: #vh;
+  display: flex;
+  flex-direction: column;
+  }
+  header {
+  background-color: var(--bg-card);
+  border-bottom: #px solid var(--border-color);
+  padding: #rem #rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  }
+  .brand {
+  display: flex;
+  align-items: center;
+  gap: #.#rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  }
+  .brand-badge {
+  background: linear-gradient(#deg, ##f#, ##ca);
+  color: white;
+  font-weight: #;
+  font-size: #.#rem;
+  padding: #.#rem #.#rem;
+  border-radius: #px;
+  letter-spacing: #.#em;
+  }
+  .brand-title {
+  font-size: #.#rem;
+  font-weight: #;
+  }
+  nav {
+  display: flex;
+  gap: #rem;
+  }
+  nav a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: #.#rem;
+  font-weight: #;
+  padding: #.#rem #.#rem;
+  border-radius: #px;
+  transition: all #.#s ease;
+  }
+  nav a:hover, nav a.active {
+  color: var(--text-primary);
+  background-color: var(--bg-card-hover);
+  }
+  main {
+  flex: #;
+  padding: #rem;
+  max-width: #px;
+  margin: # auto;
+  width: #%;
+  }
+  .card {
+  background-color: var(--bg-card);
+  border: #px solid var(--border-color);
+  border-radius: #px;
+  padding: #.#rem;
+  margin-bottom: #.#rem;
+  }
+  .badge {
+  display: inline-block;
+  padding: #.#rem #.#rem;
+  border-radius: #px;
+  font-size: #.#rem;
+  font-weight: #;
+  text-transform: uppercase;
+  }
+  .badge-urgent { background: rgba(#, #, #, #.#); color: #fca#a#; border: #px solid #ef#; }
+  .badge-action { background: rgba(#, #, #, #.#); color: #fde#a; border: #px solid #f#e#b; }
+  .badge-meeting { background: rgba(#, #, #, #.#); color: #c#d#fe; border: #px solid ##f#; }
+  .badge-promotions { background: rgba(#, #, #, #.#); color: #cbd#e#; border: #px solid ##b; }
+  .badge-needs-review { background: rgba(#, #, #, #.#); color: #fbcfe#; border: #px solid #ec#; }
+  .badge-success { background: rgba(#, #, #, #.#); color: #a#f#d#; border: #px solid ##b#; }
+  .btn {
+  background-color: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: #.#rem #.#rem;
+  border-radius: #px;
+  font-weight: #;
+  cursor: pointer;
+  transition: all #.#s ease;
+  }
+  .btn:hover { opacity: #.#; }
+  .btn-success { background-color: var(--accent-green); }
+  .btn-danger { background-color: var(--accent-red); }
+  .btn-secondary { background-color: ##; }
+  table {
+  width: #%;
+  border-collapse: collapse;
+  margin-top: #rem;
+  }
+  th, td {
+  text-align: left;
+  padding: #.#rem;
+  border-bottom: #px solid var(--border-color);
+  }
+  th {
+  color: var(--text-secondary);
+  font-size: #.#rem;
+  font-weight: #;
+  text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<header>
+<div style="display: flex; align-items: center; gap: #rem;">
+<a class="brand" href="/admin/apps/mail-organizer/dashboard">
+<span class="brand-badge">
+  MAIL
+</span>
+<span class="brand-title">
+  AI Mail Organizer
+</span>
+</a>
+<span class="badge" style="background: rgba(#, #, #, #.#); color: #c#d#fe; border: #px solid ##f#; font-family: monospace; font-size: #.#rem; padding: #.#rem #.#rem; border-radius: #px; display: inline-flex; align-items: center; gap: #.#rem;">
+<span>
+  🏢
+</span>
+<strong style="color: #ffffff;">
+  Release# Organization
+</strong>
+<span style="opacity: #.#;">
+  (default_tenant)
+</span>
+</span>
+</div>
+<nav style="display: flex; align-items: center; gap: #rem;">
+<a class="" href="/admin/apps/mail-organizer/dashboard">
+  Dashboard
+</a>
+<a class="" href="/admin/apps/mail-organizer/triage">
+  Triage Simulator
+</a>
+<a class="active" href="/admin/apps/mail-organizer/pm-queue">
+  PM Action Queue
+</a>
+<a class="" href="/admin/apps/mail-organizer/drafts">
+  Drafts
+</a>
+<a class="" href="/admin/apps/mail-organizer/rules">
+  Rules & VIPs
+</a>
+<a href="/admin/" style="color: ##a#b#; font-size: #.#rem; border-left: #px solid var(--border-color); padding-left: #.#rem;">
+  ← Admin Shell
+</a>
+</nav>
+</header>
+<main>
+<div class="card">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<h2 style="font-size: #.#rem; font-weight: #;">
+  Human-in-the-Loop PM Action Queue
+</h2>
+<span class="badge badge-action">
+  Staged Before Execution
+</span>
+</div>
+<p style="color: var(--text-secondary); font-size: #.#rem; margin-top: #.#rem;">
+  Tasks extracted from emails are held in this queue. Zero unsolicited external sync occurs until explicit user confirmation.
+</p>
+<table>
+<thead>
+<tr>
+<th>
+  ID
+</th>
+<th>
+  Title
+</th>
+<th>
+  Priority
+</th>
+<th>
+  Target Tool
+</th>
+<th>
+  Due Date
+</th>
+<th>
+  Email Ref
+</th>
+<th>
+  Actions
+</th>
+</tr>
+</thead>
+<tbody>
+...
+</tbody>
+</table>
+</div>
+<script>
+  async function approveTask(taskId, tool) {
+  try {
+  const resp = await fetch(`/admin/apps/mail-organizer/api/pm-tasks/${taskId}/approve`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({sync_to: tool})
+  });
+  const data = await resp.json();
+  if (data.success) {
+  alert(`Task synced successfully to ${tool.toUpperCase()}! Key: ${data.issue_key}`);
+  document.getElementById(`row-${taskId}`).remove();
+  } else {
+  alert('Error: ' + (data.error || 'Failed'));
+  }
+  } catch (err) {
+  alert('Request failed: ' + err.message);
+  }
+  }
+  async function rejectTask(taskId) {
+  try {
+  const resp = await fetch(`/admin/apps/mail-organizer/api/pm-tasks/${taskId}/reject`, {
+  method: 'POST'
+  });
+  const data = await resp.json();
+  if (data.success) {
+  document.getElementById(`row-${taskId}`).remove();
+  }
+  } catch (err) {
+  alert('Failed to dismiss task');
+  }
+  }
+</script>
+</main>
+</body>
+</html>

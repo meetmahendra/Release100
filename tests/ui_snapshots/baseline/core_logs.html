@@ -1,0 +1,196 @@
+STATUS 200
+<html lang="en">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<title>
+  Live System Logs — Release#
+</title>
+<script src="https://cdn.tailwindcss.com">
+</script>
+<style>
+  .log-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: #px; line-height: #.#; }
+  .log-ERROR { color: #f#; }
+  .log-WARNING { color: #fbbf#; }
+  .log-INFO { color: ##a#b#; }
+  .log-tag { color: ##bdf#; font-weight: #; }
+  .log-corr { color: #a#bfa; font-weight: #; }
+  .log-kiosk { color: ##d#; font-weight: #; }
+</style>
+</head>
+<body class="min-h-screen bg-slate-# text-slate-# flex flex-col">
+<header class="h-# bg-slate-#/# border-b border-slate-#/# px-# flex items-center justify-between shrink-#">
+<div class="flex items-center gap-#">
+<a class="flex items-center gap-# text-slate-# hover:text-white transition-colors" href="/admin/">
+<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #l-#-#m# #l#-#m-# #h#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+<span class="font-bold text-white">
+  Platform Dashboard
+</span>
+</a>
+<span class="text-slate-#">
+  /
+</span>
+<h1 class="text-lg font-semibold text-emerald-# flex items-center gap-#">
+<span>
+  📑
+</span>
+  Live System Logs & Observability
+</h1>
+</div>
+<div class="flex items-center gap-# text-xs">
+<span class="px-#.# py-# rounded bg-slate-#/# text-slate-# border border-slate-#/#">
+  Kiosk:
+<strong class="text-white">
+  NODE-#
+</strong>
+</span>
+<span class="px-#.# py-# rounded bg-slate-#/# text-slate-# border border-slate-#/#">
+  User:
+<strong class="text-white">
+  admin
+</strong>
+</span>
+</div>
+</header>
+<div class="bg-slate-#/# border-b border-slate-#/# px-# py-# flex flex-wrap items-center justify-between gap-#">
+<div class="flex flex-wrap items-center gap-#">
+<div class="flex items-center gap-#.# bg-slate-#/# rounded-lg px-# py-#.# border border-slate-#/# text-sm">
+<span class="text-slate-#">
+  🔍
+</span>
+<input class="bg-transparent border-none outline-none text-slate-# placeholder-slate-# text-xs w-#" id="searchInput" oninput="applyFilter()" placeholder="Filter by Phone, Corr ID, Kiosk..." type="text">
+</div>
+<select class="bg-slate-#/# border border-slate-#/# text-slate-# text-xs rounded-lg px-# py-#.# outline-none focus:border-emerald-#" id="levelFilter" onchange="applyFilter()">
+<option value="ALL">
+  All Levels
+</option>
+<option value="INFO">
+  INFO & Above
+</option>
+<option value="WARNING">
+  WARNING & Above
+</option>
+<option value="ERROR">
+  ERROR Only
+</option>
+</select>
+<select class="bg-slate-#/# border border-slate-#/# text-slate-# text-xs rounded-lg px-# py-#.# outline-none focus:border-emerald-#" id="lineCount" onchange="fetchLogs()">
+<option value="#">
+  Last # lines
+</option>
+<option selected value="#">
+  Last # lines
+</option>
+<option value="#">
+  Last # lines
+</option>
+<option value="#">
+  Last # lines
+</option>
+</select>
+</div>
+<div class="flex items-center gap-#">
+<label class="flex items-center gap-# cursor-pointer select-none text-xs text-slate-#">
+<input checked class="accent-emerald-# rounded cursor-pointer" id="autoRefreshToggle" onchange="toggleAutoRefresh()" type="checkbox">
+<span>
+  Live Stream (#s)
+</span>
+</label>
+<button class="px-# py-#.# bg-slate-# hover:bg-slate-# text-slate-# text-xs rounded-lg font-medium transition-colors flex items-center gap-#.#" onclick="fetchLogs()">
+<span>
+  🔄
+</span>
+  Refresh
+</button>
+<a class="px-# py-#.# bg-emerald-#/# hover:bg-emerald-# text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-#.# shadow-sm" download href="/admin/api/logs/download?format=log">
+<span>
+  💾
+</span>
+  Download .log
+</a>
+<a class="px-# py-#.# bg-indigo-#/# hover:bg-indigo-# text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-#.# shadow-sm" download href="/admin/api/logs/download?format=jsonl">
+<span>
+  📊
+</span>
+  Download .jsonl
+</a>
+<button class="px-# py-#.# bg-red-#/# hover:bg-red-#/# text-red-# border border-red-#/# text-xs rounded-lg font-medium transition-colors" onclick="clearDisplay()">
+  Clear View
+</button>
+</div>
+</div>
+<main class="flex-# p-# flex flex-col min-h-#">
+<div class="flex-# bg-black/# rounded-xl border border-slate-#/# p-# overflow-y-auto font-mono text-xs flex flex-col" id="terminalContainer">
+<div class="space-y-#.#" id="logOutput">
+<div class="text-slate-# italic">
+  Connecting to live log stream...
+</div>
+</div>
+</div>
+</main>
+<script>
+  let rawLines = [];
+  let autoRefreshInterval = null;
+  async function fetchLogs() {
+  const lineCount = document.getElementById("lineCount").value;
+  try {
+  const resp = await fetch(`/admin/api/logs/tail?lines=${lineCount}`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const data = await resp.json();
+  rawLines = data.lines || [];
+  applyFilter();
+  } catch (err) {
+  console.error("Failed to fetch logs:", err);
+  }
+  }
+  function formatLine(line) {
+  // Escape HTML
+  let escaped = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  let levelClass = "log-INFO";
+  if (line.includes("[ERROR]")) levelClass = "log-ERROR";
+  else if (line.includes("[WARNING]")) levelClass = "log-WARNING";
+  // Color tags
+  escaped = escaped.replace(/\[corr:([^\]]+)\]/g, '<span class="log-corr">[corr:$#]</span>');
+  escaped = escaped.replace(/\[kiosk:([^\]]+)\]/g, '<span class="log-kiosk">[kiosk:$#]</span>');
+  return `<div class="log-line ${levelClass}">${escaped}</div>`;
+  }
+  function applyFilter() {
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const level = document.getElementById("levelFilter").value;
+  const container = document.getElementById("logOutput");
+  const filtered = rawLines.filter(line => {
+  if (level === "ERROR" && !line.includes("[ERROR]")) return false;
+  if (level === "WARNING" && !line.includes("[ERROR]") && !line.includes("[WARNING]")) return false;
+  if (level === "INFO" && !line.includes("[ERROR]") && !line.includes("[WARNING]") && !line.includes("[INFO]")) return false;
+  if (search && !line.toLowerCase().includes(search)) return false;
+  return true;
+  });
+  if (filtered.length === #) {
+  container.innerHTML = '<div class="text-slate-# italic">No matching logs found.</div>';
+  } else {
+  container.innerHTML = filtered.map(formatLine).join("");
+  }
+  // Auto-scroll to bottom
+  const terminal = document.getElementById("terminalContainer");
+  terminal.scrollTop = terminal.scrollHeight;
+  }
+  function toggleAutoRefresh() {
+  const isChecked = document.getElementById("autoRefreshToggle").checked;
+  if (isChecked) {
+  if (!autoRefreshInterval) autoRefreshInterval = setInterval(fetchLogs, #);
+  } else {
+  if (autoRefreshInterval) { clearInterval(autoRefreshInterval); autoRefreshInterval = null; }
+  }
+  }
+  function clearDisplay() {
+  rawLines = [];
+  document.getElementById("logOutput").innerHTML = '<div class="text-slate-# italic">Display cleared. New logs will appear on next interval.</div>';
+  }
+  // Initial load
+  fetchLogs();
+  autoRefreshInterval = setInterval(fetchLogs, #);
+</script>
+</body>
+</html>

@@ -1,0 +1,1267 @@
+STATUS 200
+<html lang="en">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<title>
+  Live Temperature & Attendance Monitoring - Release#
+</title>
+<style>
+  :root {
+  --bg-main: ##f#a;
+  --bg-card: ##e#b;
+  --bg-card-hover: ##;
+  --border-color: ##;
+  --text-primary: #f#fafc;
+  --text-secondary: ##a#b#;
+  --accent-green: ##b#;
+  --accent-yellow: #f#e#b;
+  --accent-red: #ef#;
+  --accent-blue: ##b#f#;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * {
+  box-sizing: border-box;
+  margin: #;
+  padding: #;
+  }
+  body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  min-height: #vh;
+  display: flex;
+  flex-direction: column;
+  }
+  header {
+  background-color: var(--bg-card);
+  border-bottom: #px solid var(--border-color);
+  padding: #rem #rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  }
+  .brand {
+  display: flex;
+  align-items: center;
+  gap: #.#rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  }
+  .brand-badge {
+  background: linear-gradient(#deg, ##b#, ##);
+  color: white;
+  font-weight: #;
+  font-size: #.#rem;
+  padding: #.#rem #.#rem;
+  border-radius: #px;
+  letter-spacing: #.#em;
+  }
+  .brand-title {
+  font-size: #.#rem;
+  font-weight: #;
+  }
+  nav {
+  display: flex;
+  gap: #.#rem;
+  }
+  nav a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: #.#rem;
+  font-weight: #;
+  padding: #.#rem #.#rem;
+  border-radius: #px;
+  transition: all #.#s ease;
+  }
+  nav a:hover, nav a.active {
+  color: var(--text-primary);
+  background-color: var(--bg-card-hover);
+  }
+  main {
+  flex: #;
+  padding: #rem;
+  max-width: #px;
+  margin: # auto;
+  width: #%;
+  }
+  .card {
+  background-color: var(--bg-card);
+  border: #px solid var(--border-color);
+  border-radius: #px;
+  padding: #.#rem;
+  margin-bottom: #.#rem;
+  box-shadow: # #px #px -#px rgba(#, #, #, #.#);
+  }
+  .badge {
+  display: inline-block;
+  padding: #.#rem #.#rem;
+  font-size: #.#rem;
+  font-weight: #;
+  border-radius: #px;
+  text-transform: uppercase;
+  }
+  .badge-green { background-color: rgba(#, #, #, #.#); color: var(--accent-green); border: #px solid var(--accent-green); }
+  .badge-yellow { background-color: rgba(#, #, #, #.#); color: var(--accent-yellow); border: #px solid var(--accent-yellow); }
+  .badge-red { background-color: rgba(#, #, #, #.#); color: var(--accent-red); border: #px solid var(--accent-red); }
+  .badge-blue { background-color: rgba(#, #, #, #.#); color: var(--accent-blue); border: #px solid var(--accent-blue); }
+  .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: #.#rem #rem;
+  font-size: #.#rem;
+  font-weight: #;
+  border-radius: #px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color #.#s ease;
+  }
+  .btn-primary { background-color: var(--accent-blue); color: white; }
+  .btn-primary:hover { background-color: ##eb; }
+  .btn-success { background-color: var(--accent-green); color: white; }
+  .btn-success:hover { background-color: ##; }
+  .btn-danger { background-color: var(--accent-red); color: white; }
+  .btn-danger:hover { background-color: #dc#; }
+  footer {
+  background-color: var(--bg-card);
+  border-top: #px solid var(--border-color);
+  padding: #rem #rem;
+  text-align: center;
+  font-size: #.#rem;
+  color: var(--text-secondary);
+  }
+</style>
+<style>
+  .kpi-card {
+  background: ##e#b;
+  border: #px solid ##;
+  border-radius: #px;
+  padding: #.#rem;
+  display: flex;
+  flex-direction: column;
+  }
+  .kpi-val {
+  font-size: #.#rem;
+  font-weight: #;
+  margin-top: #.#rem;
+  }
+  .kpi-lbl {
+  font-size: #.#rem;
+  text-transform: uppercase;
+  letter-spacing: #.#em;
+  color: ##a#b#;
+  }
+  .alert-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: #.#rem;
+  padding: #.#rem #.#rem;
+  border-radius: #px;
+  font-size: #.#rem;
+  font-weight: #;
+  }
+  .chip-ok { background: rgba(#, #, #, #.#); color: ##b#; border: #px solid ##b#; }
+  .chip-warn { background: rgba(#, #, #, #.#); color: #f#e#b; border: #px solid #f#e#b; }
+  .chip-danger { background: rgba(#, #, #, #.#); color: #ef#; border: #px solid #ef#; }
+  /* Sticky High Alert Banner */
+  .emergency-banner {
+  background: linear-gradient(#deg, ##b#b, #dc#);
+  border: #px solid #f#;
+  border-radius: #px;
+  padding: #rem #.#rem;
+  margin-bottom: #.#rem;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: # #px #px rgba(#, #, #, #.#);
+  animation: pulseAlert #s infinite ease-in-out;
+  }
+  @keyframes pulseAlert {
+  #%, #% { box-shadow: # # #px rgba(#, #, #, #.#); }
+  #% { box-shadow: # # #px rgba(#, #, #, #.#); }
+  }
+  /* Kiosk Fleet Grid */
+  .kiosk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(#px, #fr));
+  gap: #.#rem;
+  margin-bottom: #rem;
+  }
+  .kiosk-card {
+  background: ##e#b;
+  border: #px solid ##;
+  border-radius: #px;
+  padding: #.#rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform #.#s ease, border-color #.#s ease;
+  }
+  .kiosk-card:hover {
+  transform: translateY(-#px);
+  border-color: ##b;
+  }
+  .kiosk-card.hazard {
+  border-left: #px solid #ef#;
+  }
+  .kiosk-card.overdue {
+  border-left: #px solid #f#e#b;
+  }
+  .kiosk-card.ok {
+  border-left: #px solid ##b#;
+  }
+  .progress-bar-bg {
+  background: ##f#a;
+  border-radius: #px;
+  height: #px;
+  overflow: hidden;
+  margin-top: #.#rem;
+  border: #px solid ##;
+  }
+  .progress-bar-fill {
+  height: #%;
+  border-radius: #px;
+  transition: width #.#s ease;
+  }
+  /* Tabs */
+  .nav-tabs {
+  display: flex;
+  gap: #.#rem;
+  border-bottom: #px solid ##;
+  margin-bottom: #.#rem;
+  }
+  .tab-btn {
+  background: none;
+  border: none;
+  padding: #.#rem #.#rem;
+  color: ##a#b#;
+  font-weight: #;
+  font-size: #.#rem;
+  cursor: pointer;
+  border-bottom: #px solid transparent;
+  margin-bottom: -#px;
+  transition: all #.#s;
+  }
+  .tab-btn.active {
+  color: ##bdf#;
+  border-bottom-color: ##bdf#;
+  }
+  .tab-btn:hover {
+  color: #f#fafc;
+  }
+  .tab-panel {
+  display: none;
+  }
+  .tab-panel.active {
+  display: block;
+  }
+</style>
+</head>
+<body>
+<header>
+<div style="display: flex; align-items: center; gap: #rem;">
+<a class="brand" href="/admin/apps/temperature-marker/fleet">
+<span class="brand-badge">
+  APEX
+</span>
+<span class="brand-title">
+  Fleet Telemetry & Operations Control
+</span>
+</a>
+<span class="badge" style="background: rgba(#, #, #, #.#); color: #a#f#d#; border: #px solid ##b#; font-family: monospace; font-size: #.#rem; padding: #.#rem #.#rem; border-radius: #px; display: inline-flex; align-items: center; gap: #.#rem;">
+<span>
+  🏢
+</span>
+<strong style="color: #ffffff;">
+  Release# Organization
+</strong>
+<span style="opacity: #.#;">
+  (default_tenant)
+</span>
+</span>
+</div>
+<nav style="display: flex; align-items: center; gap: #rem;">
+<a class="active" href="/admin/apps/temperature-marker/monitoring">
+  📊 Live Monitoring
+</a>
+<a class="" href="/admin/apps/temperature-marker/fleet">
+  Fleet Map
+</a>
+<a class="" href="/admin/apps/temperature-marker/wizard">
+  Stepper Wizard
+</a>
+<a class="" href="/admin/apps/temperature-marker/approvals">
+  Operator Approvals
+</a>
+<a href="/admin/" style="color: ##a#b#; font-size: #.#rem; border-left: #px solid var(--border-color); padding-left: #.#rem;">
+  ← Admin Shell
+</a>
+</nav>
+</header>
+<main>
+<div class="emergency-banner">
+<div style="display: flex; align-items: center; gap: #.#rem;">
+<span style="font-size: #.#rem;">
+  🚨
+</span>
+<div>
+<div style="font-weight: #; font-size: #.#rem; letter-spacing: #.#em;">
+  HIGH ALERT: # Unresolved Safety Incident Detected
+</div>
+<div style="font-size: #.#rem; opacity: #.#; margin-top: #.#rem;">
+  •
+<strong>
+  [NODE-PUNE-#]
+</strong>
+  HACCP Hazard: Chiller temp #.#°C (CRITICAL_HAZARD) (<TIME> IST)
+</div>
+</div>
+</div>
+<div style="display: flex; gap: #.#rem;">
+<button class="btn" onclick="document.getElementById('alertsDetailsModal').style.display='flex'" style="background: rgba(#,#,#,#.#); color: white; border: #px solid rgba(#,#,#,#.#); font-size: #.#rem;">
+  Inspect All Alerts
+</button>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #.#rem;">
+<div>
+<h1 style="font-size: #.#rem; font-weight: #; color: white;">
+  📊 Unified Fleet Monitoring & HACCP Center
+</h1>
+<p style="color: var(--text-secondary); margin-top: #.#rem;">
+  Live operator attendance, multi-check chiller temperature logs, internal communications hub, and safety alert dispatch.
+</p>
+</div>
+<div style="display: flex; gap: #.#rem;">
+<button class="btn btn-primary" onclick="window.location.reload()" style="font-size: #.#rem; padding: #.#rem #rem;">
+  🔄 Refresh Feed
+</button>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(#px, #fr)); gap: #rem; margin-bottom: #.#rem;">
+<div class="kpi-card">
+<span class="kpi-lbl">
+  Total Kiosks Monitored
+</span>
+<span class="kpi-val" style="color: ##bdf#;">
+  #
+</span>
+<span style="font-size: #.#rem; color: ##b; margin-top: #.#rem;">
+  # active today
+</span>
+</div>
+<div class="kpi-card">
+<span class="kpi-lbl">
+  Attendance Check-ins
+</span>
+<span class="kpi-val" style="color: ##b#;">
+  # / #
+</span>
+<span style="font-size: #.#rem; color: ##b; margin-top: #.#rem;">
+  Kiosks opened today
+</span>
+</div>
+<div class="kpi-card">
+<span class="kpi-lbl">
+  Multi-Check HACCP Progress
+</span>
+<span class="kpi-val" style="color: #a#bfa;">
+  # Checks
+</span>
+<span style="font-size: #.#rem; color: ##b; margin-top: #.#rem;">
+  In safe cold zone (#°C – #°C)
+</span>
+</div>
+<div class="kpi-card">
+<span class="kpi-lbl">
+  Safety & Operational Alerts
+</span>
+<span class="kpi-val" style="color: #f#;">
+  #
+</span>
+<span style="font-size: #.#rem; color: ##b; margin-top: #.#rem;">
+  Immediate Action Required
+</span>
+</div>
+</div>
+<div style="margin-bottom: #.#rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #.#rem;">
+<h3 style="font-size: #.#rem; font-weight: #; color: white;">
+  🏪 Kiosk Fleet Live Status Matrix
+</h3>
+<span style="font-size: #.#rem; color: var(--text-secondary);">
+  Today's shift attendance & multi-point temperature cadence
+</span>
+</div>
+<div class="kiosk-grid">
+<div class="kiosk-card hazard">
+<div>
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: #.#rem;">
+<div>
+<span style="font-weight: #; font-size: #.#rem; color: white;">
+  NODE-PUNE-#
+</span>
+<div style="font-size: #.#rem; color: ##a#b#;">
+  Phoenix Marketcity Food Court (Pune)
+</div>
+</div>
+<span class="badge badge-green">
+  CHECKED IN
+</span>
+</div>
+<div style="background: ##f#a; padding: #.#rem #.#rem; border-radius: #px; font-size: #.#rem; margin-top: #.#rem; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between;">
+<span style="color: ##a#b#;">
+  Operator:
+</span>
+<span style="font-weight: #; color: #f#fafc;">
+  EMP-SIM-TEST
+</span>
+</div>
+<div style="display: flex; justify-content: space-between; margin-top: #.#rem;">
+<span style="color: ##a#b#;">
+  Check-in (IST):
+</span>
+<span style="font-family: monospace; color: ##bdf#;">
+  <TIME> IST
+</span>
+</div>
+</div>
+<div style="margin-top: #.#rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: #.#rem;">
+<span style="color: ##a#b#;">
+  Temp Checks Cadence:
+</span>
+<span style="font-weight: #; color: ##bdf#;">
+  # / # Done
+</span>
+</div>
+<div class="progress-bar-bg">
+<div class="progress-bar-fill" style="width: #%; background: ##bdf#;">
+</div>
+</div>
+</div>
+<div style="margin-top: #.#rem; display: flex; justify-content: space-between; align-items: center; font-size: #.#rem;">
+<span style="color: ##a#b#;">
+  Latest Reading:
+</span>
+<div>
+<span style="font-weight: #; font-family: monospace; color: #ef#;">
+  #.#°C
+</span>
+<span style="font-size: #.#rem; color: ##b;">
+  (<TIME> IST)
+</span>
+</div>
+</div>
+</div>
+<div style="margin-top: #rem; border-top: #px solid ##; padding-top: #.#rem; display: flex; justify-content: space-between; align-items: center;">
+<span class="alert-chip chip-danger">
+  🚨 Hazard Active
+</span>
+<button class="btn" onclick="openKioskConfigModal('NODE-PUNE-#', 'Phoenix Marketcity Food Court', #)" style="background: ##; color: white; padding: #.#rem #.#rem; font-size: #.#rem;">
+  ⚙️ Config
+</button>
+</div>
+</div>
+<div class="kiosk-card">
+<div>
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: #.#rem;">
+<div>
+<span style="font-weight: #; font-size: #.#rem; color: white;">
+  NODE-PUNE-#
+</span>
+<div style="font-size: #.#rem; color: ##a#b#;">
+  Dassault Systemes Sky Tower (Pune)
+</div>
+</div>
+<span class="badge badge-red">
+  NOT CHECKED IN
+</span>
+</div>
+<div style="background: ##f#a; padding: #.#rem #.#rem; border-radius: #px; font-size: #.#rem; margin-top: #.#rem; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between;">
+<span style="color: ##a#b#;">
+  Operator:
+</span>
+<span style="font-weight: #; color: #f#fafc;">
+  Rajesh Sharma, Suresh Kumar
+</span>
+</div>
+</div>
+<div style="margin-top: #.#rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: #.#rem;">
+<span style="color: ##a#b#;">
+  Temp Checks Cadence:
+</span>
+<span style="font-weight: #; color: ##bdf#;">
+  # / # Done
+</span>
+</div>
+<div class="progress-bar-bg">
+<div class="progress-bar-fill" style="width: #%; background: ##bdf#;">
+</div>
+</div>
+</div>
+<div style="margin-top: #.#rem; display: flex; justify-content: space-between; align-items: center; font-size: #.#rem;">
+<span style="color: ##a#b#;">
+  Latest Reading:
+</span>
+<div>
+<span style="color: #f#e#b; font-size: #.#rem;">
+  Pending Reading
+</span>
+</div>
+</div>
+</div>
+<div style="margin-top: #rem; border-top: #px solid ##; padding-top: #.#rem; display: flex; justify-content: space-between; align-items: center;">
+<span class="alert-chip" style="background: rgba(#, #, #, #.#); color: ##a#b#;">
+  In Progress
+</span>
+<button class="btn" onclick="openKioskConfigModal('NODE-PUNE-#', 'Dassault Systemes Sky Tower', #)" style="background: ##; color: white; padding: #.#rem #.#rem; font-size: #.#rem;">
+  ⚙️ Config
+</button>
+</div>
+</div>
+<div class="kiosk-card">
+<div>
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: #.#rem;">
+<div>
+<span style="font-weight: #; font-size: #.#rem; color: white;">
+  NODE-PUNE-#
+</span>
+<div style="font-size: #.#rem; color: ##a#b#;">
+  Eka Elitas Paud Road Kothrud (Pune)
+</div>
+</div>
+<span class="badge badge-red">
+  NOT CHECKED IN
+</span>
+</div>
+<div style="background: ##f#a; padding: #.#rem #.#rem; border-radius: #px; font-size: #.#rem; margin-top: #.#rem; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between;">
+<span style="color: ##a#b#;">
+  Operator:
+</span>
+<span style="font-weight: #; color: #f#fafc;">
+  Unassigned
+</span>
+</div>
+</div>
+<div style="margin-top: #.#rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: #.#rem;">
+<span style="color: ##a#b#;">
+  Temp Checks Cadence:
+</span>
+<span style="font-weight: #; color: ##bdf#;">
+  # / # Done
+</span>
+</div>
+<div class="progress-bar-bg">
+<div class="progress-bar-fill" style="width: #%; background: ##bdf#;">
+</div>
+</div>
+</div>
+<div style="margin-top: #.#rem; display: flex; justify-content: space-between; align-items: center; font-size: #.#rem;">
+<span style="color: ##a#b#;">
+  Latest Reading:
+</span>
+<div>
+<span style="color: #f#e#b; font-size: #.#rem;">
+  Pending Reading
+</span>
+</div>
+</div>
+</div>
+<div style="margin-top: #rem; border-top: #px solid ##; padding-top: #.#rem; display: flex; justify-content: space-between; align-items: center;">
+<span class="alert-chip" style="background: rgba(#, #, #, #.#); color: ##a#b#;">
+  In Progress
+</span>
+<button class="btn" onclick="openKioskConfigModal('NODE-PUNE-#', 'Eka Elitas Paud Road Kothrud', #)" style="background: ##; color: white; padding: #.#rem #.#rem; font-size: #.#rem;">
+  ⚙️ Config
+</button>
+</div>
+</div>
+<div class="kiosk-card">
+<div>
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: #.#rem;">
+<div>
+<span style="font-weight: #; font-size: #.#rem; color: white;">
+  NODE-MUMBAI-#
+</span>
+<div style="font-size: #.#rem; color: ##a#b#;">
+  Seawoods Grand Central Mall (Navi Mumbai)
+</div>
+</div>
+<span class="badge badge-red">
+  NOT CHECKED IN
+</span>
+</div>
+<div style="background: ##f#a; padding: #.#rem #.#rem; border-radius: #px; font-size: #.#rem; margin-top: #.#rem; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between;">
+<span style="color: ##a#b#;">
+  Operator:
+</span>
+<span style="font-weight: #; color: #f#fafc;">
+  Unassigned
+</span>
+</div>
+</div>
+<div style="margin-top: #.#rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: #.#rem;">
+<span style="color: ##a#b#;">
+  Temp Checks Cadence:
+</span>
+<span style="font-weight: #; color: ##bdf#;">
+  # / # Done
+</span>
+</div>
+<div class="progress-bar-bg">
+<div class="progress-bar-fill" style="width: #%; background: ##bdf#;">
+</div>
+</div>
+</div>
+<div style="margin-top: #.#rem; display: flex; justify-content: space-between; align-items: center; font-size: #.#rem;">
+<span style="color: ##a#b#;">
+  Latest Reading:
+</span>
+<div>
+<span style="color: #f#e#b; font-size: #.#rem;">
+  Pending Reading
+</span>
+</div>
+</div>
+</div>
+<div style="margin-top: #rem; border-top: #px solid ##; padding-top: #.#rem; display: flex; justify-content: space-between; align-items: center;">
+<span class="alert-chip" style="background: rgba(#, #, #, #.#); color: ##a#b#;">
+  In Progress
+</span>
+<button class="btn" onclick="openKioskConfigModal('NODE-MUMBAI-#', 'Seawoods Grand Central Mall', #)" style="background: ##; color: white; padding: #.#rem #.#rem; font-size: #.#rem;">
+  ⚙️ Config
+</button>
+</div>
+</div>
+<div class="kiosk-card">
+<div>
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: #.#rem;">
+<div>
+<span style="font-weight: #; font-size: #.#rem; color: white;">
+  NODE-BLR-#
+</span>
+<div style="font-size: #.#rem; color: ##a#b#;">
+  Indiranagar Metro Station Concourse (Bangalore)
+</div>
+</div>
+<span class="badge badge-red">
+  NOT CHECKED IN
+</span>
+</div>
+<div style="background: ##f#a; padding: #.#rem #.#rem; border-radius: #px; font-size: #.#rem; margin-top: #.#rem; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between;">
+<span style="color: ##a#b#;">
+  Operator:
+</span>
+<span style="font-weight: #; color: #f#fafc;">
+  Unassigned
+</span>
+</div>
+</div>
+<div style="margin-top: #.#rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: #.#rem;">
+<span style="color: ##a#b#;">
+  Temp Checks Cadence:
+</span>
+<span style="font-weight: #; color: ##bdf#;">
+  # / # Done
+</span>
+</div>
+<div class="progress-bar-bg">
+<div class="progress-bar-fill" style="width: #%; background: ##bdf#;">
+</div>
+</div>
+</div>
+<div style="margin-top: #.#rem; display: flex; justify-content: space-between; align-items: center; font-size: #.#rem;">
+<span style="color: ##a#b#;">
+  Latest Reading:
+</span>
+<div>
+<span style="color: #f#e#b; font-size: #.#rem;">
+  Pending Reading
+</span>
+</div>
+</div>
+</div>
+<div style="margin-top: #rem; border-top: #px solid ##; padding-top: #.#rem; display: flex; justify-content: space-between; align-items: center;">
+<span class="alert-chip" style="background: rgba(#, #, #, #.#); color: ##a#b#;">
+  In Progress
+</span>
+<button class="btn" onclick="openKioskConfigModal('NODE-BLR-#', 'Indiranagar Metro Station Concourse', #)" style="background: ##; color: white; padding: #.#rem #.#rem; font-size: #.#rem;">
+  ⚙️ Config
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="nav-tabs">
+<button class="tab-btn active" onclick="switchTab(event, 'tab-records')">
+  📸 Shift Records & Live Photo Feed
+</button>
+<button class="tab-btn" onclick="switchTab(event, 'tab-messages')">
+  💬 Communications Hub (Who is messaging whom)
+<span style="background: ##b#f#; color: white; border-radius: #px; padding: #.#rem #.#rem; font-size: #.#rem; margin-left: #.#rem;">
+  #
+</span>
+</button>
+<button class="tab-btn" onclick="switchTab(event, 'tab-config')">
+  ⚙️ Multi-Check HACCP Rules
+</button>
+</div>
+<div class="tab-panel active" id="tab-records">
+<div class="card" style="padding: #; overflow: hidden;">
+<div style="padding: #rem #.#rem; border-bottom: #px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+<h3 style="font-size: #.#rem; font-weight: #;">
+  Captured Duty Check-ins & Verifications
+</h3>
+<span style="font-size: #.#rem; color: var(--text-secondary);">
+  Photos securely stored in local media vault
+</span>
+</div>
+<div style="overflow-x: auto;">
+<table style="width: #%; border-collapse: collapse; text-align: left; font-size: #.#rem;">
+<thead>
+<tr style="border-bottom: #px solid var(--border-color); color: var(--text-secondary); font-size: #.#rem; text-transform: uppercase;">
+<th style="padding: #.#rem #rem;">
+  Timestamp (IST)
+</th>
+<th style="padding: #.#rem #rem;">
+  Check-in Photo
+</th>
+<th style="padding: #.#rem #rem;">
+  Operator
+</th>
+<th style="padding: #.#rem #rem;">
+  Kiosk / Site
+</th>
+<th style="padding: #.#rem #rem;">
+  Chiller Temp
+</th>
+<th style="padding: #.#rem #rem;">
+  Location & Biometrics
+</th>
+<th style="padding: #.#rem #rem;">
+  Compliance Status
+</th>
+<th style="padding: #.#rem #rem; text-align: right;">
+  Action
+</th>
+</tr>
+</thead>
+<tbody>
+...
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="tab-panel" id="tab-messages">
+<div class="card" style="padding: #; overflow: hidden;">
+<div style="padding: #rem #.#rem; border-bottom: #px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+<div>
+<h3 style="font-size: #.#rem; font-weight: #;">
+  Internal Operator & Supervisor Communications
+</h3>
+<span style="font-size: #.#rem; color: var(--text-secondary);">
+  Who is messaging whom, resolution states, and direct response center
+</span>
+</div>
+<span style="font-size: #.#rem; color: ##a#b#;">
+  Total: # Messages
+</span>
+</div>
+<div style="overflow-x: auto;">
+<table style="width: #%; border-collapse: collapse; text-align: left; font-size: #.#rem;">
+<thead>
+<tr style="border-bottom: #px solid var(--border-color); color: var(--text-secondary); font-size: #.#rem; text-transform: uppercase;">
+<th style="padding: #.#rem #rem;">
+  Time (IST)
+</th>
+<th style="padding: #.#rem #rem;">
+  Sender (Operator)
+</th>
+<th style="padding: #.#rem #rem;">
+  Kiosk
+</th>
+<th style="padding: #.#rem #rem;">
+  Recipient (Manager)
+</th>
+<th style="padding: #.#rem #rem;">
+  Message Inquiry
+</th>
+<th style="padding: #.#rem #rem;">
+  Status
+</th>
+<th style="padding: #.#rem #rem; text-align: right;">
+  Action
+</th>
+</tr>
+</thead>
+<tbody>
+...
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="tab-panel" id="tab-config">
+<div class="card" style="max-width: #px; margin: # auto;">
+<h3 style="font-size: #.#rem; font-weight: #; color: white; margin-bottom: #.#rem;">
+  ⚙️ HACCP Multi-Check Frequency & Safety Thresholds
+</h3>
+<p style="color: var(--text-secondary); font-size: #.#rem; margin-bottom: #.#rem;">
+  Configure temperature capture frequency requirements across all KioskNode kiosks. Overdue alarms trigger automatically when interval expires without a valid photo reading.
+</p>
+<form onsubmit="saveGlobalConfig(event)" style="display: flex; flex-direction: column; gap: #.#rem;">
+<div style="display: grid; grid-template-columns: #fr #fr; gap: #rem;">
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Required Daily Temp Checks *
+</label>
+<input id="cfgRequiredChecks" max="#" min="#" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;" type="number" value="#">
+<span style="font-size: #.#rem; color: ##b;">
+  e.g. # checks/day (Morning Check-in, Midday, Evening)
+</span>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Check Interval Frequency (Hours) *
+</label>
+<input id="cfgIntervalHours" max="#.#" min="#.#" required step="#.#" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;" type="number" value="#.#">
+<span style="font-size: #.#rem; color: ##b;">
+  Max elapsed hours before kiosk flagged as OVERDUE
+</span>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: #fr #fr #fr; gap: #rem;">
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Min Safe Temp (°C)
+</label>
+<input id="cfgMinTemp" required step="#.#" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;" type="number" value="#.#">
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Max Safe Temp (°C)
+</label>
+<input id="cfgMaxTemp" required step="#.#" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;" type="number" value="#.#">
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Critical Alert Limit (°C)
+</label>
+<input id="cfgCritTemp" required step="#.#" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;" type="number" value="#.#">
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: #.#rem;">
+<input checked id="cfgAlertManager" style="width: #px; height: #px;" type="checkbox">
+<label for="cfgAlertManager" style="font-size: #.#rem; color: #e#e#f#; cursor: pointer;">
+  Push immediate WhatsApp high-alert notification to Fleet Supervisor upon critical HACCP violation or face mismatch
+</label>
+</div>
+<div style="display: flex; justify-content: flex-end; margin-top: #rem;">
+<button class="btn btn-primary" id="btnSaveConfig" style="padding: #.#rem #.#rem;" type="submit">
+  💾 Save Fleet HACCP Policy
+</button>
+</div>
+</form>
+</div>
+</div>
+<div id="photoModal" onclick="closeModal('photoModal')" style="display: none; position: fixed; inset: #; background: rgba(#,#,#,#.#); z-index: #; align-items: center; justify-content: center;">
+<div style="max-width: #vw; max-height: #vh; position: relative;">
+<img alt="Captured Image" id="modalImg" src="" style="max-width: #%; max-height: #vh; border-radius: #px; border: #px solid ##; box-shadow: # #px #px rgba(#,#,#,#.#);">
+<div style="text-align: center; color: ##a#b#; font-size: #.#rem; margin-top: #.#rem;">
+  Click anywhere to dismiss
+</div>
+</div>
+</div>
+<div id="resolveModal" style="display: none; position: fixed; inset: #; background: rgba(#,#,#,#.#); z-index: #; align-items: center; justify-content: center;">
+<div class="card" style="width: #%; max-width: #px; background: ##e#b; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #.#rem;">
+<h3 style="font-size: #.#rem; font-weight: #; color: white;">
+  🛠️ Manual Admin Resolution
+</h3>
+<button onclick="closeModal('resolveModal')" style="background: none; border: none; color: ##a#b#; font-size: #.#rem; cursor: pointer;">
+  ✕
+</button>
+</div>
+<form onsubmit="submitResolution(event)" style="display: flex; flex-direction: column; gap: #rem;">
+<input id="resolveRecordId" type="hidden">
+<div style="background: ##f#a; padding: #.#rem; border-radius: #px; font-size: #.#rem; border: #px solid ##;">
+<div>
+<strong>
+  Record ID:
+</strong>
+<span id="resRecIdText" style="font-family: monospace; color: ##bdf#;">
+</span>
+</div>
+<div>
+<strong>
+  Operator:
+</strong>
+<span id="resEmpText">
+</span>
+</div>
+<div>
+<strong>
+  Kiosk:
+</strong>
+<span id="resKioskText">
+</span>
+</div>
+<div>
+<strong>
+  Recorded Temp:
+</strong>
+<span id="resTempText">
+</span>
+</div>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Resolution Decision *
+</label>
+<select id="resolveStatus" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;">
+<option value="APPROVED_OVERRIDE">
+  Approve & Override (Verified by Manager)
+</option>
+<option value="DISPUTED_INVALID">
+  Reject & Invalidate (Suspected Fraud / Breach)
+</option>
+<option value="MAINTENANCE_REQUIRED">
+  Escalate to KioskNode Technician (Chiller Warning)
+</option>
+<option value="RESOLVED_MANUALLY">
+  Resolved Manually
+</option>
+</select>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Administrator Audit Notes *
+</label>
+<textarea id="resolveNotes" placeholder="Provide audit rationale (e.g. 'Verified physical presence via CCTV; display reflection caused false OCR reading')." required rows="#" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white; font-family: inherit; font-size: #.#rem;">
+</textarea>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: #.#rem; margin-top: #rem;">
+<button class="btn btn-secondary" onclick="closeModal('resolveModal')" type="button">
+  Cancel
+</button>
+<button class="btn btn-success" id="resolveSubmitBtn" type="submit">
+  Save Resolution
+</button>
+</div>
+</form>
+</div>
+</div>
+<div id="replyModal" style="display: none; position: fixed; inset: #; background: rgba(#,#,#,#.#); z-index: #; align-items: center; justify-content: center;">
+<div class="card" style="width: #%; max-width: #px; background: ##e#b; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #.#rem;">
+<h3 style="font-size: #.#rem; font-weight: #; color: white;">
+  💬 Reply & Resolve Operator Inquiry
+</h3>
+<button onclick="closeModal('replyModal')" style="background: none; border: none; color: ##a#b#; font-size: #.#rem; cursor: pointer;">
+  ✕
+</button>
+</div>
+<form onsubmit="submitMessageResolution(event)" style="display: flex; flex-direction: column; gap: #rem;">
+<input id="replyMsgId" type="hidden">
+<div style="background: ##f#a; padding: #.#rem; border-radius: #px; font-size: #.#rem; border: #px solid ##;">
+<div>
+<strong>
+  From:
+</strong>
+<span id="replySenderText" style="color: ##bdf#;">
+</span>
+</div>
+<div>
+<strong>
+  Phone:
+</strong>
+<span id="replyPhoneText" style="font-family: monospace;">
+</span>
+</div>
+<div style="margin-top: #.#rem; padding-top: #.#rem; border-top: #px solid ##;">
+<strong>
+  Inquiry:
+</strong>
+<p id="replyBodyText" style="color: #cbd#e#; font-style: italic; margin-top: #.#rem;">
+</p>
+</div>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Supervisor Reply Message (Sent via WhatsApp) *
+</label>
+<textarea id="replyResponseText" placeholder="Type instructions or resolution details for the operator..." required rows="#" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white; font-family: inherit; font-size: #.#rem;">
+</textarea>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: #.#rem; margin-top: #.#rem;">
+<button class="btn btn-secondary" onclick="closeModal('replyModal')" type="button">
+  Cancel
+</button>
+<button class="btn btn-success" id="replySubmitBtn" type="submit">
+  Send Reply & Mark Resolved
+</button>
+</div>
+</form>
+</div>
+</div>
+<div id="kioskConfigModal" style="display: none; position: fixed; inset: #; background: rgba(#,#,#,#.#); z-index: #; align-items: center; justify-content: center;">
+<div class="card" style="width: #%; max-width: #px; background: ##e#b; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #.#rem;">
+<h3 id="kioskCfgTitle" style="font-size: #.#rem; font-weight: #; color: white;">
+  ⚙️ Kiosk Schedule
+</h3>
+<button onclick="closeModal('kioskConfigModal')" style="background: none; border: none; color: ##a#b#; font-size: #.#rem; cursor: pointer;">
+  ✕
+</button>
+</div>
+<form onsubmit="submitKioskSpecificConfig(event)" style="display: flex; flex-direction: column; gap: #rem;">
+<input id="kioskCfgId" type="hidden">
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Required Daily Checks
+</label>
+<input id="kioskCfgChecks" max="#" min="#" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;" type="number">
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Re-check Cadence Interval (Hours)
+</label>
+<input id="kioskCfgInterval" max="#.#" min="#.#" required step="#.#" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;" type="number" value="#.#">
+</div>
+<div style="display: flex; justify-content: flex-end; gap: #.#rem; margin-top: #.#rem;">
+<button class="btn btn-secondary" onclick="closeModal('kioskConfigModal')" type="button">
+  Cancel
+</button>
+<button class="btn btn-primary" type="submit">
+  Save Schedule
+</button>
+</div>
+</form>
+</div>
+</div>
+<div id="alertsDetailsModal" style="display: none; position: fixed; inset: #; background: rgba(#,#,#,#.#); z-index: #; align-items: center; justify-content: center;">
+<div class="card" style="width: #%; max-width: #px; background: ##e#b; border: #px solid #ef#;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #rem;">
+<h3 style="font-size: #.#rem; font-weight: #; color: #f#;">
+  🚨 Active Emergency & Safety Incidents
+</h3>
+<button onclick="closeModal('alertsDetailsModal')" style="background: none; border: none; color: ##a#b#; font-size: #.#rem; cursor: pointer;">
+  ✕
+</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: #.#rem; max-height: #vh; overflow-y: auto;">
+<div style="background: ##f#a; padding: #.#rem; border-radius: #px; border-left: #px solid #ef#; display: flex; justify-content: space-between; align-items: center;">
+<div>
+<div style="font-weight: #; color: white; font-size: #.#rem;">
+  [NODE-PUNE-#] HACCP Hazard
+</div>
+<div style="color: #cbd#e#; font-size: #.#rem; margin-top: #.#rem;">
+  Chiller temp #.#°C (CRITICAL_HAZARD)
+</div>
+<div style="font-size: #.#rem; color: ##a#b#; margin-top: #.#rem;">
+  Reported at <TIME> IST by EMP-SIM-TEST
+</div>
+</div>
+<button class="btn" onclick="acknowledgeAlertRecord(#)" style="background: #ef#; color: white; padding: #.#rem #.#rem; font-size: #.#rem;">
+  Dismiss / Ack
+</button>
+</div>
+</div>
+<div style="display: flex; justify-content: flex-end; margin-top: #rem;">
+<button class="btn btn-secondary" onclick="closeModal('alertsDetailsModal')" type="button">
+  Close
+</button>
+</div>
+</div>
+</div>
+<script>
+  function switchTab(e, tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+  }
+  function previewPhoto(url) {
+  document.getElementById('modalImg').src = url;
+  document.getElementById('photoModal').style.display = 'flex';
+  }
+  function openResolveModal(id, emp, kiosk, temp, dist) {
+  document.getElementById('resolveRecordId').value = id;
+  document.getElementById('resRecIdText').textContent = `#${id}`;
+  document.getElementById('resEmpText').textContent = emp;
+  document.getElementById('resKioskText').textContent = kiosk;
+  document.getElementById('resTempText').textContent = temp + '°C';
+  document.getElementById('resolveModal').style.display = 'flex';
+  }
+  function openMessageReplyModal(msgId, sender, phone, text) {
+  document.getElementById('replyMsgId').value = msgId;
+  document.getElementById('replySenderText').textContent = sender;
+  document.getElementById('replyPhoneText').textContent = phone;
+  document.getElementById('replyBodyText').textContent = text;
+  document.getElementById('replyResponseText').value = '';
+  document.getElementById('replyModal').style.display = 'flex';
+  }
+  function openKioskConfigModal(kioskId, kioskName, currentChecks) {
+  document.getElementById('kioskCfgId').value = kioskId;
+  document.getElementById('kioskCfgTitle').textContent = `⚙️ ${kioskId} Schedule`;
+  document.getElementById('kioskCfgChecks').value = currentChecks || #;
+  document.getElementById('kioskConfigModal').style.display = 'flex';
+  }
+  function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+  }
+  async function submitResolution(e) {
+  e.preventDefault();
+  const btn = document.getElementById('resolveSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  const recordId = document.getElementById('resolveRecordId').value;
+  const payload = {
+  resolution_status: document.getElementById('resolveStatus').value,
+  notes: document.getElementById('resolveNotes').value.trim()
+  };
+  try {
+  const resp = await fetch(`/admin/apps/temperature-marker/api/records/${recordId}/resolve`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify(payload)
+  });
+  if (resp.ok) {
+  window.location.reload();
+  } else {
+  const err = await resp.json();
+  alert("Resolution failed: " + (err.detail || JSON.stringify(err)));
+  btn.disabled = false;
+  btn.textContent = 'Save Resolution';
+  }
+  } catch (err) {
+  alert("Network error: " + err.message);
+  btn.disabled = false;
+  btn.textContent = 'Save Resolution';
+  }
+  }
+  async function submitMessageResolution(e) {
+  e.preventDefault();
+  const btn = document.getElementById('replySubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  const msgId = document.getElementById('replyMsgId').value;
+  const payload = {
+  reply_text: document.getElementById('replyResponseText').value.trim(),
+  resolver_phone: '+#'
+  };
+  try {
+  const resp = await fetch(`/admin/apps/temperature-marker/api/messages/${msgId}/resolve`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify(payload)
+  });
+  if (resp.ok) {
+  window.location.reload();
+  } else {
+  const err = await resp.json();
+  alert("Reply failed: " + (err.detail || JSON.stringify(err)));
+  btn.disabled = false;
+  btn.textContent = 'Send Reply & Mark Resolved';
+  }
+  } catch (err) {
+  alert("Network error: " + err.message);
+  btn.disabled = false;
+  btn.textContent = 'Send Reply & Mark Resolved';
+  }
+  }
+  async function submitKioskSpecificConfig(e) {
+  e.preventDefault();
+  const kioskId = document.getElementById('kioskCfgId').value;
+  const payload = {
+  required_daily_temp_checks: parseInt(document.getElementById('kioskCfgChecks').value, #),
+  check_interval_hours: parseFloat(document.getElementById('kioskCfgInterval').value)
+  };
+  try {
+  const resp = await fetch(`/admin/apps/temperature-marker/api/kiosks/${kioskId}/config`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify(payload)
+  });
+  if (resp.ok) {
+  window.location.reload();
+  } else {
+  const err = await resp.json();
+  alert("Config update failed: " + (err.detail || JSON.stringify(err)));
+  }
+  } catch (err) {
+  alert("Network error: " + err.message);
+  }
+  }
+  async function saveGlobalConfig(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnSaveConfig');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  const payload = {
+  required_daily_temp_checks: parseInt(document.getElementById('cfgRequiredChecks').value, #),
+  check_interval_hours: parseFloat(document.getElementById('cfgIntervalHours').value),
+  min_safe_temp: parseFloat(document.getElementById('cfgMinTemp').value),
+  max_safe_temp: parseFloat(document.getElementById('cfgMaxTemp').value),
+  critical_alert_temp: parseFloat(document.getElementById('cfgCritTemp').value),
+  alert_manager_on_hazard: document.getElementById('cfgAlertManager').checked
+  };
+  try {
+  const resp = await fetch(`/admin/apps/temperature-marker/api/kiosks/GLOBAL_DEFAULT/config`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify(payload)
+  });
+  if (resp.ok) {
+  alert("Fleet HACCP policy updated successfully!");
+  window.location.reload();
+  } else {
+  const err = await resp.json();
+  alert("Policy update failed: " + (err.detail || JSON.stringify(err)));
+  btn.disabled = false;
+  btn.textContent = '💾 Save Fleet HACCP Policy';
+  }
+  } catch (err) {
+  alert("Network error: " + err.message);
+  btn.disabled = false;
+  btn.textContent = '💾 Save Fleet HACCP Policy';
+  }
+  }
+  async function acknowledgeAlertRecord(recId) {
+  try {
+  const resp = await fetch(`/admin/apps/temperature-marker/api/alerts/${recId}/acknowledge`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({ack_notes: "Dismissed by admin"})
+  });
+  if (resp.ok) {
+  window.location.reload();
+  } else {
+  const err = await resp.json();
+  alert("Acknowledge failed: " + (err.detail || JSON.stringify(err)));
+  }
+  } catch (err) {
+  alert("Network error: " + err.message);
+  }
+  }
+</script>
+</main>
+<footer>
+  Release# Industrial Automation Platform • KioskNode Multi-Kiosk Fleet • Apache-#.# Copyright # Mahendra GURAV
+</footer>
+</body>
+</html>

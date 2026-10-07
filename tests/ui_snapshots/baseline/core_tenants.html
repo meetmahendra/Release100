@@ -1,0 +1,273 @@
+STATUS 200
+<html lang="en">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<title>
+  Company Profile & Workspace Settings — Release#
+</title>
+<script src="https://cdn.tailwindcss.com">
+</script>
+</head>
+<body class="min-h-screen bg-slate-# text-slate-# flex flex-col font-sans">
+<header class="h-# bg-slate-#/# border-b border-slate-#/# px-# flex items-center justify-between shrink-#">
+<div class="flex items-center gap-#">
+<a class="flex items-center gap-# text-slate-# hover:text-white transition-colors" href="/admin/">
+<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #l-#-#m# #l#-#m-# #h#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+<span class="font-bold text-white">
+  Dashboard
+</span>
+</a>
+<span class="text-slate-#">
+  /
+</span>
+<h1 class="text-base font-semibold text-emerald-# flex items-center gap-#">
+<span>
+  🏢
+</span>
+  Company Profile & Plan Settings
+</h1>
+</div>
+<div class="flex items-center gap-# text-xs">
+<span class="px-#.# py-# rounded bg-slate-#/# text-slate-# border border-slate-#/#">
+  🏢 Tenant:
+<strong class="text-white">
+  Release# Organization
+</strong>
+<span class="text-emerald-# font-mono">
+  (default_tenant)
+</span>
+</span>
+<span class="px-#.# py-# rounded bg-slate-#/# text-slate-# border border-slate-#/#">
+  Admin:
+<strong class="text-white">
+  admin
+</strong>
+</span>
+</div>
+</header>
+<main class="flex-# p-# space-y-# max-w-#xl mx-auto w-full">
+<div class="bg-indigo-#/# border border-indigo-#/# rounded-xl p-# flex items-center justify-between shadow-lg">
+<div class="flex items-center gap-#">
+<span class="text-xl">
+  ⚡
+</span>
+<div>
+<p class="text-sm font-semibold text-indigo-#">
+  DevOps Super-Admin Privileges Detected
+</p>
+<p class="text-xs text-indigo-#/#">
+  You are viewing the scoped customer view for
+<strong class="font-mono">
+  public
+</strong>
+  . To manage all tenants across the SaaS fleet, open the DevOps Control Plane.
+</p>
+</div>
+</div>
+<a class="px-#.# py-#.# rounded-lg bg-indigo-# hover:bg-indigo-# text-white font-semibold text-xs transition-colors flex items-center gap-#.# shrink-# shadow-md" href="/ops/tenants">
+<span>
+  Open DevOps Portal
+</span>
+<span>
+  →
+</span>
+</a>
+</div>
+<div class="grid grid-cols-# md:grid-cols-# gap-#">
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs text-slate-# uppercase tracking-wider">
+  Company Workspace
+</p>
+<p class="text-lg font-bold text-white mt-# truncate">
+  Public Organization
+</p>
+<p class="text-xs text-slate-# font-mono mt-#.#">
+  ID: public
+</p>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs text-slate-# uppercase tracking-wider">
+  Cloud License Tier
+</p>
+<div class="flex items-center gap-# mt-#">
+<span class="px-#.# py-#.# rounded-full text-xs font-bold bg-emerald-#/# text-emerald-# border border-emerald-#/#">
+  ENTERPRISE
+</span>
+</div>
+<p class="text-xs text-slate-# mt-#.#">
+  Max Users: Unlimited
+</p>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs text-slate-# uppercase tracking-wider">
+  Registered Users
+</p>
+<p class="text-#xl font-bold text-sky-# mt-#">
+  #
+</p>
+<a class="text-xs text-sky-# hover:underline mt-#.# inline-block" href="/admin/users">
+  Manage Directory →
+</a>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs text-slate-# uppercase tracking-wider">
+  Credential Mode
+</p>
+<div class="mt-#">
+<span class="px-#.# py-#.# rounded-full text-xs font-bold bg-sky-#/# text-sky-# border border-sky-#/#">
+  ☁️ Platform-Managed
+</span>
+</div>
+<p class="text-xs text-slate-# mt-#.#">
+  AES-#-GCM Vault
+</p>
+</div>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-md space-y-#">
+<div class="flex items-center justify-between border-b border-slate-#/# pb-#">
+<div>
+<h2 class="text-sm font-bold text-white flex items-center gap-#">
+<span>
+  🔒
+</span>
+  Company Identity & Domain Governance
+</h2>
+<p class="text-xs text-slate-# mt-#.#">
+  These core parameters are provisioned by Platform DevOps and locked for security isolation.
+</p>
+</div>
+<span class="text-xs px-# py-#.# rounded bg-slate-# text-slate-# font-mono">
+  Managed by DevOps
+</span>
+</div>
+<div class="grid grid-cols-# md:grid-cols-# gap-# text-xs">
+<div class="bg-slate-#/# p-# rounded-lg border border-slate-#/#">
+<p class="text-slate-# uppercase font-semibold">
+  Tenant Identifier (Slug)
+</p>
+<p class="text-sm font-mono text-white mt-#">
+  public
+</p>
+<p class="text-slate-# text-[#px] mt-#">
+  Immutable partition key used across database tables.
+</p>
+</div>
+<div class="bg-slate-#/# p-# rounded-lg border border-slate-#/#">
+<p class="text-slate-# uppercase font-semibold">
+  Custom Domain / Subdomain
+</p>
+<p class="text-sm font-mono text-emerald-# mt-#">
+  public.intentrouter.io
+</p>
+<p class="text-slate-# text-[#px] mt-#">
+  Requests matching this Host header auto-bind to your workspace.
+</p>
+</div>
+<div class="bg-slate-#/# p-# rounded-lg border border-slate-#/#">
+<p class="text-slate-# uppercase font-semibold">
+  Data Storage Region
+</p>
+<p class="text-sm font-mono text-white mt-#">
+  us-east-#
+</p>
+<p class="text-slate-# text-[#px] mt-#">
+  Physical region for encrypted data & audit logs.
+</p>
+</div>
+</div>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-md space-y-#">
+<div class="flex items-center justify-between border-b border-slate-#/# pb-#">
+<div>
+<h2 class="text-sm font-bold text-white flex items-center gap-#">
+<span>
+  🔑
+</span>
+  AI & Messaging Credentials
+</h2>
+<p class="text-xs text-slate-# mt-#.#">
+  Control how your company connects to Google Gemini AI and WhatsApp Business APIs.
+</p>
+</div>
+</div>
+<div class="bg-slate-#/# border border-sky-#/# rounded-xl p-# space-y-#">
+<div class="flex items-center gap-#">
+<div class="w-# h-# rounded-lg bg-sky-#/# text-sky-# flex items-center justify-center shrink-#">
+  ☁️
+</div>
+<div>
+<p class="text-sm font-semibold text-white">
+  Platform-Managed Cloud Plan
+</p>
+<p class="text-xs text-slate-#">
+  Your organization utilizes the high-throughput, platform-managed LLM gateway and WhatsApp connectors provided with your enterprise subscription.
+</p>
+</div>
+</div>
+<div class="grid grid-cols-# md:grid-cols-# gap-# pt-# text-xs">
+<div class="bg-slate-# p-# rounded-lg border border-slate-#">
+<span class="text-slate-#">
+  Google Gemini LLM:
+</span>
+<span class="text-sky-# font-semibold ml-#">
+  Provided by Platform (Active)
+</span>
+</div>
+<div class="bg-slate-# p-# rounded-lg border border-slate-#">
+<span class="text-slate-#">
+  WhatsApp Messaging:
+</span>
+<span class="text-sky-# font-semibold ml-#">
+  Provided by Platform (Active)
+</span>
+</div>
+</div>
+<p class="text-[#px] text-slate-# italic">
+  To switch to your own dedicated BYOK keys, please contact your Platform DevOps account manager.
+</p>
+</div>
+</div>
+<div class="grid grid-cols-# md:grid-cols-# gap-#">
+<a class="bg-slate-#/# hover:bg-slate-# border border-slate-#/# rounded-xl p-# transition-colors flex items-center justify-between group" href="/admin/users">
+<div class="flex items-center gap-#">
+<span class="text-#xl">
+  👥
+</span>
+<div>
+<p class="text-sm font-bold text-white group-hover:text-emerald-# transition-colors">
+  Users & WhatsApp OAuth Registry
+</p>
+<p class="text-xs text-slate-#">
+  Manage employee accounts, assign application roles, and issue magic links.
+</p>
+</div>
+</div>
+<span class="text-slate-# group-hover:text-emerald-# transition-colors">
+  →
+</span>
+</a>
+<a class="bg-slate-#/# hover:bg-slate-# border border-slate-#/# rounded-xl p-# transition-colors flex items-center justify-between group" href="/admin/apps/mail-organizer/">
+<div class="flex items-center gap-#">
+<span class="text-#xl">
+  📦
+</span>
+<div>
+<p class="text-sm font-bold text-white group-hover:text-emerald-# transition-colors">
+  Mail Organizer App Settings
+</p>
+<p class="text-xs text-slate-#">
+  Configure email triage rules, monitored mailboxes, and VIP sender lists.
+</p>
+</div>
+</div>
+<span class="text-slate-# group-hover:text-emerald-# transition-colors">
+  →
+</span>
+</a>
+</div>
+</main>
+</body>
+</html>

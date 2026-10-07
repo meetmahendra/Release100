@@ -1,0 +1,269 @@
+STATUS 200
+<html lang="en">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<title>
+  LLM Token & Cost Consumption — Release#
+</title>
+<script src="https://cdn.tailwindcss.com">
+</script>
+</head>
+<body class="min-h-screen bg-slate-# text-slate-# flex">
+<aside class="w-# shrink-# bg-slate-#/# border-r border-slate-#/# flex flex-col">
+<div class="px-# py-# border-b border-slate-#/#">
+<div class="flex items-center gap-#">
+<div class="w-# h-# rounded-lg bg-emerald-# flex items-center justify-center shrink-# shadow-lg shadow-emerald-#/#">
+<svg class="w-# h-# text-white" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #l# # #-#m#.#-#.#A#.# #.# # # #.#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+</div>
+<div>
+<p class="text-sm font-bold text-white leading-tight">
+  Release#
+</p>
+<p class="text-xs text-slate-# truncate max-w-[#px]">
+  Release# Organization
+</p>
+</div>
+</div>
+</div>
+<nav class="flex-# px-# py-# space-y-# overflow-y-auto text-sm">
+<a class="flex items-center gap-# px-# py-# rounded-lg font-medium transition-colors text-slate-# hover:bg-slate-#/#" href="/admin/">
+<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #l#-#m# #l#-# # #M# #v#a# # # # #h#m#-#l# #m-#-#v#a# # # #-# #h-#m-# #a# # # #-#v-#a# # # #-#h#a# # # # #v#a# # # # #m-# #h#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+  Overview Dashboard
+</a>
+<p class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-slate-#">
+  Applications
+</p>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/apps/mail-organizer/dashboard">
+<span>
+  📦
+</span>
+<span class="truncate">
+  AI Email & Calendar Organizer
+</span>
+</a>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/apps/temperature-marker/fleet">
+<span>
+  📦
+</span>
+<span class="truncate">
+  Apex Industrial Temperature & Attendance Marker
+</span>
+</a>
+<p class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-slate-#">
+  Workspace & Access
+</p>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/users">
+<span>
+  👥
+</span>
+<span>
+  Users & Team
+</span>
+</a>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/tenants">
+<span>
+  🏢
+</span>
+<span>
+  Company Profile & Vault
+</span>
+</a>
+<a class="flex items-center gap-# px-# py-#.# rounded-lg text-slate-# hover:bg-slate-#/# transition-colors" href="/admin/api-keys">
+<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #a# # # # #m# #a# # # #-#.# #.#L# #H#v#H#v#H#a# # # #-#-#v-#.# a# # # #.#-.#l#.#-#.#A# # # # #z" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+  API Keys
+</a>
+</nav>
+<div class="px-# py-# border-t border-slate-#/# bg-slate-#/#">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-# min-w-#">
+<div class="w-# h-# rounded-full bg-emerald-# flex items-center justify-center text-xs font-bold text-white shrink-#">
+  A
+</div>
+<span class="text-sm font-medium text-slate-# truncate">
+  admin
+</span>
+</div>
+<a class="text-slate-# hover:text-red-# transition-colors p-#" href="/admin/logout" title="Logout">
+<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #l#-#m# #l-#-#m# #H#m# #v#a# # # #-# #H#a# # # #-#-#V#a# # # #-#h#a# # # # #v#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+</a>
+</div>
+</div>
+</aside>
+<main class="flex-# overflow-auto p-# bg-slate-#">
+<div class="mb-# flex items-center justify-between">
+<div>
+<h1 class="text-#xl font-bold text-white">
+  LLM Token & Cost Consumption
+</h1>
+<p class="text-xs text-slate-# mt-#">
+  Node:
+<span class="font-mono text-emerald-#">
+  NODE-#
+</span>
+  () • 🏢 Tenant:
+<strong class="text-slate-#">
+  Release# Organization
+</strong>
+<span class="text-emerald-# font-mono">
+  ()
+</span>
+</p>
+</div>
+<div class="flex items-center gap-#">
+<span class="px-# py-# rounded-full bg-emerald-#/# text-emerald-# text-xs font-semibold border border-emerald-#/#">
+  ✅ LIVE PRODUCTION
+</span>
+<span class="px-# py-# rounded-full bg-slate-# text-slate-# text-xs font-medium border border-slate-#">
+  Mode: shadow
+</span>
+</div>
+</div>
+<div class="space-y-#">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-xl font-bold text-white flex items-center gap-#">
+<span>
+  💰
+</span>
+  LLM Token & Cost Consumption Monitor
+</h2>
+<p class="text-sm text-slate-# mt-#.#">
+  Granular per-trigger and per-interaction token audit with real-time model pricing aggregation.
+</p>
+</div>
+<div class="flex items-center gap-#">
+<button class="px-# py-#.# rounded-lg bg-slate-# hover:bg-slate-# text-slate-# text-xs font-semibold border border-slate-# flex items-center gap-#.# transition" onclick="fetchCostData()">
+<span>
+  🔄
+</span>
+  Refresh Telemetry
+</button>
+</div>
+</div>
+<div class="grid grid-cols-# md:grid-cols-# gap-#">
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs font-medium text-slate-# uppercase tracking-wider">
+  Total Operations / Triggers
+</p>
+<p class="text-#xl font-bold text-white mt-#" id="totalOps">
+  #
+</p>
+<p class="text-xs text-slate-# mt-#">
+  End-to-end user workflows
+</p>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs font-medium text-slate-# uppercase tracking-wider">
+  Total LLM Calls
+</p>
+<p class="text-#xl font-bold text-sky-# mt-#" id="totalCalls">
+  #
+</p>
+<p class="text-xs text-slate-# mt-#">
+  Individual provider requests
+</p>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs font-medium text-slate-# uppercase tracking-wider">
+  Total Tokens Consumed
+</p>
+<p class="text-#xl font-bold text-purple-# mt-#" id="totalTokens">
+  #,#
+</p>
+<p class="text-xs text-slate-# mt-#">
+  Prompt + Completion
+</p>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs font-medium text-slate-# uppercase tracking-wider">
+  Total Est. Cost (USD)
+</p>
+<p class="text-#xl font-bold text-emerald-# mt-#" id="totalCost">
+  $#.#
+</p>
+<p class="text-xs text-slate-# mt-#">
+  Live token rates
+</p>
+</div>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl overflow-hidden shadow-xl">
+<div class="px-# py-# border-b border-slate-#/# flex items-center justify-between">
+<h3 class="text-sm font-semibold text-white flex items-center gap-#">
+<span>
+  📋
+</span>
+  Workflow Triggers & Cost Breakdown
+</h3>
+<span class="text-xs text-slate-#">
+  Click any row to view individual LLM interactions
+</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-sm">
+<thead>
+<tr class="border-b border-slate-#/# text-xs uppercase tracking-wider text-slate-# bg-slate-#/#">
+<th class="py-# px-#">
+  Trigger / Operation ID
+</th>
+<th class="py-# px-#">
+  First Seen
+</th>
+<th class="py-# px-# text-center">
+  LLM Calls
+</th>
+<th class="py-# px-# text-right">
+  Tokens
+</th>
+<th class="py-# px-# text-right">
+  Total Latency
+</th>
+<th class="py-# px-# text-right">
+  Cost (USD)
+</th>
+<th class="py-# px-# text-center">
+  Action
+</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-#/#" id="operationsTableBody">
+...
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<script>
+  function toggleDetails(index) {
+  const row = document.getElementById(`detailsRow-${index}`);
+  const icon = document.getElementById(`expandIcon-${index}`);
+  if (row.classList.contains('hidden')) {
+  row.classList.remove('hidden');
+  icon.textContent = '▲ Hide';
+  } else {
+  row.classList.add('hidden');
+  icon.textContent = '▼ Expand';
+  }
+  }
+  async function fetchCostData() {
+  try {
+  const res = await fetch('/admin/api/llm-costs');
+  if (res.ok) {
+  window.location.reload();
+  }
+  } catch (err) {
+  console.error("Refresh error:", err);
+  }
+  }
+</script>
+</main>
+</body>
+</html>

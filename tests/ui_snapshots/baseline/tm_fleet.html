@@ -1,0 +1,910 @@
+STATUS 200
+<html lang="en">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<title>
+  Multi-Kiosk Fleet Roster & Operator Assignments - Release#
+</title>
+<style>
+  :root {
+  --bg-main: ##f#a;
+  --bg-card: ##e#b;
+  --bg-card-hover: ##;
+  --border-color: ##;
+  --text-primary: #f#fafc;
+  --text-secondary: ##a#b#;
+  --accent-green: ##b#;
+  --accent-yellow: #f#e#b;
+  --accent-red: #ef#;
+  --accent-blue: ##b#f#;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * {
+  box-sizing: border-box;
+  margin: #;
+  padding: #;
+  }
+  body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  min-height: #vh;
+  display: flex;
+  flex-direction: column;
+  }
+  header {
+  background-color: var(--bg-card);
+  border-bottom: #px solid var(--border-color);
+  padding: #rem #rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  }
+  .brand {
+  display: flex;
+  align-items: center;
+  gap: #.#rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  }
+  .brand-badge {
+  background: linear-gradient(#deg, ##b#, ##);
+  color: white;
+  font-weight: #;
+  font-size: #.#rem;
+  padding: #.#rem #.#rem;
+  border-radius: #px;
+  letter-spacing: #.#em;
+  }
+  .brand-title {
+  font-size: #.#rem;
+  font-weight: #;
+  }
+  nav {
+  display: flex;
+  gap: #.#rem;
+  }
+  nav a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: #.#rem;
+  font-weight: #;
+  padding: #.#rem #.#rem;
+  border-radius: #px;
+  transition: all #.#s ease;
+  }
+  nav a:hover, nav a.active {
+  color: var(--text-primary);
+  background-color: var(--bg-card-hover);
+  }
+  main {
+  flex: #;
+  padding: #rem;
+  max-width: #px;
+  margin: # auto;
+  width: #%;
+  }
+  .card {
+  background-color: var(--bg-card);
+  border: #px solid var(--border-color);
+  border-radius: #px;
+  padding: #.#rem;
+  margin-bottom: #.#rem;
+  box-shadow: # #px #px -#px rgba(#, #, #, #.#);
+  }
+  .badge {
+  display: inline-block;
+  padding: #.#rem #.#rem;
+  font-size: #.#rem;
+  font-weight: #;
+  border-radius: #px;
+  text-transform: uppercase;
+  }
+  .badge-green { background-color: rgba(#, #, #, #.#); color: var(--accent-green); border: #px solid var(--accent-green); }
+  .badge-yellow { background-color: rgba(#, #, #, #.#); color: var(--accent-yellow); border: #px solid var(--accent-yellow); }
+  .badge-red { background-color: rgba(#, #, #, #.#); color: var(--accent-red); border: #px solid var(--accent-red); }
+  .badge-blue { background-color: rgba(#, #, #, #.#); color: var(--accent-blue); border: #px solid var(--accent-blue); }
+  .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: #.#rem #rem;
+  font-size: #.#rem;
+  font-weight: #;
+  border-radius: #px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color #.#s ease;
+  }
+  .btn-primary { background-color: var(--accent-blue); color: white; }
+  .btn-primary:hover { background-color: ##eb; }
+  .btn-success { background-color: var(--accent-green); color: white; }
+  .btn-success:hover { background-color: ##; }
+  .btn-danger { background-color: var(--accent-red); color: white; }
+  .btn-danger:hover { background-color: #dc#; }
+  footer {
+  background-color: var(--bg-card);
+  border-top: #px solid var(--border-color);
+  padding: #rem #rem;
+  text-align: center;
+  font-size: #.#rem;
+  color: var(--text-secondary);
+  }
+</style>
+</head>
+<body>
+<header>
+<div style="display: flex; align-items: center; gap: #rem;">
+<a class="brand" href="/admin/apps/temperature-marker/fleet">
+<span class="brand-badge">
+  APEX
+</span>
+<span class="brand-title">
+  Fleet Telemetry & Operations Control
+</span>
+</a>
+<span class="badge" style="background: rgba(#, #, #, #.#); color: #a#f#d#; border: #px solid ##b#; font-family: monospace; font-size: #.#rem; padding: #.#rem #.#rem; border-radius: #px; display: inline-flex; align-items: center; gap: #.#rem;">
+<span>
+  🏢
+</span>
+<strong style="color: #ffffff;">
+  Release# Organization
+</strong>
+<span style="opacity: #.#;">
+  (default_tenant)
+</span>
+</span>
+</div>
+<nav style="display: flex; align-items: center; gap: #rem;">
+<a class="" href="/admin/apps/temperature-marker/monitoring">
+  📊 Live Monitoring
+</a>
+<a class="active" href="/admin/apps/temperature-marker/fleet">
+  Fleet Map
+</a>
+<a class="" href="/admin/apps/temperature-marker/wizard">
+  Stepper Wizard
+</a>
+<a class="" href="/admin/apps/temperature-marker/approvals">
+  Operator Approvals
+</a>
+<a href="/admin/" style="color: ##a#b#; font-size: #.#rem; border-left: #px solid var(--border-color); padding-left: #.#rem;">
+  ← Admin Shell
+</a>
+</nav>
+</header>
+<main>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #.#rem; flex-wrap: wrap; gap: #rem;">
+<div>
+<h1 style="font-size: #.#rem; font-weight: #;">
+  Multi-Kiosk Fleet Overview & Team Management
+</h1>
+<p style="color: var(--text-secondary); margin-top: #.#rem;">
+  Register dispensing stations, configure GPS geofence boundaries, and assign operators across retail locations.
+</p>
+</div>
+<div style="display: flex; gap: #.#rem;">
+<button class="btn btn-primary" onclick="openModal('kioskModal')" style="background-color: ##b#; border-color: ##b#;">
+  + Add New Kiosk
+</button>
+<button class="btn btn-secondary" onclick="openModal('operatorModal')">
+  + Enroll Operator
+</button>
+<a class="btn btn-primary" href="/admin/apps/temperature-marker/wizard">
+  + Run Simulation
+</a>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(#px, #fr)); gap: #rem; margin-bottom: #rem;">
+<div class="card" style="margin-bottom: #;">
+<div style="color: var(--text-secondary); font-size: #.#rem; text-transform: uppercase;">
+  Total Kiosks Active
+</div>
+<div style="font-size: #rem; font-weight: #; color: var(--accent-blue); margin-top: #.#rem;">
+  #
+</div>
+<div style="color: var(--text-secondary); font-size: #.#rem; margin-top: #.#rem;">
+  Multi-region retail fleet
+</div>
+</div>
+<div class="card" style="margin-bottom: #;">
+<div style="color: var(--text-secondary); font-size: #.#rem; text-transform: uppercase;">
+  Registered Operators
+</div>
+<div style="font-size: #rem; font-weight: #; color: ##b#; margin-top: #.#rem;">
+  #
+</div>
+<div style="color: var(--text-secondary); font-size: #.#rem; margin-top: #.#rem;">
+  Active field staff
+</div>
+</div>
+<div class="card" style="margin-bottom: #;">
+<div style="color: var(--text-secondary); font-size: #.#rem; text-transform: uppercase;">
+  HACCP Safe Window
+</div>
+<div style="font-size: #rem; font-weight: #; color: var(--accent-green); margin-top: #.#rem;">
+  #.#°C – #.#°C
+</div>
+<div style="color: var(--text-secondary); font-size: #.#rem; margin-top: #.#rem;">
+  Cold-chain preservation & HACCP compliance
+</div>
+</div>
+<div class="card" style="margin-bottom: #;">
+<div style="color: var(--text-secondary); font-size: #.#rem; text-transform: uppercase;">
+  Audit Hash Chaining
+</div>
+<div style="font-size: #rem; font-weight: #; color: var(--accent-yellow); margin-top: #.#rem;">
+  SHA-#
+</div>
+<div style="color: var(--text-secondary); font-size: #.#rem; margin-top: #.#rem;">
+  # CFR Part # compliant
+</div>
+</div>
+</div>
+<div class="card" style="margin-bottom: #rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #rem;">
+<h2 style="font-size: #.#rem; font-weight: #;">
+  Registered KioskNode Station Roster
+</h2>
+<span style="font-size: #.#rem; color: var(--text-secondary);">
+  Knowledge Graph Topology
+</span>
+</div>
+<div style="overflow-x: auto;">
+<table style="width: #%; border-collapse: collapse; text-align: left;">
+<thead>
+<tr style="border-bottom: #px solid var(--border-color); color: var(--text-secondary); font-size: #.#rem;">
+<th style="padding: #.#rem #rem;">
+  Kiosk ID
+</th>
+<th style="padding: #.#rem #rem;">
+  Station Name & Location
+</th>
+<th style="padding: #.#rem #rem;">
+  Coordinates (Lat, Lon)
+</th>
+<th style="padding: #.#rem #rem;">
+  Geofence
+</th>
+<th style="padding: #.#rem #rem;">
+  Model
+</th>
+<th style="padding: #.#rem #rem;">
+  Assigned Operators
+</th>
+<th style="padding: #.#rem #rem;">
+  Actions
+</th>
+</tr>
+</thead>
+<tbody>
+...
+</tbody>
+</table>
+</div>
+</div>
+<div class="card">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #rem;">
+<div>
+<h2 style="font-size: #.#rem; font-weight: #;">
+  Team & Operator Assignments
+</h2>
+<p style="color: var(--text-secondary); font-size: #.#rem; margin-top: #.#rem;">
+  Live mapping of field staff to kiosks. Selecting a new kiosk instantly updates both SQLite and Knowledge Graph routing.
+</p>
+</div>
+<span id="reassignStatus" style="font-size: #.#rem; font-weight: #;">
+</span>
+</div>
+<div style="overflow-x: auto;">
+<table style="width: #%; border-collapse: collapse; text-align: left;">
+<thead>
+<tr style="border-bottom: #px solid var(--border-color); color: var(--text-secondary); font-size: #.#rem;">
+<th style="padding: #.#rem #rem;">
+  Emp Code
+</th>
+<th style="padding: #.#rem #rem;">
+  Operator Name
+</th>
+<th style="padding: #.#rem #rem;">
+  WhatsApp Phone
+</th>
+<th style="padding: #.#rem #rem;">
+  Assigned Kiosk
+</th>
+<th style="padding: #.#rem #rem;">
+  Reporting Manager
+</th>
+<th style="padding: #.#rem #rem;">
+  Status
+</th>
+<th style="padding: #.#rem #rem;">
+  Actions
+</th>
+</tr>
+</thead>
+<tbody>
+...
+</tbody>
+</table>
+</div>
+</div>
+<div id="kioskModal" style="display: none; position: fixed; inset: #; background: rgba(#,#,#,#.#); z-index: #; align-items: center; justify-content: center;">
+<div class="card" style="width: #%; max-width: #px; max-height: #vh; overflow-y: auto; background: ##e#b; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #.#rem;">
+<h3 style="font-size: #.#rem; font-weight: #; color: white;">
+  + Register New KioskNode Kiosk
+</h3>
+<button onclick="closeModal('kioskModal')" style="background: none; border: none; color: ##a#b#; font-size: #.#rem; cursor: pointer;">
+  ✕
+</button>
+</div>
+<form onsubmit="submitNewKiosk(event)" style="display: flex; flex-direction: column; gap: #rem;">
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Kiosk ID *
+</label>
+<input id="newKioskId" placeholder="e.g. NODE-HYD-#" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white; font-family: monospace;">
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Site / Mall Name *
+</label>
+<input id="newSiteName" placeholder="e.g. Inorbit Mall Cyberabad" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;">
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  City *
+</label>
+<input id="newCity" placeholder="e.g. Hyderabad" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;">
+</div>
+<div style="display: grid; grid-template-columns: #fr #fr; gap: #.#rem;">
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Latitude *
+</label>
+<input id="newLat" placeholder="#.#" required step="any" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white; font-family: monospace;" type="number">
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Longitude *
+</label>
+<input id="newLon" placeholder="#.#" required step="any" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white; font-family: monospace;" type="number">
+</div>
+</div>
+<button class="btn btn-secondary" onclick="detectBrowserLocation()" style="padding: #.#rem; font-size: #.#rem; align-self: flex-start;" type="button">
+  📍 Auto-fill Current Browser GPS
+</button>
+<div style="display: grid; grid-template-columns: #fr #fr; gap: #.#rem;">
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Geofence Radius (m)
+</label>
+<input id="newRadius" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;" type="number" value="#">
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Machine Model
+</label>
+<input id="newModel" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;" value="ChillerNode-Pro-X#">
+</div>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: #.#rem; margin-top: #rem;">
+<button class="btn btn-secondary" onclick="closeModal('kioskModal')" type="button">
+  Cancel
+</button>
+<button class="btn btn-primary" style="background-color: ##b#; border-color: ##b#;" type="submit">
+  Save Kiosk
+</button>
+</div>
+</form>
+</div>
+</div>
+<div id="operatorModal" style="display: none; position: fixed; inset: #; background: rgba(#,#,#,#.#); z-index: #; align-items: center; justify-content: center;">
+<div class="card" style="width: #%; max-width: #px; background: ##e#b; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #.#rem;">
+<h3 style="font-size: #.#rem; font-weight: #; color: white;">
+  + Enroll Field Operator
+</h3>
+<button onclick="closeModal('operatorModal')" style="background: none; border: none; color: ##a#b#; font-size: #.#rem; cursor: pointer;">
+  ✕
+</button>
+</div>
+<form onsubmit="submitNewOperator(event)" style="display: flex; flex-direction: column; gap: #rem;">
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Employee Code (Optional)
+</label>
+<input id="newEmpCode" placeholder="Leave blank to auto-generate (e.g. EMP-#)" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white; font-family: monospace;">
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Full Name *
+</label>
+<input id="newFullName" placeholder="e.g. Ramesh Patil" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;">
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  WhatsApp Phone Number *
+</label>
+<input id="newPhone" oninput="previewPhoneFormat(this.value, 'newPhonePreview')" placeholder="e.g. # or +#" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white; font-family: monospace;">
+<span id="newPhonePreview" style="color: ##bdf#; font-size: #.#rem; display: block; margin-top: #.#rem; font-family: monospace;">
+</span>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Assign to Initial Kiosk *
+</label>
+<select id="newAssignedKiosk" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;">
+<option value="NODE-PUNE-#">
+  NODE-PUNE-# — Phoenix Marketcity Food Court (Pune)
+</option>
+<option value="NODE-PUNE-#">
+  NODE-PUNE-# — Dassault Systemes Sky Tower (Pune)
+</option>
+<option value="NODE-PUNE-#">
+  NODE-PUNE-# — Eka Elitas Paud Road Kothrud (Pune)
+</option>
+<option value="NODE-MUMBAI-#">
+  NODE-MUMBAI-# — Seawoods Grand Central Mall (Navi Mumbai)
+</option>
+<option value="NODE-BLR-#">
+  NODE-BLR-# — Indiranagar Metro Station Concourse (Bangalore)
+</option>
+</select>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Reporting Manager / Supervisor (Optional)
+</label>
+<select id="newReportingManager" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;">
+<option value="">
+  -- No Manager Assigned --
+</option>
+<option value="MGR-#">
+  Rajesh Sharma (MGR-#)
+</option>
+<option value="MGR-#">
+  Anjali Patil (MGR-#)
+</option>
+<option value="MGR-#">
+  Fleet Lead Vikram (MGR-#)
+</option>
+<option value="EMP-#">
+  Suresh Kumar (EMP-#)
+</option>
+<option value="EMP-#">
+  Ganesh Jadhav (EMP-#)
+</option>
+<option value="EMP-#">
+  Operator Sunil (EMP-#)
+</option>
+<option value="EMP-#">
+  Anil Jadhav (EMP-#)
+</option>
+<option value="EMP-#">
+  Kavita Shinde (EMP-#)
+</option>
+<option value="EMP-#">
+  Rajesh Pawar (EMP-#)
+</option>
+<option value="EMP-PENDING-UI">
+  Pending Operator (EMP-PENDING-UI)
+</option>
+<option value="EMP-TEST-UI-#">
+  Deep Coverage Operator Updated (EMP-TEST-UI-#)
+</option>
+<option value="EMP-TEST-#">
+  Pooja Kadam (EMP-TEST-#)
+</option>
+<option value="EMP-TEST-#">
+  Vijay Shinde (EMP-TEST-#)
+</option>
+<option value="EMP-TEST-#">
+  Sunita Deshmukh (EMP-TEST-#)
+</option>
+</select>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Operator Facial Photo (Optional)
+</label>
+<input accept="image/*" id="newPhoto" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: ##a#b#; font-size: #.#rem;" type="file">
+<span style="color: ##b; font-size: #.#rem; display: block; margin-top: #.#rem;">
+  If omitted, the operator will receive an automated WhatsApp message to submit their selfie photo.
+</span>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: #.#rem; margin-top: #rem;">
+<button class="btn btn-secondary" onclick="closeModal('operatorModal')" type="button">
+  Cancel
+</button>
+<button class="btn btn-primary" id="enrollSubmitBtn" type="submit">
+  Enroll Operator
+</button>
+</div>
+</form>
+</div>
+</div>
+<div id="editMemberModal" style="display: none; position: fixed; inset: #; background: rgba(#,#,#,#.#); z-index: #; align-items: center; justify-content: center;">
+<div class="card" style="width: #%; max-width: #px; background: ##e#b; border: #px solid ##;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: #.#rem;">
+<h3 style="font-size: #.#rem; font-weight: #; color: white;">
+  ✏️ Edit Operator Profile
+</h3>
+<button onclick="closeModal('editMemberModal')" style="background: none; border: none; color: ##a#b#; font-size: #.#rem; cursor: pointer;">
+  ✕
+</button>
+</div>
+<form onsubmit="submitEditMember(event)" style="display: flex; flex-direction: column; gap: #rem;">
+<input id="editEmpCode" type="hidden">
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Employee Code
+</label>
+<div id="editEmpCodeDisplay" style="padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: #a#bfa; font-family: monospace; font-weight: #;">
+</div>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Full Name *
+</label>
+<input id="editFullName" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;">
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  WhatsApp Phone Number *
+</label>
+<input id="editPhone" oninput="previewPhoneFormat(this.value, 'editPhonePreview')" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white; font-family: monospace;">
+<span id="editPhonePreview" style="color: ##bdf#; font-size: #.#rem; display: block; margin-top: #.#rem; font-family: monospace;">
+</span>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Assigned Kiosk *
+</label>
+<select id="editAssignedKiosk" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;">
+<option value="NODE-PUNE-#">
+  NODE-PUNE-# — Phoenix Marketcity Food Court (Pune)
+</option>
+<option value="NODE-PUNE-#">
+  NODE-PUNE-# — Dassault Systemes Sky Tower (Pune)
+</option>
+<option value="NODE-PUNE-#">
+  NODE-PUNE-# — Eka Elitas Paud Road Kothrud (Pune)
+</option>
+<option value="NODE-MUMBAI-#">
+  NODE-MUMBAI-# — Seawoods Grand Central Mall (Navi Mumbai)
+</option>
+<option value="NODE-BLR-#">
+  NODE-BLR-# — Indiranagar Metro Station Concourse (Bangalore)
+</option>
+</select>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Reporting Manager / Supervisor
+</label>
+<select id="editReportingManager" style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;">
+<option value="">
+  -- No Manager Assigned --
+</option>
+<option value="MGR-#">
+  Rajesh Sharma (MGR-#)
+</option>
+<option value="MGR-#">
+  Anjali Patil (MGR-#)
+</option>
+<option value="MGR-#">
+  Fleet Lead Vikram (MGR-#)
+</option>
+<option value="EMP-#">
+  Suresh Kumar (EMP-#)
+</option>
+<option value="EMP-#">
+  Ganesh Jadhav (EMP-#)
+</option>
+<option value="EMP-#">
+  Operator Sunil (EMP-#)
+</option>
+<option value="EMP-#">
+  Anil Jadhav (EMP-#)
+</option>
+<option value="EMP-#">
+  Kavita Shinde (EMP-#)
+</option>
+<option value="EMP-#">
+  Rajesh Pawar (EMP-#)
+</option>
+<option value="EMP-PENDING-UI">
+  Pending Operator (EMP-PENDING-UI)
+</option>
+<option value="EMP-TEST-UI-#">
+  Deep Coverage Operator Updated (EMP-TEST-UI-#)
+</option>
+<option value="EMP-TEST-#">
+  Pooja Kadam (EMP-TEST-#)
+</option>
+<option value="EMP-TEST-#">
+  Vijay Shinde (EMP-TEST-#)
+</option>
+<option value="EMP-TEST-#">
+  Sunita Deshmukh (EMP-TEST-#)
+</option>
+</select>
+</div>
+<div>
+<label style="font-size: #.#rem; color: ##a#b#; display: block; margin-bottom: #.#rem;">
+  Operational Status *
+</label>
+<select id="editStatus" required style="width: #%; padding: #.#rem; border-radius: #px; background: ##f#a; border: #px solid ##; color: white;">
+<option value="ACTIVE">
+  ACTIVE (Authorized for Duty)
+</option>
+<option value="PENDING_APPROVAL">
+  PENDING_APPROVAL (Under Admin Review)
+</option>
+<option value="PENDING_PHOTO">
+  PENDING_PHOTO (Awaiting Selfie Photo)
+</option>
+<option value="INACTIVE">
+  INACTIVE (Suspended / Deactivated)
+</option>
+</select>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: #.#rem; margin-top: #rem;">
+<button class="btn btn-secondary" onclick="closeModal('editMemberModal')" type="button">
+  Cancel
+</button>
+<button class="btn btn-primary" id="editSubmitBtn" type="submit">
+  Save Changes
+</button>
+</div>
+</form>
+</div>
+</div>
+<script>
+  function openModal(id) {
+  document.getElementById(id).style.display = 'flex';
+  }
+  function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+  }
+  function detectBrowserLocation() {
+  if (!navigator.geolocation) {
+  alert("Geolocation is not supported by your browser.");
+  return;
+  }
+  navigator.geolocation.getCurrentPosition(
+  pos => {
+  document.getElementById('newLat').value = pos.coords.latitude.toFixed(#);
+  document.getElementById('newLon').value = pos.coords.longitude.toFixed(#);
+  },
+  err => alert("Could not fetch location: " + err.message),
+  { enableHighAccuracy: true, timeout: #, maximumAge: # }
+  );
+  }
+  async function submitNewKiosk(e) {
+  e.preventDefault();
+  const payload = {
+  kiosk_id: document.getElementById('newKioskId').value,
+  site_name: document.getElementById('newSiteName').value,
+  city: document.getElementById('newCity').value,
+  latitude: parseFloat(document.getElementById('newLat').value),
+  longitude: parseFloat(document.getElementById('newLon').value),
+  radius_meters: parseFloat(document.getElementById('newRadius').value),
+  machine_model: document.getElementById('newModel').value,
+  };
+  try {
+  const resp = await fetch('/admin/apps/temperature-marker/api/kiosks', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify(payload)
+  });
+  if (resp.ok) {
+  window.location.reload();
+  } else {
+  const err = await resp.json();
+  alert("Error registering kiosk: " + (err.detail || JSON.stringify(err)));
+  }
+  } catch (err) {
+  alert("Network error: " + err.message);
+  }
+  }
+  function previewPhoneFormat(val, elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const cleaned = val.replace(/\D/g, '');
+  if (!cleaned) { el.textContent = ''; return; }
+  let preview = '';
+  if (val.trim().startsWith('+')) {
+  preview = '+' + cleaned;
+  } else if (cleaned.length === #) {
+  preview = '+#' + cleaned;
+  } else if (cleaned.length === # && cleaned.startsWith('#')) {
+  preview = '+' + cleaned;
+  } else if (cleaned.length === # && cleaned.startsWith('#')) {
+  preview = '+#' + cleaned.substring(#);
+  } else {
+  preview = '+' + cleaned;
+  }
+  el.textContent = `Formatted E.#: ${preview}`;
+  }
+  function calibrateKioskLocation(kioskId, kioskName) {
+  if (!navigator.geolocation) {
+  alert("Geolocation is not supported by your browser.");
+  return;
+  }
+  if (!confirm(`Calibrate physical location for ${kioskName} (${kioskId}) using your current device GPS coordinates?`)) return;
+  navigator.geolocation.getCurrentPosition(
+  async pos => {
+  const lat = pos.coords.latitude;
+  const lon = pos.coords.longitude;
+  try {
+  const resp = await fetch(`/admin/apps/temperature-marker/api/kiosks/${kioskId}/calibrate-location`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({latitude: lat, longitude: lon})
+  });
+  const res = await resp.json();
+  if (resp.ok) {
+  alert(`✅ Location Calibrated!\n${kioskId} updated to (${lat.toFixed(#)}, ${lon.toFixed(#)})`);
+  window.location.reload();
+  } else {
+  alert("Error calibrating location: " + (res.detail || JSON.stringify(res)));
+  }
+  } catch (err) {
+  alert("Network error: " + err.message);
+  }
+  },
+  err => alert("Could not fetch device GPS: " + err.message),
+  { enableHighAccuracy: true, timeout: #, maximumAge: # }
+  );
+  }
+  function openEditMemberModal(empCode, fullName, phone, kioskId, mgrCode, status) {
+  document.getElementById('editEmpCode').value = empCode;
+  document.getElementById('editEmpCodeDisplay').textContent = empCode;
+  document.getElementById('editFullName').value = fullName;
+  document.getElementById('editPhone').value = phone;
+  document.getElementById('editAssignedKiosk').value = kioskId;
+  document.getElementById('editReportingManager').value = mgrCode || '';
+  document.getElementById('editStatus').value = status;
+  previewPhoneFormat(phone, 'editPhonePreview');
+  openModal('editMemberModal');
+  }
+  async function submitEditMember(e) {
+  e.preventDefault();
+  const btn = document.getElementById('editSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  const empCode = document.getElementById('editEmpCode').value;
+  const payload = {
+  full_name: document.getElementById('editFullName').value.trim(),
+  phone_number: document.getElementById('editPhone').value.trim(),
+  assigned_kiosk_id: document.getElementById('editAssignedKiosk').value,
+  reporting_manager_emp_code: document.getElementById('editReportingManager').value.trim() || null,
+  status: document.getElementById('editStatus').value
+  };
+  try {
+  const resp = await fetch(`/admin/apps/temperature-marker/api/members/${empCode}/update`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify(payload)
+  });
+  if (resp.ok) {
+  window.location.reload();
+  } else {
+  const err = await resp.json();
+  alert("Error updating operator: " + (err.detail || JSON.stringify(err)));
+  btn.disabled = false;
+  btn.textContent = 'Save Changes';
+  }
+  } catch (err) {
+  alert("Network error: " + err.message);
+  btn.disabled = false;
+  btn.textContent = 'Save Changes';
+  }
+  }
+  async function submitNewOperator(e) {
+  e.preventDefault();
+  const submitBtn = document.getElementById('enrollSubmitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Enrolling...';
+  const empCodeVal = document.getElementById('newEmpCode').value.trim();
+  const mgrVal = document.getElementById('newReportingManager').value.trim();
+  const payload = {
+  emp_code: empCodeVal.length > # ? empCodeVal : null,
+  full_name: document.getElementById('newFullName').value.trim(),
+  phone_number: document.getElementById('newPhone').value.trim(),
+  assigned_kiosk_id: document.getElementById('newAssignedKiosk').value,
+  reporting_manager_emp_code: mgrVal.length > # ? mgrVal : null,
+  photo_base#: null
+  };
+  const fileInput = document.getElementById('newPhoto');
+  const finishSubmit = async () => {
+  try {
+  const resp = await fetch('/admin/apps/temperature-marker/api/members', {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify(payload)
+  });
+  if (resp.ok) {
+  window.location.reload();
+  } else {
+  const err = await resp.json();
+  alert("Error enrolling operator: " + (err.detail || JSON.stringify(err)));
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Enroll Operator';
+  }
+  } catch (err) {
+  alert("Network error: " + err.message);
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Enroll Operator';
+  }
+  };
+  if (fileInput.files && fileInput.files[#]) {
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+  const dataUrl = evt.target.result;
+  const base#Data = dataUrl.split(',')[#];
+  payload.photo_base# = base#Data;
+  finishSubmit();
+  };
+  reader.onerror = function() {
+  alert("Failed to read image file.");
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Enroll Operator';
+  };
+  reader.readAsDataURL(fileInput.files[#]);
+  } else {
+  await finishSubmit();
+  }
+  }
+  async function reassignOperator(empCode, newKioskId) {
+  const statusEl = document.getElementById('reassignStatus');
+  statusEl.style.color = '##bdf#';
+  statusEl.textContent = `Updating ${empCode} -> ${newKioskId}...`;
+  try {
+  const resp = await fetch(`/admin/apps/temperature-marker/api/members/${empCode}/reassign`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({kiosk_id: newKioskId})
+  });
+  if (resp.ok) {
+  statusEl.style.color = '##b#';
+  statusEl.textContent = `✅ ${empCode} reassigned to ${newKioskId}`;
+  setTimeout(() => { statusEl.textContent = ''; }, #);
+  } else {
+  statusEl.style.color = '#f#';
+  statusEl.textContent = `❌ Reassignment failed.`;
+  }
+  } catch (err) {
+  statusEl.style.color = '#f#';
+  statusEl.textContent = `❌ Error: ${err.message}`;
+  }
+  }
+  async function forgetOperatorPhoto(empCode, name) {
+  if (!confirm(`Clear biometric photo for ${name} (${empCode})?\n\nThis will remove the current face embedding and send an automated WhatsApp message asking the operator to send a fresh selfie photo for approval.`)) return;
+  try {
+  const resp = await fetch(`/admin/apps/temperature-marker/api/members/${empCode}/forget-photo`, {
+  method: 'POST'
+  });
+  const data = await resp.json();
+  if (resp.ok) {
+  alert(`✅ Photo cleared for ${name} (${empCode}).\nAn automated WhatsApp selfie invitation has been dispatched.`);
+  window.location.reload();
+  } else {
+  alert("Error: " + (data.detail || JSON.stringify(data)));
+  }
+  } catch (err) {
+  alert("Failed to reset photo: " + err.message);
+  }
+  }
+</script>
+</main>
+<footer>
+  Release# Industrial Automation Platform • KioskNode Multi-Kiosk Fleet • Apache-#.# Copyright # Mahendra GURAV
+</footer>
+</body>
+</html>

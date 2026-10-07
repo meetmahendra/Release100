@@ -1,0 +1,298 @@
+STATUS 200
+<html lang="en">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<title>
+  User & Identity Management — Release#
+</title>
+<script src="https://cdn.tailwindcss.com">
+</script>
+</head>
+<body class="min-h-screen bg-slate-# text-slate-# flex flex-col">
+<header class="h-# bg-slate-#/# border-b border-slate-#/# px-# flex items-center justify-between shrink-#">
+<div class="flex items-center gap-#">
+<a class="flex items-center gap-# text-slate-# hover:text-white transition-colors" href="/admin/">
+<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #l-#-#m# #l#-#m-# #h#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+<span class="font-bold text-white">
+  Platform Dashboard
+</span>
+</a>
+<span class="text-slate-#">
+  /
+</span>
+<h1 class="text-lg font-semibold text-emerald-# flex items-center gap-#">
+<span>
+  👥
+</span>
+  Multi-Tenant User Registry & WhatsApp Entitlements
+</h1>
+</div>
+<div class="flex items-center gap-# text-xs">
+<span class="px-#.# py-# rounded bg-slate-#/# text-slate-# border border-slate-#/#">
+  🏢 Tenant:
+<strong class="text-white">
+  Release# Organization
+</strong>
+<span class="text-emerald-# font-mono">
+  (default_tenant)
+</span>
+</span>
+<span class="px-#.# py-# rounded bg-slate-#/# text-slate-# border border-slate-#/#">
+  Admin:
+<strong class="text-white">
+  admin
+</strong>
+</span>
+</div>
+</header>
+<main class="flex-# p-# space-y-# max-w-#xl mx-auto w-full">
+<div class="grid grid-cols-# md:grid-cols-# gap-#">
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs text-slate-# uppercase tracking-wider">
+  Total Registered Users
+</p>
+<p class="text-#xl font-bold text-white mt-#">
+  #
+</p>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs text-slate-# uppercase tracking-wider">
+  Active WhatsApp Users
+</p>
+<p class="text-#xl font-bold text-emerald-# mt-#">
+  #
+</p>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs text-slate-# uppercase tracking-wider">
+  Google OAuth Linked
+</p>
+<p class="text-#xl font-bold text-sky-# mt-#">
+  #
+</p>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<p class="text-xs text-slate-# uppercase tracking-wider">
+  Suspended / Inactive
+</p>
+<p class="text-#xl font-bold text-amber-# mt-#">
+  #
+</p>
+</div>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-lg">
+<h2 class="text-base font-semibold text-white mb-# flex items-center gap-#">
+<span>
+  ➕
+</span>
+  Register New WhatsApp User
+</h2>
+<form action="/admin/users" class="grid grid-cols-# md:grid-cols-# gap-#" method="POST">
+<input name="csrf_token" type="hidden" value="<TOKEN>">
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  E.# Phone Number *
+</label>
+<input class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="phone_number" placeholder="+# or +#" required type="text">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Full Name *
+</label>
+<input class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="full_name" placeholder="Jane Doe" required type="text">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Tenant Partition
+</label>
+<div class="flex items-center gap-# px-# py-# bg-slate-#/# border border-slate-#/# rounded-lg text-slate-# text-sm font-mono">
+<span class="w-# h-# rounded-full bg-emerald-#">
+</span>
+<span>
+  default_tenant
+</span>
+<span class="text-xs text-slate-# ml-auto font-sans">
+  (Auto-scoped)
+</span>
+</div>
+<input name="tenant_id" type="hidden" value="default_tenant">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Role
+</label>
+<select class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# focus:border-emerald-# outline-none" name="role">
+<option selected value="user">
+  User
+</option>
+<option value="supervisor">
+  Supervisor
+</option>
+<option value="admin">
+  Administrator
+</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Timezone
+</label>
+<input class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="timezone" type="text" value="UTC">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Web Login Password (Optional)
+</label>
+<input class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="password" placeholder="••••••••" type="password">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Email Address (Optional)
+</label>
+<input class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="email" placeholder="user@company.com" type="email">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Allowed Application Cartridges
+</label>
+<div class="flex flex-wrap items-center gap-# mt-#">
+<label class="flex items-center gap-# text-xs text-slate-#">
+<input checked class="rounded bg-slate-# border-slate-# text-emerald-# focus:ring-#" name="cartridges" type="checkbox" value="mail_organizer">
+<span>
+  📧 Mail Organizer
+</span>
+</label>
+<label class="flex items-center gap-# text-xs text-slate-#">
+<input checked class="rounded bg-slate-# border-slate-# text-emerald-# focus:ring-#" name="cartridges" type="checkbox" value="temperature_marker">
+<span>
+  🌡️ Temperature Marker
+</span>
+</label>
+</div>
+</div>
+<div class="md:col-span-# flex justify-end">
+<button class="px-# py-# rounded-lg bg-emerald-# hover:bg-emerald-# font-semibold text-sm text-white transition-colors shadow-lg shadow-emerald-#/#" type="submit">
+  Register User
+</button>
+</div>
+</form>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl overflow-hidden shadow-lg">
+<div class="p-# border-b border-slate-#/# flex flex-wrap items-center justify-between gap-#">
+<h3 class="text-base font-semibold text-white">
+  Registered Users Directory
+</h3>
+<input class="bg-slate-#/# border border-slate-# rounded-lg px-# py-#.# text-xs text-slate-# placeholder-slate-# w-# outline-none focus:border-emerald-#" id="tableSearch" oninput="filterTable()" placeholder="Search phone, name, tenant..." type="text">
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-xs text-slate-#" id="usersTable">
+<thead class="bg-slate-#/# uppercase text-slate-# border-b border-slate-#/# font-semibold">
+<tr>
+<th class="px-# py-#">
+  Phone
+</th>
+<th class="px-# py-#">
+  Name
+</th>
+<th class="px-# py-#">
+  Tenant
+</th>
+<th class="px-# py-#">
+  Role
+</th>
+<th class="px-# py-#">
+  Entitled Cartridges
+</th>
+<th class="px-# py-#">
+  Google Auth
+</th>
+<th class="px-# py-#">
+  Status
+</th>
+<th class="px-# py-#">
+  Last Heartbeat
+</th>
+<th class="px-# py-# text-right">
+  Actions
+</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-#/#">
+...
+</tbody>
+</table>
+</div>
+</div>
+</main>
+<div class="hidden fixed inset-# bg-black/# backdrop-blur-sm flex items-center justify-center p-# z-#" id="magicModal">
+<div class="bg-slate-# border border-slate-# rounded-xl p-# max-w-lg w-full space-y-# shadow-#xl">
+<div class="flex items-center justify-between">
+<h3 class="text-base font-bold text-white flex items-center gap-#">
+<span>
+  🔗
+</span>
+  Google OAuth Magic Link
+</h3>
+<button class="text-slate-# hover:text-white" onclick="closeModal()">
+  ✕
+</button>
+</div>
+<p class="text-xs text-slate-#">
+  Send this single-use signed link to the user over WhatsApp. Clicking this opens their mobile browser to securely link their Google Workspace account.
+</p>
+<div class="bg-slate-# rounded-lg p-# border border-slate-#">
+<p class="text-xs font-mono text-emerald-# break-all select-all" id="magicLinkText">
+</p>
+</div>
+<div class="flex justify-between items-center text-xs text-slate-#">
+<span>
+  Expires in:
+<strong>
+  # minutes
+</strong>
+</span>
+<button class="px-# py-#.# rounded-lg bg-emerald-# hover:bg-emerald-# font-semibold text-white transition-colors" id="copyBtn" onclick="copyMagicLink()">
+  Copy Link
+</button>
+</div>
+</div>
+</div>
+<script>
+  function filterTable() {
+  const q = document.getElementById('tableSearch').value.toLowerCase();
+  const rows = document.querySelectorAll('.user-row');
+  rows.forEach(r => {
+  const text = r.innerText.toLowerCase();
+  r.style.display = text.includes(q) ? '' : 'none';
+  });
+  }
+  async function getMagicLink(userId, phone) {
+  try {
+  const resp = await fetch(`/admin/users/${userId}/magic-link`);
+  if (resp.ok) {
+  const data = await resp.json();
+  document.getElementById('magicLinkText').innerText = data.magic_link;
+  document.getElementById('magicModal').classList.remove('hidden');
+  } else {
+  alert('Failed to generate magic link.');
+  }
+  } catch (err) {
+  alert('Error: ' + err);
+  }
+  }
+  function closeModal() {
+  document.getElementById('magicModal').classList.add('hidden');
+  }
+  function copyMagicLink() {
+  const txt = document.getElementById('magicLinkText').innerText;
+  navigator.clipboard.writeText(txt);
+  const btn = document.getElementById('copyBtn');
+  btn.innerText = 'Copied!';
+  setTimeout(() => { btn.innerText = 'Copy Link'; }, #);
+  }
+</script>
+</body>
+</html>

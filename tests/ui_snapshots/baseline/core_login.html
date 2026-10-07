@@ -1,0 +1,52 @@
+STATUS 200
+<html lang="en">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<title>
+  Admin Login — Release#
+</title>
+<script src="https://cdn.tailwindcss.com">
+</script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-# via-slate-# to-slate-# flex items-center justify-center">
+<div class="w-full max-w-md px-#">
+<div class="bg-white/# border border-white/# rounded-#xl p-# shadow-#xl backdrop-blur">
+<div class="text-center mb-#">
+<div class="inline-flex items-center justify-center w-# h-# rounded-full bg-emerald-#/# mb-#">
+<svg class="w-# h-# text-emerald-#" fill="none" stroke="currentColor" viewbox="# # # #">
+<path d="M# #l# # #-#m#.#-#.#A#.# #.# # # #.#a#.# #.# # #-#.# #.# A#.# #.# # # #c# #.# #.# #.# # #.# #.#-#.# #-#.# #-#.# #-#.#-.#-#.#-.#-#.#z" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+</svg>
+</div>
+<h1 class="text-#xl font-bold text-white">
+  Release# Admin
+</h1>
+<p class="text-slate-# text-sm mt-#">
+  KioskNode Platform Control Panel
+</p>
+</div>
+<form action="/admin/login" class="space-y-#" method="post">
+<input name="csrf_token" type="hidden" value="<TOKEN>">
+<div>
+<label class="block text-sm font-medium text-slate-# mb-#" for="username">
+  Username, Phone Number, or Email
+</label>
+<input autocomplete="username" class="w-full px-# py-#.# rounded-lg bg-white/# border border-white/# text-white placeholder-slate-# focus:outline-none focus:ring-# focus:ring-emerald-# focus:border-transparent" id="username" name="username" placeholder="admin or +#" required type="text">
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-# mb-#" for="password">
+  Password
+</label>
+<input autocomplete="current-password" class="w-full px-# py-#.# rounded-lg bg-white/# border border-white/# text-white placeholder-slate-# focus:outline-none focus:ring-# focus:ring-emerald-# focus:border-transparent" id="password" name="password" placeholder="••••••••" required type="password">
+</div>
+<button class="w-full py-#.# px-# rounded-lg bg-emerald-# hover:bg-emerald-# text-white font-semibold transition-colors duration-# focus:outline-none focus:ring-# focus:ring-emerald-#" type="submit">
+  Sign In
+</button>
+</form>
+<p class="text-center text-slate-# text-xs mt-#">
+  GEES v#.# · Apache #.# · Copyright # Mahendra GURAV
+</p>
+</div>
+</div>
+</body>
+</html>

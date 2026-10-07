@@ -1,0 +1,260 @@
+STATUS 200
+<html lang="en">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<title>
+  KioskNode #-Click Location Verification
+</title>
+<style>
+  :root {
+  --bg-main: ##f#a;
+  --bg-card: ##e#b;
+  --border-color: ##;
+  --text-primary: #f#fafc;
+  --text-secondary: ##a#b#;
+  --accent-green: ##b#;
+  --accent-red: #ef#;
+  --accent-blue: ##b#f#;
+  }
+  body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  margin: #;
+  padding: #.#rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: #vh;
+  }
+  .container {
+  background-color: var(--bg-card);
+  border: #px solid var(--border-color);
+  border-radius: #px;
+  padding: #rem;
+  max-width: #px;
+  width: #%;
+  text-align: center;
+  box-shadow: # #px #px -#px rgba(#, #, #, #.#);
+  }
+  .logo-badge {
+  background: linear-gradient(#deg, ##b#, ##);
+  color: white;
+  font-weight: #;
+  padding: #.#rem #.#rem;
+  border-radius: #px;
+  display: inline-block;
+  margin-bottom: #rem;
+  font-size: #.#rem;
+  letter-spacing: #.#em;
+  }
+  .status-icon {
+  width: #px;
+  height: #px;
+  border-radius: #%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: #.#rem auto;
+  font-size: #rem;
+  }
+  .status-loading { background: rgba(#, #, #, #.#); color: var(--accent-blue); animation: pulse #.#s infinite; }
+  .status-success { background: rgba(#, #, #, #.#); color: var(--accent-green); }
+  .status-error { background: rgba(#, #, #, #.#); color: var(--accent-red); }
+  @keyframes pulse {
+  #% { transform: scale(#.#); opacity: #.#; }
+  #% { transform: scale(#.#); opacity: #; }
+  #% { transform: scale(#.#); opacity: #.#; }
+  }
+  .btn {
+  display: inline-block;
+  width: #%;
+  padding: #.#rem;
+  font-size: #rem;
+  font-weight: #;
+  border-radius: #px;
+  border: none;
+  background-color: var(--accent-green);
+  color: white;
+  cursor: pointer;
+  margin-top: #.#rem;
+  }
+  .kiosk-select-container {
+  margin: #.#rem # #rem #;
+  text-align: left;
+  background: ##f#a;
+  padding: #.#rem;
+  border-radius: #px;
+  border: #px solid var(--border-color);
+  }
+  .kiosk-select-container label {
+  display: block;
+  font-size: #.#rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: #.#em;
+  margin-bottom: #.#rem;
+  font-weight: #;
+  }
+  .kiosk-select-container select {
+  width: #%;
+  padding: #.#rem;
+  background: ##e#b;
+  border: #px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: #px;
+  font-size: #.#rem;
+  outline: none;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="logo-badge">
+  APEX KIOSK
+</div>
+<h2 style="font-size: #.#rem; margin-bottom: #.#rem;">
+  Kiosk Geolocation Check
+</h2>
+<p id="subtext" style="color: var(--text-secondary); font-size: #.#rem;">
+  Verifying your physical proximity to KioskNode Station
+<span id="kioskLabel" style="color: var(--text-primary); font-weight: #;">
+  NODE-#
+</span>
+  .
+</p>
+<div class="kiosk-select-container">
+<label for="kioskSelect">
+  Selected Kiosk Station:
+</label>
+<select id="kioskSelect" onchange="onKioskChanged()">
+<option value="NODE-PUNE-#">
+  Phoenix Marketcity Food Court (NODE-PUNE-#)
+</option>
+<option value="NODE-PUNE-#">
+  Dassault Systemes Sky Tower (NODE-PUNE-#)
+</option>
+<option value="NODE-PUNE-#">
+  Eka Elitas Paud Road Kothrud (NODE-PUNE-#)
+</option>
+<option value="NODE-MUMBAI-#">
+  Seawoods Grand Central Mall (NODE-MUMBAI-#)
+</option>
+<option value="NODE-BLR-#">
+  Indiranagar Metro Station Concourse (NODE-BLR-#)
+</option>
+<option value="KIOSK-A">
+  Site Alpha (KIOSK-A)
+</option>
+<option value="KIOSK-B">
+  Site Beta (KIOSK-B)
+</option>
+</select>
+</div>
+<div class="status-icon status-loading" id="statusIcon">
+  📍
+</div>
+<div id="statusMessage" style="font-weight: #; font-size: #.#rem; margin-bottom: #.#rem;">
+  Acquiring GPS location...
+</div>
+<div id="distanceDetail" style="color: var(--text-secondary); font-size: #.#rem;">
+  Please allow location access when prompted.
+</div>
+<button class="btn" id="retryBtn" onclick="requestLocation()" style="display: none;">
+  Retry Location Check
+</button>
+</div>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  let kioskId = urlParams.get('kiosk_id') || document.getElementById('kioskSelect')?.value || 'NODE-#';
+  const sessionId = urlParams.get('session') || '';
+  if (kioskId) {
+  const sel = document.getElementById('kioskSelect');
+  if (sel) {
+  sel.value = kioskId;
+  const label = document.getElementById('kioskLabel');
+  if (label && sel.selectedIndex >= #) {
+  label.innerText = sel.options[sel.selectedIndex].text;
+  }
+  }
+  }
+  function onKioskChanged() {
+  const sel = document.getElementById('kioskSelect');
+  kioskId = sel.value;
+  const selText = sel.options[sel.selectedIndex].text;
+  document.getElementById('kioskLabel').innerText = selText;
+  const newUrl = new URL(window.location);
+  newUrl.searchParams.set('kiosk_id', kioskId);
+  window.history.replaceState({}, '', newUrl);
+  requestLocation();
+  }
+  function requestLocation() {
+  const icon = document.getElementById('statusIcon');
+  const msg = document.getElementById('statusMessage');
+  const detail = document.getElementById('distanceDetail');
+  const retry = document.getElementById('retryBtn');
+  icon.className = 'status-icon status-loading';
+  icon.innerText = '📍';
+  msg.innerText = 'Acquiring GPS coordinates...';
+  detail.innerText = 'Communicating with smartphone GPS sensor...';
+  retry.style.display = 'none';
+  if (!navigator.geolocation) {
+  showError('Geolocation is not supported by your mobile browser.');
+  return;
+  }
+  navigator.geolocation.getCurrentPosition(
+  async (position) => {
+  msg.innerText = 'Verifying kiosk geofence perimeter...';
+  try {
+  const resp = await fetch('/admin/apps/temperature-marker/api/verify-location', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+  kiosk_id: kioskId,
+  latitude: position.coords.latitude,
+  longitude: position.coords.longitude,
+  accuracy: position.coords.accuracy,
+  session_id: sessionId
+  })
+  });
+  const data = await resp.json();
+  if (data.within_geofence) {
+  icon.className = 'status-icon status-success';
+  icon.innerText = '✓';
+  msg.innerText = 'Location Verified!';
+  const stationName = data.kiosk_name || kioskId;
+  detail.innerHTML = `You are <strong>${data.distance_meters}m</strong> from KioskNode Station <strong>${stationName}</strong> (${kioskId}).<br><br>Return to WhatsApp to complete duty check-in.`;
+  } else {
+  icon.className = 'status-icon status-error';
+  icon.innerText = '✕';
+  msg.innerText = 'Geofence Perimeter Breach';
+  const stationName = data.kiosk_name || kioskId;
+  detail.innerHTML = `You appear to be <strong>${data.distance_meters}m</strong> away from <strong>${stationName}</strong> (${kioskId}). Allowed radius is ${data.radius_meters}m.<br><br><small style="color: ##a#b#">If you are at a different kiosk, select it from the dropdown above.</small>`;
+  retry.style.display = 'block';
+  }
+  } catch (err) {
+  showError('Network error communicating with kiosk server.');
+  }
+  },
+  (err) => {
+  showError('Location permission denied or unavailable: ' + err.message);
+  },
+  { enableHighAccuracy: true, timeout: #, maximumAge: # }
+  );
+  }
+  function showError(text) {
+  const icon = document.getElementById('statusIcon');
+  const msg = document.getElementById('statusMessage');
+  const detail = document.getElementById('distanceDetail');
+  const retry = document.getElementById('retryBtn');
+  icon.className = 'status-icon status-error';
+  icon.innerText = '✕';
+  msg.innerText = 'Location Check Failed';
+  detail.innerText = text;
+  retry.style.display = 'block';
+  }
+  window.onload = requestLocation;
+</script>
+</body>
+</html>
