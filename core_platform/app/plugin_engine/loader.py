@@ -36,6 +36,7 @@ from fastapi import FastAPI
 
 from core_platform.app.entitlements.registry import EntitlementRegistry
 from core_platform.app.i18n.catalog import I18nCatalog
+from core_platform.app.ui.status_registry import StatusRegistry
 from core_platform.app.plugin_engine.base_plugin import BaseApplication
 
 logger = logging.getLogger("core_platform.plugin_engine")
@@ -245,6 +246,27 @@ class PluginLoader:
                 catalog.load_app(app_id, directory)
             except Exception as exc:  # noqa: BLE001 - isolation boundary: log and record, never propagate
                 logger.error("[PluginLoader] UI catalog error for '%s': %s", app_id, exc)
+                rejected[app_id] = str(exc)
+        return rejected
+    def register_ui_statuses(self, registry: StatusRegistry) -> Dict[str, str]:
+        """Register the status presentation of every loaded cartridge into `registry`.
+
+        Isolated per cartridge, like :meth:egister_ui_text.
+
+        Args:
+            registry: Target status registry.
+
+        Returns:
+            Mapping of app_id to the error message for each cartridge that was rejected.
+        """
+        rejected: Dict[str, str] = {}
+        for app_id, instance in self._loaded.items():
+            try:
+                statuses = instance.get_ui_statuses()
+                if statuses:
+                    registry.register_app(app_id, statuses)
+            except Exception as exc:  # noqa: BLE001 - isolation boundary: log and record, never propagate
+                logger.error("[PluginLoader] UI status error for '%s': %s", app_id, exc)
                 rejected[app_id] = str(exc)
         return rejected
     def _load_single(self, app_id: str) -> Optional[BaseApplication]:

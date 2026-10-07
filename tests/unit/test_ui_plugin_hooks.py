@@ -109,3 +109,22 @@ def test_contract_models_are_frozen() -> None:
         nav.path = "/x"  # type: ignore[misc]
     info = StatusInfo(code="ok", tone="success", icon="check", label_key="core.status.success")
     assert info.tone == "success"
+
+
+def test_loader_registers_cartridge_statuses_with_isolation(tmp_path: Path) -> None:
+    from core_platform.app.ui.status_registry import StatusRegistry
+
+    good = _make_cartridge(tmp_path, "demo_s1", None)
+    bad = _make_cartridge(tmp_path, "demo_s2", None)
+    good.get_ui_statuses = lambda: {  # type: ignore[method-assign]
+        "on_route": StatusInfo(code="on_route", tone="info", icon="clock", label_key="apps.demo_s1.status.on_route")
+    }
+    bad.get_ui_statuses = lambda: {  # type: ignore[method-assign]
+        "x": StatusInfo(code="x", tone="info", icon="clock", label_key="core.status.x")
+    }
+    loader = PluginLoader(apps_root=tmp_path)
+    loader._loaded.update({"demo_s1": good, "demo_s2": bad})
+    registry = StatusRegistry()
+    rejected = loader.register_ui_statuses(registry)
+    assert set(rejected) == {"demo_s2"}
+    assert registry.get("on_route", app_id="demo_s1").label_key == "apps.demo_s1.status.on_route"

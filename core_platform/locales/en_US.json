@@ -21,7 +21,8 @@
       "failed": "Failed",
       "off": "Off",
       "shadow": "Shadow",
-      "enforce": "Enforce"
+      "enforce": "Enforce",
+      "unknown": "Unknown"
     }
   }
 }

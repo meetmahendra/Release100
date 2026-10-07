@@ -255,7 +255,10 @@ except Exception as _ent_exc:  # noqa: BLE001
 try:
     from core_platform.app.i18n.catalog import get_catalog as _get_ui_catalog
 
+    from core_platform.app.ui.status_registry import get_status_registry as _get_ui_statuses
+
     _ui_rejected = plugin_loader.register_ui_text(_get_ui_catalog())
+    _ui_rejected.update(plugin_loader.register_ui_statuses(_get_ui_statuses()))
     if _ui_rejected:
         logger.error("[Main] UI catalogs rejected: %s", _ui_rejected)
 except Exception as _ui_exc:  # noqa: BLE001
