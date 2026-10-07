@@ -103,6 +103,8 @@ const out = {};
   out.known = await window.uiFetch('/x');
   reply = mk(false, 400, JSON.stringify({ detail: { code: 'WEIRD_CODE' } }));
   out.unknown = await window.uiFetch('/x');
+  reply = mk(false, 403, JSON.stringify({ detail: 'GROUP_NOT_FOUND' }));
+  out.strdetail = await window.uiFetch('/x');
   reply = mk(false, 500, 'not json');
   out.nonjson = await window.uiFetch('/x');
   reply = mk(true, 200, JSON.stringify({ a: 1 }));
@@ -120,7 +122,7 @@ const out = {};
 def test_ui_js_behaviour_under_node() -> None:
     bundle = {
         "a.hello": "Hello {name}", "a.items_one": "{count} item", "a.items_other": "{count} items",
-        "errors.generic": "G", "errors.network": "N", "errors.high_risk_confirmation_required": "Confirm first",
+        "errors.generic": "G", "errors.network": "N", "errors.high_risk_confirmation_required": "Confirm first", "errors.group_not_found": "Gone",
     }
     proc = subprocess.run(
         [str(NODE), "-e", HARNESS, json.dumps(bundle), str(UI_JS)],
@@ -131,6 +133,7 @@ def test_ui_js_behaviour_under_node() -> None:
     assert out["t4"] == "[[no.key]]"
     assert out["known"]["message"] == "Confirm first" and out["known"]["code"] == "HIGH_RISK_CONFIRMATION_REQUIRED"
     assert out["unknown"]["message"] == "G" and out["unknown"]["code"] == "WEIRD_CODE"
+    assert out["strdetail"]["message"] == "Gone"
     assert out["nonjson"]["message"] == "G"
     assert out["okay"]["ok"] is True and out["okay"]["data"] == {"a": 1}
     assert out["net"]["message"] == "N" and out["net"]["status"] == 0

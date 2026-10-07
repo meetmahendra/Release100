@@ -38,7 +38,7 @@
       return "";
     }
     var detail = body.detail;
-    var code = body.code || body.error_code || (detail && (detail.code || detail.error_code)) || "";
+    var code = body.code || body.error_code || (detail && (detail.code || detail.error_code)) || (typeof detail === "string" ? detail : "");
     return typeof code === "string" ? code : "";
   }
 

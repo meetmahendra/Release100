@@ -133,8 +133,7 @@
       "create_group_first": "Create a group first, then assign a package to it.",
       "no_access": "This person has no access through groups.",
       "eff_line": "{title} ({app}) - via {group} / {bundle}{where}",
-      "eff_in": " in {unit}",
-      "request_failed": "Could not complete the request ({code})."
+      "eff_in": " in {unit}"
     }
   },
   "errors": {
@@ -145,6 +144,7 @@
     "scope_not_allowed": "That reach is not allowed for this package.",
     "binding_already_exists": "This group already has this package at this reach.",
     "group_not_found": "That group no longer exists.",
-    "scope_unit_required": "Pick a unit for this reach."
+    "scope_unit_required": "Pick a unit for this reach.",
+    "unknown_bundle": "That access package is not available."
   }
 }

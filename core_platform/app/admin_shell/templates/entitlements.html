@@ -130,23 +130,16 @@
   function api(method, path, body) {
     var opts = { method: method, credentials: "same-origin", headers: { "X-CSRF-Token": $("csrf").value } };
     if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
-    return fetch(BASE + path, opts).then(function (r) {
-      return r.json().catch(function () { return {}; }).then(function (data) {
-        if (!r.ok) {
-          var d = data && data.detail;
-          var code = (d && d.code) ? d.code : (typeof d === "string" ? d : "REQUEST_FAILED");
-          var err = new Error(code); err.code = code; throw err;
-        }
-        return data;
-      });
+    return window.uiFetch(BASE + path, opts).then(function (res) {
+      if (!res.ok) {
+        var err = new Error(res.code || "REQUEST_FAILED");
+        err.code = res.code || "REQUEST_FAILED"; err.userMessage = res.message;
+        throw err;
+      }
+      return res.data;
     });
   }
-  function friendly(err) {
-    var key = "errors." + String(err.code).toLowerCase();
-    var text = window.t(key);
-    return text.indexOf("[[") === 0 ? T("request_failed", { code: err.code }) : text;
-  }
-
+  function friendly(err) { return err.userMessage || window.t("errors.generic"); }
   function riskBadge(card) {
     var r = RISK[card.risk] || RISK.LOW;
     var b = el("span", "inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-semibold " + r.color);
