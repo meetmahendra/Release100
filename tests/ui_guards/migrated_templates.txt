@@ -13,3 +13,4 @@ ops_control_plane/super_admin/templates/super_admin_audit.html
 ops_control_plane/super_admin/templates/super_admin_tenants.html
 ops_control_plane/super_admin/templates/_tenant_table.html
 ops_control_plane/super_admin/templates/_tenant_modals.html
+apps/temperature_marker/ui/templates/approvals.html

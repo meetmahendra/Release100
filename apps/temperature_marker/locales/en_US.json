@@ -12,6 +12,34 @@
         "normal": "Normal",
         "warning": "Warning",
         "critical": "Critical"
+      },
+      "approvals": {
+        "title_tag": "Pending Operator Approvals \u2014 Release100",
+        "heading": "Operator Onboarding Approvals",
+        "subheading": "Review and approve pending KioskNode operators before biometric check-in authorization.",
+        "pending_review": "{count} Pending Review",
+        "col_emp_id": "Employee ID",
+        "col_name": "Full Name",
+        "col_phone": "Phone Number",
+        "col_role": "Role",
+        "col_kiosk": "Assigned Kiosk",
+        "col_photo": "Submitted Photo",
+        "col_status": "Status",
+        "col_registered_at": "Registered At",
+        "col_action": "Approval Action",
+        "role_operator": "Operator",
+        "unassigned": "Unassigned",
+        "alt_photo": "Profile Photo",
+        "waiting_photo": "Waiting Photo",
+        "status_awaiting_photo": "AWAITING PHOTO",
+        "status_pending_approval": "PENDING APPROVAL",
+        "recent": "Recent",
+        "btn_approve": "Approve",
+        "btn_reject": "Reject",
+        "empty_state": "No pending operator onboarding requests found. All staff authorized!",
+        "confirm_action": "Are you sure you want to {action} operator {empId}?",
+        "action_success": "Operator {empId} successfully {action}d.",
+        "action_failed": "Action failed: "
       }
     }
   }

@@ -38,10 +38,11 @@ from core_platform.app.common.timezone import to_local_ist, to_local_ist_full
 from core_platform.app.entitlements.dependencies import require_action
 from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
 from core_platform.app.rbac.permissions import get_web_security_context, require_app
+from core_platform.app.config import settings
 from core_platform.app.skills.geofencing import GeofencingSkill
 from core_platform.app.telemetry.audit_engine import AuditEngine
-
 from core_platform.app.ui.templating import build_templates
+from core_platform.app.ui.ui_context import Breadcrumb, build_ui_context
 
 router = APIRouter(
     prefix="/admin/apps/temperature-marker",
@@ -538,6 +539,19 @@ async def view_approvals(
     """Render Pending Operator Onboarding Queue."""
     eff_tenant, tenant_name, tenant_obj = resolve_effective_tenant_info(request, ctx)
     pending = _db_service.get_pending_approvals(tenant_id=eff_tenant)
+
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name=str(tenant_name or ""),
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
+            Breadcrumb(label_key="apps.temperature_marker.name", path="/admin/apps/temperature-marker/fleet"),
+            Breadcrumb(label_key="apps.temperature_marker.nav.approvals"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="approvals.html",
@@ -548,6 +562,7 @@ async def view_approvals(
             "tenant_name": tenant_name,
             "active_tenant": tenant_obj,
             "pending_operators": pending,
+            "ui": ui_ctx,
         },
     )
 
