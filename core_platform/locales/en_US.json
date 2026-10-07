@@ -10,6 +10,12 @@
     "records_found_other": "{count} records found"
   },
   "core": {
+    "role": {
+      "devops": "Platform operations",
+      "admin": "Administrator",
+      "operator": "Team member",
+      "guest": "Not signed in"
+    },
     "status": {
       "active": "Active",
       "inactive": "Inactive",
