@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Live Temperature & Attendance Monitoring{% endblock %}
+{% block title %}{{ t('apps.temperature_marker.monitoring.title_tag') }}{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -140,16 +140,16 @@
 
 <!-- Tabbed Navigation Panels -->
 <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab(event, 'tab-records')">📸 Shift Records & Live Photo Feed</button>
+    <button class="tab-btn active" onclick="switchTab(event, 'tab-records')">{{ t('apps.temperature_marker.monitoring.tab_records') }}</button>
     <button class="tab-btn" onclick="switchTab(event, 'tab-messages')">
-        💬 Communications Hub (Who is messaging whom)
+        {{ t('apps.temperature_marker.monitoring.tab_messages') }}
         {% if messages %}
             <span style="background: #3b82f6; color: white; border-radius: 9999px; padding: 0.1rem 0.5rem; font-size: 0.75rem; margin-left: 0.3rem;">
                 {{ messages|length }}
             </span>
         {% endif %}
     </button>
-    <button class="tab-btn" onclick="switchTab(event, 'tab-config')">⚙️ Multi-Check HACCP Rules</button>
+    <button class="tab-btn" onclick="switchTab(event, 'tab-config')">{{ t('apps.temperature_marker.monitoring.tab_config') }}</button>
 </div>
 
 {% include "_monitoring_records.html" %}
@@ -190,7 +190,7 @@ function openMessageReplyModal(msgId, sender, phone, text) {
 
 function openKioskConfigModal(kioskId, kioskName, currentChecks) {
     document.getElementById('kioskCfgId').value = kioskId;
-    document.getElementById('kioskCfgTitle').textContent = `⚙️ ${kioskId} Schedule`;
+    document.getElementById('kioskCfgTitle').textContent = {{ t('apps.temperature_marker.monitoring.schedule_title') | tojson }}.replace('{kioskId}', kioskId);
     document.getElementById('kioskCfgChecks').value = currentChecks || 3;
     document.getElementById('kioskConfigModal').style.display = 'flex';
 }
@@ -203,7 +203,7 @@ async function submitResolution(e) {
     e.preventDefault();
     const btn = document.getElementById('resolveSubmitBtn');
     btn.disabled = true;
-    btn.textContent = 'Saving...';
+    btn.textContent = {{ t('apps.temperature_marker.monitoring.js_saving') | tojson }};
 
     const recordId = document.getElementById('resolveRecordId').value;
     const payload = {
@@ -221,14 +221,14 @@ async function submitResolution(e) {
             window.location.reload();
         } else {
             const err = await resp.json();
-            alert("Resolution failed: " + (err.detail || JSON.stringify(err)));
+            alert({{ t('apps.temperature_marker.monitoring.err_resolution_failed') | tojson }} + (err.detail || JSON.stringify(err)));
             btn.disabled = false;
-            btn.textContent = 'Save Resolution';
+            btn.textContent = {{ t('apps.temperature_marker.monitoring.js_save_resolution') | tojson }};
         }
     } catch (err) {
-        alert("Network error: " + err.message);
+        alert({{ t('apps.temperature_marker.monitoring.err_network') | tojson }} + err.message);
         btn.disabled = false;
-        btn.textContent = 'Save Resolution';
+        btn.textContent = {{ t('apps.temperature_marker.monitoring.js_save_resolution') | tojson }};
     }
 }
 
@@ -236,7 +236,7 @@ async function submitMessageResolution(e) {
     e.preventDefault();
     const btn = document.getElementById('replySubmitBtn');
     btn.disabled = true;
-    btn.textContent = 'Sending...';
+    btn.textContent = {{ t('apps.temperature_marker.monitoring.js_sending') | tojson }};
 
     const msgId = document.getElementById('replyMsgId').value;
     const payload = {
@@ -254,14 +254,14 @@ async function submitMessageResolution(e) {
             window.location.reload();
         } else {
             const err = await resp.json();
-            alert("Reply failed: " + (err.detail || JSON.stringify(err)));
+            alert({{ t('apps.temperature_marker.monitoring.err_reply_failed') | tojson }} + (err.detail || JSON.stringify(err)));
             btn.disabled = false;
-            btn.textContent = 'Send Reply & Mark Resolved';
+            btn.textContent = {{ t('apps.temperature_marker.monitoring.js_send_reply_resolved') | tojson }};
         }
     } catch (err) {
-        alert("Network error: " + err.message);
+        alert({{ t('apps.temperature_marker.monitoring.err_network') | tojson }} + err.message);
         btn.disabled = false;
-        btn.textContent = 'Send Reply & Mark Resolved';
+        btn.textContent = {{ t('apps.temperature_marker.monitoring.js_send_reply_resolved') | tojson }};
     }
 }
 
@@ -283,10 +283,10 @@ async function submitKioskSpecificConfig(e) {
             window.location.reload();
         } else {
             const err = await resp.json();
-            alert("Config update failed: " + (err.detail || JSON.stringify(err)));
+            alert({{ t('apps.temperature_marker.monitoring.err_config_update_failed') | tojson }} + (err.detail || JSON.stringify(err)));
         }
     } catch (err) {
-        alert("Network error: " + err.message);
+        alert({{ t('apps.temperature_marker.monitoring.err_network') | tojson }} + err.message);
     }
 }
 
@@ -294,7 +294,7 @@ async function saveGlobalConfig(e) {
     e.preventDefault();
     const btn = document.getElementById('btnSaveConfig');
     btn.disabled = true;
-    btn.textContent = 'Saving...';
+    btn.textContent = {{ t('apps.temperature_marker.monitoring.js_saving') | tojson }};
 
     const payload = {
         required_daily_temp_checks: parseInt(document.getElementById('cfgRequiredChecks').value, 10),
@@ -312,18 +312,18 @@ async function saveGlobalConfig(e) {
             body: JSON.stringify(payload)
         });
         if (resp.ok) {
-            alert("Fleet HACCP policy updated successfully!");
+            alert({{ t('apps.temperature_marker.monitoring.msg_fleet_haccp_updated') | tojson }});
             window.location.reload();
         } else {
             const err = await resp.json();
-            alert("Policy update failed: " + (err.detail || JSON.stringify(err)));
+            alert({{ t('apps.temperature_marker.monitoring.err_policy_update_failed') | tojson }} + (err.detail || JSON.stringify(err)));
             btn.disabled = false;
-            btn.textContent = '💾 Save Fleet HACCP Policy';
+            btn.textContent = {{ t('apps.temperature_marker.monitoring.btn_save_fleet_policy') | tojson }};
         }
     } catch (err) {
-        alert("Network error: " + err.message);
+        alert({{ t('apps.temperature_marker.monitoring.err_network') | tojson }} + err.message);
         btn.disabled = false;
-        btn.textContent = '💾 Save Fleet HACCP Policy';
+        btn.textContent = {{ t('apps.temperature_marker.monitoring.btn_save_fleet_policy') | tojson }};
     }
 }
 
@@ -338,10 +338,10 @@ async function acknowledgeAlertRecord(recId) {
             window.location.reload();
         } else {
             const err = await resp.json();
-            alert("Acknowledge failed: " + (err.detail || JSON.stringify(err)));
+            alert({{ t('apps.temperature_marker.monitoring.err_ack_failed') | tojson }} + (err.detail || JSON.stringify(err)));
         }
     } catch (err) {
-        alert("Network error: " + err.message);
+        alert({{ t('apps.temperature_marker.monitoring.err_network') | tojson }} + err.message);
     }
 }
 </script>

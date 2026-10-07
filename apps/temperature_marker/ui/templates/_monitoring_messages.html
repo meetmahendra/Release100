@@ -3,23 +3,23 @@
     <div class="card" style="padding: 0; overflow: hidden;">
         <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h3 style="font-size: 1.1rem; font-weight: 600;">Internal Operator & Supervisor Communications</h3>
-                <span style="font-size: 0.8rem; color: var(--text-secondary);">Who is messaging whom, resolution states, and direct response center</span>
+                <h3 style="font-size: 1.1rem; font-weight: 600;">{{ t('apps.temperature_marker.monitoring.messages_title') }}</h3>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ t('apps.temperature_marker.monitoring.messages_subtitle') }}</span>
             </div>
-            <span style="font-size: 0.8rem; color: #94a3b8;">Total: {{ messages|length }} Messages</span>
+            <span style="font-size: 0.8rem; color: #94a3b8;">{{ t('apps.temperature_marker.monitoring.total_messages', count=messages|length) }}</span>
         </div>
 
         <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
-                        <th style="padding: 0.75rem 1rem;">Time (IST)</th>
-                        <th style="padding: 0.75rem 1rem;">Sender (Operator)</th>
-                        <th style="padding: 0.75rem 1rem;">Kiosk</th>
-                        <th style="padding: 0.75rem 1rem;">Recipient (Manager)</th>
-                        <th style="padding: 0.75rem 1rem;">Message Inquiry</th>
-                        <th style="padding: 0.75rem 1rem;">Status</th>
-                        <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_time') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_sender') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_kiosk') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_recipient') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_inquiry') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_msg_status') }}</th>
+                        <th style="padding: 0.75rem 1rem; text-align: right;">{{ t('apps.temperature_marker.monitoring.col_msg_action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -45,34 +45,34 @@
                             </div>
                             {% if m.reply_context %}
                             <div style="margin-top: 0.4rem; padding: 0.4rem 0.6rem; background: #0f172a; border-left: 3px solid #10b981; border-radius: 4px; font-size: 0.8rem; color: #cbd5e1;">
-                                <strong>Manager Reply:</strong> {{ m.reply_context }}
+                                <strong>{{ t('apps.temperature_marker.monitoring.lbl_manager_reply') }}</strong> {{ m.reply_context }}
                             </div>
                             {% endif %}
                         </td>
                         <td style="padding: 0.85rem 1rem;">
                             {% if m.status == 'RESOLVED' %}
-                                <span class="badge badge-green">RESOLVED</span>
+                                <span class="badge badge-green">{{ t('apps.temperature_marker.monitoring.badge_resolved') }}</span>
                             {% elif m.priority >= 100 %}
-                                <span class="badge badge-red">CRITICAL PENDING</span>
+                                <span class="badge badge-red">{{ t('apps.temperature_marker.monitoring.badge_critical_pending') }}</span>
                             {% else %}
-                                <span class="badge badge-yellow">PENDING</span>
+                                <span class="badge badge-yellow">{{ t('apps.temperature_marker.monitoring.badge_pending') }}</span>
                             {% endif %}
                         </td>
                         <td style="padding: 0.85rem 1rem; text-align: right;">
                             {% if m.status != 'RESOLVED' %}
                                 <button onclick="openMessageReplyModal({{ m.id }}, '{{ m.sender_name or m.sender_emp_code }}', '{{ m.sender_phone }}', '{{ m.message_text|replace("'", "\\'") }}')"
                                         class="btn btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
-                                    💬 Reply & Resolve
+                                    {{ t('apps.temperature_marker.monitoring.btn_reply_resolve') }}
                                 </button>
                             {% else %}
-                                <span style="font-size: 0.78rem; color: #64748b;">Resolved</span>
+                                <span style="font-size: 0.78rem; color: #64748b;">{{ t('apps.temperature_marker.monitoring.txt_resolved') }}</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% else %}
                     <tr>
                         <td colspan="7" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
-                            No internal operator inquiries or messages found.
+                            {{ t('apps.temperature_marker.monitoring.empty_messages') }}
                         </td>
                     </tr>
                     {% endfor %}

@@ -2,22 +2,22 @@
 <div id="tab-records" class="tab-panel active">
     <div class="card" style="padding: 0; overflow: hidden;">
         <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="font-size: 1.1rem; font-weight: 600;">Captured Duty Check-ins & Verifications</h3>
-            <span style="font-size: 0.8rem; color: var(--text-secondary);">Photos securely stored in local media vault</span>
+            <h3 style="font-size: 1.1rem; font-weight: 600;">{{ t('apps.temperature_marker.monitoring.records_title') }}</h3>
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ t('apps.temperature_marker.monitoring.records_subtitle') }}</span>
         </div>
 
         <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
                 <thead>
                     <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
-                        <th style="padding: 0.75rem 1rem;">Timestamp (IST)</th>
-                        <th style="padding: 0.75rem 1rem;">Check-in Photo</th>
-                        <th style="padding: 0.75rem 1rem;">Operator</th>
-                        <th style="padding: 0.75rem 1rem;">Kiosk / Site</th>
-                        <th style="padding: 0.75rem 1rem;">Chiller Temp</th>
-                        <th style="padding: 0.75rem 1rem;">Location & Biometrics</th>
-                        <th style="padding: 0.75rem 1rem;">Compliance Status</th>
-                        <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_timestamp') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_photo') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_operator') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_kiosk_site') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_chiller_temp') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_loc_biometrics') }}</th>
+                        <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.monitoring.col_compliance_status') }}</th>
+                        <th style="padding: 0.75rem 1rem; text-align: right;">{{ t('apps.temperature_marker.monitoring.col_action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -31,19 +31,19 @@
                             {% if r.photo_path %}
                             {% set p_src = r.photo_path if r.photo_path.startswith('/') else '/' ~ r.photo_path %}
                             <div style="position: relative; display: inline-block;">
-                                <img src="{{ p_src }}" alt="Photo"
+                                <img src="{{ p_src }}" alt="{{ t('apps.temperature_marker.monitoring.alt_photo') }}"
                                      onclick="previewPhoto('{{ p_src }}')"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                                      style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; transition: transform 0.2s;"
                                      onmouseover="this.style.transform='scale(1.15)'"
                                      onmouseout="this.style.transform='scale(1.0)'" />
                                 <div style="display: none; width: 48px; height: 48px; border-radius: 6px; background: #0f172a; border: 1px dashed #ef4444; align-items: center; justify-content: center; font-size: 0.65rem; color: #f87171; text-align: center; line-height: 1.1;">
-                                    Corrupt File
+                                    {{ t('apps.temperature_marker.monitoring.txt_corrupt_file') }}
                                 </div>
                             </div>
                             {% else %}
                             <div style="width: 48px; height: 48px; border-radius: 6px; background: #0f172a; border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #64748b;">
-                                No Pic
+                                {{ t('apps.temperature_marker.monitoring.txt_no_pic') }}
                             </div>
                             {% endif %}
                         </td>
@@ -73,26 +73,26 @@
                                 </div>
                             {% else %}
                                 <div style="font-size: 0.85rem; font-weight: 700; color: #f59e0b;">
-                                    UNAVAILABLE
+                                    {{ t('apps.temperature_marker.monitoring.val_unavailable') }}
                                 </div>
                                 <div style="font-size: 0.7rem; color: #ef4444;">
-                                    ⚠️ Missing Display
+                                    {{ t('apps.temperature_marker.monitoring.val_missing_display') }}
                                 </div>
                             {% endif %}
                         </td>
                         <td style="padding: 0.85rem 1rem;">
                             <div style="font-size: 0.8rem; margin-bottom: 0.2rem;">
                                 {% if r.geofence_verified %}
-                                    <span class="alert-chip chip-ok">📍 GPS: {{ "%.0f"|format(r.gps_distance_meters) }}m</span>
+                                    <span class="alert-chip chip-ok">{{ t('apps.temperature_marker.monitoring.gps_val', dist="%.0f"|format(r.gps_distance_meters)) }}</span>
                                 {% else %}
-                                    <span class="alert-chip chip-danger" title="Outside kiosk allowed radius">⚠️ GPS: {{ "%.0f"|format(r.gps_distance_meters) }}m</span>
+                                    <span class="alert-chip chip-danger" title="{{ t('apps.temperature_marker.monitoring.tip_outside_radius') }}">{{ t('apps.temperature_marker.monitoring.gps_warn_val', dist="%.0f"|format(r.gps_distance_meters)) }}</span>
                                 {% endif %}
                             </div>
                             <div style="font-size: 0.8rem;">
                                 {% if r.face_confidence >= 0.82 %}
-                                    <span class="alert-chip chip-ok">👤 Face: {{ "%.0f"|format(r.face_confidence * 100) }}%</span>
+                                    <span class="alert-chip chip-ok">{{ t('apps.temperature_marker.monitoring.face_val', conf="%.0f"|format(r.face_confidence * 100)) }}</span>
                                 {% else %}
-                                    <span class="alert-chip chip-danger" title="Face similarity below 82% threshold">👤 Face: {{ "%.0f"|format(r.face_confidence * 100) }}%</span>
+                                    <span class="alert-chip chip-danger" title="{{ t('apps.temperature_marker.monitoring.tip_low_face_conf') }}">{{ t('apps.temperature_marker.monitoring.face_val', conf="%.0f"|format(r.face_confidence * 100)) }}</span>
                                 {% endif %}
                             </div>
                         </td>
@@ -103,22 +103,22 @@
                                     {{ r.manual_resolution_notes or '' }}
                                 </div>
                             {% elif r.haccp_compliant and r.geofence_verified and r.face_confidence >= 0.82 %}
-                                <span class="badge badge-green">COMPLIANT</span>
+                                <span class="badge badge-green">{{ t('apps.temperature_marker.monitoring.badge_compliant') }}</span>
                             {% else %}
-                                <span class="badge badge-red">NEEDS REVIEW</span>
+                                <span class="badge badge-red">{{ t('apps.temperature_marker.monitoring.badge_needs_review') }}</span>
                             {% endif %}
                         </td>
                         <td style="padding: 0.85rem 1rem; text-align: right;">
                             <button onclick="openResolveModal('{{ r.id }}', '{{ r.emp_code }}', '{{ r.kiosk_id }}', '{{ r.chiller_temp_c if r.chiller_temp_c is not none else 'N/A' }}', '{{ r.gps_distance_meters }}')"
                                     class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
-                                🛠️ Resolve
+                                {{ t('apps.temperature_marker.monitoring.btn_resolve') }}
                             </button>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
                         <td colspan="8" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
-                            No attendance or temperature records found yet. Records will stream in live from WhatsApp.
+                            {{ t('apps.temperature_marker.monitoring.empty_records') }}
                         </td>
                     </tr>
                     {% endfor %}

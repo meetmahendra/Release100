@@ -826,6 +826,18 @@ async def view_monitoring(
 
     alert_count = len(active_alerts)
 
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name=str(tenant_name or ""),
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
+            Breadcrumb(label_key="apps.temperature_marker.name", path="/admin/apps/temperature-marker/fleet"),
+            Breadcrumb(label_key="apps.temperature_marker.nav.monitoring"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="monitoring.html",
@@ -843,6 +855,7 @@ async def view_monitoring(
             "messages": recent_messages,
             "kiosk_configs": kiosk_configs,
             "alert_count": alert_count,
+            "ui": ui_ctx,
         },
     )
 
