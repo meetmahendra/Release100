@@ -1,243 +1,212 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Company Profile & Workspace Settings — Release100</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
+{% extends "base_shell.html" %}
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{% block title %}{{ t('core.tenants.title_tag') }}{% endblock %}
 
-  <!-- Header -->
-  <header class="h-16 bg-slate-800/90 border-b border-slate-700/60 px-6 flex items-center justify-between shrink-0">
-    <div class="flex items-center gap-4">
-      <a href="/admin/" class="flex items-center gap-2 text-slate-300 hover:text-white transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-        </svg>
-        <span class="font-bold text-white">Dashboard</span>
-      </a>
-      <span class="text-slate-500">/</span>
-      <h1 class="text-base font-semibold text-emerald-400 flex items-center gap-2">
-        <span>🏢</span> Company Profile & Plan Settings
-      </h1>
-    </div>
-    <div class="flex items-center gap-3 text-xs">
-      <span class="px-2.5 py-1 rounded bg-slate-700/60 text-slate-300 border border-slate-600/50">
-        🏢 Tenant: <strong class="text-white">{{ organization or (active_tenant.name if active_tenant else 'public') }}</strong> <span class="text-emerald-400 font-mono">({{ tenant_id or (active_tenant.id if active_tenant else 'public') }})</span>
-      </span>
-      <span class="px-2.5 py-1 rounded bg-slate-700/60 text-slate-300 border border-slate-600/50">
-        Admin: <strong class="text-white">{{ principal }}</strong>
-      </span>
-    </div>
-  </header>
+{% block content %}
+<div class="space-y-6">
 
-  <main class="flex-1 p-6 space-y-6 max-w-6xl mx-auto w-full">
-
-    <!-- DevOps Operator Switch Banner (Visible if user has platform privileges) -->
-    {% if is_devops %}
-    <div class="bg-indigo-950/60 border border-indigo-500/50 rounded-xl p-4 flex items-center justify-between shadow-lg">
-      <div class="flex items-center gap-3">
-        <span class="text-xl">⚡</span>
-        <div>
-          <p class="text-sm font-semibold text-indigo-200">DevOps Super-Admin Privileges Detected</p>
-          <p class="text-xs text-indigo-300/80">You are viewing the scoped customer view for <strong class="font-mono">{{ active_tenant.id if active_tenant else 'public' }}</strong>. To manage all tenants across the SaaS fleet, open the DevOps Control Plane.</p>
-        </div>
+  <!-- DevOps Operator Switch Banner (Visible if user has platform privileges) -->
+  {% if is_devops %}
+  <div class="bg-indigo-950/60 border border-indigo-500/50 rounded-xl p-4 flex items-center justify-between shadow-lg">
+    <div class="flex items-center gap-3">
+      <span class="text-xl">⚡</span>
+      <div>
+        <p class="text-sm font-semibold text-indigo-200">{{ t('core.tenants.devops_detected') }}</p>
+        <p class="text-xs text-indigo-300/80">{{ t('core.tenants.devops_viewing_before') }}<strong class="font-mono">{{ active_tenant.id if active_tenant else 'public' }}</strong>{{ t('core.tenants.devops_viewing_after') }}</p>
       </div>
-      <a href="/ops/tenants" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 shrink-0 shadow-md">
-        <span>Open DevOps Portal</span>
-        <span>→</span>
-      </a>
     </div>
-    {% endif %}
+    <a href="/ops/tenants" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 shrink-0 shadow-md">
+      <span>{{ t('core.tenants.devops_open') }}</span>
+    </a>
+  </div>
+  {% endif %}
 
-    <!-- Flash messages -->
-    {% if message %}
-    <div class="bg-emerald-900/40 border border-emerald-500/50 rounded-xl p-4 text-emerald-300 text-sm flex items-center justify-between">
-      <span>✓ {{ message }}</span>
-      <button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-white">✕</button>
-    </div>
-    {% endif %}
-    {% if error %}
-    <div class="bg-red-900/40 border border-red-500/50 rounded-xl p-4 text-red-300 text-sm flex items-center justify-between">
-      <span>⚠ {{ error }}</span>
-      <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-white">✕</button>
-    </div>
-    {% endif %}
+  <!-- Flash messages -->
+  {% if message %}
+  <div class="bg-emerald-900/40 border border-emerald-500/50 rounded-xl p-4 text-emerald-300 text-sm flex items-center justify-between">
+    <span>✓ {{ message }}</span>
+    <button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-white">✕</button>
+  </div>
+  {% endif %}
+  {% if error %}
+  <div class="bg-red-900/40 border border-red-500/50 rounded-xl p-4 text-red-300 text-sm flex items-center justify-between">
+    <span>⚠ {{ error }}</span>
+    <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-white">✕</button>
+  </div>
+  {% endif %}
 
-    <!-- Company Overview Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 uppercase tracking-wider">Company Workspace</p>
-        <p class="text-lg font-bold text-white mt-1 truncate">{{ active_tenant.name if active_tenant else 'Public Organization' }}</p>
-        <p class="text-xs text-slate-400 font-mono mt-0.5">ID: {{ active_tenant.id if active_tenant else 'public' }}</p>
+  <!-- Company Overview Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
+      <p class="text-xs text-slate-400 uppercase tracking-wider">{{ t('core.tenants.stat_workspace') }}</p>
+      <p class="text-lg font-bold text-white mt-1 truncate">{{ active_tenant.name if active_tenant else t('core.tenants.stat_public') }}</p>
+      <p class="text-xs text-slate-400 font-mono mt-0.5">{{ t('core.tenants.stat_id', id=active_tenant.id if active_tenant else 'public') }}</p>
+    </div>
+
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
+      <p class="text-xs text-slate-400 uppercase tracking-wider">{{ t('core.tenants.stat_tier') }}</p>
+      <div class="flex items-center gap-2 mt-1">
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+          {{ active_tenant.license_tier if active_tenant else t('core.tenants.stat_enterprise') }}
+        </span>
+      </div>
+      <p class="text-xs text-slate-400 mt-1.5">{{ t('core.tenants.stat_max_users', count=active_tenant.max_users if active_tenant else t('core.tenants.stat_unlimited')) }}</p>
+    </div>
+
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
+      <p class="text-xs text-slate-400 uppercase tracking-wider">{{ t('core.tenants.stat_users') }}</p>
+      <p class="text-2xl font-bold text-sky-400 mt-1">{{ total_users }}</p>
+      <a href="/admin/users" class="text-xs text-sky-300 hover:underline mt-0.5 inline-block">{{ t('core.tenants.manage_directory') }}</a>
+    </div>
+
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
+      <p class="text-xs text-slate-400 uppercase tracking-wider">{{ t('core.tenants.stat_cred_mode') }}</p>
+      <div class="mt-1">
+        {% if config and config.credential_mode == 'CUSTOMER_BYOK' %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+          {{ t('core.tenants.cred_byok') }}
+        </span>
+        {% else %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40">
+          {{ t('core.tenants.cred_platform') }}
+        </span>
+        {% endif %}
+      </div>
+      <p class="text-xs text-slate-400 mt-1.5">{{ t('core.tenants.vault_badge') }}</p>
+    </div>
+  </div>
+
+  <!-- Company Details (Locked by DevOps) -->
+  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-md space-y-4">
+    <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+      <div>
+        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+          <span>🔒</span> {{ t('core.tenants.gov_title') }}
+        </h2>
+        <p class="text-xs text-slate-400 mt-0.5">{{ t('core.tenants.gov_desc') }}</p>
+      </div>
+      <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300 font-mono">{{ t('core.tenants.gov_badge') }}</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+      <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/40">
+        <p class="text-slate-400 uppercase font-semibold">{{ t('core.tenants.slug_title') }}</p>
+        <p class="text-sm font-mono text-white mt-1">{{ active_tenant.id if active_tenant else 'public' }}</p>
+        <p class="text-slate-500 text-[11px] mt-1">{{ t('core.tenants.slug_desc') }}</p>
       </div>
 
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 uppercase tracking-wider">Cloud License Tier</p>
-        <div class="flex items-center gap-2 mt-1">
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-            {{ active_tenant.license_tier if active_tenant else 'ENTERPRISE' }}
-          </span>
-        </div>
-        <p class="text-xs text-slate-400 mt-1.5">Max Users: {{ active_tenant.max_users if active_tenant else 'Unlimited' }}</p>
-      </div>
-
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 uppercase tracking-wider">Registered Users</p>
-        <p class="text-2xl font-bold text-sky-400 mt-1">{{ total_users }}</p>
-        <a href="/admin/users" class="text-xs text-sky-300 hover:underline mt-0.5 inline-block">Manage Directory →</a>
-      </div>
-
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 uppercase tracking-wider">Credential Mode</p>
-        <div class="mt-1">
-          {% if config and config.credential_mode == 'CUSTOMER_BYOK' %}
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-            🔑 Customer BYOK
-          </span>
+      <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/40">
+        <p class="text-slate-400 uppercase font-semibold">{{ t('core.tenants.domain_title') }}</p>
+        <p class="text-sm font-mono text-emerald-400 mt-1">
+          {% if custom_domains %}
+            {{ custom_domains[0].domain }}
           {% else %}
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40">
-            ☁️ Platform-Managed
-          </span>
+            {{ (active_tenant.id if active_tenant else 'public') ~ '.intentrouter.io' }}
           {% endif %}
-        </div>
-        <p class="text-xs text-slate-400 mt-1.5">AES-256-GCM Vault</p>
+        </p>
+        <p class="text-slate-500 text-[11px] mt-1">{{ t('core.tenants.domain_desc') }}</p>
+      </div>
+
+      <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/40">
+        <p class="text-slate-400 uppercase font-semibold">{{ t('core.tenants.region_title') }}</p>
+        <p class="text-sm font-mono text-white mt-1">{{ active_tenant.storage_region if active_tenant else 'us-east-1' }}</p>
+        <p class="text-slate-500 text-[11px] mt-1">{{ t('core.tenants.region_desc') }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI & Integration Credentials -->
+  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-md space-y-4">
+    <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+      <div>
+        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+          <span>🔑</span> {{ t('core.tenants.cred_title') }}
+        </h2>
+        <p class="text-xs text-slate-400 mt-0.5">{{ t('core.tenants.cred_desc') }}</p>
       </div>
     </div>
 
-    <!-- Company Details (Locked by DevOps) -->
-    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-md space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+    {% if config and config.credential_mode == 'CUSTOMER_BYOK' %}
+    <!-- BYOK Mode: Customer Admin Can Provide Their Own Keys -->
+    <form action="/admin/tenants/save-byok" method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <div class="p-3.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs">
+        <strong>{{ t('core.tenants.byok_active_title') }}</strong>{{ t('core.tenants.byok_active_desc') }}
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <h2 class="text-sm font-bold text-white flex items-center gap-2">
-            <span>🔒</span> Company Identity & Domain Governance
-          </h2>
-          <p class="text-xs text-slate-400 mt-0.5">These core parameters are provisioned by Platform DevOps and locked for security isolation.</p>
-        </div>
-        <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300 font-mono">Managed by DevOps</span>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-        <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/40">
-          <p class="text-slate-400 uppercase font-semibold">Tenant Identifier (Slug)</p>
-          <p class="text-sm font-mono text-white mt-1">{{ active_tenant.id if active_tenant else 'public' }}</p>
-          <p class="text-slate-500 text-[11px] mt-1">Immutable partition key used across database tables.</p>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_gemini_key') }}</label>
+          <input type="password" name="gemini_api_key" placeholder="{{ t('core.tenants.ph_gemini_key') }}"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
+          <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if config.encrypted_gemini_api_key %}<span class="text-emerald-400">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
         </div>
 
-        <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/40">
-          <p class="text-slate-400 uppercase font-semibold">Custom Domain / Subdomain</p>
-          <p class="text-sm font-mono text-emerald-400 mt-1">
-            {% if custom_domains %}
-              {{ custom_domains[0].domain }}
-            {% else %}
-              {{ (active_tenant.id if active_tenant else 'public') ~ '.intentrouter.io' }}
-            {% endif %}
-          </p>
-          <p class="text-slate-500 text-[11px] mt-1">Requests matching this Host header auto-bind to your workspace.</p>
-        </div>
-
-        <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-700/40">
-          <p class="text-slate-400 uppercase font-semibold">Data Storage Region</p>
-          <p class="text-sm font-mono text-white mt-1">{{ active_tenant.storage_region if active_tenant else 'us-east-1' }}</p>
-          <p class="text-slate-500 text-[11px] mt-1">Physical region for encrypted data & audit logs.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- AI & Integration Credentials -->
-    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-md space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
         <div>
-          <h2 class="text-sm font-bold text-white flex items-center gap-2">
-            <span>🔑</span> AI & Messaging Credentials
-          </h2>
-          <p class="text-xs text-slate-400 mt-0.5">Control how your company connects to Google Gemini AI and WhatsApp Business APIs.</p>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_waba_token') }}</label>
+          <input type="password" name="waba_token" placeholder="{{ t('core.tenants.ph_waba_token') }}"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
+          <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if config.encrypted_waba_access_token %}<span class="text-emerald-400">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
         </div>
       </div>
 
-      {% if config and config.credential_mode == 'CUSTOMER_BYOK' %}
-      <!-- BYOK Mode: Customer Admin Can Provide Their Own Keys -->
-      <form action="/admin/tenants/save-byok" method="POST" class="space-y-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-        <div class="p-3.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs">
-          <strong>Customer BYOK Active:</strong> Your company provides its own API credentials. Keys are encrypted at rest via AES-256-GCM and never shared with other tenants.
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Company Google Gemini API Key</label>
-            <input type="password" name="gemini_api_key" placeholder="Enter custom Gemini key (or leave blank to keep existing)"
-                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
-            <p class="text-[11px] text-slate-400 mt-1">Status: {% if config.encrypted_gemini_api_key %}<span class="text-emerald-400">✓ Configured</span>{% else %}<span class="text-slate-500">Not set</span>{% endif %}</p>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">WhatsApp Cloud API Token</label>
-            <input type="password" name="waba_token" placeholder="Enter custom WABA token (or leave blank to keep existing)"
-                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
-            <p class="text-[11px] text-slate-400 mt-1">Status: {% if config.encrypted_waba_access_token %}<span class="text-emerald-400">✓ Configured</span>{% else %}<span class="text-slate-500">Not set</span>{% endif %}</p>
-          </div>
-        </div>
-
-        <div class="flex justify-end">
-          <button type="submit" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition-colors shadow-md">
-            Save Company Credentials
-          </button>
-        </div>
-      </form>
-      {% else %}
-      <!-- Platform-Managed Mode: Keys are managed centrally by DevOps -->
-      <div class="bg-slate-900/80 border border-sky-500/30 rounded-xl p-5 space-y-3">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
-            ☁️
-          </div>
-          <div>
-            <p class="text-sm font-semibold text-white">Platform-Managed Cloud Plan</p>
-            <p class="text-xs text-slate-400">Your organization utilizes the high-throughput, platform-managed LLM gateway and WhatsApp connectors provided with your enterprise subscription.</p>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
-            <span class="text-slate-400">Google Gemini LLM:</span>
-            <span class="text-sky-400 font-semibold ml-2">Provided by Platform (Active)</span>
-          </div>
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
-            <span class="text-slate-400">WhatsApp Messaging:</span>
-            <span class="text-sky-400 font-semibold ml-2">Provided by Platform (Active)</span>
-          </div>
-        </div>
-        <p class="text-[11px] text-slate-500 italic">To switch to your own dedicated BYOK keys, please contact your Platform DevOps account manager.</p>
+      <div class="flex justify-end">
+        <button type="submit" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition-colors shadow-md">
+          {{ t('core.tenants.btn_save_cred') }}
+        </button>
       </div>
-      {% endif %}
-    </div>
-
-    <!-- Quick Navigation -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <a href="/admin/users" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-xl p-4 transition-colors flex items-center justify-between group">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">👥</span>
-          <div>
-            <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">Users & WhatsApp OAuth Registry</p>
-            <p class="text-xs text-slate-400">Manage employee accounts, assign application roles, and issue magic links.</p>
-          </div>
+    </form>
+    {% else %}
+    <!-- Platform-Managed Mode: Keys are managed centrally by DevOps -->
+    <div class="bg-slate-900/80 border border-sky-500/30 rounded-xl p-5 space-y-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+          ☁️
         </div>
-        <span class="text-slate-400 group-hover:text-emerald-400 transition-colors">→</span>
-      </a>
-
-      <a href="/admin/apps/mail-organizer/" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-xl p-4 transition-colors flex items-center justify-between group">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">📦</span>
-          <div>
-            <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">Mail Organizer App Settings</p>
-            <p class="text-xs text-slate-400">Configure email triage rules, monitored mailboxes, and VIP sender lists.</p>
-          </div>
+        <div>
+          <p class="text-sm font-semibold text-white">{{ t('core.tenants.platform_plan_title') }}</p>
+          <p class="text-xs text-slate-400">{{ t('core.tenants.platform_plan_desc') }}</p>
         </div>
-        <span class="text-slate-400 group-hover:text-emerald-400 transition-colors">→</span>
-      </a>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <span class="text-slate-400">{{ t('core.tenants.platform_gemini_label') }}</span>
+          <span class="text-sky-400 font-semibold ml-2">{{ t('core.tenants.platform_active') }}</span>
+        </div>
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+          <span class="text-slate-400">{{ t('core.tenants.platform_wa_label') }}</span>
+          <span class="text-sky-400 font-semibold ml-2">{{ t('core.tenants.platform_active') }}</span>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-500 italic">{{ t('core.tenants.platform_byok_hint') }}</p>
     </div>
+    {% endif %}
+  </div>
 
-  </main>
-</body>
-</html>
+  <!-- Quick Navigation -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <a href="/admin/users" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-xl p-4 transition-colors flex items-center justify-between group">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">👥</span>
+        <div>
+          <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">{{ t('core.tenants.quick_users_title') }}</p>
+          <p class="text-xs text-slate-400">{{ t('core.tenants.quick_users_desc') }}</p>
+        </div>
+      </div>
+      <span class="text-slate-400 group-hover:text-emerald-400 transition-colors">→</span>
+    </a>
+
+    <a href="/admin/apps/mail-organizer/" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-xl p-4 transition-colors flex items-center justify-between group">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">📦</span>
+        <div>
+          <p class="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">{{ t('core.tenants.quick_mail_title') }}</p>
+          <p class="text-xs text-slate-400">{{ t('core.tenants.quick_mail_desc') }}</p>
+        </div>
+      </div>
+      <span class="text-slate-400 group-hover:text-emerald-400 transition-colors">→</span>
+    </a>
+  </div>
+
+</div>
+{% endblock %}

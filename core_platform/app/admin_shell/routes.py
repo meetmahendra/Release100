@@ -759,6 +759,17 @@ async def view_tenants(
     nav_apps = _build_nav_apps(ctx, active_tenant)
     csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
 
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=[a["id"] for a in nav_apps],
+        tenant_name=str(tenant_name),
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
+            Breadcrumb(label_key="core.nav.tenants"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="tenants.html",
@@ -779,6 +790,7 @@ async def view_tenants(
             "message": message,
             "error": error,
             "organization": tenant_name,
+            "ui": ui_ctx,
         },
     )
 
