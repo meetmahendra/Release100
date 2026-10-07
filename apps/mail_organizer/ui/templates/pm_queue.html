@@ -1,47 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}PM Action Queue{% endblock %}
+{% block title %}{{ t('apps.mail_organizer.pm_queue.title_tag') }}{% endblock %}
 
 {% block content %}
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="font-size: 1.25rem; font-weight: 700;">Human-in-the-Loop PM Action Queue</h2>
-        <span class="badge badge-action">Staged Before Execution</span>
+        <h2 style="font-size: 1.25rem; font-weight: 700;">{{ t('apps.mail_organizer.pm_queue.heading') }}</h2>
+        <span class="badge badge-action">{{ t('apps.mail_organizer.pm_queue.badge_staged') }}</span>
     </div>
     <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
-        Tasks extracted from emails are held in this queue. Zero unsolicited external sync occurs until explicit user confirmation.
+        {{ t('apps.mail_organizer.pm_queue.description') }}
     </p>
 
     <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Priority</th>
-                <th>Target Tool</th>
-                <th>Due Date</th>
-                <th>Email Ref</th>
-                <th>Actions</th>
+                <th>{{ t('apps.mail_organizer.pm_queue.th_id') }}</th>
+                <th>{{ t('apps.mail_organizer.pm_queue.th_title') }}</th>
+                <th>{{ t('apps.mail_organizer.pm_queue.th_priority') }}</th>
+                <th>{{ t('apps.mail_organizer.pm_queue.th_target_tool') }}</th>
+                <th>{{ t('apps.mail_organizer.pm_queue.th_due_date') }}</th>
+                <th>{{ t('apps.mail_organizer.pm_queue.th_email_ref') }}</th>
+                <th>{{ t('apps.mail_organizer.pm_queue.th_actions') }}</th>
             </tr>
         </thead>
         <tbody>
-            {% for t in tasks %}
-            <tr id="row-{{ t.id }}">
-                <td>#{{ t.id }}</td>
-                <td style="font-weight: 600;">{{ t.summary }}</td>
-                <td><span class="badge badge-urgent">{{ t.priority }}</span></td>
-                <td><span class="badge badge-meeting">{{ t.destination|upper }}</span></td>
-                <td>{{ t.due_date or 'None' }}</td>
-                <td style="font-size: 0.8rem; color: var(--text-secondary);">{{ t.gmail_id or 'Extracted' }}</td>
+            {% for t_task in tasks %}
+            <tr id="row-{{ t_task.id }}">
+                <td>#{{ t_task.id }}</td>
+                <td style="font-weight: 600;">{{ t_task.summary }}</td>
+                <td><span class="badge badge-urgent">{{ t_task.priority }}</span></td>
+                <td><span class="badge badge-meeting">{{ t_task.destination|upper }}</span></td>
+                <td>{{ t_task.due_date or t('apps.mail_organizer.pm_queue.val_none') }}</td>
+                <td style="font-size: 0.8rem; color: var(--text-secondary);">{{ t_task.gmail_id or t('apps.mail_organizer.pm_queue.val_extracted') }}</td>
                 <td style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="approveTask({{ t.id }}, 'jira')">Sync Jira</button>
-                    <button class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="approveTask({{ t.id }}, 'linear')">Sync Linear</button>
-                    <button class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="rejectTask({{ t.id }})">Dismiss</button>
+                    <button class="btn btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="approveTask({{ t_task.id }}, 'jira')">{{ t('apps.mail_organizer.pm_queue.btn_sync_jira') }}</button>
+                    <button class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="approveTask({{ t_task.id }}, 'linear')">{{ t('apps.mail_organizer.pm_queue.btn_sync_linear') }}</button>
+                    <button class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="rejectTask({{ t_task.id }})">{{ t('apps.mail_organizer.pm_queue.btn_dismiss') }}</button>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 2rem;">No pending PM tasks. All tickets are synced.</td>
+                <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 2rem;">{{ t('apps.mail_organizer.pm_queue.empty_state') }}</td>
             </tr>
             {% endfor %}
         </tbody>

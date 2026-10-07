@@ -126,6 +126,30 @@
         "th_created_utc": "Created (UTC)",
         "val_recent": "Recent",
         "empty_state": "No drafts staged. Use Triage Simulator with a meeting or action request."
+      },
+      "pm_queue": {
+        "title_tag": "PM Action Queue",
+        "heading": "Human-in-the-Loop PM Action Queue",
+        "badge_staged": "Staged Before Execution",
+        "description": "Tasks extracted from emails are held in this queue. Zero unsolicited external sync occurs until explicit user confirmation.",
+        "th_id": "ID",
+        "th_title": "Title",
+        "th_priority": "Priority",
+        "th_target_tool": "Target Tool",
+        "th_due_date": "Due Date",
+        "th_email_ref": "Email Ref",
+        "th_actions": "Actions",
+        "val_none": "None",
+        "val_extracted": "Extracted",
+        "btn_sync_jira": "Sync Jira",
+        "btn_sync_linear": "Sync Linear",
+        "btn_dismiss": "Dismiss",
+        "empty_state": "No pending PM tasks. All tickets are synced.",
+        "sync_success": "Task synced successfully to {tool}! Key: {key}",
+        "sync_error_prefix": "Error: ",
+        "sync_fallback_failed": "Failed",
+        "request_failed_prefix": "Request failed: ",
+        "dismiss_failed": "Failed to dismiss task"
       }
     }
   }
