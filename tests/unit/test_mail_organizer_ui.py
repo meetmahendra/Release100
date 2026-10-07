@@ -41,7 +41,7 @@ def test_mail_organizer_unauthenticated_access():
 def test_dashboard_endpoint(client):
     res = client.get("/admin/apps/mail-organizer/dashboard")
     assert res.status_code == 200
-    assert "AI Mail & Calendar Organizer" in res.text
+    assert ("AI Mail & Calendar Organizer" in res.text or "AI Mail &amp; Calendar Organizer" in res.text)
     assert "Total Emails Triaged" in res.text
 
 
@@ -61,7 +61,7 @@ def test_pm_queue_page(client):
 def test_rules_page(client):
     res = client.get("/admin/apps/mail-organizer/rules")
     assert res.status_code == 200
-    assert "Deterministic VIP & Whitelist Rules" in res.text
+    assert ("Deterministic VIP & Whitelist Rules" in res.text or "Deterministic VIP &amp; Whitelist Rules" in res.text)
 
 
 def test_drafts_page(client):
