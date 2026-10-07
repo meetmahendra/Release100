@@ -1,46 +1,32 @@
-<!--
-Copyright 2026 Mahendra GURAV
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
--->
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
 <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
   <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-    <h3 class="text-base font-semibold text-white">Enterprise Tenants Directory</h3>
-    <span class="text-xs text-slate-500 font-mono">Real-time DNS & DB Partition Routing</span>
+    <h3 class="text-base font-semibold text-white">{{ t('core.ops_tenants.table_title') }}</h3>
+    <span class="text-xs text-slate-500 font-mono">{{ t('core.ops_tenants.table_subtitle') }}</span>
   </div>
 
   <div class="overflow-x-auto">
     <table class="w-full text-left text-xs text-slate-300">
       <thead class="bg-slate-950 uppercase text-slate-400 border-b border-slate-800 font-semibold">
         <tr>
-          <th class="px-4 py-3">Slug & Name</th>
-          <th class="px-4 py-3">Root Admin User</th>
-          <th class="px-4 py-3">Status</th>
-          <th class="px-4 py-3">Tier</th>
-          <th class="px-4 py-3">Cartridges</th>
-          <th class="px-4 py-3">Domains & Routing</th>
-          <th class="px-4 py-3">Credential Vault</th>
-          <th class="px-4 py-3">Region & DB</th>
-          <th class="px-4 py-3 text-right">Lifecycle Actions</th>
+          <th class="px-4 py-3">{{ t('core.ops_tenants.col_slug_name') }}</th>
+          <th class="px-4 py-3">{{ t('core.ops_tenants.col_root_admin') }}</th>
+          <th class="px-4 py-3">{{ t('core.ops_tenants.col_status') }}</th>
+          <th class="px-4 py-3">{{ t('core.ops_tenants.col_tier') }}</th>
+          <th class="px-4 py-3">{{ t('core.ops_tenants.col_cartridges') }}</th>
+          <th class="px-4 py-3">{{ t('core.ops_tenants.col_domains') }}</th>
+          <th class="px-4 py-3">{{ t('core.ops_tenants.col_vault') }}</th>
+          <th class="px-4 py-3">{{ t('core.ops_tenants.col_region_db') }}</th>
+          <th class="px-4 py-3 text-right">{{ t('core.ops_tenants.col_actions') }}</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-800/60">
         {% for item in tenants %}
-        {% set t = item.tenant %}
+        {% set t_item = item.tenant %}
         <tr class="hover:bg-slate-800/30 transition-colors">
           <td class="px-4 py-3">
-            <p class="font-bold text-white text-sm">{{ t.name }}</p>
-            <p class="font-mono text-slate-500 text-[11px]">{{ t.id }}</p>
+            <p class="font-bold text-white text-sm">{{ t_item.name }}</p>
+            <p class="font-mono text-slate-500 text-[11px]">{{ t_item.id }}</p>
           </td>
           <td class="px-4 py-3">
             {% if item.admin %}
@@ -54,26 +40,26 @@ limitations under the License.
               {% endif %}
             </div>
             {% else %}
-            <span class="text-slate-500 italic text-[11px]">No admin user</span>
+            <span class="text-slate-500 italic text-[11px]">{{ t('core.ops_tenants.no_admin') }}</span>
             {% endif %}
           </td>
           <td class="px-4 py-3">
-            {% if t.status == 'ACTIVE' %}
-            <span class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-semibold">ACTIVE</span>
-            {% elif t.status == 'ARCHIVED' %}
-            <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-600 text-slate-400 font-semibold">ARCHIVED</span>
-            {% elif t.status == 'SUSPENDED' %}
-            <span class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-semibold">SUSPENDED</span>
+            {% if t_item.status == 'ACTIVE' %}
+            <span class="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-600 text-emerald-300 font-semibold">{{ t('core.ops_tenants.badge_active') }}</span>
+            {% elif t_item.status == 'ARCHIVED' %}
+            <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-600 text-slate-400 font-semibold">{{ t('core.ops_tenants.badge_archived') }}</span>
+            {% elif t_item.status == 'SUSPENDED' %}
+            <span class="px-2 py-0.5 rounded bg-rose-950 border border-rose-600 text-rose-300 font-semibold">{{ t('core.ops_tenants.badge_suspended') }}</span>
             {% else %}
-            <span class="px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 font-semibold">{{ t.status }}</span>
+            <span class="px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 font-semibold">{{ t_item.status }}</span>
             {% endif %}
           </td>
           <td class="px-4 py-3">
-            <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-slate-200">{{ t.license_tier }}</span>
+            <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-slate-200">{{ t_item.license_tier }}</span>
           </td>
           <td class="px-4 py-3">
             <div class="flex flex-wrap gap-1">
-              {% for c in t.allowed_cartridges %}
+              {% for c in t_item.allowed_cartridges %}
               <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 border border-slate-700 text-indigo-300">
                 {{ c }}
               </span>
@@ -87,63 +73,63 @@ limitations under the License.
                 <span>🌐</span> {{ dom.domain_name }}
               </p>
               {% else %}
-              <p class="font-mono text-slate-500">{{ t.id }}.release100.com</p>
+              <p class="font-mono text-slate-500">{{ t_item.id ~ '.release100.com' }}</p>
               {% endfor %}
             </div>
           </td>
           <td class="px-4 py-3">
             {% if item.credential_mode == 'CUSTOMER_BYOK' %}
-            <span class="px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 font-semibold">CUSTOMER_BYOK</span>
+            <span class="px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-300 font-semibold">{{ t('core.ops_tenants.badge_byok') }}</span>
             {% else %}
-            <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-600 text-sky-300 font-semibold">PLATFORM_MANAGED</span>
+            <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-600 text-sky-300 font-semibold">{{ t('core.ops_tenants.badge_platform_managed') }}</span>
             {% endif %}
           </td>
           <td class="px-4 py-3 font-mono text-[11px] text-slate-400">
-            <p>{{ t.storage_region }}</p>
-            <p class="text-slate-500">{{ t.db_mode }}</p>
+            <p>{{ t_item.storage_region }}</p>
+            <p class="text-slate-500">{{ t_item.db_mode }}</p>
           </td>
           <td class="px-4 py-3 text-right">
             <div class="flex items-center justify-end gap-1.5">
               <!-- Primary Inspect & Manage Trigger -->
-              <button type="button" onclick="openInspectModal('{{ t.id }}', '{{ t.name }}', '{{ t.status }}', '{{ t.license_tier }}', '{{ t.storage_region }}', '{{ t.db_mode }}', '{{ item.credential_mode }}', '{% if item.domains %}{{ item.domains[0].domain_name }}{% else %}{{ t.id }}.release100.com{% endif %}', '{% for c in t.allowed_cartridges %}{{ c }}{% if not loop.last %},{% endif %}{% endfor %}', '{% if item.admin %}{{ item.admin.phone_number }}{% endif %}', '{% if item.admin %}{{ item.admin.full_name }}{% endif %}', '{% if item.admin %}{{ item.admin.email or '' }}{% endif %}')" class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm transition-colors flex items-center gap-1">
-                <span>🔍</span> Inspect
+              <button type="button" onclick="openInspectModal('{{ t_item.id }}', '{{ t_item.name }}', '{{ t_item.status }}', '{{ t_item.license_tier }}', '{{ t_item.storage_region }}', '{{ t_item.db_mode }}', '{{ item.credential_mode }}', '{% if item.domains %}{{ item.domains[0].domain_name }}{% else %}{{ t_item.id }}.release100.com{% endif %}', '{% for c in t_item.allowed_cartridges %}{{ c }}{% if not loop.last %},{% endif %}{% endfor %}', '{% if item.admin %}{{ item.admin.phone_number }}{% endif %}', '{% if item.admin %}{{ item.admin.full_name }}{% endif %}', '{% if item.admin %}{{ item.admin.email or '' }}{% endif %}')" class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm transition-colors flex items-center gap-1">
+                <span>🔍</span> {{ t('core.ops_tenants.btn_inspect') }}
               </button>
 
               <!-- Edit Tenant Trigger -->
-              <button type="button" onclick="openEditModal('{{ t.id }}', '{{ t.name }}', '{{ t.license_tier }}', '{{ t.status }}', '{{ t.max_users }}', '{% if item.admin %}{{ item.admin.phone_number }}{% endif %}', '{% if item.admin %}{{ item.admin.full_name }}{% endif %}', '{% if item.admin %}{{ item.admin.email or '' }}{% endif %}')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100 font-medium transition-colors">
-                ✏️ Edit
+              <button type="button" onclick="openEditModal('{{ t_item.id }}', '{{ t_item.name }}', '{{ t_item.license_tier }}', '{{ t_item.status }}', '{{ t_item.max_users }}', '{% if item.admin %}{{ item.admin.phone_number }}{% endif %}', '{% if item.admin %}{{ item.admin.full_name }}{% endif %}', '{% if item.admin %}{{ item.admin.email or '' }}{% endif %}')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100 font-medium transition-colors">
+                {{ t('core.ops_tenants.btn_edit') }}
               </button>
 
               <!-- BYOK Modal Trigger -->
-              <button type="button" onclick="openVaultModal('{{ t.id }}', '{{ item.credential_mode }}')" class="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-700 font-medium transition-colors">
-                🔑 BYOK
+              <button type="button" onclick="openVaultModal('{{ t_item.id }}', '{{ item.credential_mode }}')" class="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-700 font-medium transition-colors">
+                {{ t('core.ops_tenants.btn_byok') }}
               </button>
 
               <!-- Clone Trigger -->
-              <button type="button" onclick="openCloneModal('{{ t.id }}', '{{ t.name }}')" class="px-2 py-1 rounded bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 font-medium transition-colors">
-                📋 Clone
+              <button type="button" onclick="openCloneModal('{{ t_item.id }}', '{{ t_item.name }}')" class="px-2 py-1 rounded bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 font-medium transition-colors">
+                {{ t('core.ops_tenants.btn_clone') }}
               </button>
 
               <!-- Transfer Trigger -->
-              <button type="button" onclick="openTransferModal('{{ t.id }}', '{{ t.storage_region }}')" class="px-2 py-1 rounded bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-700 font-medium transition-colors">
-                🚚 Transfer
+              <button type="button" onclick="openTransferModal('{{ t_item.id }}', '{{ t_item.storage_region }}')" class="px-2 py-1 rounded bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-700 font-medium transition-colors">
+                {{ t('core.ops_tenants.btn_transfer') }}
               </button>
 
               <!-- Audit Link -->
-              <a href="/ops/tenants/{{ t.id }}/audit" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium transition-colors">
-                Audit
+              <a href="/ops/tenants/{{ t_item.id }}/audit" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium transition-colors">
+                {{ t('core.ops_tenants.btn_audit') }}
               </a>
 
               <!-- Delete Trigger -->
-              <button type="button" onclick="openDeleteModal('{{ t.id }}', '{{ t.name }}')" class="px-2 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700 font-medium transition-colors">
-                🗑️ Delete
+              <button type="button" onclick="openDeleteModal('{{ t_item.id }}', '{{ t_item.name }}')" class="px-2 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700 font-medium transition-colors">
+                {{ t('core.ops_tenants.btn_delete') }}
               </button>
             </div>
           </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="9" class="px-4 py-8 text-center text-slate-500 italic">No enterprise tenants provisioned yet.</td>
+          <td colspan="9" class="px-4 py-8 text-center text-slate-500 italic">{{ t('core.ops_tenants.empty_state') }}</td>
         </tr>
         {% endfor %}
       </tbody>

@@ -1,205 +1,155 @@
-<!DOCTYPE html>
-<!--
-Copyright 2026 Mahendra GURAV
+{% extends "base_shell.html" %}
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{% block title %}{{ t('core.ops_tenants.title_tag') }}{% endblock %}
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+{% block content %}
+<div class="space-y-6">
 
-    http://www.apache.org/licenses/LICENSE-2.0
+  <!-- Flash Messages -->
+  {% if message %}
+  <div class="p-4 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-sm flex items-center justify-between shadow-lg">
+    <div class="flex items-center gap-2 font-mono">
+      <span>✓</span> {{ message }}
+    </div>
+    <button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-white">✕</button>
+  </div>
+  {% endif %}
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
--->
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ title }} — Release100</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+  {% if error %}
+  <div class="p-4 rounded-xl bg-rose-950/80 border border-rose-500/60 text-rose-300 text-sm flex items-center justify-between shadow-lg">
+    <div class="flex items-center gap-2">
+      <span>⚠️</span> {{ error }}
+    </div>
+    <button onclick="this.parentElement.remove()" class="text-rose-400 hover:text-white">✕</button>
+  </div>
+  {% endif %}
 
-  <!-- DevOps Top Navigation Bar -->
-  <header class="h-16 bg-slate-900/95 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 sticky top-0 z-40">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-600/30">
-        ⚡
-      </div>
+  <!-- Provisioning Section -->
+  <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
       <div>
-        <div class="flex items-center gap-2">
-          <span class="font-bold text-white text-base tracking-tight">DevOps Control Plane</span>
-          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-950 text-indigo-300 border border-indigo-700">SUPER_ADMIN</span>
-        </div>
-        <p class="text-xs text-slate-400">Two-Tier Multi-Tenant SaaS Engine & Dynamic Routing</p>
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <span>✨</span> {{ t('core.ops_tenants.provision_title') }}
+        </h2>
+        <p class="text-xs text-slate-400 mt-0.5">{{ t('core.ops_tenants.provision_desc') }}</p>
       </div>
+      <span class="px-2.5 py-1 rounded text-xs font-mono font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700">
+        {{ t('core.ops_tenants.badge_zero_trust') }}
+      </span>
     </div>
 
-    <!-- Quick Switcher & User Profile -->
-    <div class="flex items-center gap-4">
-      <a href="/admin/" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition-colors flex items-center gap-1.5">
-        <span>🏢</span> Switch to Customer Admin Shell ↗
-      </a>
-      <div class="flex items-center gap-2 pl-3 border-l border-slate-800 text-xs">
-        <span class="text-slate-400 font-mono">{{ principal }}</span>
-        <a href="/admin/logout" class="px-2.5 py-1 rounded bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800 transition-colors">
-          Logout
-        </a>
-      </div>
-    </div>
-  </header>
+    <form method="POST" action="/ops/tenants/provision" class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
 
-  <!-- Main Content Body -->
-  <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
-
-    <!-- Flash Messages -->
-    {% if message %}
-    <div class="p-4 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-sm flex items-center justify-between shadow-lg">
-      <div class="flex items-center gap-2 font-mono">
-        <span>✓</span> {{ message }}
-      </div>
-      <button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-white">✕</button>
-    </div>
-    {% endif %}
-
-    {% if error %}
-    <div class="p-4 rounded-xl bg-rose-950/80 border border-rose-500/60 text-rose-300 text-sm flex items-center justify-between shadow-lg">
-      <div class="flex items-center gap-2">
-        <span>⚠️</span> {{ error }}
-      </div>
-      <button onclick="this.parentElement.remove()" class="text-rose-400 hover:text-white">✕</button>
-    </div>
-    {% endif %}
-
-    <!-- Provisioning Section -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
-        <div>
-          <h2 class="text-lg font-bold text-white flex items-center gap-2">
-            <span>✨</span> Provision New Enterprise Tenant Workspace
-          </h2>
-          <p class="text-xs text-slate-400 mt-0.5">Automates atomic DB schema creation, DNS subdomain routing, cartridge entitlements, and initial root admin setup.</p>
-        </div>
-        <span class="px-2.5 py-1 rounded text-xs font-mono font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700">
-          ZERO-TRUST ISOLATION
-        </span>
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_slug') }}</label>
+        <input type="text" name="slug" placeholder="{{ t('core.ops_tenants.ph_slug') }}" required
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
       </div>
 
-      <form method="POST" action="/ops/tenants/provision" class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_name') }}</label>
+        <input type="text" name="name" placeholder="{{ t('core.ops_tenants.ph_name') }}" required
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none" />
+      </div>
 
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Tenant Slug (ID) *</label>
-          <input type="text" name="slug" placeholder="e.g. acme_corp" required
-                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_admin_phone') }}</label>
+        <input type="text" name="admin_phone" placeholder="{{ t('core.ops_tenants.ph_admin_phone') }}"
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_admin_name') }}</label>
+        <input type="text" name="admin_name" placeholder="{{ t('core.ops_tenants.ph_admin_name') }}"
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_admin_password') }}</label>
+        <input type="password" name="admin_password" placeholder="{{ t('core.ops_tenants.ph_admin_password') }}"
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_admin_email') }}</label>
+        <input type="email" name="admin_email" placeholder="{{ t('core.ops_tenants.ph_admin_email') }}"
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_db_mode') }}</label>
+        <select name="db_mode" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none">
+          <option value="sqlite" selected>{{ t('core.ops_tenants.opt_sqlite') }}</option>
+          <option value="dedicated_postgres">{{ t('core.ops_tenants.opt_dedicated_postgres') }}</option>
+          <option value="dedicated_mysql">{{ t('core.ops_tenants.opt_dedicated_mysql') }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_db_url') }}</label>
+        <input type="text" name="db_url" placeholder="{{ t('core.ops_tenants.ph_db_url') }}"
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_license_tier') }}</label>
+        <select name="license_tier" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none">
+          <option value="STANDARD">{{ t('core.ops_tenants.opt_standard') }}</option>
+          <option value="ENTERPRISE" selected>{{ t('core.ops_tenants.opt_enterprise') }}</option>
+          <option value="DEDICATED">{{ t('core.ops_tenants.opt_dedicated') }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_storage_region') }}</label>
+        <input type="text" name="storage_region" value="ap-south-1"
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none font-mono" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_custom_domain') }}</label>
+        <input type="text" name="custom_domain" placeholder="{{ t('core.ops_tenants.ph_custom_domain') }}" autocomplete="off"
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_max_users') }}</label>
+        <input type="number" name="max_users" value="50"
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none font-mono" />
+      </div>
+
+      <!-- Enabled Cartridges Multi-select -->
+      <div class="md:col-span-2 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
+        <label class="block text-xs font-semibold text-slate-300 mb-2">{{ t('core.ops_tenants.lbl_cartridges') }}</label>
+        <div class="flex flex-wrap items-center gap-4">
+          <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" name="cartridges" value="mail_organizer" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
+            <span class="font-medium text-white">{{ t('core.ops_tenants.cartridge_mail') }}</span>
+          </label>
+          <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" name="cartridges" value="temperature_marker" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
+            <span class="font-medium text-white">{{ t('core.ops_tenants.cartridge_temp') }}</span>
+          </label>
         </div>
+      </div>
 
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Company Display Name *</label>
-          <input type="text" name="name" placeholder="Acme Corporation" required
-                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none" />
-        </div>
+      <div class="md:col-span-4 flex justify-end pt-2">
+        <button type="submit" class="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm text-white transition-colors shadow-lg shadow-indigo-600/20">
+          {{ t('core.ops_tenants.btn_provision') }}
+        </button>
+      </div>
+    </form>
+  </div>
 
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Root Admin Username / Phone</label>
-          <input type="text" name="admin_phone" placeholder="e.g. acme_admin or leave blank for auto"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
-        </div>
+  <!-- Tenants Directory Table -->
+  {% include "_tenant_table.html" %}
 
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Root Admin Display Name</label>
-          <input type="text" name="admin_name" placeholder="e.g. Acme Enterprise Admin"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none" />
-        </div>
+</div>
 
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Root Admin Password (Optional)</label>
-          <input type="password" name="admin_password" placeholder="Leave blank to auto-generate"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
-        </div>
+{% include "_tenant_modals.html" %}
+{% endblock %}
 
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Root Admin Email (Optional)</label>
-          <input type="email" name="admin_email" placeholder="admin@acme.com"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Database Mode *</label>
-          <select name="db_mode" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none">
-            <option value="sqlite" selected>SQLite Partition (Default)</option>
-            <option value="dedicated_postgres">Dedicated PostgreSQL / Cloud SQL</option>
-            <option value="dedicated_mysql">Dedicated MySQL / Aurora</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Database URL (Optional)</label>
-          <input type="text" name="db_url" placeholder="postgresql://user:pass@host:5432/db"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">License Tier</label>
-          <select name="license_tier" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none">
-            <option value="STANDARD">Standard</option>
-            <option value="ENTERPRISE" selected>Enterprise</option>
-            <option value="DEDICATED">Dedicated Private Cloud</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Storage Region</label>
-          <input type="text" name="storage_region" value="ap-south-1"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none font-mono" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Custom Vanity CNAME (Optional)</label>
-          <input type="text" name="custom_domain" placeholder="e.g. mail.acmeworks.com" autocomplete="off"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-indigo-500 outline-none font-mono" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Max User Seats</label>
-          <input type="number" name="max_users" value="50"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-indigo-500 outline-none font-mono" />
-        </div>
-
-        <!-- Enabled Cartridges Multi-select -->
-        <div class="md:col-span-2 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
-          <label class="block text-xs font-semibold text-slate-300 mb-2">Enabled Applications / Cartridges *</label>
-          <div class="flex flex-wrap items-center gap-4">
-            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
-              <input type="checkbox" name="cartridges" value="mail_organizer" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
-              <span class="font-medium text-white">📦 Mail Organizer</span>
-            </label>
-            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
-              <input type="checkbox" name="cartridges" value="temperature_marker" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
-              <span class="font-medium text-white">🌡️ Temperature Marker</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="md:col-span-4 flex justify-end pt-2">
-          <button type="submit" class="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm text-white transition-colors shadow-lg shadow-indigo-600/20">
-            Provision Tenant & Partition
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Tenants Directory Table -->
-    {% include "_tenant_table.html" %}
-
-  </main>
-
-  {% include "_tenant_modals.html" %}
-
-  {% include "_tenant_scripts.html" %}
-
-</body>
-</html>
+{% block scripts %}
+{% include "_tenant_scripts.html" %}
+{% endblock %}

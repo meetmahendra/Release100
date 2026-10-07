@@ -133,6 +133,17 @@ async def super_admin_tenants_dashboard(
                 "has_custom_waba": bool(t_cfg and t_cfg.encrypted_waba_token),
             })
 
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=[],
+        tenant_name=settings.ORGANIZATION_NAME or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.devops_plane", path="/ops/tenants"),
+            Breadcrumb(label_key="core.ops_tenants.heading"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="super_admin_tenants.html",
@@ -144,6 +155,7 @@ async def super_admin_tenants_dashboard(
             "message": message,
             "error": error,
             "organization": settings.ORGANIZATION_NAME,
+            "ui": ui_ctx,
         },
     )
 
