@@ -1,0 +1,118 @@
+<script>
+  function openInspectModal(slug, name, status, tier, region, dbMode, credMode, domain, cartridges, adminUser, adminName, adminEmail) {
+    document.getElementById('inspectTitle').textContent = name;
+    document.getElementById('inspectSlug').textContent = 'Tenant ID: ' + slug;
+    document.getElementById('inspectStatus').textContent = status;
+    document.getElementById('inspectTier').textContent = tier;
+    document.getElementById('inspectRegion').textContent = region;
+    document.getElementById('inspectDbMode').textContent = dbMode;
+    document.getElementById('inspectDomain').textContent = domain;
+    document.getElementById('inspectCredMode').textContent = credMode;
+    document.getElementById('inspectCartridges').textContent = cartridges || 'mail_organizer, temperature_marker';
+    document.getElementById('inspectAdminUser').textContent = adminUser || 'Not configured';
+    document.getElementById('inspectAdminName').textContent = adminName || '-';
+    document.getElementById('inspectAdminEmail').textContent = adminEmail || '-';
+    document.getElementById('inspectAuditLink').href = '/ops/tenants/' + slug + '/audit';
+
+    var cleanDomain = (domain || '').split(':')[0].trim();
+    var hostUrl = cleanDomain ? ('http://' + cleanDomain + ':8000/admin/login') : '/admin/login';
+    document.getElementById('inspectWorkspaceUrl').href = hostUrl;
+    document.getElementById('inspectWorkspaceUrl').textContent = hostUrl + ' ↗';
+
+    document.getElementById('inspectEditBtn').onclick = function() {
+      closeInspectModal();
+      openEditModal(slug, name, tier, status, 10, adminUser, adminName, adminEmail);
+    };
+    document.getElementById('inspectCartridgesBtn').onclick = function() {
+      closeInspectModal();
+      openCartridgesModal(slug, cartridges);
+    };
+    document.getElementById('inspectByokBtn').onclick = function() {
+      closeInspectModal();
+      openVaultModal(slug, credMode);
+    };
+    document.getElementById('inspectCloneBtn').onclick = function() {
+      closeInspectModal();
+      openCloneModal(slug, name);
+    };
+    document.getElementById('inspectTransferBtn').onclick = function() {
+      closeInspectModal();
+      openTransferModal(slug, region);
+    };
+    document.getElementById('inspectDeleteBtn').onclick = function() {
+      closeInspectModal();
+      openDeleteModal(slug, name);
+    };
+
+    document.getElementById('inspectModal').classList.remove('hidden');
+  }
+  function closeInspectModal() {
+    document.getElementById('inspectModal').classList.add('hidden');
+  }
+
+  function openEditModal(slug, name, tier, status, maxUsers, adminUser, adminName, adminEmail) {
+    document.getElementById('editForm').action = '/ops/tenants/' + slug + '/update';
+    document.getElementById('editName').value = name || '';
+    document.getElementById('editTier').value = (tier || 'ENTERPRISE').toUpperCase();
+    document.getElementById('editStatus').value = (status || 'ACTIVE').toUpperCase();
+    document.getElementById('editMaxUsers').value = maxUsers || 10;
+    document.getElementById('editAdminUsername').value = adminUser || ('admin_' + slug);
+    document.getElementById('editAdminName').value = adminName || (name + ' Admin');
+    document.getElementById('editAdminEmail').value = adminEmail || ('admin@' + slug + '.release100.com');
+    document.getElementById('editAdminPassword').value = '';
+    document.getElementById('editModal').classList.remove('hidden');
+  }
+  function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+  }
+
+  function openDeleteModal(slug, name) {
+    document.getElementById('deleteForm').action = '/ops/tenants/' + slug + '/delete';
+    document.getElementById('deleteTenantName').textContent = name;
+    document.getElementById('deleteTenantSlug').textContent = slug;
+    document.getElementById('deleteConfirmSlug').value = '';
+    document.getElementById('deleteConfirmSlug').placeholder = slug;
+    document.getElementById('deleteModal').classList.remove('hidden');
+  }
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+  }
+
+  function openCartridgesModal(slug, currentCartridges) {
+    document.getElementById('cartridgesForm').action = '/ops/tenants/' + slug + '/cartridges';
+    var list = (currentCartridges || '').split(',');
+    document.getElementById('cMailOrganizer').checked = list.includes('mail_organizer') || !currentCartridges;
+    document.getElementById('cTemperatureMarker').checked = list.includes('temperature_marker') || !currentCartridges;
+    document.getElementById('cartridgesModal').classList.remove('hidden');
+  }
+  function closeCartridgesModal() {
+    document.getElementById('cartridgesModal').classList.add('hidden');
+  }
+
+  function openVaultModal(slug, currentMode) {
+    document.getElementById('vaultForm').action = '/ops/tenants/' + slug + '/vault';
+    document.getElementById('vaultCredMode').value = currentMode;
+    document.getElementById('vaultModal').classList.remove('hidden');
+  }
+  function closeVaultModal() {
+    document.getElementById('vaultModal').classList.add('hidden');
+  }
+
+  function openCloneModal(slug, name) {
+    document.getElementById('cloneForm').action = '/ops/tenants/' + slug + '/clone';
+    document.getElementById('cloneTargetName').value = name + ' (Clone)';
+    document.getElementById('cloneModal').classList.remove('hidden');
+  }
+  function closeCloneModal() {
+    document.getElementById('cloneModal').classList.add('hidden');
+  }
+
+  function openTransferModal(slug, currentRegion) {
+    document.getElementById('transferForm').action = '/ops/tenants/' + slug + '/transfer';
+    document.getElementById('transferRegion').value = currentRegion;
+    document.getElementById('transferModal').classList.remove('hidden');
+  }
+  function closeTransferModal() {
+    document.getElementById('transferModal').classList.add('hidden');
+  }
+</script>
