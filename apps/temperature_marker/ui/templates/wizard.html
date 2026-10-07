@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Progressive Stepper Wizard{% endblock %}
+{% block title %}{{ t('apps.temperature_marker.wizard.title_tag') }}{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 1.5rem;">
-    <h1 style="font-size: 1.75rem; font-weight: 700;">Progressive Stepper Check-in Simulator</h1>
+    <h1 style="font-size: 1.75rem; font-weight: 700;">{{ t('apps.temperature_marker.wizard.header_title') }}</h1>
     <p style="color: var(--text-secondary); margin-top: 0.25rem;">
-        Simulate an authentic operator duty check-in and chiller verification across all safety layers.
+        {{ t('apps.temperature_marker.wizard.header_subtitle') }}
     </p>
 </div>
 
@@ -14,30 +14,30 @@
     <div style="display: flex; justify-content: space-between; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
         <div style="text-align: center; flex: 1;">
             <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-weight: 700;">1</div>
-            <div style="font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">Station &amp; Operator</div>
+            <div style="font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">{{ t('apps.temperature_marker.wizard.step_1') }}</div>
         </div>
         <div style="text-align: center; flex: 1;">
             <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-weight: 700;">2</div>
-            <div style="font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">Telemetry &amp; Reading</div>
+            <div style="font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">{{ t('apps.temperature_marker.wizard.step_2') }}</div>
         </div>
         <div style="text-align: center; flex: 1;">
             <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-weight: 700;">3</div>
-            <div style="font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">Geolocation Check</div>
+            <div style="font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">{{ t('apps.temperature_marker.wizard.step_3') }}</div>
         </div>
         <div style="text-align: center; flex: 1;">
             <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-weight: 700;">4</div>
-            <div style="font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">Multi-Layer Safety</div>
+            <div style="font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">{{ t('apps.temperature_marker.wizard.step_4') }}</div>
         </div>
         <div style="text-align: center; flex: 1;">
             <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-weight: 700;">5</div>
-            <div style="font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">Audit &amp; Hash</div>
+            <div style="font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">{{ t('apps.temperature_marker.wizard.step_5') }}</div>
         </div>
     </div>
 
     <form id="wizardForm" onsubmit="runSimulation(event)">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
             <div>
-                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Target Kiosk</label>
+                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">{{ t('apps.temperature_marker.wizard.label_kiosk') }}</label>
                 <select id="kiosk_id" name="kiosk_id" onchange="updateKioskCoords()" style="width: 100%; padding: 0.6rem; border-radius: 6px; background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary);">
                     {% for k in kiosks %}
                     <option value="{{ k.kiosk_id }}" data-lat="{{ k.latitude }}" data-lon="{{ k.longitude }}" {% if selected_kiosk == k.kiosk_id %}selected{% endif %}>
@@ -47,49 +47,49 @@
                 </select>
             </div>
             <div>
-                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Operator Phone Number</label>
+                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">{{ t('apps.temperature_marker.wizard.label_phone') }}</label>
                 <input type="text" id="phone_number" name="phone_number" value="+919800011122" style="width: 100%; padding: 0.6rem; border-radius: 6px; background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary);" required>
             </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
             <div>
-                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Chiller Temperature (°C)</label>
+                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">{{ t('apps.temperature_marker.wizard.label_temperature') }}</label>
                 <input type="number" step="0.1" id="temperature" name="temperature" value="3.2" style="width: 100%; padding: 0.6rem; border-radius: 6px; background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary);" required>
-                <span style="font-size: 0.8rem; color: var(--text-secondary);">Safe Range: 2.0°C – 4.0°C | Physical Sanity: -20°C – 120°C</span>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ t('apps.temperature_marker.wizard.hint_safe_range') }}</span>
             </div>
             <div>
-                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Face Match Confidence (0.0 – 1.0)</label>
+                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">{{ t('apps.temperature_marker.wizard.label_face_confidence') }}</label>
                 <input type="number" step="0.01" min="0" max="1" id="face_confidence" name="face_confidence" value="0.95" style="width: 100%; padding: 0.6rem; border-radius: 6px; background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary);" required>
-                <span style="font-size: 0.8rem; color: var(--text-secondary);">Threshold: ≥ 0.85 for auto-approval. &lt; 0.85 diverts to human review.</span>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ t('apps.temperature_marker.wizard.hint_face_confidence') }}</span>
             </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
             <div>
-                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Latitude</label>
+                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">{{ t('apps.temperature_marker.wizard.label_latitude') }}</label>
                 <input type="number" step="0.000001" id="latitude" name="latitude" value="18.5621" style="width: 100%; padding: 0.6rem; border-radius: 6px; background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary);" required>
             </div>
             <div>
-                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Longitude</label>
+                <label style="display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">{{ t('apps.temperature_marker.wizard.label_longitude') }}</label>
                 <input type="number" step="0.000001" id="longitude" name="longitude" value="73.9168" style="width: 100%; padding: 0.6rem; border-radius: 6px; background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary);" required>
             </div>
         </div>
 
         <div style="display: flex; gap: 1rem; align-items: center;">
             <button type="submit" id="submitBtn" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
-                Run Verification Workflow
+                {{ t('apps.temperature_marker.wizard.btn_submit') }}
             </button>
-            <button type="button" onclick="setPreset('safe')" class="btn" style="background-color: var(--bg-card-hover); color: var(--text-primary);">Preset: Safe 3.2°C</button>
-            <button type="button" onclick="setPreset('elevated')" class="btn" style="background-color: var(--bg-card-hover); color: var(--text-primary);">Preset: Elevated 5.5°C</button>
-            <button type="button" onclick="setPreset('critical')" class="btn" style="background-color: var(--bg-card-hover); color: var(--text-primary);">Preset: Critical 8.5°C</button>
-            <button type="button" onclick="setPreset('low_confidence')" class="btn" style="background-color: var(--bg-card-hover); color: var(--text-primary);">Preset: Low Conf (0.72)</button>
+            <button type="button" onclick="setPreset('safe')" class="btn" style="background-color: var(--bg-card-hover); color: var(--text-primary);">{{ t('apps.temperature_marker.wizard.preset_safe') }}</button>
+            <button type="button" onclick="setPreset('elevated')" class="btn" style="background-color: var(--bg-card-hover); color: var(--text-primary);">{{ t('apps.temperature_marker.wizard.preset_elevated') }}</button>
+            <button type="button" onclick="setPreset('critical')" class="btn" style="background-color: var(--bg-card-hover); color: var(--text-primary);">{{ t('apps.temperature_marker.wizard.preset_critical') }}</button>
+            <button type="button" onclick="setPreset('low_confidence')" class="btn" style="background-color: var(--bg-card-hover); color: var(--text-primary);">{{ t('apps.temperature_marker.wizard.preset_low_conf') }}</button>
         </div>
     </form>
 </div>
 
 <div id="resultsCard" class="card" style="display: none;">
-    <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Workflow Execution Results</h2>
+    <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">{{ t('apps.temperature_marker.wizard.results_title') }}</h2>
     <div id="resultsContent"></div>
 </div>
 
@@ -127,7 +127,7 @@ async function runSimulation(e) {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.innerText = 'Evaluating through Safety Gates...';
+    btn.innerText = {{ t('apps.temperature_marker.wizard.btn_evaluating') | tojson }};
 
     const payload = {
         kiosk_id: document.getElementById('kiosk_id').value,
@@ -167,37 +167,37 @@ async function runSimulation(e) {
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
                 <div style="background-color: var(--bg-main); padding: 1rem; border-radius: 6px;">
-                    <div style="color: var(--text-secondary); font-size: 0.8rem;">Layer 0 Geofence</div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem;">{{ t('apps.temperature_marker.wizard.layer_geofence') }}</div>
                     <div style="font-weight: 600; margin-top: 0.25rem;">${data.geofence_status || 'VERIFIED'}</div>
                     <div style="font-size: 0.8rem; color: var(--text-secondary);">${data.distance_meters ? data.distance_meters + 'm from kiosk' : 'Within perimeter'}</div>
                 </div>
                 <div style="background-color: var(--bg-main); padding: 1rem; border-radius: 6px;">
-                    <div style="color: var(--text-secondary); font-size: 0.8rem;">Layer 1 Face Match</div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem;">{{ t('apps.temperature_marker.wizard.layer_face_match') }}</div>
                     <div style="font-weight: 600; margin-top: 0.25rem;">${(data.face_confidence * 100).toFixed(1)}% Confidence</div>
                     <div style="font-size: 0.8rem; color: var(--text-secondary);">${data.face_confidence >= 0.85 ? 'Verified (≥85%)' : 'Sub-Threshold (<85%)'}</div>
                 </div>
                 <div style="background-color: var(--bg-main); padding: 1rem; border-radius: 6px;">
-                    <div style="color: var(--text-secondary); font-size: 0.8rem;">HACCP Chiller Status</div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem;">{{ t('apps.temperature_marker.wizard.layer_haccp') }}</div>
                     <div style="font-weight: 600; margin-top: 0.25rem;">${data.temperature}°C (${data.haccp_status || 'COMPLIANT'})</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Safe band: 2.0°C - 4.0°C</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ t('apps.temperature_marker.wizard.safe_band') }}</div>
                 </div>
                 <div style="background-color: var(--bg-main); padding: 1rem; border-radius: 6px;">
-                    <div style="color: var(--text-secondary); font-size: 0.8rem;">Outbox Sync Queue</div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem;">{{ t('apps.temperature_marker.wizard.layer_outbox') }}</div>
                     <div style="font-weight: 600; margin-top: 0.25rem;">${data.outbox_enqueued ? 'ENQUEUED' : 'SKIPPED'}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Offline-first resilient storage</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ t('apps.temperature_marker.wizard.offline_storage') }}</div>
                 </div>
             </div>
 
             <div style="background-color: var(--bg-main); padding: 1rem; border-radius: 6px; font-family: monospace; font-size: 0.85rem;">
-                <div style="color: var(--text-secondary); margin-bottom: 0.25rem;">Cryptographic SHA-256 Audit Hash:</div>
+                <div style="color: var(--text-secondary); margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.wizard.audit_hash_label') }}</div>
                 <div style="color: var(--accent-yellow); word-break: break-all;">${data.audit_hash || 'SHA256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}</div>
             </div>
         `;
     } catch (err) {
-        alert('Simulation error: ' + err);
+        alert({{ t('apps.temperature_marker.wizard.error_simulation') | tojson }} + err);
     } finally {
         btn.disabled = false;
-        btn.innerText = 'Run Verification Workflow';
+        btn.innerText = {{ t('apps.temperature_marker.wizard.btn_submit') | tojson }};
     }
 }
 

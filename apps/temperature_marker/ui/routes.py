@@ -448,6 +448,19 @@ async def view_wizard(
     eff_tenant, tenant_name, tenant_obj = resolve_effective_tenant_info(request, ctx)
     kiosks = _kg_service.list_all_kiosks(tenant_id=eff_tenant)
     selected = kiosk_id or (kiosks[0]["kiosk_id"] if kiosks else "NODE-PUNE-04")
+
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name=str(tenant_name or ""),
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
+            Breadcrumb(label_key="apps.temperature_marker.name", path="/admin/apps/temperature-marker/fleet"),
+            Breadcrumb(label_key="apps.temperature_marker.nav.wizard"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="wizard.html",
@@ -459,6 +472,7 @@ async def view_wizard(
             "active_tenant": tenant_obj,
             "kiosks": kiosks,
             "selected_kiosk": selected,
+            "ui": ui_ctx,
         },
     )
 
