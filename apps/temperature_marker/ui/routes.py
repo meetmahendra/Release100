@@ -41,6 +41,8 @@ from core_platform.app.rbac.permissions import get_web_security_context, require
 from core_platform.app.skills.geofencing import GeofencingSkill
 from core_platform.app.telemetry.audit_engine import AuditEngine
 
+from core_platform.app.ui.templating import build_templates
+
 router = APIRouter(
     prefix="/admin/apps/temperature-marker",
     tags=["Temperature Marker Admin"],
@@ -49,7 +51,7 @@ router = APIRouter(
 
 # Set up Jinja2 templates directory
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
-templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
+templates = build_templates([_TEMPLATES_DIR])
 templates.env.filters["to_local_ist"] = to_local_ist
 templates.env.filters["to_local_ist_full"] = to_local_ist_full
 templates.env.globals["to_local_ist"] = to_local_ist

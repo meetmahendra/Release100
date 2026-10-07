@@ -109,6 +109,28 @@ class TemperatureMarkerApplication(BaseApplication):
         from apps.temperature_marker.ui.routes import router
         return router
 
+    def get_locale_dir(self) -> Optional[Path]:
+        """Return the directory holding this cartridge's locales."""
+        d = Path(__file__).parent / "locales"
+        return d if d.is_dir() else None
+
+    def get_ui_nav(self) -> List[NavItem]:
+        """Return sidebar navigation items for Temperature Marker."""
+        return [
+            NavItem(label_key="apps.temperature_marker.nav.monitoring", path="/admin/apps/temperature-marker/monitoring", group_key="apps.temperature_marker.name"),
+            NavItem(label_key="apps.temperature_marker.nav.fleet", path="/admin/apps/temperature-marker/fleet", group_key="apps.temperature_marker.name"),
+            NavItem(label_key="apps.temperature_marker.nav.wizard", path="/admin/apps/temperature-marker/wizard", group_key="apps.temperature_marker.name"),
+            NavItem(label_key="apps.temperature_marker.nav.approvals", path="/admin/apps/temperature-marker/approvals", group_key="apps.temperature_marker.name"),
+        ]
+
+    def get_ui_statuses(self) -> Dict[str, StatusInfo]:
+        """Return status display mappings for Temperature Marker."""
+        return {
+            "TEMP_NORMAL": StatusInfo(code="TEMP_NORMAL", tone="success", icon="check", label_key="apps.temperature_marker.status.normal"),
+            "TEMP_WARNING": StatusInfo(code="TEMP_WARNING", tone="warning", icon="alert", label_key="apps.temperature_marker.status.warning"),
+            "TEMP_CRITICAL": StatusInfo(code="TEMP_CRITICAL", tone="danger", icon="alert", label_key="apps.temperature_marker.status.critical"),
+        }
+
     def get_mcp_tools(self) -> List[Dict[str, Any]]:
         """Return the domain tools exported to Core MCP Server."""
         from apps.temperature_marker.downstream.mcp_tools import get_temperature_marker_mcp_tools

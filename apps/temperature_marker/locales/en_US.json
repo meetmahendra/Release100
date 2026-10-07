@@ -1,0 +1,18 @@
+{
+  "apps": {
+    "temperature_marker": {
+      "name": "Apex Industrial Temperature & Attendance Marker",
+      "nav": {
+        "monitoring": "📊 Live Monitoring",
+        "fleet": "Fleet Map",
+        "wizard": "Stepper Wizard",
+        "approvals": "Operator Approvals"
+      },
+      "status": {
+        "normal": "Normal",
+        "warning": "Warning",
+        "critical": "Critical"
+      }
+    }
+  }
+}
