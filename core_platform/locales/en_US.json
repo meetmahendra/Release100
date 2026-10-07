@@ -61,5 +61,9 @@
       "confirm_yes": "Yes, continue",
       "confirm_no": "No, go back"
     }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "We could not reach the server. Check your connection and try again."
   }
 }

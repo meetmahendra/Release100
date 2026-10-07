@@ -28,6 +28,8 @@ never marked safe.
 
 from __future__ import annotations
 
+import json
+
 from pathlib import Path
 from typing import Any, Callable, List, Mapping, Optional, Sequence
 
@@ -75,6 +77,19 @@ def status_badge(context: jinja2.runtime.Context, code: str, app_id: Optional[st
     ).format(tone=escape(info.tone), code=escape(info.code), icon=escape(info.icon), label=escape(label))
 
 
+@jinja2.pass_context
+def i18n_bundle(context: jinja2.runtime.Context, prefixes: Sequence[str] = ()) -> Markup:
+    """Jinja global emitting the JSON bundle read by ``ui.js`` (always includes ``errors``).
+
+    The JSON is made safe for embedding inside a script element by escaping ``<``, ``>``, ``&``
+    and the JavaScript line separators.
+    """
+    wanted = sorted({"errors", *prefixes})
+    data = get_catalog().bundle(wanted, _locale_of(context))
+    payload = json.dumps(data, ensure_ascii=True, sort_keys=True)
+    payload = payload.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    return Markup('<script type="application/json" id="i18n-bundle">' + payload + "</script>")
+
 def ui_locales() -> List[str]:
     """Jinja global returning the supported UI locale codes (from settings)."""
     return list(settings.UI_SUPPORTED_LOCALES)
@@ -104,6 +119,7 @@ def build_templates(
     env.globals["status_info"] = status_info
     env.globals["status_badge"] = status_badge
     env.globals["ui_locales"] = ui_locales
+    env.globals["i18n_bundle"] = i18n_bundle
     for name, func in (extra_filters or {}).items():
         env.filters[name] = func
     for name, value in (extra_globals or {}).items():

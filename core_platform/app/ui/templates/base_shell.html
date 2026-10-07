@@ -71,6 +71,8 @@
     </div>
   </div>
 {% endif %}
+{{ i18n_bundle(bundle_prefixes | default([])) }}
+<script src="/ui-static/ui.js"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
