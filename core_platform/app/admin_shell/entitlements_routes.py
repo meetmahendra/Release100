@@ -43,7 +43,8 @@ from core_platform.app.entitlements.repository import (
     MemberDTO,
     UnitDTO,
 )
-from core_platform.app.rbac.permissions import require_admin
+from core_platform.app.rbac.permissions import RBACFilter, require_admin
+from core_platform.app.ui.ui_context import Breadcrumb, build_ui_context
 
 logger = logging.getLogger("core_platform.admin_shell.entitlements")
 
@@ -163,6 +164,16 @@ def entitlements_page(request: Request, ctx: SecurityContext = Depends(require_a
             "tenant_name": tenant_name,
             "organization": tenant_name,
             "csrf_token": request.cookies.get("csrf_token") or generate_csrf_token(),
+            "ui": build_ui_context(
+                locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+                ctx=scoped,
+                allowed_apps=RBACFilter.prune_candidate_apps(scoped),
+                tenant_name=str(tenant_name),
+                breadcrumbs=[
+                    Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
+                    Breadcrumb(label_key="core.entitlements.heading"),
+                ],
+            ),
         },
     )
 

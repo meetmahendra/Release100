@@ -2,3 +2,4 @@
 # Each migration task appends its file here; the hardcoded-text guard then enforces it.
 core_platform/app/ui/templates/base_shell.html
 core_platform/app/ui/templates/components/macros.html
+core_platform/app/admin_shell/templates/entitlements.html

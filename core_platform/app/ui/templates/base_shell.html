@@ -43,7 +43,7 @@
         </nav>
         <div class="flex items-center gap-3 text-sm">
           <span class="rounded-md border border-line px-2 py-1" title="{{ t('core.shell.workspace') }}">
-            {{ _ui.tenant_name if _ui.tenant_name else t('core.shell.platform_scope') }}
+            {{ _ui.tenant_name if _ui.tenant_name else t('core.shell.platform_scope') }}{% if _ui.tenant_slug %} <span class="font-mono text-primary">({{ _ui.tenant_slug }})</span>{% endif %}
           </span>
           <span class="rounded-md border px-2 py-1 {% if _ui.runtime_mode == 'live' %}border-primary text-primary{% elif _ui.runtime_mode == 'preview' %}border-preview text-preview{% else %}border-line text-muted{% endif %}"
                 title="{{ t('core.shell.mode_label') }}: {{ t('core.shell.mode_' ~ _ui.runtime_mode ~ '_help') }}"

@@ -64,8 +64,9 @@ def test_page_requires_admin(client: TestClient) -> None:
     assert client.get("/admin/entitlements/", cookies=_cookies("operator")).status_code == 403
 
 
-def test_template_has_required_vocabulary() -> None:
-    html = TEMPLATE.read_text(encoding="utf-8")
+def test_template_has_required_vocabulary(client: TestClient) -> None:
+    # Plan 11 T15: wording now lives in the catalog, so assert on the rendered page (HTML + embedded bundle).
+    html = client.get("/admin/entitlements/", cookies=_cookies()).text
     for needle in (
         "They CAN", "They CANNOT",
         "Members of ", " will be able to ", "They will not be able to",
