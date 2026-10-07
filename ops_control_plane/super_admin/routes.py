@@ -41,6 +41,8 @@ from core_platform.app.auth.models import SecurityContext
 from core_platform.app.config import settings
 from core_platform.app.identity.models import Tenant, TenantAuditLog, TenantConfig, TenantDomain
 from core_platform.app.rbac.permissions import get_web_security_context, require_devops
+from core_platform.app.ui.templating import build_templates
+from core_platform.app.ui.ui_context import Breadcrumb, build_ui_context
 from ops_control_plane.devops_vault import DevOpsKeyVault
 from ops_control_plane.tenant_lifecycle import GENESIS_HASH, TenantLifecycleManager, compute_audit_hash
 
@@ -51,7 +53,7 @@ router = APIRouter(
     tags=["DevOps Super-Admin Control Plane"],
     dependencies=[Depends(require_devops)],
 )
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+templates = build_templates([Path(__file__).parent / "templates"])
 
 
 def _verify_devops_privilege(ctx: SecurityContext, request: Optional[Request] = None) -> None:
@@ -518,6 +520,17 @@ async def view_tenant_audit_trail(
             })
             current_prev = l.record_hash
 
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=[],
+        tenant_name=settings.ORGANIZATION_NAME or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.devops_plane", path="/ops/tenants"),
+            Breadcrumb(label_key="core.ops_audit.heading"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="super_admin_audit.html",
@@ -528,5 +541,6 @@ async def view_tenant_audit_trail(
             "logs": verified_logs,
             "is_tamper_free": is_tamper_free,
             "organization": settings.ORGANIZATION_NAME,
+            "ui": ui_ctx,
         },
     )

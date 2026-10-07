@@ -1,99 +1,86 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SHA-256 Audit Trail — {{ tenant.name }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+{% extends "base_shell.html" %}
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{% block title %}{{ t('core.ops_audit.title_tag', name=tenant.name) }}{% endblock %}
 
-  <!-- Header -->
-  <header class="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 shadow-md">
-    <div class="flex items-center gap-3">
-      <a href="/ops/tenants" class="text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-sm font-medium">
-        ← Back to Tenants
-      </a>
-      <span class="text-slate-600">/</span>
-      <h1 class="text-base font-bold text-white flex items-center gap-2">
-        <span>🛡️</span> Cryptographic Audit Trail: <span class="text-indigo-400">{{ tenant.name }} ({{ tenant.id }})</span>
-      </h1>
-    </div>
-    <div class="flex items-center gap-3 text-xs">
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Top bar with verification status badge -->
+  <div class="flex items-center justify-between">
+    <a href="/ops/tenants" class="text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-sm font-medium">
+      {{ t('core.ops_audit.back_to_tenants') }}
+    </a>
+    <div>
       {% if is_tamper_free %}
-      <span class="px-3 py-1 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 font-semibold flex items-center gap-1.5">
+      <span class="px-3 py-1 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 font-semibold flex items-center gap-1.5 text-xs">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        SHA-256 Integrity Verified (0 Tamper Anomalies)
+        {{ t('core.ops_audit.badge_verified') }}
       </span>
       {% else %}
-      <span class="px-3 py-1 rounded bg-red-950 border border-red-500 text-red-300 font-semibold flex items-center gap-1.5">
+      <span class="px-3 py-1 rounded bg-red-950 border border-red-500 text-red-300 font-semibold flex items-center gap-1.5 text-xs">
         <span class="w-2 h-2 rounded-full bg-red-400"></span>
-        WARNING: Tamper Detected in Audit Chain!
+        {{ t('core.ops_audit.badge_tamper') }}
       </span>
       {% endif %}
     </div>
-  </header>
+  </div>
 
-  <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
+    <h2 class="text-base font-semibold text-white mb-2">{{ t('core.ops_audit.card_title') }}</h2>
+    <p class="text-xs text-slate-400">
+      {{ t('core.ops_audit.card_desc_before') }}<code class="text-indigo-300">{{ t('core.ops_audit.card_formula') }}</code>{{ t('core.ops_audit.card_desc_after') }}
+    </p>
+  </div>
 
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-      <h2 class="text-base font-semibold text-white mb-2">Immutable Audit Chain Details</h2>
-      <p class="text-xs text-slate-400">
-        Every operational lifecycle event is chained via <code class="text-indigo-300">SHA-256(Prev_Hash + Timestamp + Payload)</code>
-        providing mathematical non-repudiation and tamper prevention (FDA 21 CFR Part 11 / ISO 22000 compliance).
-      </p>
+  <!-- Audit Timeline Table -->
+  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs text-slate-300">
+        <thead class="bg-slate-900/60 uppercase text-slate-400 border-b border-slate-700/60 font-semibold">
+          <tr>
+            <th class="px-4 py-3">{{ t('core.ops_audit.col_event_id') }}</th>
+            <th class="px-4 py-3">{{ t('core.ops_audit.col_action') }}</th>
+            <th class="px-4 py-3">{{ t('core.ops_audit.col_operator') }}</th>
+            <th class="px-4 py-3">{{ t('core.ops_audit.col_timestamp') }}</th>
+            <th class="px-4 py-3">{{ t('core.ops_audit.col_prev_hash') }}</th>
+            <th class="px-4 py-3">{{ t('core.ops_audit.col_record_hash') }}</th>
+            <th class="px-4 py-3">{{ t('core.ops_audit.col_verification') }}</th>
+            <th class="px-4 py-3">{{ t('core.ops_audit.col_payload') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-700/40 font-mono text-[11px]">
+          {% for item in logs %}
+          {% set l = item.log %}
+          <tr class="hover:bg-slate-700/30 transition-colors">
+            <td class="px-4 py-3 font-bold text-white">#{{ l.id }}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-700 text-indigo-300 font-semibold uppercase">
+                {{ l.action }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-slate-300 font-sans font-medium">{{ l.performed_by }}</td>
+            <td class="px-4 py-3 text-slate-400">{{ l.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td class="px-4 py-3 text-slate-500 truncate max-w-[120px]" title="{{ l.prev_hash }}">{{ l.prev_hash }}</td>
+            <td class="px-4 py-3 text-emerald-400 truncate max-w-[120px]" title="{{ l.record_hash }}">{{ l.record_hash }}</td>
+            <td class="px-4 py-3">
+              {% if item.is_valid %}
+              <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-600 font-semibold">{{ t('core.ops_audit.status_valid') }}</span>
+              {% else %}
+              <span class="px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-600 font-semibold">{{ t('core.ops_audit.status_corrupted') }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 font-sans text-slate-300">
+              <pre class="text-[10px] bg-slate-950 p-2 rounded border border-slate-800 max-w-xs overflow-x-auto">{{ item.payload | tojson(indent=2) }}</pre>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-slate-500 italic font-sans">{{ t('core.ops_audit.empty_events') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-
-    <!-- Audit Timeline Table -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-slate-300">
-          <thead class="bg-slate-950 uppercase text-slate-400 border-b border-slate-800 font-semibold">
-            <tr>
-              <th class="px-4 py-3">Event ID</th>
-              <th class="px-4 py-3">Action</th>
-              <th class="px-4 py-3">Operator</th>
-              <th class="px-4 py-3">Timestamp (UTC)</th>
-              <th class="px-4 py-3">Previous Hash</th>
-              <th class="px-4 py-3">Record Hash</th>
-              <th class="px-4 py-3">Chain Verification</th>
-              <th class="px-4 py-3">Event Payload</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-800/60 font-mono text-[11px]">
-            {% for item in logs %}
-            {% set l = item.log %}
-            <tr class="hover:bg-slate-800/30 transition-colors">
-              <td class="px-4 py-3 font-bold text-white">#{{ l.id }}</td>
-              <td class="px-4 py-3">
-                <span class="px-2 py-0.5 rounded bg-indigo-950 border border-indigo-700 text-indigo-300 font-semibold uppercase">
-                  {{ l.action }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-slate-300 font-sans font-medium">{{ l.performed_by }}</td>
-              <td class="px-4 py-3 text-slate-400">{{ l.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-              <td class="px-4 py-3 text-slate-500 truncate max-w-[120px]" title="{{ l.prev_hash }}">{{ l.prev_hash }}</td>
-              <td class="px-4 py-3 text-emerald-400 truncate max-w-[120px]" title="{{ l.record_hash }}">{{ l.record_hash }}</td>
-              <td class="px-4 py-3">
-                {% if item.is_valid %}
-                <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-600 font-semibold">VALID</span>
-                {% else %}
-                <span class="px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-600 font-semibold">CORRUPTED</span>
-                {% endif %}
-              </td>
-              <td class="px-4 py-3 font-sans text-slate-300">
-                <pre class="text-[10px] bg-slate-950 p-2 rounded border border-slate-800 max-w-xs overflow-x-auto">{{ item.payload | tojson(indent=2) }}</pre>
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="8" class="px-4 py-8 text-center text-slate-500 italic font-sans">No audit events recorded yet.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </main>
-</body>
-</html>
+  </div>
+</div>
+{% endblock %}

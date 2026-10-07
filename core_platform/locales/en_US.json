@@ -410,6 +410,28 @@
       "status_200": "\u2713 200",
       "status_fail": "\u2717 Fail",
       "empty_interactions": "No LLM interactions recorded yet. Telemetry logs will automatically appear here on runtime requests."
+    },
+    "ops_audit": {
+      "title_tag": "SHA-256 Audit Trail \u2014 {name}",
+      "back_to_tenants": "\u2190 Back to Tenants",
+      "heading": "Cryptographic Audit Trail: {name} ({id})",
+      "badge_verified": "SHA-256 Integrity Verified (0 Tamper Anomalies)",
+      "badge_tamper": "WARNING: Tamper Detected in Audit Chain!",
+      "card_title": "Immutable Audit Chain Details",
+      "card_desc_before": "Every operational lifecycle event is chained via ",
+      "card_formula": "SHA-256(Prev_Hash + Timestamp + Payload)",
+      "card_desc_after": " providing mathematical non-repudiation and tamper prevention (FDA 21 CFR Part 11 / ISO 22000 compliance).",
+      "col_event_id": "Event ID",
+      "col_action": "Action",
+      "col_operator": "Operator",
+      "col_timestamp": "Timestamp (UTC)",
+      "col_prev_hash": "Previous Hash",
+      "col_record_hash": "Record Hash",
+      "col_verification": "Chain Verification",
+      "col_payload": "Event Payload",
+      "status_valid": "VALID",
+      "status_corrupted": "CORRUPTED",
+      "empty_events": "No audit events recorded yet."
     }
   },
   "errors": {
