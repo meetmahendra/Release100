@@ -23,7 +23,7 @@ from pydantic import BaseModel, ConfigDict
 from core_platform.app.auth.models import SecurityContext
 from core_platform.app.config import settings
 from core_platform.app.ui.contracts import Breadcrumb, NavItem
-from core_platform.app.ui.nav_builder import build_nav
+from core_platform.app.ui.nav_builder import compose_nav
 
 __all__ = ["Breadcrumb", "NavItem", "UiContext", "build_ui_context"]
 
@@ -91,6 +91,6 @@ def build_ui_context(
         role_label_key=_role_key(principal),
         runtime_mode=_MODE_MAP.get(settings.ENTITLEMENT_ENFORCEMENT_MODE, "off"),
         breadcrumbs=list(breadcrumbs),
-        nav=build_nav(principal, allowed_apps) if principal.is_authenticated else [],
+        nav=compose_nav(principal, allowed_apps) if principal.is_authenticated else [],
         shell_mode=shell_mode,
     )

@@ -47,6 +47,7 @@ from core_platform.app.ingress.rate_limiter import get_platform_rate_limiter
 from core_platform.app.llm.gateway import get_platform_llm_gateway
 from core_platform.app.rbac.permissions import (get_web_security_context, is_devops_context, require_devops)
 from core_platform.app.ui.templating import build_templates
+from core_platform.app.ui.ui_context import Breadcrumb, build_ui_context
 
 logger = logging.getLogger("core_platform.admin_shell")
 
@@ -248,10 +249,13 @@ async def admin_dashboard(
 
     db_mgr = get_db_manager()
     total_tenant_users = 0
-    with db_mgr.get_session() as session:
-        total_tenant_users = session.scalar(
-            select(func.count(PlatformUser.id)).where(PlatformUser.tenant_id == active_tenant_slug)
-        ) or 0
+    try:
+        with db_mgr.get_session() as session:
+            total_tenant_users = session.scalar(
+                select(func.count(PlatformUser.id)).where(PlatformUser.tenant_id == active_tenant_slug)
+            ) or 0
+    except Exception:
+        total_tenant_users = 0
 
     nav_apps = _build_nav_apps(ctx, active_tenant)
 
@@ -268,6 +272,16 @@ async def admin_dashboard(
     recent_audits = []
     if hasattr(audit_engine, "_active_records"):
         recent_audits = list(reversed(audit_engine._active_records[-5:]))
+
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=[a["id"] for a in nav_apps],
+        tenant_name=str(tenant_name),
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.overview", path="/admin/"),
+        ],
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -296,6 +310,7 @@ async def admin_dashboard(
             "last_audit_sequence": audit_engine._sequence_counter,
             "last_audit_hash": audit_engine._last_hash,
             "recent_audits": recent_audits,
+            "ui": ui_ctx,
         },
     )
 
@@ -325,6 +340,17 @@ async def view_api_keys(
     keys = manager.list_keys()
     nav_apps = _build_nav_apps(ctx, active_tenant)
 
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=[a["id"] for a in nav_apps],
+        tenant_name=str(tenant_name),
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
+            Breadcrumb(label_key="core.nav.api_keys"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="shell.html",
@@ -339,6 +365,7 @@ async def view_api_keys(
             "tenant_name": tenant_name,
             "organization": tenant_name,
             "active_tenant": active_tenant,
+            "ui": ui_ctx,
         },
     )
 

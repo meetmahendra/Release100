@@ -72,5 +72,51 @@ def build_nav(
         except Exception as err:  # noqa: BLE001 - one bad cartridge must not hide the rest
             logger.warning("[UiNav] get_ui_nav failed for %s: %s", app_id, err)
             continue
-        items.extend(item for item in declared if _is_visible(ctx, item))
+        visible = [item for item in declared if _is_visible(ctx, item)]
+        if not declared:
+            visible = [_fallback_item(app_id, app)]
+        items.extend(visible)
+    return items
+
+
+def _fallback_item(app_id: str, app: BaseApplication) -> NavItem:
+    """Return a single entry for a cartridge that declares no navigation of its own."""
+    slug = app_id.replace("_", "-")
+    path = getattr(app, "dashboard_url", "") or f"/admin/apps/{slug}/"
+    return NavItem(
+        label_key="core.nav.group_apps",
+        label_text=str(getattr(app, "name", app_id) or app_id),
+        path=str(path),
+        group_key="core.nav.group_apps",
+    )
+
+
+def _core(label_key: str, path: str, group_key: Optional[str] = None) -> NavItem:
+    return NavItem(label_key=label_key, path=path, group_key=group_key)
+
+
+def compose_nav(
+    ctx: SecurityContext,
+    allowed_apps: Iterable[str],
+    applications: Optional[Dict[str, BaseApplication]] = None,
+) -> List[NavItem]:
+    """Return the full sidebar: overview, cartridge entries, then role-based core sections."""
+    items: List[NavItem] = [_core("core.nav.overview", "/admin/")]
+    apps = build_nav(ctx, allowed_apps, applications)
+    items.extend(
+        item if item.group_key else item.model_copy(update={"group_key": "core.nav.group_apps"}) for item in apps
+    )
+    if ctx.is_admin or ctx.is_devops:
+        ws = "core.nav.group_workspace"
+        items.append(_core("core.nav.users", "/admin/users", ws))
+        items.append(_core("core.nav.tenants", "/admin/tenants", ws))
+        items.append(_core("core.nav.api_keys", "/admin/api-keys", ws))
+        if ctx.is_devops:
+            items.append(_core("core.nav.devops_plane", "/ops/tenants", ws))
+    if ctx.is_devops:
+        dg = "core.nav.group_diagnostics"
+        items.append(_core("core.nav.llm_costs", "/admin/llm-costs", dg))
+        items.append(_core("core.nav.logs", "/admin/logs", dg))
+        items.append(_core("core.nav.settings", "/settings", dg))
+        items.append(_core("core.nav.health", "/health", dg))
     return items

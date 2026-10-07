@@ -1,187 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ title }} — Release100</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-slate-900 text-slate-100 flex">
+{% extends "base_shell.html" %}
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{% block title %}{{ title }} {{ t('core.dashboard.title_suffix') }}{% endblock %}
 
-  <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
-  <aside class="w-64 shrink-0 bg-slate-800/90 border-r border-slate-700/60 flex flex-col">
-    <!-- Branding -->
-    <div class="px-6 py-5 border-b border-slate-700/60">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944"/>
-          </svg>
-        </div>
-        <div>
-          <p class="text-sm font-bold text-white leading-tight">Release100</p>
-          <p class="text-xs text-slate-400 truncate max-w-[140px]">{{ organization }}</p>
-        </div>
-      </div>
+{% block content %}
+<div class="space-y-8">
+  <!-- Top header bar -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white">{{ title }}</h1>
+      <p class="text-xs text-slate-400 mt-1">
+        {{ t('core.dashboard.node_label') }} <span class="font-mono text-emerald-400">{{ kiosk_id }}</span> ({{ station }}) &bull; {{ t('core.dashboard.tenant_label') }} <strong class="text-slate-200">{{ organization }}</strong> <span class="text-emerald-400 font-mono">({{ tenant_id }})</span>
+      </p>
     </div>
-
-    <!-- Navigation Links -->
-    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto text-sm">
-      <!-- Dashboard -->
-      <a href="/admin/"
-         class="flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors
-                {% if not section %}bg-emerald-600/20 text-emerald-300 font-semibold{% else %}text-slate-300 hover:bg-slate-700/50{% endif %}">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-        </svg>
-        Overview Dashboard
-      </a>
-
-      <!-- Section: Dynamic Installed Applications -->
-      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Applications</p>
-      {% for nav in nav_apps %}
-      <a href="{{ nav.url }}"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <span>📦</span>
-        <span class="truncate">{{ nav.label }}</span>
-      </a>
+    <!-- Mode Badges -->
+    <div class="flex items-center gap-2">
+      {% if dry_run %}
+      <span class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold border border-amber-500/30">
+        {{ t('core.dashboard.badge_shadow') }}
+      </span>
       {% else %}
-      <p class="px-3 py-1.5 text-xs text-slate-500 italic">No cartridges installed</p>
-      {% endfor %}
-
-      <!-- Workspace & Security -->
-      {% if is_admin %}
-      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Workspace & Access</p>
-      <a href="/admin/users"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
-                {% if section == 'users' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
-        <span>👥</span>
-        <span>Users & Team</span>
-      </a>
-      <a href="/admin/tenants"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
-                {% if section == 'tenants' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
-        <span>🏢</span>
-        <span>Company Profile & Vault</span>
-      </a>
-      <a href="/admin/api-keys"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
-                {% if section == 'api_keys' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586
-               a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-        </svg>
-        API Keys
-      </a>
-      {% if is_devops %}
-      <a href="/ops/tenants"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-amber-300 hover:bg-amber-900/30 transition-colors">
-        <span>⚡</span>
-        <span class="font-semibold text-amber-400">DevOps Control Plane</span>
-      </a>
+      <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30">
+        {{ t('core.dashboard.badge_live') }}
+      </span>
       {% endif %}
-      {% endif %}
-
-      <!-- DevOps Diagnostics -->
-      {% if is_devops %}
-      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">DevOps Diagnostics</p>
-      <a href="/admin/llm-costs"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
-                {% if section == 'llm_costs' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
-        <span>💰</span> LLM Costs & Tokens
-      </a>
-      <a href="/admin/logs"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors
-                {% if section == 'logs' %}bg-emerald-600/20 text-emerald-300 font-semibold{% endif %}">
-        <span>📑</span> Live System Logs
-      </a>
-      <a href="/settings"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <span>📡</span> Master Settings & Keys
-      </a>
-      <a href="/health" target="_blank"
-         class="flex items-center gap-3 px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors">
-        <span>💓</span> Live Health JSON ↗
-      </a>
-      {% endif %}
-    </nav>
-
-    <!-- User & Logout -->
-    <div class="px-4 py-4 border-t border-slate-700/60 bg-slate-800/40">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-bold text-white shrink-0">
-            {{ principal[:1].upper() }}
-          </div>
-          <span class="text-sm font-medium text-slate-200 truncate">{{ principal }}</span>
-        </div>
-        <a href="/admin/logout" class="text-slate-400 hover:text-red-400 transition-colors p-1" title="Logout">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-          </svg>
-        </a>
-      </div>
+      <span class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700">
+        {{ t('core.dashboard.badge_mode', mode=execution_mode | default("shadow")) }}
+      </span>
     </div>
-  </aside>
+  </div>
 
-  <!-- ── Main Content ───────────────────────────────────────────────────── -->
-  <main class="flex-1 overflow-auto p-8 bg-slate-900">
-
-    <!-- Top header bar -->
-    <div class="mb-8 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-white">{{ title }}</h1>
-        <p class="text-xs text-slate-400 mt-1">
-          Node: <span class="font-mono text-emerald-400">{{ kiosk_id }}</span> ({{ station }}) &bull; 🏢 Tenant: <strong class="text-slate-200">{{ organization }}</strong> <span class="text-emerald-400 font-mono">({{ tenant_id }})</span>
-        </p>
-      </div>
-      <!-- Mode Badges -->
-      <div class="flex items-center gap-2">
-        {% if dry_run %}
-        <span class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold border border-amber-500/30">
-          🔶 SHADOW (DRY RUN)
-        </span>
-        {% else %}
-        <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold border border-emerald-500/30">
-          ✅ LIVE PRODUCTION
-        </span>
-        {% endif %}
-        <span class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700">
-          Mode: {{ execution_mode | default("shadow") }}
-        </span>
-      </div>
-    </div>
-
-    <!-- ── Dashboard Section ─────────────────────────────────────────── -->
-    {% if not section %}
-    
-    <!-- 1. Live Services Readiness Grid -->
-    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Service & Credential Readiness</h2>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+  <!-- ── Dashboard Section ─────────────────────────────────────────── -->
+  {% if not section %}
+  
+  <!-- 1. Live Services Readiness Grid -->
+  <div>
+    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">{{ t('core.dashboard.readiness_heading') }}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       
       <!-- Google Gemini AI -->
       <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Google Gemini AI</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ t('core.dashboard.gemini_name') }}</span>
             {% if gemini_configured %}
-            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">READY</span>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">{{ t('core.dashboard.ready') }}</span>
             {% else %}
-            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold">MISSING KEY</span>
+            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold">{{ t('core.dashboard.missing_key') }}</span>
             {% endif %}
           </div>
-          <p class="text-lg font-bold text-white">Cognitive Gateway</p>
-          <p class="text-xs text-slate-400 mt-1">Powers intent routing, OCR & stochastic reasoning.</p>
+          <p class="text-lg font-bold text-white">{{ t('core.dashboard.gateway_title') }}</p>
+          <p class="text-xs text-slate-400 mt-1">{{ t('core.dashboard.gateway_desc') }}</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
           {% if is_devops %}
-          <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Configure / Test Key →</a>
+          <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">{{ t('core.dashboard.gemini_cfg') }}</a>
           {% else %}
-          <a href="/admin/tenants" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Tenant BYOK Keys →</a>
+          <a href="/admin/tenants" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">{{ t('core.dashboard.gemini_byok') }}</a>
           {% endif %}
         </div>
       </div>
@@ -190,21 +64,21 @@
       <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">WhatsApp Ingress</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ t('core.dashboard.wa_name') }}</span>
             {% if whatsapp_configured %}
-            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">CONFIGURED</span>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">{{ t('core.dashboard.configured') }}</span>
             {% else %}
-            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold">INCOMPLETE</span>
+            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold">{{ t('core.dashboard.incomplete') }}</span>
             {% endif %}
           </div>
-          <p class="text-lg font-bold text-white">Field Messaging</p>
-          <p class="text-xs text-slate-400 mt-1">Handles conversational webhooks and notification outbox.</p>
+          <p class="text-lg font-bold text-white">{{ t('core.dashboard.messaging_title') }}</p>
+          <p class="text-xs text-slate-400 mt-1">{{ t('core.dashboard.messaging_desc') }}</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
           {% if is_devops %}
-          <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Configure WhatsApp →</a>
+          <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">{{ t('core.dashboard.wa_cfg') }}</a>
           {% else %}
-          <a href="/admin/tenants" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Configure WhatsApp BYOK →</a>
+          <a href="/admin/tenants" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">{{ t('core.dashboard.wa_byok') }}</a>
           {% endif %}
         </div>
       </div>
@@ -213,21 +87,21 @@
       <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Outbound Relay</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ t('core.dashboard.relay_name') }}</span>
             {% if relay_configured %}
-            <span class="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold">WSS TUNNEL</span>
+            <span class="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold">{{ t('core.dashboard.wss') }}</span>
             {% else %}
-            <span class="px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 text-xs font-bold">LOCAL MODE</span>
+            <span class="px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 text-xs font-bold">{{ t('core.dashboard.local_mode') }}</span>
             {% endif %}
           </div>
-          <p class="text-lg font-bold text-white">Zero Inbound</p>
-          <p class="text-xs text-slate-400 mt-1 truncate">Target: {{ relay_url or "Local Simulator" }}</p>
+          <p class="text-lg font-bold text-white">{{ t('core.dashboard.inbound_title') }}</p>
+          <p class="text-xs text-slate-400 mt-1 truncate">{{ t('core.dashboard.relay_target', url=relay_url if relay_url else t('core.dashboard.local_sim')) }}</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
           {% if is_devops %}
-          <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Cloudflare Tunnel Info →</a>
+          <a href="/settings" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">{{ t('core.dashboard.tunnel_info') }}</a>
           {% else %}
-          <span class="text-xs text-slate-500">Platform Managed</span>
+          <span class="text-xs text-slate-500">{{ t('core.dashboard.platform_managed') }}</span>
           {% endif %}
         </div>
       </div>
@@ -236,25 +110,27 @@
       <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Audit Ledger</span>
-            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">SHA-256</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ t('core.dashboard.audit_name') }}</span>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">{{ t('core.dashboard.sha') }}</span>
           </div>
-          <p class="text-lg font-bold text-white">#{{ last_audit_sequence or 0 }} Events</p>
-          <p class="text-xs text-slate-400 mt-1 font-mono truncate">Hash: {{ (last_audit_hash or "")[:16] }}...</p>
+          <p class="text-lg font-bold text-white">{{ t('core.dashboard.events', count=last_audit_sequence or 0) }}</p>
+          <p class="text-xs text-slate-400 mt-1 font-mono truncate">{{ t('core.dashboard.hash_line', hash=(last_audit_hash or "")[:16]) }}</p>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-700/60">
           {% if is_devops %}
-          <a href="/health" target="_blank" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">View Telemetry →</a>
+          <a href="/health" target="_blank" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">{{ t('core.dashboard.view_telemetry') }}</a>
           {% else %}
-          <span class="text-xs text-emerald-400">Tamper-Proof Ledger</span>
+          <span class="text-xs text-emerald-400">{{ t('core.dashboard.tamper_proof') }}</span>
           {% endif %}
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- 2. Quick Action Launchpad -->
-    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Action Launchpad</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+  <!-- 2. Quick Action Launchpad -->
+  <div>
+    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">{{ t('core.dashboard.launchpad_heading') }}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
       
       {% if is_devops %}
       <!-- DevOps Action 1: Live Settings & Disk Sync -->
@@ -262,10 +138,10 @@
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-2xl">⚙️</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Settings & Master Keys</h3>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">{{ t('core.dashboard.settings_title') }}</h3>
         </div>
-        <p class="text-xs text-slate-400">Configure LLM providers, WhatsApp webhooks, Cloudflare tunnels, and manage configuration backups.</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Configure System →</p>
+        <p class="text-xs text-slate-400">{{ t('core.dashboard.settings_desc') }}</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">{{ t('core.dashboard.settings_cta') }}</p>
       </a>
 
       <!-- DevOps Action 2: Multi-Tenant Control Plane -->
@@ -273,10 +149,10 @@
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-amber-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-2xl">⚡</span>
-          <h3 class="text-base font-semibold text-amber-300 group-hover:text-amber-400">DevOps Control Plane</h3>
+          <h3 class="text-base font-semibold text-amber-300 group-hover:text-amber-400">{{ t('core.dashboard.plane_title') }}</h3>
         </div>
-        <p class="text-xs text-slate-400">Provision tenant databases, deep-clone partitions, cutover geo-regions, and audit hash chains.</p>
-        <p class="text-xs text-amber-400 font-medium mt-3">Open Operations →</p>
+        <p class="text-xs text-slate-400">{{ t('core.dashboard.plane_desc') }}</p>
+        <p class="text-xs text-amber-400 font-medium mt-3">{{ t('core.dashboard.plane_cta') }}</p>
       </a>
 
       <!-- DevOps Action 3: API Keys -->
@@ -284,10 +160,10 @@
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-2xl">🎟️</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Provision API Keys</h3>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">{{ t('core.dashboard.keys_title') }}</h3>
         </div>
-        <p class="text-xs text-slate-400">Generate scoped, rate-limited SHA-256 API keys for field tablets, MCP agents, and external integrations.</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Manage Keys →</p>
+        <p class="text-xs text-slate-400">{{ t('core.dashboard.keys_desc') }}</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">{{ t('core.dashboard.keys_cta') }}</p>
       </a>
       {% else %}
       <!-- Customer Admin Action 1: Company Profile & BYOK Vault -->
@@ -295,10 +171,10 @@
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-2xl">🏢</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Company Profile & BYOK Vault</h3>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">{{ t('core.dashboard.profile_title') }}</h3>
         </div>
-        <p class="text-xs text-slate-400">Configure company WhatsApp integration, custom Gemini API keys, and custom domain CNAME records.</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Manage Profile & Keys →</p>
+        <p class="text-xs text-slate-400">{{ t('core.dashboard.profile_desc') }}</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">{{ t('core.dashboard.profile_cta') }}</p>
       </a>
 
       <!-- Customer Admin Action 2: User Registry -->
@@ -306,10 +182,10 @@
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-2xl">👥</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Users & Team Directory</h3>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">{{ t('core.dashboard.team_title') }}</h3>
         </div>
-        <p class="text-xs text-slate-400">Invite and manage team members, assign cartridge permissions, and generate instant 1-click magic links.</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Manage Users →</p>
+        <p class="text-xs text-slate-400">{{ t('core.dashboard.team_desc') }}</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">{{ t('core.dashboard.team_cta') }}</p>
       </a>
 
       <!-- Customer Admin Action 3: API Keys -->
@@ -317,10 +193,10 @@
          class="bg-slate-800/80 border border-slate-700 rounded-xl p-5 hover:bg-slate-750 hover:border-emerald-500/50 transition-all duration-150 group">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-2xl">🎟️</span>
-          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">Scoped API Keys</h3>
+          <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">{{ t('core.dashboard.scoped_title') }}</h3>
         </div>
-        <p class="text-xs text-slate-400">Issue secure API keys scoped specifically to your organization's entitled applications.</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Issue Keys →</p>
+        <p class="text-xs text-slate-400">{{ t('core.dashboard.scoped_desc') }}</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">{{ t('core.dashboard.scoped_cta') }}</p>
       </a>
       {% endif %}
 
@@ -333,30 +209,32 @@
           <h3 class="text-base font-semibold text-white group-hover:text-emerald-400">{{ nav.label }}</h3>
         </div>
         <p class="text-xs text-slate-400">{{ nav.description or "Active domain cartridge." }}</p>
-        <p class="text-xs text-emerald-400 font-medium mt-3">Open Cartridge Dashboard →</p>
+        <p class="text-xs text-emerald-400 font-medium mt-3">{{ t('core.dashboard.cartridge_cta') }}</p>
       </a>
       {% endfor %}
 
       {% if not nav_apps %}
       <div class="col-span-full bg-slate-800/40 border border-slate-700/60 rounded-xl p-6 text-center">
-        <p class="text-slate-300 font-medium">📦 Pure Microkernel Mode — No Application Cartridges Installed</p>
-        <p class="text-xs text-slate-400 mt-1">Core platform is fully operational. Install cartridges (e.g. <code>pip install release100-cartridge-temperature-marker</code>) to enable business workflows.</p>
+        <p class="text-slate-300 font-medium">{{ t('core.dashboard.microkernel_title') }}</p>
+        <p class="text-xs text-slate-400 mt-1">{{ t('core.dashboard.microkernel_before') }}<code>{{ t('core.dashboard.microkernel_cmd') }}</code>{{ t('core.dashboard.microkernel_after') }}</p>
       </div>
       {% endif %}
 
     </div>
+  </div>
 
-    <!-- 3. Recent Cryptographic Audit Activity -->
-    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Recent Audit Trail Activity (SHA-256 Hash Chain)</h2>
-    <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden mb-8">
+  <!-- 3. Recent Cryptographic Audit Activity -->
+  <div>
+    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">{{ t('core.dashboard.audit_heading') }}</h2>
+    <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-slate-700 bg-slate-800 text-slate-400 text-xs uppercase">
-            <th class="px-4 py-3 text-left">Seq #</th>
-            <th class="px-4 py-3 text-left">Timestamp (UTC)</th>
-            <th class="px-4 py-3 text-left">Action / Event</th>
-            <th class="px-4 py-3 text-left">Actor / User</th>
-            <th class="px-4 py-3 text-left">Cryptographic Hash</th>
+            <th class="px-4 py-3 text-left">{{ t('core.dashboard.col_seq') }}</th>
+            <th class="px-4 py-3 text-left">{{ t('core.dashboard.col_ts') }}</th>
+            <th class="px-4 py-3 text-left">{{ t('core.dashboard.col_action') }}</th>
+            <th class="px-4 py-3 text-left">{{ t('core.dashboard.col_actor') }}</th>
+            <th class="px-4 py-3 text-left">{{ t('core.dashboard.col_hash') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-700/60">
@@ -370,88 +248,87 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="5" class="px-4 py-6 text-center text-slate-400 text-sm">Audit chain is initialized and waiting for live transactions.</td>
+            <td colspan="5" class="px-4 py-6 text-center text-slate-400 text-sm">{{ t('core.dashboard.audit_empty') }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+  </div>
 
-    {% endif %}
+  {% endif %}
 
-    <!-- ── API Keys Section ──────────────────────────────────────────── -->
-    {% if section == 'api_keys' %}
-    <div class="mb-6 bg-slate-800/80 border border-slate-700 rounded-xl p-6">
-      <h2 class="text-base font-semibold text-white mb-2">Create Scoped API Key</h2>
-      <p class="text-xs text-slate-400 mb-4">Keys are hashed with SHA-256 before storage. Raw keys are shown once upon creation.</p>
-      <form method="post" action="/admin/api-keys" class="grid grid-cols-1 md:grid-cols-4 gap-4" id="create-key-form">
-        <input name="label" type="text" required placeholder="Key Label (e.g. Field Tablet)"
-               class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
-        <input name="permitted_apps_csv" type="text" placeholder="Apps CSV (e.g. * or specific app)"
-               class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
-        <input name="roles_csv" type="text" value="field_operator" placeholder="Roles CSV (e.g. field_operator)"
-               class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
-        <button type="submit"
-                class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors">
-          Generate Key
-        </button>
-      </form>
-      <div id="key-result" class="hidden mt-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm font-mono whitespace-pre-line"></div>
-      <script>
-        document.getElementById('create-key-form').addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const fd = new FormData(e.target);
-          const res = await fetch('/admin/api-keys', { method: 'POST', body: fd });
-          const data = await res.json();
-          const el = document.getElementById('key-result');
-          el.textContent = '⚠️ COPY NOW — shown once:\n' + data.raw_key;
-          el.classList.remove('hidden');
-        });
-      </script>
-    </div>
+  <!-- ── API Keys Section ──────────────────────────────────────────── -->
+  {% if section == 'api_keys' %}
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-6">
+    <h2 class="text-base font-semibold text-white mb-2">{{ t('core.dashboard.key_create_title') }}</h2>
+    <p class="text-xs text-slate-400 mb-4">{{ t('core.dashboard.key_create_desc') }}</p>
+    <form method="post" action="/admin/api-keys" class="grid grid-cols-1 md:grid-cols-4 gap-4" id="create-key-form">
+      <input name="label" type="text" required placeholder="{{ t('core.dashboard.key_label_ph') }}"
+             class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
+      <input name="permitted_apps_csv" type="text" placeholder="{{ t('core.dashboard.key_apps_ph') }}"
+             class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
+      <input name="roles_csv" type="text" value="field_operator" placeholder="{{ t('core.dashboard.key_roles_ph') }}"
+             class="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"/>
+      <button type="submit"
+              class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors">
+        {{ t('core.dashboard.key_generate') }}
+      </button>
+    </form>
+    <div id="key-result" class="hidden mt-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm font-mono whitespace-pre-line"></div>
+    <script>
+      document.getElementById('create-key-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const res = await fetch('/admin/api-keys', { method: 'POST', body: fd });
+        const data = await res.json();
+        const el = document.getElementById('key-result');
+        el.textContent = '{{ t("core.dashboard.key_copy_now") }}\n' + data.raw_key;
+        el.classList.remove('hidden');
+      });
+    </script>
+  </div>
 
-    <!-- Key table -->
-    <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-slate-700 bg-slate-800 text-slate-400 text-xs uppercase">
-            <th class="px-4 py-3 text-left">Label</th>
-            <th class="px-4 py-3 text-left">Principal</th>
-            <th class="px-4 py-3 text-left">Status</th>
-            <th class="px-4 py-3 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-700/60">
-          {% for key in api_keys %}
-          <tr class="hover:bg-slate-750/50">
-            <td class="px-4 py-3 text-white font-medium">{{ key.label }}</td>
-            <td class="px-4 py-3 text-slate-400">{{ key.principal_id }}</td>
-            <td class="px-4 py-3">
-              {% if key.revoked %}
-              <span class="px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-xs font-semibold">Revoked</span>
-              {% else %}
-              <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold">Active</span>
-              {% endif %}
-            </td>
-            <td class="px-4 py-3">
-              {% if not key.revoked %}
-              <form method="post" action="/admin/api-keys/revoke" class="inline">
-                <input type="hidden" name="key_hash" value="{{ key.key_hash }}" />
-                <button type="submit" class="text-red-400 hover:text-red-300 text-xs font-medium">Revoke</button>
-              </form>
-              {% endif %}
-            </td>
-          </tr>
-          {% else %}
-          <tr><td colspan="4" class="px-4 py-6 text-center text-slate-400 text-sm">No API keys generated yet.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% endif %}
+  <!-- Key table -->
+  <div class="bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-slate-700 bg-slate-800 text-slate-400 text-xs uppercase">
+          <th class="px-4 py-3 text-left">{{ t('core.dashboard.key_col_label') }}</th>
+          <th class="px-4 py-3 text-left">{{ t('core.dashboard.key_col_principal') }}</th>
+          <th class="px-4 py-3 text-left">{{ t('core.dashboard.key_col_status') }}</th>
+          <th class="px-4 py-3 text-left">{{ t('core.dashboard.key_col_actions') }}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-700/60">
+        {% for key in api_keys %}
+        <tr class="hover:bg-slate-750/50">
+          <td class="px-4 py-3 text-white font-medium">{{ key.label }}</td>
+          <td class="px-4 py-3 text-slate-400">{{ key.principal_id }}</td>
+          <td class="px-4 py-3">
+            {% if key.revoked %}
+            <span class="px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-xs font-semibold">{{ t('core.dashboard.key_revoked') }}</span>
+            {% else %}
+            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold">{{ t('core.dashboard.key_active') }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% if not key.revoked %}
+            <form method="post" action="/admin/api-keys/revoke" class="inline">
+              <input type="hidden" name="key_hash" value="{{ key.key_hash }}" />
+              <button type="submit" class="text-red-400 hover:text-red-300 text-xs font-medium">{{ t('core.dashboard.key_revoke') }}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="px-4 py-6 text-center text-slate-400 text-sm">{{ t('core.dashboard.key_empty') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 
-    {% block content %}{% endblock %}
-
-  </main>
-</body>
-</html>
+  {% block dashboard_content %}{% endblock %}
+</div>
+{% endblock %}

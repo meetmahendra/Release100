@@ -24,9 +24,18 @@
         <a href="/admin/" class="font-semibold text-ink">{{ t('core.shell.home') }}</a>
       </div>
       <nav class="p-2">
+        {%- set _path = request.url.path if (request is defined and request.url is defined) else "" -%}
+        {% set ns = namespace(group=none) %}
         <ul class="space-y-1">
           {% for item in _ui.nav %}
-          <li><a class="block rounded-md px-3 py-2 text-sm text-muted hover:text-ink hover:bg-line" href="{{ item.path }}">{{ t(item.label_key) }}</a></li>
+          {% if item.group_key and item.group_key != ns.group %}
+          <li class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">{{ t(item.group_key) }}</li>
+          {% endif %}
+          {% set ns.group = item.group_key %}
+          {% set _active = (item.path == _path) or (item.path != "/admin/" and item.path != "/" and _path.startswith(item.path)) %}
+          <li><a class="block rounded-md px-3 py-2 text-sm {% if _active %}bg-line text-ink font-semibold{% else %}text-muted hover:text-ink hover:bg-line{% endif %}" href="{{ item.path }}"{% if _active %} aria-current="page"{% endif %}>{{ item.label_text if item.label_text else t(item.label_key) }}</a></li>
+          {% else %}
+          <li class="px-3 py-1.5 text-xs italic text-muted">{{ t('core.nav.no_apps') }}</li>
           {% endfor %}
         </ul>
       </nav>

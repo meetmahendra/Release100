@@ -45,6 +45,8 @@ class NavItem(BaseModel):
     label_key: str
     path: str
     required_action: Optional[str] = None  # entitlement action id; the gate decides visibility
+    group_key: Optional[str] = None  # catalog key of the sidebar section heading, if any
+    label_text: Optional[str] = None  # runtime display name (for example an application name)
 
 
 class StatusInfo(BaseModel):

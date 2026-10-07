@@ -143,4 +143,29 @@ def test_nav_survives_missing_plugin_loader(monkeypatch: pytest.MonkeyPatch) -> 
 def test_authenticated_context_builds_nav() -> None:
     ui = build_ui_context("en_US", _ctx(["admin"]), allowed_apps=[])
     assert isinstance(ui, UiContext)
-    assert ui.nav == []
+    assert [i.path for i in ui.nav] == ["/admin/", "/admin/users", "/admin/tenants", "/admin/api-keys"]
+
+
+class _Plain:
+    name = "Sample App"
+    dashboard_url = ""
+
+    def get_ui_nav(self) -> List[NavItem]:
+        return []
+
+
+def test_compose_nav_devops_has_all_core_sections_and_app_fallback() -> None:
+    from core_platform.app.ui.nav_builder import compose_nav
+
+    items = compose_nav(_ctx(["devops_admin"], tenant="platform", pid="devops_admin"), ["sample_app"], _apps(sample_app=_Plain()))  # type: ignore[arg-type]
+    paths = [i.path for i in items]
+    assert paths[0] == "/admin/"
+    assert "/admin/apps/sample-app/" in paths and "/ops/tenants" in paths and "/admin/llm-costs" in paths and "/health" in paths
+    app_item = next(i for i in items if i.path == "/admin/apps/sample-app/")
+    assert app_item.label_text == "Sample App" and app_item.group_key == "core.nav.group_apps"
+
+
+def test_compose_nav_operator_sees_only_overview() -> None:
+    from core_platform.app.ui.nav_builder import compose_nav
+
+    assert [i.path for i in compose_nav(_ctx(["operator"]), [], {})] == ["/admin/"]
