@@ -19,7 +19,7 @@ block_cipher = None
 project_root = Path(SPECPATH).parent.parent
 
 datas = [
-    (str(project_root / "apps" / "temperature_marker" / "knowledge_graph" / "canebot_fleet_roster.json"), "apps/temperature_marker/knowledge_graph"),
+    (str(project_root / "apps" / "temperature_marker" / "knowledge_graph" / "fleet_roster.json"), "apps/temperature_marker/knowledge_graph"),
     (str(project_root / "apps" / "temperature_marker" / "ui" / "templates"), "apps/temperature_marker/ui/templates"),
     (str(project_root / "core_platform" / "app" / "admin_shell" / "templates"), "core_platform/app/admin_shell/templates"),
     (str(project_root / "deployment" / "desktop_tray" / "assets"), "deployment/desktop_tray/assets"),

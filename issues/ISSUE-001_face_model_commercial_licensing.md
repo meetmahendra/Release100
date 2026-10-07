@@ -16,12 +16,12 @@ Standard Ref   : GEES v1.0 Standard, Section 7.3 (Dependency Licensing & Supply 
 
 ## 1. Context & Problem Statement
 
-`Release100` includes a reusable platform cognitive skill, `FaceRecognizerSkill`, designed to compute 512-dimensional biometric face embeddings for employee attendance verification at retail kiosks (such as Canectar Foods CaneBot machines).
+`Release100` includes a reusable platform cognitive skill, `FaceRecognizerSkill`, designed to compute 512-dimensional biometric face embeddings for employee attendance verification at retail kiosks (such as Apex Cold-Chain Logistics KioskNode machines).
 
 In initial prototyping, InsightFace was evaluated. However, a rigorous IP and licensing compliance audit revealed a critical legal barrier:
 1. **The Python Library:** The `insightface` Python library package itself is distributed under the permissive **MIT License**.
 2. **The Pretrained Model Weights:** The popular pretrained ONNX model weights downloaded by default (e.g. `buffalo_l`, `antelopev2`) are released under a **Non-Commercial Academic Research License** created by the InsightFace team / ONNX Model Zoo.
-3. **Commercial Deployment Risk:** Canectar Foods Pvt Ltd is a **commercial enterprise customer**. Deploying non-commercial research model weights into a commercial production environment at retail kiosks creates potential copyright infringement and licensing liability.
+3. **Commercial Deployment Risk:** Apex Cold-Chain Logistics Ltd is a **commercial enterprise customer**. Deploying non-commercial research model weights into a commercial production environment at retail kiosks creates potential copyright infringement and licensing liability.
 
 Per the **Global Engineering Excellence Standard (GEES v1.0, Section 7.3)**:
 > *"All third-party libraries must be scanned for license compatibility... Viral copyleft or restrictive non-commercial licenses must not be linked into proprietary commercial builds unless explicitly authorized."*
@@ -32,7 +32,7 @@ Per the **Global Engineering Excellence Standard (GEES v1.0, Section 7.3)**:
 
 ### Option A: Retain InsightFace with Default `buffalo_l` Weights
 * **Pros:** Fast setup, high accuracy (~99.8% LFW).
-* **Cons:** Violates non-commercial license terms in a commercial production deployment for Canectar Foods. Unacceptable legal liability.
+* **Cons:** Violates non-commercial license terms in a commercial production deployment for Apex Cold-Chain Logistics. Unacceptable legal liability.
 * **Verdict:** ❌ **REJECTED**
 
 ### Option B: MobileFaceNet / ArcFace with Commercially Permissive Weights
@@ -85,6 +85,6 @@ class FaceModelSource(str, Enum):
 
 ## 4. Consequences & Verification
 
-- **Legal Compliance:** Canectar Foods and all future commercial clients have **zero licensing ambiguity or non-commercial copyright exposure**.
+- **Legal Compliance:** Apex Cold-Chain Logistics and all future commercial clients have **zero licensing ambiguity or non-commercial copyright exposure**.
 - **Edge Efficiency:** MobileFaceNet runs at $< 25\text{ms}$ on low-cost quad-core kiosk PCs with minimal RAM footprint.
 - **Verification:** Unit and live benchmark tests verify face matching accuracy against the commercial MobileFaceNet model with a calibrated threshold of $0.82$, ensuring zero false positives during attendance check-ins.

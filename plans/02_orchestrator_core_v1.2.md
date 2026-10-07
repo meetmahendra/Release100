@@ -168,7 +168,7 @@ graph LR
     end
 
     subgraph "Applications Consuming Skills"
-        AppTemp[App: CaneBot Temperature Marker]
+        AppTemp[App: KioskNode Temperature Marker]
         AppFuture[App: Future Machine / Access App]
     end
 
@@ -343,4 +343,4 @@ D:\Release100\core_platform/
 
 With **Plan 2 updated to `v1.2.0`**, the universal skills library is formally anchored in the Core Platform.
 
-We now update **Plan 3 (`03_app_temperature_marker_v1.2.md`)** to reflect that the CaneBot application consumes these platform cognitive skills.
+We now update **Plan 3 (`03_app_temperature_marker_v1.2.md`)** to reflect that the KioskNode application consumes these platform cognitive skills.

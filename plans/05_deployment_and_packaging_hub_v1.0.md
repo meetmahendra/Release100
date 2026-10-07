@@ -59,7 +59,7 @@ graph TD
 ```
 
 ### Key Technical Capabilities:
-- **Dynamic Service Activation**: Inspects `enabled_applications` in `platform.env`. If only `temperature_marker` is active, it only launches the CaneBot listeners and suppresses email workers.
+- **Dynamic Service Activation**: Inspects `enabled_applications` in `platform.env`. If only `temperature_marker` is active, it only launches the KioskNode listeners and suppresses email workers.
 - **Port Collision Prevention**: Verifies ports `:8001` and `:8002` are free before spawning subprocesses; cleanly terminates orphaned zombie processes from prior crashes.
 - **Cross-Platform Termination**:
   - Windows: Uses `taskkill /F /T /PID <pid>` with `CREATE_NO_WINDOW` flags to suppress ugly command prompt popups.
@@ -82,11 +82,11 @@ Built with `pystray`, the system tray application provides factory supervisors a
 ### Context Menu Actions:
 ```
 Right-Click Tray Menu:
-├── 📊 Canectar CaneBot: Kiosk #04 (Healthy)
+├── 📊 Apex KioskNode: Kiosk #04 (Healthy)
 ├── 📧 Email Organizer: Polling Active
 ├── ───────────────
 ├── [🔘] Toggle Background Email Polling (ON/OFF)
-├── [🔘] Toggle CaneBot Simulator Mode
+├── [🔘] Toggle KioskNode Simulator Mode
 ├── ───────────────
 ├── 🌐 Open Central Admin Dashboard (Browser)
 ├── 📋 View Visual Compliance Audit Report (HTML)
@@ -103,7 +103,7 @@ Right-Click Tray Menu:
   2. `logs/audit_log.csv` (Tabular spreadsheet view)
   3. `logs/audit_partitions/html/*.html` (Visual dashboards)
   4. Active configuration snapshots
-- Places a timestamped zip file directly onto the user's Windows Desktop: `Canectar_Audit_Dump_YYYY-MM-DD.zip`.
+- Places a timestamped zip file directly onto the user's Windows Desktop: `Apex_Audit_Dump_YYYY-MM-DD.zip`.
 
 ---
 
@@ -111,7 +111,7 @@ Right-Click Tray Menu:
 
 ### The Enterprise Factory Firewall Dilemma:
 * Meta’s WhatsApp Cloud API requires a public HTTPS URL with a valid SSL certificate to deliver webhook events.
-* Factory PCs running at CaneBot kiosks, retail malls, or plant floors are behind **strict NATs, dynamic IPs, and corporate firewalls**. Opening inbound port 80/443 or installing ngrok is forbidden by plant IT security.
+* Factory PCs running at KioskNode kiosks, retail malls, or plant floors are behind **strict NATs, dynamic IPs, and corporate firewalls**. Opening inbound port 80/443 or installing ngrok is forbidden by plant IT security.
 
 ### The Cloud Relay Solution:
 The **Cloud Relay** is a lightweight FastAPI / WebSocket service hosted on a public cloud server (e.g. Render, Fly.io, or AWS).
@@ -124,11 +124,11 @@ sequenceDiagram
     participant CloudRelay as Cloud Relay Server (Render / Fly.io)
     participant LocalHost as Factory PC / Supervisor (Release100)
 
-    LocalHost->>CloudRelay: Connects OUTWARD via WebSocket (wss://relay.canectar.com/ws/kiosk1)
+    LocalHost->>CloudRelay: Connects OUTWARD via WebSocket (wss://relay.apex.com/ws/kiosk1)
     Note over LocalHost,CloudRelay: Persistent Outbound WebSocket bypasses all factory firewalls!
     
-    Worker->>Meta: Sends CaneBot temperature selfie
-    Meta->>CloudRelay: POST https://relay.canectar.com/webhook (Public HTTPS)
+    Worker->>Meta: Sends KioskNode temperature selfie
+    Meta->>CloudRelay: POST https://relay.apex.com/webhook (Public HTTPS)
     CloudRelay->>CloudRelay: Validates HMAC-SHA256 Signature
     CloudRelay->>LocalHost: Pushes message frame instantly over established WebSocket
     LocalHost->>LocalHost: Executes LangGraph Workflow & Downstream Sync
@@ -303,7 +303,7 @@ With **Plan 5 (`05_deployment_and_packaging_hub_v1.0.md`)** established, the ent
 | :--- | :--- | :--- |
 | **01_master_platform_architecture_v1.3.md** | Master Platform Architecture, Ecosystem Topology & Directory Tree | ✅ Approved Master |
 | **02_orchestrator_core_v1.2.md** | Universal Host Gateway, Skills Library, Auth, Safety & Telemetry | ✅ Approved Core |
-| **03_app_temperature_marker_v1.2.md** | Canectar CaneBot Sugarcane Juice Chiller & Attendance Cartridge | ✅ Approved App |
+| **03_app_temperature_marker_v1.2.md** | Apex KioskNode Cold-chain Juice Chiller & Attendance Cartridge | ✅ Approved App |
 | **04_app_mail_organizer_v1.0.md** | Decoupled AI Email & Calendar Triage Cartridge | ✅ Approved App |
 | **05_deployment_and_packaging_hub_v1.0.md** | Multi-Platform Supervisor, Tray App, Cloud Relay & Packaging Hub | ✅ Complete |
 

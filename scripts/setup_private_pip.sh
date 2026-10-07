@@ -11,7 +11,7 @@ fi
 
 GITHUB_USER="$1"
 GITHUB_TOKEN="$2"
-ORG="${3:-canectar}"
+ORG="${3:-apex}"
 
 PIP_DIR="$HOME/.config/pip"
 mkdir -p "$PIP_DIR"

@@ -16,8 +16,8 @@
 | Version | Date | Author | Description of Changes | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **v1.0.0** | 2026-09-13 | AI Architecture Team | Initial Domain Specification: Plugin contract, LangGraph state machine, dual-mode 7-segment/LCD OCR, face recognition, WhatsApp self-onboarding, Knowledge Graph shift inference, Progressive Stepper Admin Wizard, and ERP MCP Adapter. | Superseded |
-| **v1.1.0** | 2026-09-14 | AI Architecture Team | Grounded in Canectar CaneBot defaults, Option 4 Web Geolocation, Two-Track Registration with Admin Approval, and Universal Downstream Gateway. | Superseded |
-| **v1.2.0** | 2026-09-14 | AI Architecture Team | **Refactored to Consume Platform Cognitive Skills**: <br>1. Removed redundant local `skills/` directory; application now consumes `FaceRecognizerSkill`, `DisplayOCRSkill`, `ImageEnhancerSkill`, and `GeofencingSkill` directly from `core_platform/skills/` via `ctx.get_skill()`.<br>2. Kept application ultra-lean, focusing strictly on Canectar CaneBot business rules, Knowledge Graph kiosk rosters, and downstream dispatching. | **Current** |
+| **v1.1.0** | 2026-09-14 | AI Architecture Team | Grounded in Apex KioskNode defaults, Option 4 Web Geolocation, Two-Track Registration with Admin Approval, and Universal Downstream Gateway. | Superseded |
+| **v1.2.0** | 2026-09-14 | AI Architecture Team | **Refactored to Consume Platform Cognitive Skills**: <br>1. Removed redundant local `skills/` directory; application now consumes `FaceRecognizerSkill`, `DisplayOCRSkill`, `ImageEnhancerSkill`, and `GeofencingSkill` directly from `core_platform/skills/` via `ctx.get_skill()`.<br>2. Kept application ultra-lean, focusing strictly on Apex KioskNode business rules, Knowledge Graph kiosk rosters, and downstream dispatching. | **Current** |
 
 ---
 
@@ -26,10 +26,10 @@
 The **Food Temperature & Attendance Marker** (`temperature_marker`) is an intelligent industrial automation cartridge that plugs into `Release100`. 
 
 ### Primary Reference & Default Implementation:
-The platform uses **Canectar Foods Pvt Ltd** and its **CaneBot sugarcane crushing juice machines** as the primary operational template:
-* **Perishability Challenge**: Freshly crushed sugarcane juice ferments and oxidizes rapidly if not chilled immediately. Maintaining the juice chiller/dispenser temperature within **2.0°C to 4.0°C** (with alert at **> 7.0°C**) is mission-critical for food hygiene, FSSAI compliance, and beverage quality.
-* **Retail Footprint**: CaneBot machines are deployed across retail kiosks, malls, metro stations, and food courts.
-* **Extensibility**: While Canectar Foods and CaneBot serve as the concrete default, all parameters are fully configurable for other organizations.
+The platform uses **Apex Cold-Chain Logistics Ltd** and its **KioskNode industrial cold-storage chiller units** as the primary operational template:
+* **Perishability Challenge**: Freshly crushed perishable cold-chain goods ferments and oxidizes rapidly if not chilled immediately. Maintaining the juice chiller/dispenser temperature within **2.0°C to 4.0°C** (with alert at **> 7.0°C**) is mission-critical for food hygiene, FSSAI compliance, and beverage quality.
+* **Retail Footprint**: KioskNode machines are deployed across retail kiosks, malls, metro stations, and food courts.
+* **Extensibility**: While Apex Cold-Chain Logistics and KioskNode serve as the concrete default, all parameters are fully configurable for other organizations.
 
 ### Shared Platform Skills Consumed:
 Instead of bundling its own computer vision libraries, the application borrows cognitive capabilities OOTB from the Orchestrator:
@@ -53,10 +53,10 @@ from .downstream.mcp_tools import get_temperature_marker_mcp_tools
 
 class TemperatureMarkerConfig(BaseModel):
     # Reference organization & machine
-    organization_name: str = "Canectar Foods Pvt Ltd"
-    default_machine_type: str = "CaneBot Sugarcane Crushing Machine"
+    organization_name: str = "Apex Cold-Chain Logistics Ltd"
+    default_machine_type: str = "Industrial Cold-Storage Chiller Unit"
     
-    # Temperature defaults (Canectar Chiller baseline)
+    # Temperature defaults (Apex Chiller baseline)
     default_unit: str = "C"
     safe_min_temp: float = 2.0
     safe_max_temp: float = 4.0
@@ -76,7 +76,7 @@ class TemperatureMarkerConfig(BaseModel):
 
 class TemperatureMarkerApplication(BaseApplication):
     app_id: str = "temperature_marker"
-    name: str = "Canectar CaneBot Temperature & Attendance Marker"
+    name: str = "Apex Industrial Temperature & Attendance Marker"
     version: str = "1.2.0"
     config_schema = TemperatureMarkerConfig
     required_roles = ["operator", "supervisor", "admin"]
@@ -99,26 +99,26 @@ class TemperatureMarkerApplication(BaseApplication):
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Worker as Operator at CaneBot Kiosk
+    actor Worker as Operator at KioskNode Kiosk
     participant WA as WhatsApp Bot
     participant WebCheckin as 1-Click Location Check-in Page
     participant GeoSkill as Platform GeofencingSkill
-    participant DB as CaneBot Kiosk Registry
+    participant DB as KioskNode Kiosk Registry
 
     Worker->>WA: Sends duty check-in photo
-    WA->>Worker: "📍 Tap to verify CaneBot location (1-click): https://app.canectar.com/loc?session=xyz"
+    WA->>Worker: "📍 Tap to verify KioskNode location (1-click): https://app.apex.com/loc?session=xyz"
     Worker->>WebCheckin: Taps link on smartphone
     WebCheckin->>WebCheckin: Queries navigator.geolocation.getCurrentPosition()
     WebCheckin->>GeoSkill: calculate_distance_meters(User_Coords, Target_Coords)
-    GeoSkill->>DB: Lookup CaneBot Kiosk Coordinates
+    GeoSkill->>DB: Lookup KioskNode Kiosk Coordinates
     GeoSkill->>GeoSkill: Compute Haversine Distance
     
     alt Distance <= Configured Radius (50m - 100m)
         GeoSkill->>WA: Update Session: Location VERIFIED
-        WebCheckin->>Worker: "✅ Location Verified: CaneBot Kiosk #04 (Phoenix Mall). You may close this tab."
-        WA->>Worker: "✅ Location Verified at Phoenix Mall CaneBot Kiosk! Processing your reading..."
+        WebCheckin->>Worker: "✅ Location Verified: KioskNode Kiosk #04 (Phoenix Mall). You may close this tab."
+        WA->>Worker: "✅ Location Verified at Phoenix Mall KioskNode Kiosk! Processing your reading..."
     else Distance > Configured Radius
-        WebCheckin->>Worker: "⚠️ Location Mismatch: You appear to be 320m away from CaneBot Kiosk #04."
+        WebCheckin->>Worker: "⚠️ Location Mismatch: You appear to be 320m away from KioskNode Kiosk #04."
         WA->>Worker: "⚠️ Location verification failed: Out of permissible kiosk bounds."
     end
 ```
@@ -130,7 +130,7 @@ sequenceDiagram
 ```mermaid
 graph TD
     subgraph "Track 1: Direct Admin Registration (Primary)"
-        AdminUI[Admin Dashboard /admin] --> AddOperatorForm[Admin Enters: Name, EMP Code, Phone, CaneBot ID]
+        AdminUI[Admin Dashboard /admin] --> AddOperatorForm[Admin Enters: Name, EMP Code, Phone, KioskNode ID]
         AddOperatorForm --> UploadPhoto[Admin Uploads Reference Face Photo]
         UploadPhoto --> SetActiveImmediate[Operator Status: ACTIVE immediately]
     end
@@ -157,10 +157,10 @@ graph TD
 erDiagram
     EMPLOYEE ||--o{ SHIFT_ASSIGNMENT : assigned_to
     SHIFT_ASSIGNMENT }o--|| SHIFT : during
-    SHIFT ||--o{ CANEBOT_MACHINE : operates
-    CANEBOT_MACHINE ||--|| LOCATION : installed_at
-    CANEBOT_MACHINE ||--|| HACCP_RULE : governed_by
-    CANEBOT_MACHINE ||--|| DOWNSTREAM_ASSET : mapped_to
+    SHIFT ||--o{ KIOSK_MACHINE : operates
+    KIOSK_MACHINE ||--|| LOCATION : installed_at
+    KIOSK_MACHINE ||--|| HACCP_RULE : governed_by
+    KIOSK_MACHINE ||--|| DOWNSTREAM_ASSET : mapped_to
 
     EMPLOYEE {
         string id PK "EMP-1042"
@@ -169,9 +169,9 @@ erDiagram
         string status "ACTIVE | PENDING_APPROVAL"
         vector face_embedding
     }
-    CANEBOT_MACHINE {
-        string id PK "CANEBOT-PUNE-04"
-        string model "CaneBot-Pro-Chilled"
+    KIOSK_MACHINE {
+        string id PK "NODE-PUNE-04"
+        string model "ChillerNode-Pro-Chilled"
         string display_type "7_segment_led"
     }
     LOCATION {
@@ -208,7 +208,7 @@ graph TD
     LocationCheckNode -->|No| SendLocationLink[Send 1-Click Geolocation Link]
     LocationCheckNode -->|Yes / Geofence Passed| DisplayOCRNode[Display OCR Node - Calls Platform Skill]
     
-    DisplayOCRNode --> HACCPCheckNode{CaneBot Chiller Temp Evaluation}
+    DisplayOCRNode --> HACCPCheckNode{KioskNode Chiller Temp Evaluation}
     HACCPCheckNode -->|2.0°C - 4.0°C: Normal| CommitLogNode[Tri-Format Audit Logging]
     HACCPCheckNode -->|> 7.0°C: Spoilage Risk| CriticalAlertNode[Alert Kiosk Manager + Log Violation]
     
@@ -231,11 +231,11 @@ graph TD
 Hosted on `/admin/apps/temperature-marker/wizard`:
 
 ```
-[Step 1: CaneBot Kiosk] ──> [Step 2: Chiller Temp Limits] ──> [Step 3: Assign Operator] ──> [Step 4: Downstream & Review]
+[Step 1: KioskNode Kiosk] ──> [Step 2: Chiller Temp Limits] ──> [Step 3: Assign Operator] ──> [Step 4: Downstream & Review]
         (Draft)                       (Draft)                         (Draft)                      (Live)
 ```
 
-1. **Step 1: Register CaneBot Kiosk**: Machine Code, Location, GPS Coordinates, Geofence Radius (50m/100m).
+1. **Step 1: Register KioskNode Kiosk**: Machine Code, Location, GPS Coordinates, Geofence Radius (50m/100m).
 2. **Step 2: Chiller Temp Limits**: Default 2.0°C – 4.0°C, Critical Alert at 7.0°C.
 3. **Step 3: Assign Operator & Manage Approvals**: Direct registration or pending approvals queue.
 4. **Step 4: Universal Downstream Gateway Setup**: Select target (In-House REST, Direct DB, Google Sheets, ERP/MCP).
@@ -276,9 +276,9 @@ D:\Release100\apps\temperature_marker/
 │       ├── face_node.py               # Calls ctx.get_skill("face_recognizer")
 │       ├── onboarding_node.py         # Field self-onboarding
 │       ├── location_node.py           # Calls ctx.get_skill("geofencing")
-│       ├── kg_inference_node.py       # CaneBot kiosk & roster lookup
+│       ├── kg_inference_node.py       # KioskNode kiosk & roster lookup
 │       ├── ocr_node.py                # Calls ctx.get_skill("display_ocr")
-│       ├── haccp_node.py              # CaneBot 2°C-4°C safety evaluation
+│       ├── haccp_node.py              # KioskNode 2°C-4°C safety evaluation
 │       ├── audit_node.py              # Emits tri-format compliance log
 │       ├── downstream_node.py         # Universal downstream gateway dispatch
 │       └── reply_node.py              # WhatsApp notification composer
@@ -287,7 +287,7 @@ D:\Release100\apps\temperature_marker/
 │   ├── __init__.py
 │   ├── schema.py                      # Node & Edge type definitions
 │   ├── service.py                     # Kiosk roster & rule lookup service
-│   └── default_canectar_graph.json    # CaneBot machine roster & chiller thresholds
+│   └── default_apex_graph.json    # KioskNode machine roster & chiller thresholds
 │
 ├── downstream/                        # Pluggable Downstream Gateway
 │   ├── __init__.py
@@ -301,12 +301,12 @@ D:\Release100\apps\temperature_marker/
 ├── ui/                                # Progressive Stepper Admin Wizard
 │   ├── __init__.py
 │   ├── routes.py                      # FastAPI routes for /admin/apps/temperature-marker
-│   ├── templates/                     # Jinja2 templates (CaneBot Stepper, Approvals Tab)
-│   └── static/                        # CSS, CaneBot badges, JS auto-save & GPS scripts
+│   ├── templates/                     # Jinja2 templates (KioskNode Stepper, Approvals Tab)
+│   └── static/                        # CSS, KioskNode badges, JS auto-save & GPS scripts
 │
 └── database/                          # Local Storage & Biometric Vectors
     ├── __init__.py
-    ├── models.py                      # SQLAlchemy models: Employee, CaneBotMachine, AttendanceRecord
+    ├── models.py                      # SQLAlchemy models: Employee, KioskNodeMachine, AttendanceRecord
     └── db_service.py                  # CRUD operations, approvals & vector search
 ```
 

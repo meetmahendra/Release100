@@ -25,7 +25,7 @@
 
 [CmdletBinding()]
 param (
-    [string]$SubjectName = "CN=Release100 Industrial Automation (Test Sign), O=Canectar Foods, OU=Edge Automation",
+    [string]$SubjectName = "CN=Release100 Industrial Automation (Test Sign), O=Apex Cold-Chain Logistics, OU=Edge Automation",
     [string]$DistDir = ""
 )
 

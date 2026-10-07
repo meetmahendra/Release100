@@ -89,5 +89,5 @@ Generated artifacts:
 
 ## 5. Future Roadmap: Solution 2 (Public PyPI + License Gate)
 *Planned Enhancement for Public Enterprise Edition:*
-- Direct public hosting on `pypi.org` (`pip install canectar-release100-core`).
+- Direct public hosting on `pypi.org` (`pip install apex-release100-core`).
 - Access restriction managed via cryptographic license keys / tokens in `.env` (`RELEASE100_LICENSE_KEY=...`).

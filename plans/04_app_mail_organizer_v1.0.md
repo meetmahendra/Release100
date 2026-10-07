@@ -227,7 +227,7 @@ graph LR
   > *"I am available this Wednesday at 10:00 AM or 2:30 PM EST, or Thursday anytime after 1:00 PM."*
 
 ### 5.3. Project Management (PM) Task Queue (`pm/task_manager.py`)
-- Automatically detects actionable deliverables in emails (e.g., *"Rajesh, please update the CaneBot chiller maintenance spec by Friday"*).
+- Automatically detects actionable deliverables in emails (e.g., *"Rajesh, please update the KioskNode chiller maintenance spec by Friday"*).
 - Extracts: `task_title`, `assignee`, `due_date`, `priority`, and source email snippet.
 - Stages task in `pending_pm_tasks` table.
 - Exports to Jira or Linear upon 1-click user confirmation in the Admin UI or via WhatsApp.
@@ -302,7 +302,7 @@ http://localhost:8002/admin/apps/mail-organizer/
 
 ### Key UI Capabilities:
 1. **Google Account 1-Click Re-Auth**: Seamless browser OAuth popup handling token refresh without manual JSON copying.
-2. **Deterministic Rules Manager**: Add/remove VIP senders (e.g. `@canectar.com`, `ceo@partner.com`) with instant sync.
+2. **Deterministic Rules Manager**: Add/remove VIP senders (e.g. `@apex.com`, `ceo@partner.com`) with instant sync.
 3. **Task Approval Grid**: Shows extracted tasks with source email quotes, editable title/due dates, and an `[Approve & Push to Jira]` button.
 4. **Visual Audit Inspector**: Reuses the core platform's HTML audit generator to show node execution timelines and confidence scores.
 

@@ -69,7 +69,7 @@ export default {
     if (url.pathname.startsWith("/ws/")) {
       const kioskId = url.pathname.replace("/ws/", "").trim();
       if (!kioskId) {
-        return new Response("Missing kiosk identifier in URL path (e.g. /ws/CANEBOT-PUNE-04)", { status: 400 });
+        return new Response("Missing kiosk identifier in URL path (e.g. /ws/NODE-PUNE-04)", { status: 400 });
       }
 
       const doId = env.RELAY_SESSIONS.idFromName(kioskId);
@@ -155,7 +155,7 @@ function resolveTargetKiosk(payload: any): string {
     const message = change?.value?.messages?.[0];
     const text = message?.text?.body || "";
 
-    // If message contains explicit kiosk tag e.g. #kiosk:CANEBOT-MUMBAI-08
+    // If message contains explicit kiosk tag e.g. #kiosk:NODE-MUMBAI-08
     const match = text.match(/#kiosk:([A-Za-z0-9_-]+)/);
     if (match) {
       return match[1];
@@ -163,7 +163,7 @@ function resolveTargetKiosk(payload: any): string {
   } catch {}
 
   // Fallback to default kiosk session
-  return "CANEBOT-PUNE-04";
+  return "NODE-PUNE-04";
 }
 
 /**

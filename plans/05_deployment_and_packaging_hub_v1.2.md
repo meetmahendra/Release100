@@ -90,7 +90,7 @@ Right-Click Tray Menu:
 ├── 🏢 Organization: [config.ORGANIZATION_NAME]
 ├── 📍 Station: [config.STATION_NAME] ([config.KIOSK_ID])
 ├── ───────────────
-├── 📊 CaneBot Chiller: 3.2°C (Compliant: 2°C-4°C)
+├── 📊 KioskNode Chiller: 3.2°C (Compliant: 2°C-4°C)
 ├── 📦 Outbox Sync: 0 pending items (Online)
 ├── ───────────────
 ├── 🌐 Open Central Admin Dashboard (Browser)
@@ -117,17 +117,17 @@ sequenceDiagram
     participant Kiosk04 as Pune Phoenix Mall Kiosk (Release100)
     participant Kiosk08 as Mumbai Mall Kiosk (Release100)
 
-    Kiosk04->>CF_Worker: WS Connect: wss://relay.canectar.com/ws/CANEBOT-PUNE-04
-    CF_Worker->>CF_DO: Bind session: RelaySession("CANEBOT-PUNE-04")
+    Kiosk04->>CF_Worker: WS Connect: wss://relay.apex.com/ws/NODE-PUNE-04
+    CF_Worker->>CF_DO: Bind session: RelaySession("NODE-PUNE-04")
     
-    Kiosk08->>CF_Worker: WS Connect: wss://relay.canectar.com/ws/CANEBOT-MUMBAI-08
-    CF_Worker->>CF_DO: Bind session: RelaySession("CANEBOT-MUMBAI-08")
+    Kiosk08->>CF_Worker: WS Connect: wss://relay.apex.com/ws/NODE-MUMBAI-08
+    CF_Worker->>CF_DO: Bind session: RelaySession("NODE-MUMBAI-08")
 
     Worker->>Meta: Operator at Phoenix Mall sends temperature photo
     Meta->>CF_Worker: POST /webhook (payload contains sender phone: +919800011122)
     CF_Worker->>CF_Worker: Verify HMAC-SHA256 signature
-    CF_Worker->>CF_Worker: Resolve Phone -> Kiosk ID ("CANEBOT-PUNE-04") via KV/Registry
-    CF_Worker->>CF_DO: Forward to RelaySession("CANEBOT-PUNE-04") ONLY
+    CF_Worker->>CF_Worker: Resolve Phone -> Kiosk ID ("NODE-PUNE-04") via KV/Registry
+    CF_Worker->>CF_DO: Forward to RelaySession("NODE-PUNE-04") ONLY
     CF_DO->>Kiosk04: Streams payload frame to Kiosk 04 ONLY
     Note over Kiosk08: Kiosk 08 receives ZERO noise! Clean isolation.
 ```

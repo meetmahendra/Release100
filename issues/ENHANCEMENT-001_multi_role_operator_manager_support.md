@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Business Rationale
 
-In real-world retail, Quick Service Restaurant (QSR), and automated food/beverage kiosk networks (e.g., CaneBOT), staff responsibilities are fluid:
+In real-world retail, Quick Service Restaurant (QSR), and automated food/beverage kiosk networks (e.g., KioskNode), staff responsibilities are fluid:
 - **Kiosk Leads & Shift Supervisors** simultaneously operate a physical machine (performing morning attendance, submitting chiller HACCP logs, dispensing beverages) while supervising junior operators across multiple kiosks or shifts.
 - Currently, the system models employee hierarchy via a rigid, mutually exclusive scalar string: `role: 'OPERATOR' | 'MANAGER' | 'ADMIN'`.
 - If an employee is set to `OPERATOR`, they cannot triage subordinate inquiries or receive manager digests over WhatsApp.
@@ -57,7 +57,7 @@ When a dual-role employee sends `"Hello"`, `"Hi"`, or `"Status"`, rather than pi
 
 ```text
 👋 Namaste Mahendra Gurav (EMP-1001)
-Role: Lead Operator & Supervisor | CaneBOT Eka Elitas
+Role: Lead Operator & Supervisor | KioskNode Eka Elitas
 
 📍 PERSONAL SHIFT STATUS:
 • Attendance: ✅ Checked-in at 09:15 AM (On-Time)
@@ -66,7 +66,7 @@ Role: Lead Operator & Supervisor | CaneBOT Eka Elitas
 
 ----------------------------------------
 📬 TEAM TRIAGE INBOX (1 Pending Action):
-From: Dnyaneshwari Gurav (EMP-1002 - CaneBOT Eka Elitas)
+From: Dnyaneshwari Gurav (EMP-1002 - KioskNode Eka Elitas)
 Ref: MSG-1 (Priority: 50)
 "The cups are about to be empty"
 ----------------------------------------

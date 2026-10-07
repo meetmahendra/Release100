@@ -73,15 +73,15 @@ banking_partners:
 
   - bank_name: "ICICI Bank"
     domain: "icici.bank.in"
-    transaction_email: "credit_cards@icici.bank.in"
+    transaction_email: "credit_cards@bank.example.com"
     is_vip: false
 
   - bank_name: "HDFC Bank"
     domain: "hdfcbank.net"
-    transaction_email: "alerts@hdfcbank.net"
+    transaction_email: "alerts@bank.example.com"
     is_vip: false
 
   - bank_name: "Silicon Valley Bank / First Citizens"
     domain: "svb.com"
-    wire_email: "wires@svb.com"
+    wire_email: "wires@bank.example.com"
     is_vip: true

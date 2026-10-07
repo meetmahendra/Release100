@@ -20,7 +20,7 @@
 | **v1.0.0** | 2026-09-13 | AI Architecture Team | Initial Master Platform Architecture: Ecosystem topology, microkernel & cartridges model, multi-customer deployment matrix, and directory layout. | Superseded |
 | **v1.1.0** | 2026-09-13 | AI Architecture Team | Added JSON audit logs and multi-platform Linux/Cloud targets. | Superseded |
 | **v1.2.0** | 2026-09-13 | AI Architecture Team | Restored ProcessSupervisor in topology, FDA/ISO compliance, and Phased Roadmap Gantt chart. | Superseded |
-| **v1.3.0** | 2026-09-14 | AI Architecture Team | Promoted reusable cognitive skills to Core Platform (`core_platform/skills/`). Lean domain cartridges. Incorporated Canectar Foods & CaneBot baseline. | Superseded |
+| **v1.3.0** | 2026-09-14 | AI Architecture Team | Promoted reusable cognitive skills to Core Platform (`core_platform/skills/`). Lean domain cartridges. Incorporated Apex Cold-Chain Logistics & KioskNode baseline. | Superseded |
 | **v1.4.0** | 2026-09-14 | AI Architecture Team | **Architectural Hardening & Commercial Production Readiness**: <br>1. Standardized safety layer terminology to **Layer 0 (Deterministic Pre-Gate), Layer 1 (Stochastic AI), and Layer 2 (Deterministic Post-Gate)**.<br>2. Added **Multi-Kiosk Fleet Architecture from Day 1** with per-kiosk dynamic routing via Cloudflare Durable Objects.<br>3. Added **Dual-Engine OCR** (Local ONNX 7-segment detector + Cloud Vision LLM fallback).<br>4. Added **Edge Resilience & Offline Outbox Pattern** (local SQLite cache for kiosk internet dropouts).<br>5. Upgraded SHA-256 Non-Repudiation Audit Chain with **Monotonic Sequence Numbering**.<br>6. Added **Alembic Database Migration Engine** into Core Platform lifecycle.<br>7. Added Commercial Licensing Compliance Strategy for Face Recognition (`ISSUE-001`). | **Current** |
 
 ---
@@ -43,7 +43,7 @@
    - Native Model Context Protocol (MCP) Server host for external agents (Cursor, Claude Desktop).
 
 2. **Domain Applications** plug in as isolated, ultra-lean packages ("cartridges"):
-   - **App 1: `temperature_marker`**: Canectar Foods CaneBot sugarcane juice machine chiller verification ($2.0^\circ\text{C} - 4.0^\circ\text{C}$), multi-kiosk fleet attendance, HACCP compliance, and universal downstream telemetry.
+   - **App 1: `temperature_marker`**: Apex Cold-Chain Logistics KioskNode cold-chain chiller unit chiller verification ($2.0^\circ\text{C} - 4.0^\circ\text{C}$), multi-kiosk fleet attendance, HACCP compliance, and universal downstream telemetry.
    - **App 2: `mail_organizer`**: Autonomous Gmail & Calendar triage, categorization, and meeting assistant.
    - **Future Apps (`app_inventory`, `app_boiler_monitor`, etc.)**: Seamlessly mountable without modifying core code, immediately inheriting all platform cognitive skills.
 
@@ -104,7 +104,7 @@ graph TD
     end
 
     subgraph "Layer 4: Plugged-In Domain Applications (Ultra-Lean Cartridges)"
-        subgraph "App: CaneBot Temperature & Attendance (Canectar Foods Multi-Kiosk Fleet)"
+        subgraph "App: KioskNode Temperature & Attendance (Apex Cold-Chain Logistics Multi-Kiosk Fleet)"
             TempGraph[LangGraph State Graph]
             FoodKG[Knowledge Graph: Kiosks, Shifts & Chiller Rules]
             UniversalGateway[Universal Downstream Gateway: REST / DB / Sheets / ERP]
@@ -211,10 +211,10 @@ D:\Release100/
 │
 ├── apps/                                    # Pluggable Domain Applications ("Cartridges")
 │   │
-│   ├── temperature_marker/                  # App: Canectar CaneBot Multi-Kiosk Fleet
+│   ├── temperature_marker/                  # App: Apex KioskNode Multi-Kiosk Fleet
 │   │   ├── plugin.py                        # BaseApplication implementation manifest
 │   │   ├── graph/                           # LangGraph workflow (consumes platform skills)
-│   │   ├── knowledge_graph/                 # CaneBot kiosk rosters & 2°C-4°C chiller rules
+│   │   ├── knowledge_graph/                 # KioskNode kiosk rosters & 2°C-4°C chiller rules
 │   │   ├── downstream/                      # Universal Downstream Gateway (REST / DB / Sheets / ERP)
 │   │   ├── ui/                              # Progressive Stepper Admin Wizard & Approval Queue
 │   │   └── database/                        # SQLAlchemy models for records & audit trails
@@ -236,7 +236,7 @@ D:\Release100/
 │
 └── config/
     ├── platform.env.example                 # Master configuration template
-    └── canebot_kiosks.example.json          # Multi-kiosk fleet registry & chiller thresholds
+    └── kiosks.example.json          # Multi-kiosk fleet registry & chiller thresholds
 ```
 
 ---

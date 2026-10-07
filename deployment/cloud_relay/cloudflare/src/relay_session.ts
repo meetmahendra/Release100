@@ -5,7 +5,7 @@
  * Cloudflare Durable Object: RelaySession
  *
  * Implements the per-kiosk stateful WebSocket relay for multi-kiosk
- * bidirectional message routing. Each CaneBot kiosk maintains one
+ * bidirectional message routing. Each KioskNode kiosk maintains one
  * persistent Durable Object instance identified by its kiosk_id.
  *
  * Architecture (Plan 05 v1.2 §4):
@@ -14,7 +14,7 @@
  *                          → Edge Kiosk (outbound WebSocket)
  *
  * Zero inbound ports required at the kiosk — the edge device opens an
- * outbound WebSocket to wss://relay.canectar.com/ws/{kiosk_id} and the
+ * outbound WebSocket to wss://relay.apex.com/ws/{kiosk_id} and the
  * DO hibernates it until a message arrives.
  */
 

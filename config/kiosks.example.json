@@ -1,6 +1,6 @@
 {
-  "fleet_name": "Canectar CaneBot Multi-Kiosk Fleet",
-  "organization": "Canectar Foods Pvt Ltd",
+  "fleet_name": "Apex KioskNode Multi-Kiosk Fleet",
+  "organization": "Apex Cold-Chain Logistics Ltd",
   "default_chiller_rules": {
     "safe_min_temp_c": 2.0,
     "safe_max_temp_c": 4.0,
@@ -11,10 +11,10 @@
   },
   "kiosks": [
     {
-      "kiosk_id": "CANEBOT-PUNE-04",
+      "kiosk_id": "NODE-PUNE-04",
       "serial_number": "CB-2026-X88",
       "display_hardware": "7_segment_red_led",
-      "machine_model": "CaneBot Sugarcane Crushing Machine",
+      "machine_model": "Industrial Cold-Storage Chiller Unit",
       "is_active": true,
       "location": {
         "name": "Phoenix Marketcity Food Court",
@@ -35,10 +35,10 @@
       "timezone": "Asia/Kolkata"
     },
     {
-      "kiosk_id": "CANEBOT-MUMBAI-08",
+      "kiosk_id": "NODE-MUMBAI-08",
       "serial_number": "CB-2026-X91",
       "display_hardware": "7_segment_red_led",
-      "machine_model": "CaneBot Sugarcane Crushing Machine",
+      "machine_model": "Industrial Cold-Storage Chiller Unit",
       "is_active": true,
       "location": {
         "name": "Infiniti Mall Andheri",
@@ -59,10 +59,10 @@
       "timezone": "Asia/Kolkata"
     },
     {
-      "kiosk_id": "CANEBOT-BANGALORE-03",
+      "kiosk_id": "NODE-BANGALORE-03",
       "serial_number": "CB-2026-X79",
       "display_hardware": "7_segment_red_led",
-      "machine_model": "CaneBot Sugarcane Crushing Machine",
+      "machine_model": "Industrial Cold-Storage Chiller Unit",
       "is_active": true,
       "location": {
         "name": "Phoenix Marketcity Whitefield",

@@ -47,7 +47,7 @@ Standard Ref   : GEES v1.0 Standard, Section 4 (Zero-Trust Security) & Section 2
 * **Root Cause:**
   PyInstaller's default enterprise build mode is `COLLECT` (multi-binary directory). This architecture starts 10x faster than `--onefile` (which unpacks 50MB of DLLs to `%TEMP%` on every startup), but requires the sibling `_internal\` folder and `.env` to be present.
 * **Resolution & Hardening:**
-  1. Bundled the entire directory into `dist/CaneBot_Kiosk_Retail_v1.3.0_Portable.zip` to prevent accidental partial folder copies.
+  1. Bundled the entire directory into `dist/KioskNode_Kiosk_Retail_v1.3.0_Portable.zip` to prevent accidental partial folder copies.
   2. Created Inno Setup script `installer_kiosk.iss` (`Release100_Kiosk_Setup_v1.3.0.exe`) which packages the entire payload into a single, self-extracting Windows installer wizard.
   3. Added explicit clarification in `VM_TESTING_GUIDE.md` that the entire `Release100_Kiosk\` folder is the unit of deployment.
 
@@ -57,7 +57,7 @@ Standard Ref   : GEES v1.0 Standard, Section 4 (Zero-Trust Security) & Section 2
 * **Symptom:**
   Customer testing on VMs experiences certificate trust warnings unless `install_cert.bat` is executed beforehand.
 * **Root Cause & Production Contrast:**
-  - **Testing/Staging:** We use a free, self-generated Authenticode certificate (`CN=Release100 Industrial Automation (Test Sign), O=Canectar Foods`) with SHA-256 and DigiCert RFC3161 timestamping to avoid purchasing commercial EV certificates during development. Because Microsoft does not ship our private test CA in Windows, it must be imported into the VM's Root and TrustedPublisher stores once.
+  - **Testing/Staging:** We use a free, self-generated Authenticode certificate (`CN=Release100 Industrial Automation (Test Sign), O=Apex Cold-Chain Logistics`) with SHA-256 and DigiCert RFC3161 timestamping to avoid purchasing commercial EV certificates during development. Because Microsoft does not ship our private test CA in Windows, it must be imported into the VM's Root and TrustedPublisher stores once.
   - **Commercial Production:** For live customer retail rollout, binaries must be signed with a commercial EV Code Signing Certificate (DigiCert, Sectigo) or Microsoft Azure Trusted Signing. Because Windows already trusts these public Root CAs out-of-the-box, **production customers will never install certificates or interact with PowerShell policies.**
 
 ---

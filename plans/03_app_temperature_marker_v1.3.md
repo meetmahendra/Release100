@@ -16,7 +16,7 @@
 | Version | Date | Author | Description of Changes | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **v1.0.0** | 2026-09-13 | AI Architecture Team | Initial Domain Specification. | Superseded |
-| **v1.1.0** | 2026-09-14 | AI Architecture Team | Grounded in Canectar CaneBot defaults, Option 4 Web Geolocation, Two-Track Registration. | Superseded |
+| **v1.1.0** | 2026-09-14 | AI Architecture Team | Grounded in Apex KioskNode defaults, Option 4 Web Geolocation, Two-Track Registration. | Superseded |
 | **v1.2.0** | 2026-09-14 | AI Architecture Team | Refactored to consume Platform Cognitive Skills (`core_platform/skills/`). | Superseded |
 | **v1.3.0** | 2026-09-14 | AI Architecture Team | **Architectural Hardening & Multi-Kiosk Fleet Production**: <br>1. Aligned to **Layer 0 (Pre-Execution), Layer 1 (Stochastic AI), and Layer 2 (Post-Execution)** safety gates.<br>2. Implemented **Multi-Kiosk Fleet Architecture from Day 1** across retail malls, food courts, and transit stations.<br>3. Incorporated **Dual-Engine OCR**: Local ONNX 7-segment digit detector as primary edge engine with Cloud Vision LLM (Gemini Flash) fallback.<br>4. Added **Edge Resilience & Offline Outbox Pattern** (local SQLite cache for kiosk internet drops).<br>5. Pluggable face recognition engine aligned with **`ISSUE-001`** commercial compliance.<br>6. Structured error taxonomy with `PlatformErrorCode`. | **Current** |
 
@@ -26,9 +26,9 @@
 
 The **Food Temperature & Attendance Marker** (`temperature_marker`) is an intelligent industrial automation cartridge that plugs into `Release100`.
 
-### Operational Template (Canectar Foods & CaneBot Fleet):
-* **The Mission-Critical Challenge**: Freshly crushed sugarcane juice oxidizes and ferments rapidly if not chilled immediately. Maintaining the juice chiller/dispenser temperature within **2.0°C to 4.0°C** (with alert at **> 7.0°C**) is mission-critical for food hygiene, FSSAI compliance, and beverage quality.
-* **Multi-Kiosk Fleet Deployment from Day 1**: Canectar CaneBot machines are deployed across retail kiosks, malls (e.g. Phoenix Marketcity), metro stations, and food courts. Each machine has distinct GPS geofences, operator rosters, and hardware display profiles.
+### Operational Template (Apex Cold-Chain Logistics & KioskNode Fleet):
+* **The Mission-Critical Challenge**: Freshly crushed perishable cold-chain goods oxidizes and ferments rapidly if not chilled immediately. Maintaining the juice chiller/dispenser temperature within **2.0°C to 4.0°C** (with alert at **> 7.0°C**) is mission-critical for food hygiene, FSSAI compliance, and beverage quality.
+* **Multi-Kiosk Fleet Deployment from Day 1**: Apex KioskNode machines are deployed across retail kiosks, malls (e.g. Phoenix Marketcity), metro stations, and food courts. Each machine has distinct GPS geofences, operator rosters, and hardware display profiles.
 * **Edge Resilience**: Factory and mall retail kiosks frequently suffer 4G/WiFi drops. The cartridge must log temperatures, verify physical bounds, and queue downstream syncs **100% offline**, synchronizing automatically when connectivity recovers.
 
 ### Shared Platform Skills Consumed:
@@ -53,10 +53,10 @@ from .ui.routes import router as ui_router
 from .downstream.mcp_tools import get_temperature_marker_mcp_tools
 
 class TemperatureMarkerConfig(BaseModel):
-    organization_name: str = "Canectar Foods Pvt Ltd"
-    default_machine_type: str = "CaneBot Sugarcane Crushing Machine"
+    organization_name: str = "Apex Cold-Chain Logistics Ltd"
+    default_machine_type: str = "Industrial Cold-Storage Chiller Unit"
     
-    # Temperature defaults (Canectar Chiller baseline)
+    # Temperature defaults (Apex Chiller baseline)
     default_unit: str = "C"
     safe_min_temp: float = 2.0
     safe_max_temp: float = 4.0
@@ -85,7 +85,7 @@ class TemperatureMarkerConfig(BaseModel):
 
 class TemperatureMarkerApplication(BaseApplication):
     app_id: str = "temperature_marker"
-    name: str = "Canectar CaneBot Multi-Kiosk Fleet Temperature & Attendance Marker"
+    name: str = "Apex KioskNode Multi-Kiosk Fleet Temperature & Attendance Marker"
     version: str = "1.3.0"
     config_schema = TemperatureMarkerConfig
     required_roles = ["operator", "supervisor", "admin"]
@@ -108,14 +108,14 @@ class TemperatureMarkerApplication(BaseApplication):
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Worker as Operator at CaneBot Kiosk
+    actor Worker as Operator at KioskNode Kiosk
     participant WA as WhatsApp Bot
     participant WebCheckin as 1-Click Location Check-in Page
     participant GeoSkill as Platform GeofencingSkill
     participant KG as Multi-Kiosk Fleet Registry
 
     Worker->>WA: Sends duty check-in photo
-    WA->>Worker: "📍 Tap to verify CaneBot location: https://app.canectar.com/loc?session=xyz"
+    WA->>Worker: "📍 Tap to verify KioskNode location: https://app.apex.com/loc?session=xyz"
     Worker->>WebCheckin: Taps link on smartphone
     WebCheckin->>WebCheckin: navigator.geolocation.getCurrentPosition()
     WebCheckin->>GeoSkill: calculate_distance_meters(User_Coords, Target_Kiosk_Coords)
@@ -124,10 +124,10 @@ sequenceDiagram
     
     alt Distance <= Configured Radius (50m - 100m)
         GeoSkill->>WA: Session Updated: Location VERIFIED (Distance: 18.4m)
-        WebCheckin->>Worker: "✅ Location Verified: CaneBot Kiosk #04 (Phoenix Mall). You may close this tab."
+        WebCheckin->>Worker: "✅ Location Verified: KioskNode Kiosk #04 (Phoenix Mall). You may close this tab."
         WA->>Worker: "✅ Location Verified at Phoenix Mall! Processing chiller reading..."
     else Distance > Configured Radius
-        WebCheckin->>Worker: "⚠️ Location Mismatch: You appear to be 320m away from CaneBot Kiosk #04."
+        WebCheckin->>Worker: "⚠️ Location Mismatch: You appear to be 320m away from KioskNode Kiosk #04."
         WA->>Worker: "⚠️ Location verification failed: E-SAFE-002 Out of permissible bounds."
     end
 ```
@@ -140,14 +140,14 @@ Supports an arbitrary number of retail kiosks across geographic regions:
 
 ```mermaid
 erDiagram
-    KIOSK_FLEET ||--|{ CANEBOT_MACHINE : contains
-    CANEBOT_MACHINE ||--|| LOCATION : located_at
-    CANEBOT_MACHINE ||--|| HACCP_RULE : governed_by
-    CANEBOT_MACHINE ||--o{ SHIFT_ASSIGNMENT : schedules
+    KIOSK_FLEET ||--|{ KIOSK_MACHINE : contains
+    KIOSK_MACHINE ||--|| LOCATION : located_at
+    KIOSK_MACHINE ||--|| HACCP_RULE : governed_by
+    KIOSK_MACHINE ||--o{ SHIFT_ASSIGNMENT : schedules
     SHIFT_ASSIGNMENT }o--|| EMPLOYEE : assigned_to
 
-    CANEBOT_MACHINE {
-        string kiosk_id PK "CANEBOT-PUNE-04"
+    KIOSK_MACHINE {
+        string kiosk_id PK "NODE-PUNE-04"
         string serial_number "CB-2026-X88"
         string display_hardware "7_segment_red_led"
         string primary_phone_number "+919800011122"
@@ -266,7 +266,7 @@ D:\Release100\apps\temperature_marker/
 │       ├── kg_inference_node.py       # Multi-kiosk fleet roster & rule lookup
 │       ├── layer1_ocr_node.py         # Layer 1: Dual-Engine OCR (Local ONNX + Cloud fallback)
 │       ├── layer0_sanity_node.py      # Layer 0: -20°C to 120°C physical sanity
-│       ├── haccp_node.py              # CaneBot 2°C-4°C HACCP evaluation
+│       ├── haccp_node.py              # KioskNode 2°C-4°C HACCP evaluation
 │       ├── audit_node.py              # Emits tri-format monotonic SHA-256 log
 │       ├── outbox_node.py             # Enqueues to local offline outbox table
 │       └── reply_node.py              # WhatsApp notification composer
@@ -275,7 +275,7 @@ D:\Release100\apps\temperature_marker/
 │   ├── __init__.py
 │   ├── schema.py                      # Kiosk, Machine, Shift, Rule models
 │   ├── service.py                     # Multi-kiosk fleet lookup service
-│   └── canebot_fleet_roster.json      # Roster of all Canectar retail kiosks
+│   └── fleet_roster.json      # Roster of all Apex retail kiosks
 │
 ├── downstream/                        # Pluggable Downstream Gateway
 │   ├── __init__.py
@@ -290,11 +290,11 @@ D:\Release100\apps\temperature_marker/
 │   ├── __init__.py
 │   ├── routes.py                      # FastAPI routes for /admin/apps/temperature-marker
 │   ├── templates/                     # Jinja2 templates (Fleet Map, Kiosk Stepper, Approvals)
-│   └── static/                        # CSS, CaneBot badges, Leaflet fleet maps, GPS scripts
+│   └── static/                        # CSS, KioskNode badges, Leaflet fleet maps, GPS scripts
 │
 └── database/                          # Local Storage & Biometric Vectors
     ├── __init__.py
-    ├── models.py                      # SQLAlchemy models: Employee, CaneBotMachine, AttendanceRecord, OutboxItem
+    ├── models.py                      # SQLAlchemy models: Employee, KioskNodeMachine, AttendanceRecord, OutboxItem
     └── db_service.py                  # CRUD operations, approvals & vector search
 ```
 

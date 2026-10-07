@@ -311,8 +311,8 @@ FastAPI endpoint polled by the Windows Tray App, systemd watchdog, and cloud loa
   "status": "healthy",
   "timestamp_utc": "2026-09-14T03:50:00.123Z",
   "uptime_seconds": 4512,
-  "tenant_id": "canectar_foods",
-  "kiosk_id": "CANEBOT-PUNE-04",
+  "tenant_id": "apex_foods",
+  "kiosk_id": "NODE-PUNE-04",
   "enabled_apps": ["temperature_marker"],
   "skills": {
     "display_ocr": { "status": "operational", "local_engine": "onnx_ready", "cloud_fallback": "connected" },

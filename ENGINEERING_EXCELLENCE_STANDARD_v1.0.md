@@ -212,7 +212,7 @@ Every audit entry must contain the following standard fields:
 {
   "event_id": "c61b2a9d-1b3c-44e2-a0d3-3df84f22709e",
   "timestamp_utc": "2026-09-14T02:30:00.123456Z",
-  "organization_id": "CANECTAR_FOODS",
+  "organization_id": "APEX_ENTERPRISES",
   "facility_id": "UNIT_01_MUMBAI",
   "operator_id": "EMP_1042",
   "action_type": "TEMPERATURE_LOG_COMMIT",

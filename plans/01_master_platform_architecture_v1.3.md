@@ -20,7 +20,7 @@
 | **v1.0.0** | 2026-09-13 | AI Architecture Team | Initial Master Platform Architecture: Ecosystem topology, microkernel & cartridges model, multi-customer deployment matrix, and directory layout. | Superseded |
 | **v1.1.0** | 2026-09-13 | AI Architecture Team | Added JSON audit logs and multi-platform Linux/Cloud targets. | Superseded |
 | **v1.2.0** | 2026-09-13 | AI Architecture Team | Restored ProcessSupervisor in topology, FDA/ISO compliance, and Phased Roadmap Gantt chart. | Superseded |
-| **v1.3.0** | 2026-09-14 | AI Architecture Team | **Promotion of Cognitive Skills to Core Platform**: <br>1. Promoted reusable cognitive skills (Biometric Face Recognition, Display OCR, Image Preprocessing & Mirror Check, Geofencing) into the **Universal Platform Skills Library** (`core_platform/skills/`).<br>2. Domain applications (`apps/`) become ultra-lean business cartridges consuming shared platform skills via `ctx.get_skill()`.<br>3. Incorporated **Canectar Foods & CaneBot** as primary default reference scenario. | **Current** |
+| **v1.3.0** | 2026-09-14 | AI Architecture Team | **Promotion of Cognitive Skills to Core Platform**: <br>1. Promoted reusable cognitive skills (Biometric Face Recognition, Display OCR, Image Preprocessing & Mirror Check, Geofencing) into the **Universal Platform Skills Library** (`core_platform/skills/`).<br>2. Domain applications (`apps/`) become ultra-lean business cartridges consuming shared platform skills via `ctx.get_skill()`.<br>3. Incorporated **Apex Cold-Chain Logistics & KioskNode** as primary default reference scenario. | **Current** |
 
 ---
 
@@ -39,7 +39,7 @@
 
 2. **Domain Applications** plug in as isolated, ultra-lean packages ("cartridges"):
    - **App 1: `mail_organizer`**: Autonomous Gmail & Calendar triage, categorization, and meeting assistant.
-   - **App 2: `temperature_marker`**: Canectar Foods CaneBot sugarcane juice machine chiller verification, operator attendance, HACCP compliance, and downstream telemetry.
+   - **App 2: `temperature_marker`**: Apex Cold-Chain Logistics KioskNode cold-chain chiller unit chiller verification, operator attendance, HACCP compliance, and downstream telemetry.
    - **Future Apps (`app_inventory`, `app_boiler_monitor`, etc.)**: Seamlessly mountable without modifying core code, immediately inheriting all platform cognitive skills.
 
 3. **Multi-Target Distribution & Process Supervision**:
@@ -93,7 +93,7 @@ graph TD
     end
 
     subgraph "Layer 4: Plugged-In Domain Applications (Ultra-Lean Cartridges)"
-        subgraph "App: CaneBot Temperature & Attendance (Canectar Foods)"
+        subgraph "App: KioskNode Temperature & Attendance (Apex Cold-Chain Logistics)"
             TempGraph[LangGraph State Graph]
             FoodKG[Knowledge Graph: Kiosks, Shifts & Chiller Rules]
             UniversalGateway[Universal Downstream Gateway: REST / DB / Sheets / ERP]
@@ -170,10 +170,10 @@ D:\Release100/
 │
 ├── apps/                                  # Pluggable Domain Applications ("Cartridges")
 │   │
-│   ├── temperature_marker/                # App: Canectar CaneBot Temperature & Attendance
+│   ├── temperature_marker/                # App: Apex KioskNode Temperature & Attendance
 │   │   ├── plugin.py                      # BaseApplication implementation manifest
 │   │   ├── graph/                         # LangGraph workflow (consumes platform skills)
-│   │   ├── knowledge_graph/               # CaneBot kiosk rosters & 2°C-4°C chiller rules
+│   │   ├── knowledge_graph/               # KioskNode kiosk rosters & 2°C-4°C chiller rules
 │   │   ├── downstream/                    # Universal Downstream Gateway (REST / DB / Sheets / ERP)
 │   │   ├── ui/                            # Progressive Stepper Admin Wizard & Approval Queue
 │   │   └── database/                      # SQLAlchemy models for records & audit trails
@@ -195,7 +195,7 @@ D:\Release100/
 │
 └── config/
     ├── platform.env.example               # Master configuration template
-    └── canebot_kiosks.example.json        # Sample CaneBot kiosk registry & chiller thresholds
+    └── kiosks.example.json        # Sample KioskNode kiosk registry & chiller thresholds
 ```
 
 ---

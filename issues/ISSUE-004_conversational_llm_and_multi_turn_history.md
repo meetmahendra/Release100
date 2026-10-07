@@ -16,7 +16,7 @@ Standard Ref   : GEES v1.0 Standard, Pillar 1 (Multi-Layered Safety Architecture
 
 ## 1. Context & Motivation
 
-In current field trials of the **CaneBot Platform** (`Release100`), interactions with kiosk operators and fleet supervisors through WhatsApp are functional but structurally rigid. 
+In current field trials of the **KioskNode Platform** (`Release100`), interactions with kiosk operators and fleet supervisors through WhatsApp are functional but structurally rigid. 
 
 When operators text the bot:
 - Text is processed through procedural, rule-based if/elif keyword matching (`cmd_lower in [...]`, `cmd_lower.startswith(...)`).

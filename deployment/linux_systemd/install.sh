@@ -11,8 +11,8 @@ set -euo pipefail
 
 INSTALL_DIR="/opt/release100"
 SERVICE_NAME="release100"
-SERVICE_USER="canebot"
-SERVICE_GROUP="canebot"
+SERVICE_USER="kiosk"
+SERVICE_GROUP="kiosk"
 PYTHON_MIN="3.11"
 
 # ── Colour output helpers ─────────────────────────────────────────────────────

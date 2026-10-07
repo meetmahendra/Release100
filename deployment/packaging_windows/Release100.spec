@@ -13,7 +13,7 @@ import certifi
 project_root = Path(SPECPATH).parent.parent
 
 datas = [
-    (str(project_root / "apps" / "temperature_marker" / "knowledge_graph" / "canebot_fleet_roster.json"), "apps/temperature_marker/knowledge_graph"),
+    (str(project_root / "apps" / "temperature_marker" / "knowledge_graph" / "fleet_roster.json"), "apps/temperature_marker/knowledge_graph"),
     (str(project_root / "apps" / "temperature_marker" / "ui" / "templates"), "apps/temperature_marker/ui/templates"),
     (str(project_root / "apps" / "mail_organizer" / "ui" / "templates"), "apps/mail_organizer/ui/templates"),
     (certifi.where(), "certifi"),

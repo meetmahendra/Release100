@@ -28,6 +28,6 @@ When an unregistered mobile phone sends an arbitrary, meaningless text string (e
 
 ## 3. Desired Behavior
 1. Unregistered senders sending arbitrary text must receive a strict, unambiguous response:
-   > *"Welcome to CaneBot. Your phone number (+91XXXXXXXXXX) is not registered in the system. Please reach out to your facility manager to be enrolled."*
+   > *"Welcome to KioskNode. Your phone number (+91XXXXXXXXXX) is not registered in the system. Please reach out to your facility manager to be enrolled."*
 2. No message forwarding or manager escalation must ever trigger for unregistered phone numbers.
 3. Zero mock or ghost operator/manager records should ever appear in the communication logs.

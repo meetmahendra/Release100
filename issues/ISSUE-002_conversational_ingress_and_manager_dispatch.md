@@ -16,7 +16,7 @@ Standard Ref   : GEES v1.0 Standard, Pillar 1 (Fail-Safe Defaults) & Pillar 4 (Z
 
 ## 1. Context & Background
 
-During field trials of the **CaneBot Attendance & Temperature Marker** at live retail kiosks (e.g. `CANEBOT-PUNE-05` at Dassault Systèmes Sky Tower), multiple operational nuances were observed regarding how operators communicate through the Meta WhatsApp Business API ingress.
+During field trials of the **KioskNode Attendance & Temperature Marker** at live retail kiosks (e.g. `NODE-PUNE-05` at Dassault Systèmes Sky Tower), multiple operational nuances were observed regarding how operators communicate through the Meta WhatsApp Business API ingress.
 
 Currently, all inbound interactions not explicitly matching `/mail` or `/register` are treated as attendance or chiller verification attempts. This creates friction when operators wish to send general operational queries, report maintenance issues, or message supervisors.
 

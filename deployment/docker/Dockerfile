@@ -32,7 +32,7 @@ FROM python:3.12-slim AS runtime
 
 LABEL maintainer="Mahendra GURAV" \
       version="1.3.0" \
-      description="Release100 CaneBot Core Platform — Production Container"
+      description="Release100 KioskNode Core Platform — Production Container"
 
 # Runtime system libraries (OpenCV, face recognition, audio)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libglib2.0-0 \
         curl \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --create-home --shell /bin/bash canebot
+    && useradd --create-home --shell /bin/bash kiosk
 
 # Copy virtual environment from builder
 COPY --from=builder /venv /venv
@@ -56,10 +56,10 @@ RUN find . -name "*.pyc" -delete && \
 
 # Create log and credential directories
 RUN mkdir -p logs/audit_partitions .local_credentials && \
-    chown -R canebot:canebot /opt/release100
+    chown -R kiosk:kiosk /opt/release100
 
 # Switch to non-root service user
-USER canebot
+USER kiosk
 
 # Activate venv for all subsequent commands
 ENV PATH="/venv/bin:$PATH" \

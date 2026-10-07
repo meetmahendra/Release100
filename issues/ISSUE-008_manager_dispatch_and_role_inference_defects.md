@@ -13,7 +13,7 @@
 When an operator sends an operational message via WhatsApp (e.g., `"The cups are about to be empty"`), the bot returns an immediate confirmation to the operator:
 ```text
 📦 Message Dispatched to Mahendra Gurav (EMP-1001)
-Machine: CaneBOT Eka Elitas
+Machine: KioskNode Eka Elitas
 ----------------------------------------
 "The cups are about to be empty"
 ----------------------------------------

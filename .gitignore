@@ -58,3 +58,8 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 scratch/
+scratch_chrome_profile/
+scratch_chrome_screenshots/
+data/
+ToBeReviewCode/
+apps/temperature_marker/knowledge_graph/fleet_roster.json

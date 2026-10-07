@@ -50,7 +50,7 @@ class WindowsInstallerBuilder:
             self.target_name = "Release100_Kiosk"
             self.spec_file = self.packaging_dir / "Kiosk_Retail_Edition.spec"
             self.iss_file = self.packaging_dir / "installer_kiosk.iss"
-            self.zip_name = "CaneBot_Kiosk_Retail_v1.3.0_Portable.zip"
+            self.zip_name = "KioskNode_Kiosk_Retail_v1.3.0_Portable.zip"
             self.edition_title = "Release100 Kiosk & Retail Edition"
         else:
             self.target_name = "Release100"
@@ -135,11 +135,11 @@ class WindowsInstallerBuilder:
             "EXECUTION_MODE=shadow\n"
             "DRY_RUN=false\n"
             "STATION_NAME=Kiosk #04 (Phoenix Mall)\n"
-            "KIOSK_ID=CANEBOT-PUNE-04\n"
-            "ORGANIZATION_NAME=Canectar Foods Pvt Ltd\n"
+            "KIOSK_ID=NODE-PUNE-04\n"
+            "ORGANIZATION_NAME=Apex Cold-Chain Logistics Ltd\n"
             "# Outbound Cloudflare Worker / Enterprise Relay URL (leave blank for local network mode)\n"
             "RELAY_WS_URL=\n"
-            "RELAY_ROUTER_ID=CANEBOT-PUNE-04\n"
+            "RELAY_ROUTER_ID=NODE-PUNE-04\n"
         )
         kiosk_env.write_text(kiosk_env_content, encoding="utf-8")
 
@@ -235,7 +235,7 @@ This verifies:
 ## Step 3: Launch Platform
 Choose either mode:
 - **System Tray Mode (Recommended)**: Double-click `start_kiosk_tray.bat`.
-  - Look for the green CaneBot icon in the Windows Notification Area (bottom-right taskbar).
+  - Look for the green KioskNode icon in the Windows Notification Area (bottom-right taskbar).
   - Right-click the icon to open the Fleet Monitoring Dashboard, Trigger Audit Export, or inspect settings.
 - **Headless Service Mode**: Double-click `start_kiosk_headless.bat`.
   - Runs in background console on port 8002.

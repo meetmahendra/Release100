@@ -9,7 +9,7 @@
 #define MyAppExeName "Release100_Kiosk.exe"
 
 [Setup]
-AppId={{C1E4A812-74DF-4B6A-9122-CANEBOT04KIO}
+AppId={{C1E4A812-74DF-4B6A-9122-KIOSK04KIO}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}

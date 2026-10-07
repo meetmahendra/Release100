@@ -17,7 +17,7 @@
 | Version | Date | Author | Description of Changes | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **v1.0.0** | 2026-09-14 | AI Architecture Team | Initial Deployment & Packaging Hub Specification: Pluggable Process Supervisor, Windows System Tray controller, Cloud Relay, Inno Setup builder, Linux `systemd`, Docker containers, and developer CLI. | Superseded |
-| **v1.1.0** | 2026-09-14 | AI Architecture Team | **Incorporated User Feedback**: <br>1. **Dynamic Tray UI (No Hardcoding)**: Replaced hardcoded "CaneBot" references in the Windows System Tray menu with dynamic resolution from active deployment configuration (`ORGANIZATION_NAME`, `STATION_NAME`, and active app status hooks).<br>2. **Cloudflare Worker Relay (Primary)**: Added **Cloudflare Workers with Durable Objects (`RelaySession`)** as the primary, production-grade edge relay alongside the alternative Python container relay. | **Current** |
+| **v1.1.0** | 2026-09-14 | AI Architecture Team | **Incorporated User Feedback**: <br>1. **Dynamic Tray UI (No Hardcoding)**: Replaced hardcoded "KioskNode" references in the Windows System Tray menu with dynamic resolution from active deployment configuration (`ORGANIZATION_NAME`, `STATION_NAME`, and active app status hooks).<br>2. **Cloudflare Worker Relay (Primary)**: Added **Cloudflare Workers with Durable Objects (`RelaySession`)** as the primary, production-grade edge relay alongside the alternative Python container relay. | **Current** |
 
 ---
 
@@ -76,7 +76,7 @@ Built with `pystray`, the system tray application provides a friendly, non-techn
 
 ### Completely Dynamic Menu Resolution (No Hardcoding):
 The tray app queries the active deployment context at boot:
-* `ORGANIZATION_NAME`: e.g. `"Canectar Foods Pvt Ltd"` (default), or any client organization.
+* `ORGANIZATION_NAME`: e.g. `"Apex Cold-Chain Logistics Ltd"` (default), or any client organization.
 * `STATION_NAME` / `STATION_LOCATION`: e.g. `"Kiosk #04 (Phoenix Mall)"`, or `"Plant Boiler #01"`.
 * Active Application Status Hooks: Each enabled cartridge exports its dynamic tray status line and custom menu toggles.
 
@@ -135,12 +135,12 @@ sequenceDiagram
     participant CF_DO as Cloudflare Durable Object (RelaySession)
     participant LocalHost as Local Factory PC (Release100)
 
-    LocalHost->>CF_Worker: Connects OUTWARD via WebSocket (wss://relay.canectar.com/ws/kiosk_01)
+    LocalHost->>CF_Worker: Connects OUTWARD via WebSocket (wss://relay.apex.com/ws/kiosk_01)
     CF_Worker->>CF_DO: Binds WebSocket session with hibernation support
     Note over LocalHost,CF_DO: Persistent Outbound WebSocket bypasses all factory firewalls!
     
     Worker->>Meta: Sends temperature selfie / message
-    Meta->>CF_Worker: POST https://relay.canectar.com/webhook (Public HTTPS)
+    Meta->>CF_Worker: POST https://relay.apex.com/webhook (Public HTTPS)
     CF_Worker->>CF_Worker: Verifies HMAC-SHA256 Signature (env.WHATSAPP_APP_SECRET)
     CF_Worker->>CF_DO: Forwards verified payload to internal Durable Object
     CF_DO->>LocalHost: Streams payload frame instantly over active WebSocket

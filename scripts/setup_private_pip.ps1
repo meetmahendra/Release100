@@ -18,7 +18,7 @@
     The GitHub Organization or owner repository name. Default is 'your-org'.
 
 .EXAMPLE
-    .\scripts\setup_private_pip.ps1 -GitHubUser "depali" -GitHubToken "ghp_xxxxxxxxxxxx" -Org "Canectar"
+    .\scripts\setup_private_pip.ps1 -GitHubUser "depali" -GitHubToken "ghp_xxxxxxxxxxxx" -Org "Apex"
 #>
 
 [CmdletBinding()]
@@ -30,7 +30,7 @@ param(
     [string]$GitHubToken,
 
     [Parameter(Mandatory = $false, Position = 2)]
-    [string]$Org = "canectar"
+    [string]$Org = "apex"
 )
 
 $pipDir = Join-Path $env:APPDATA "pip"

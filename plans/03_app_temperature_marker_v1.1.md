@@ -16,7 +16,7 @@
 | Version | Date | Author | Description of Changes | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **v1.0.0** | 2026-09-13 | AI Architecture Team | Initial Domain Specification: Plugin contract, LangGraph state machine, dual-mode 7-segment/LCD OCR, face recognition, WhatsApp self-onboarding, Knowledge Graph shift inference, Progressive Stepper Admin Wizard, and ERP MCP Adapter. | Superseded |
-| **v1.1.0** | 2026-09-14 | AI Architecture Team | **Incorporated Operational Decisions**: <br>1. **Default Reference**: Grounded in **Canectar Foods Pvt Ltd** and the **CaneBot sugarcane juice machine** as the primary indicator and default reference template.<br>2. **Location Verification (Option 4)**: Added 1-Click Web Geolocation Link (Browser HTML5 GPS) with Haversine geofencing (50m default, 100m indoor tolerance).<br>3. **Two-Track Registration with Admin Approval Gate**: Added direct Admin Employee Registration alongside WhatsApp self-onboarding requiring mandatory Admin verification (`PENDING_APPROVAL`).<br>4. **Universal Downstream Gateway**: Expanded beyond ERP to support In-House REST APIs, Direct Databases, Cloud Spreadsheets, and ERP/MCP connectors. | **Current** |
+| **v1.1.0** | 2026-09-14 | AI Architecture Team | **Incorporated Operational Decisions**: <br>1. **Default Reference**: Grounded in **Apex Cold-Chain Logistics Ltd** and the **KioskNode cold-chain chiller unit** as the primary indicator and default reference template.<br>2. **Location Verification (Option 4)**: Added 1-Click Web Geolocation Link (Browser HTML5 GPS) with Haversine geofencing (50m default, 100m indoor tolerance).<br>3. **Two-Track Registration with Admin Approval Gate**: Added direct Admin Employee Registration alongside WhatsApp self-onboarding requiring mandatory Admin verification (`PENDING_APPROVAL`).<br>4. **Universal Downstream Gateway**: Expanded beyond ERP to support In-House REST APIs, Direct Databases, Cloud Spreadsheets, and ERP/MCP connectors. | **Current** |
 
 ---
 
@@ -25,15 +25,15 @@
 The **Food Temperature & Attendance Marker** (`temperature_marker`) is an intelligent industrial automation cartridge that plugs into `Release100`. 
 
 ### Primary Reference & Default Implementation:
-The platform uses **Canectar Foods Pvt Ltd** and its **CaneBot sugarcane crushing juice machines** as the primary operational template and indicator:
-* **Perishability Challenge**: Freshly crushed sugarcane juice ferments and oxidizes rapidly if not chilled immediately. Maintaining the juice chiller/dispenser temperature within **2.0°C to 4.0°C** (with warning at **> 7.0°C**) is mission-critical for food hygiene, FSSAI compliance, and beverage quality.
-* **Retail Footprint**: CaneBot machines are deployed across retail kiosks, malls, metro stations, and food courts.
-* **Extensibility**: While Canectar Foods and CaneBot serve as the concrete default, all parameters (process types, temperature limits, equipment codes) are fully configurable, enabling any food processing organization (dairy, bakeries, cold storages) to deploy the same cartridge.
+The platform uses **Apex Cold-Chain Logistics Ltd** and its **KioskNode industrial cold-storage chiller units** as the primary operational template and indicator:
+* **Perishability Challenge**: Freshly crushed perishable cold-chain goods ferments and oxidizes rapidly if not chilled immediately. Maintaining the juice chiller/dispenser temperature within **2.0°C to 4.0°C** (with warning at **> 7.0°C**) is mission-critical for food hygiene, FSSAI compliance, and beverage quality.
+* **Retail Footprint**: KioskNode machines are deployed across retail kiosks, malls, metro stations, and food courts.
+* **Extensibility**: While Apex Cold-Chain Logistics and KioskNode serve as the concrete default, all parameters (process types, temperature limits, equipment codes) are fully configurable, enabling any food processing organization (dairy, bakeries, cold storages) to deploy the same cartridge.
 
 ### Core Automated Capabilities:
 1. **Biometric Attendance Verification**: Operator identity verified at the machine via facial recognition.
 2. **Contactless Display OCR**: Reads the digital temperature display (7-segment LED or LCD) from operator selfies.
-3. **1-Click GPS Geofencing (Option 4)**: Validates physical proximity to the registered CaneBot kiosk location within 50–100 meters.
+3. **1-Click GPS Geofencing (Option 4)**: Validates physical proximity to the registered KioskNode kiosk location within 50–100 meters.
 4. **Automated HACCP / Safety Evaluation**: Checks temperature thresholds in real time.
 5. **Universal Downstream Dispatch**: Transmits validated telemetry to In-House REST backends, central databases, cloud spreadsheets, or enterprise ERPs.
 
@@ -54,10 +54,10 @@ from .downstream.mcp_tools import get_temperature_marker_mcp_tools
 
 class TemperatureMarkerConfig(BaseModel):
     # Reference organization & machine
-    organization_name: str = "Canectar Foods Pvt Ltd"
-    default_machine_type: str = "CaneBot Sugarcane Crushing Machine"
+    organization_name: str = "Apex Cold-Chain Logistics Ltd"
+    default_machine_type: str = "Industrial Cold-Storage Chiller Unit"
     
-    # Temperature defaults (Canectar Chiller baseline)
+    # Temperature defaults (Apex Chiller baseline)
     default_unit: str = "C"
     safe_min_temp: float = 2.0
     safe_max_temp: float = 4.0
@@ -77,7 +77,7 @@ class TemperatureMarkerConfig(BaseModel):
 
 class TemperatureMarkerApplication(BaseApplication):
     app_id: str = "temperature_marker"
-    name: str = "Canectar CaneBot Temperature & Attendance Marker"
+    name: str = "Apex Industrial Temperature & Attendance Marker"
     version: str = "1.1.0"
     config_schema = TemperatureMarkerConfig
     required_roles = ["operator", "supervisor", "admin"]
@@ -97,37 +97,37 @@ class TemperatureMarkerApplication(BaseApplication):
 
 ## 3. Location Verification & Geofencing (Option 4: 1-Click Web Geolocation)
 
-To guarantee that the operator is physically present at the specific CaneBot kiosk without forcing them to manually attach WhatsApp location pins with every message, the application implements **1-Click Web Geolocation Link**:
+To guarantee that the operator is physically present at the specific KioskNode kiosk without forcing them to manually attach WhatsApp location pins with every message, the application implements **1-Click Web Geolocation Link**:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Worker as Operator at CaneBot Kiosk
+    actor Worker as Operator at KioskNode Kiosk
     participant WA as WhatsApp Bot
     participant WebCheckin as 1-Click Location Check-in Page
     participant Haversine as Geofence Verification Engine
-    participant DB as CaneBot Kiosk Registry
+    participant DB as KioskNode Kiosk Registry
 
     Worker->>WA: Sends duty check-in photo
-    WA->>Worker: "📍 Tap to verify CaneBot location (1-click): https://app.canectar.com/loc?session=xyz"
+    WA->>Worker: "📍 Tap to verify KioskNode location (1-click): https://app.apex.com/loc?session=xyz"
     Worker->>WebCheckin: Taps link on smartphone
     WebCheckin->>WebCheckin: Queries navigator.geolocation.getCurrentPosition()
     WebCheckin->>Haversine: Sends (User_Lat, User_Lon, Accuracy)
-    Haversine->>DB: Lookup CaneBot Kiosk Coordinates (Target_Lat, Target_Lon)
+    Haversine->>DB: Lookup KioskNode Kiosk Coordinates (Target_Lat, Target_Lon)
     Haversine->>Haversine: Calculate Distance (Haversine Formula)
     
     alt Distance <= Configured Radius (50m - 100m)
         Haversine->>WA: Update Session: Location VERIFIED
-        WebCheckin->>Worker: "✅ Location Verified: CaneBot Kiosk #04 (Phoenix Mall). You may close this tab."
-        WA->>Worker: "✅ Location Verified at Phoenix Mall CaneBot Kiosk! Processing your reading..."
+        WebCheckin->>Worker: "✅ Location Verified: KioskNode Kiosk #04 (Phoenix Mall). You may close this tab."
+        WA->>Worker: "✅ Location Verified at Phoenix Mall KioskNode Kiosk! Processing your reading..."
     else Distance > Configured Radius
-        WebCheckin->>Worker: "⚠️ Location Mismatch: You appear to be 320m away from CaneBot Kiosk #04."
+        WebCheckin->>Worker: "⚠️ Location Mismatch: You appear to be 320m away from KioskNode Kiosk #04."
         WA->>Worker: "⚠️ Location verification failed: Out of permissible kiosk bounds."
     end
 ```
 
 ### Mathematical Geofence Specification:
-The distance between the user’s browser coordinates $(\phi_1, \lambda_1)$ and the CaneBot machine’s registered coordinates $(\phi_2, \lambda_2)$ is computed via the **Haversine Formula**:
+The distance between the user’s browser coordinates $(\phi_1, \lambda_1)$ and the KioskNode machine’s registered coordinates $(\phi_2, \lambda_2)$ is computed via the **Haversine Formula**:
 
 $$a = \sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)$$
 $$c = 2 \cdot \text{atan2}\left(\sqrt{a}, \sqrt{1-a}\right)$$
@@ -145,7 +145,7 @@ To prevent unauthorized attendance logging or fraudulent self-registration, the 
 ```mermaid
 graph TD
     subgraph "Track 1: Direct Admin Registration (Primary)"
-        AdminUI[Admin Dashboard /admin] --> AddOperatorForm[Admin Enters: Name, EMP Code, Phone, CaneBot ID]
+        AdminUI[Admin Dashboard /admin] --> AddOperatorForm[Admin Enters: Name, EMP Code, Phone, KioskNode ID]
         AddOperatorForm --> UploadPhoto[Admin Uploads Reference Face Photo]
         UploadPhoto --> SetActiveImmediate[Operator Status: ACTIVE immediately]
     end
@@ -166,21 +166,21 @@ graph TD
 
 ### Operational Rules:
 1. **Unapproved Guardrail**: If an operator with status `PENDING_ADMIN_APPROVAL` attempts to log temperature or attendance, the bot responds:
-   > *"⏳ Your profile for CaneBot Kiosk is awaiting Supervisor Approval. Please contact your manager to activate your account."*
+   > *"⏳ Your profile for KioskNode Kiosk is awaiting Supervisor Approval. Please contact your manager to activate your account."*
 2. **Phone Number Binding**: The operator's WhatsApp phone number is permanently bound to their employee profile upon activation.
 
 ---
 
-## 5. Dual-Mode Computer Vision OCR Engine (CaneBot Display)
+## 5. Dual-Mode Computer Vision OCR Engine (KioskNode Display)
 
-CaneBot machines feature digital temperature indicators monitoring juice chilling:
+KioskNode machines feature digital temperature indicators monitoring juice chilling:
 - Red/Green 7-segment illuminated LED digits or backlit LCD screens.
 - Front camera mirroring auto-detection & horizontal flip.
 - Adaptive histogram equalization (CLAHE) to suppress shop-floor reflections and acrylic panel glare.
 
 ```json
 {
-  "machine_context": "Canectar CaneBot Sugarcane Chiller",
+  "machine_context": "Apex KioskNode Cold-chain Chiller",
   "temperature_reading": {
     "value": 3.4,
     "unit": "C",
@@ -204,10 +204,10 @@ CaneBot machines feature digital temperature indicators monitoring juice chillin
 erDiagram
     EMPLOYEE ||--o{ SHIFT_ASSIGNMENT : assigned_to
     SHIFT_ASSIGNMENT }o--|| SHIFT : during
-    SHIFT ||--o{ CANEBOT_MACHINE : operates
-    CANEBOT_MACHINE ||--|| LOCATION : installed_at
-    CANEBOT_MACHINE ||--|| HACCP_RULE : governed_by
-    CANEBOT_MACHINE ||--|| DOWNSTREAM_ASSET : mapped_to
+    SHIFT ||--o{ KIOSK_MACHINE : operates
+    KIOSK_MACHINE ||--|| LOCATION : installed_at
+    KIOSK_MACHINE ||--|| HACCP_RULE : governed_by
+    KIOSK_MACHINE ||--|| DOWNSTREAM_ASSET : mapped_to
 
     EMPLOYEE {
         string id PK "EMP-1042"
@@ -216,9 +216,9 @@ erDiagram
         string status "ACTIVE | PENDING_APPROVAL"
         vector face_embedding
     }
-    CANEBOT_MACHINE {
-        string id PK "CANEBOT-PUNE-04"
-        string model "CaneBot-Pro-Chilled"
+    KIOSK_MACHINE {
+        string id PK "NODE-PUNE-04"
+        string model "ChillerNode-Pro-Chilled"
         string display_type "7_segment_led"
     }
     LOCATION {
@@ -253,7 +253,7 @@ graph TD
     FaceMatchNode -->|Face Match < 0.85| PromptRetake[Prompt Clearer Selfie]
     
     LocationCheckNode -->|No| SendLocationLink[Send 1-Click Geolocation Link]
-    LocationCheckNode -->|Yes / Geofence Passed| DisplayOCRNode[CaneBot Chiller Display OCR Node]
+    LocationCheckNode -->|Yes / Geofence Passed| DisplayOCRNode[KioskNode Chiller Display OCR Node]
     
     DisplayOCRNode --> HACCPCheckNode{Chiller Temp Evaluation}
     HACCPCheckNode -->|2.0°C - 4.0°C: Normal| CommitLogNode[Tri-Format Audit Logging]
@@ -278,19 +278,19 @@ graph TD
 Hosted on `/admin/apps/temperature-marker/wizard`:
 
 ```
-[Step 1: CaneBot Kiosk] ──> [Step 2: Chiller Temp Limits] ──> [Step 3: Assign Operator] ──> [Step 4: Downstream & Review]
+[Step 1: KioskNode Kiosk] ──> [Step 2: Chiller Temp Limits] ──> [Step 3: Assign Operator] ──> [Step 4: Downstream & Review]
         (Draft)                       (Draft)                         (Draft)                      (Live)
 ```
 
-### Step 1: Register CaneBot Kiosk
-- **Machine Code**: e.g., `CANEBOT-PUNE-04`.
+### Step 1: Register KioskNode Kiosk
+- **Machine Code**: e.g., `NODE-PUNE-04`.
 - **Location Name**: e.g., `Phoenix Marketcity Mall, Viman Nagar`.
 - **GPS Coordinates**: Latitude: `18.5621`, Longitude: `73.9168`.
 - **Geofence Radius**: `[🔘 50m (Street/Kiosk)]` or `[🔘 100m (Indoor Mall)]`.
 - **Display Meter**: `[🔘 Red 7-Segment LED]` or `[🔘 Grey LCD Screen]`.
 
 ### Step 2: Temperature & Food Safety Limits
-- Pre-filled with Canectar CaneBot defaults:
+- Pre-filled with Apex KioskNode defaults:
   - Minimum Safe Chiller Temp: **2.0°C**
   - Maximum Safe Chiller Temp: **4.0°C**
   - Critical Alert Limit: **7.0°C**
@@ -327,10 +327,10 @@ graph LR
 ### Standardized Payload Schema Dispatched Downstream:
 ```json
 {
-  "event_type": "canebot_duty_log",
+  "event_type": "kiosk_duty_log",
   "timestamp_iso": "2026-09-14T08:30:15.000Z",
-  "organization": "Canectar Foods Pvt Ltd",
-  "machine_id": "CANEBOT-PUNE-04",
+  "organization": "Apex Cold-Chain Logistics Ltd",
+  "machine_id": "NODE-PUNE-04",
   "kiosk_location": "Phoenix Marketcity Food Court",
   "operator": {
     "employee_id": "EMP-1042",
@@ -372,9 +372,9 @@ D:\Release100\apps\temperature_marker/
 │       ├── face_node.py               # Biometric face matching
 │       ├── onboarding_node.py         # #register conversational self-onboarding
 │       ├── location_node.py           # 1-Click web geolocation verification
-│       ├── kg_inference_node.py       # CaneBot kiosk & roster lookup
+│       ├── kg_inference_node.py       # KioskNode kiosk & roster lookup
 │       ├── ocr_node.py                # Dual-mode 7-segment / LCD vision extraction
-│       ├── haccp_node.py              # CaneBot 2°C-4°C safety evaluation
+│       ├── haccp_node.py              # KioskNode 2°C-4°C safety evaluation
 │       ├── audit_node.py              # Tri-format compliance logging
 │       ├── downstream_node.py         # Universal downstream gateway dispatch
 │       └── reply_node.py              # WhatsApp & supervisor notification composer
@@ -394,7 +394,7 @@ D:\Release100\apps\temperature_marker/
 │   ├── __init__.py
 │   ├── schema.py                      # Node & Edge type definitions
 │   ├── service.py                     # Kiosk roster & rule lookup service
-│   └── default_canectar_graph.json    # CaneBot machine roster & chiller thresholds
+│   └── default_apex_graph.json    # KioskNode machine roster & chiller thresholds
 │
 ├── downstream/                        # Pluggable Downstream Gateway
 │   ├── __init__.py
@@ -408,12 +408,12 @@ D:\Release100\apps\temperature_marker/
 ├── ui/                                # Progressive Stepper Admin Wizard
 │   ├── __init__.py
 │   ├── routes.py                      # FastAPI routes for /admin/apps/temperature-marker
-│   ├── templates/                     # Jinja2 templates (CaneBot Stepper, Approvals Tab)
-│   └── static/                        # CSS, CaneBot badges, JS auto-save & GPS scripts
+│   ├── templates/                     # Jinja2 templates (KioskNode Stepper, Approvals Tab)
+│   └── static/                        # CSS, KioskNode badges, JS auto-save & GPS scripts
 │
 └── database/                          # Local Storage & Biometric Vectors
     ├── __init__.py
-    ├── models.py                      # SQLAlchemy models: Employee, CaneBotMachine, AttendanceRecord
+    ├── models.py                      # SQLAlchemy models: Employee, KioskNodeMachine, AttendanceRecord
     └── db_service.py                  # CRUD operations, approvals & vector search
 ```
 
@@ -422,7 +422,7 @@ D:\Release100\apps\temperature_marker/
 ## 11. Next Steps
 
 With **Plan 3 updated to `v1.1.0`**, the Food Temperature & Attendance Marker application is fully specified with:
-1. **Canectar Foods & CaneBot** as the primary indicator and default template.
+1. **Apex Cold-Chain Logistics & KioskNode** as the primary indicator and default template.
 2. **Option 4 Web Geolocation** with 50m–100m geofencing.
 3. **Two-track employee registration** with Admin verification gate.
 4. **Pluggable Universal Downstream Gateway** supporting In-House REST, Direct DB, Spreadsheets, and ERP/MCP.

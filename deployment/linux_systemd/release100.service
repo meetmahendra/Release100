@@ -1,13 +1,13 @@
 [Unit]
-Description=Release100 Core Platform — CaneBot Temperature & Attendance Marker
+Description=Release100 Core Platform — Industrial Temperature & Attendance Marker
 Documentation=https://github.com/mahendrag/release100
 After=network-online.target ntp.service
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=canebot
-Group=canebot
+User=kiosk
+Group=kiosk
 WorkingDirectory=/opt/release100
 
 # Activate virtual environment and run the platform host
