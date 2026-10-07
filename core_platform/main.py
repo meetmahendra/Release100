@@ -58,6 +58,7 @@ relay_client = CloudRelayClient.get_instance()
 
 from core_platform.app.plugin_engine.loader import PluginLoader
 from core_platform.app.outbox.synchronizer import OutboxSynchronizer
+from core_platform.app.i18n.negotiation import LocaleMiddleware
 from core_platform.app.middleware.tenant_context import TenantContextMiddleware
 
 plugin_loader = PluginLoader(enabled_apps=settings.ENABLED_APPLICATIONS)
@@ -96,6 +97,14 @@ app = FastAPI(
 
 # Multi-Tenancy Dynamic Context Middleware (GEES v2.0 / Plan 09)
 app.add_middleware(TenantContextMiddleware, default_tenant=settings.TENANT_ID)
+
+# UI locale negotiation (Plan 11): query > cookie > Accept-Language > default
+app.add_middleware(
+    LocaleMiddleware,
+    supported=settings.UI_SUPPORTED_LOCALES,
+    default=settings.UI_DEFAULT_LOCALE,
+    cookie_name=settings.UI_LOCALE_COOKIE_NAME,
+)
 
 
 # Mount media and biometric photo storage vaults for browser monitoring inspection
