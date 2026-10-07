@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}VIP & Whitelist Rules{% endblock %}
+{% block title %}{{ t('apps.mail_organizer.rules.title_tag') }}{% endblock %}
 
 {% block content %}
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="font-size: 1.25rem; font-weight: 700;">Deterministic VIP & Whitelist Rules</h2>
-        <span class="badge badge-success">Layer 0 Safety Hardcoded</span>
+        <h2 style="font-size: 1.25rem; font-weight: 700;">{{ t('apps.mail_organizer.rules.heading') }}</h2>
+        <span class="badge badge-success">{{ t('apps.mail_organizer.rules.badge_layer0') }}</span>
     </div>
     <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
-        Emails from configured VIP addresses or trusted enterprise domains automatically bypass LLM latency and receive immediate priority escalation.
+        {{ t('apps.mail_organizer.rules.description') }}
     </p>
 
     <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Pattern</th>
-                <th>Rule Type</th>
-                <th>Action</th>
-                <th>Status</th>
+                <th>{{ t('apps.mail_organizer.rules.th_id') }}</th>
+                <th>{{ t('apps.mail_organizer.rules.th_pattern') }}</th>
+                <th>{{ t('apps.mail_organizer.rules.th_rule_type') }}</th>
+                <th>{{ t('apps.mail_organizer.rules.th_action') }}</th>
+                <th>{{ t('apps.mail_organizer.rules.th_status') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -29,11 +29,11 @@
                 <td><code>{{ r.pattern }}</code></td>
                 <td><span class="badge badge-action">{{ r.rule_type }}</span></td>
                 <td><span class="badge badge-urgent">{{ r.action }}</span></td>
-                <td><span class="badge badge-success">ACTIVE</span></td>
+                <td><span class="badge badge-success">{{ t('apps.mail_organizer.rules.badge_active') }}</span></td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">No custom rules configured yet.</td>
+                <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">{{ t('apps.mail_organizer.rules.empty_state') }}</td>
             </tr>
             {% endfor %}
         </tbody>

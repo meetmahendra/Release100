@@ -150,6 +150,19 @@
         "sync_fallback_failed": "Failed",
         "request_failed_prefix": "Request failed: ",
         "dismiss_failed": "Failed to dismiss task"
+      },
+      "rules": {
+        "title_tag": "VIP & Whitelist Rules",
+        "heading": "Deterministic VIP & Whitelist Rules",
+        "badge_layer0": "Layer 0 Safety Hardcoded",
+        "description": "Emails from configured VIP addresses or trusted enterprise domains automatically bypass LLM latency and receive immediate priority escalation.",
+        "th_id": "ID",
+        "th_pattern": "Pattern",
+        "th_rule_type": "Rule Type",
+        "th_action": "Action",
+        "th_status": "Status",
+        "badge_active": "ACTIVE",
+        "empty_state": "No custom rules configured yet."
       }
     }
   }
