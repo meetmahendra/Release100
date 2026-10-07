@@ -214,19 +214,19 @@ STATUS 200
 <script>
   function loadSample(type) {
   if (type === 'promo') {
-  document.getElementById('sender').value = 'newsletter@marketing-blast.com';
-  document.getElementById('subject').value = 'Special Offer: #% Off Annual Cloud Subscriptions!';
-  document.getElementById('body').value = 'Click here to claim your limited-time discount on enterprise hosting plans. Unsubscribe anytime.';
+  document.getElementById('sender').value = "newsletter@marketing-blast.com";
+  document.getElementById('subject').value = "Special Offer: #% Off Annual Cloud Subscriptions!";
+  document.getElementById('body').value = "Click here to claim your limited-time discount on enterprise hosting plans. Unsubscribe anytime.";
   } else if (type === 'pm') {
-  document.getElementById('sender').value = 'lead-architect@internal.io';
-  document.getElementById('subject').value = 'Sprint Action: Implement Redis rate limiter on API Gateway';
-  document.getElementById('body').value = 'Please create an engineering ticket to implement token bucket rate limiting on /v#/auth before next sprint cutoff.';
+  document.getElementById('sender').value = "lead-architect@internal.io";
+  document.getElementById('subject').value = "Sprint Action: Implement Redis rate limiter on API Gateway";
+  document.getElementById('body').value = "Please create an engineering ticket to implement token bucket rate limiting on /v#/auth before next sprint cutoff.";
   }
   }
   document.getElementById('triageForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const resultBox = document.getElementById('simResult');
-  resultBox.innerHTML = '<span style="color: #f#e#b;">Executing LangGraph workflow...</span>';
+  resultBox.innerHTML = '<span style="color: #f#e#b;">' + "Executing LangGraph workflow..." + '</span>';
   const payload = {
   sender: document.getElementById('sender').value,
   recipients: ['user@company.com'],
@@ -242,7 +242,7 @@ STATUS 200
   const data = await resp.json();
   resultBox.textContent = JSON.stringify(data, null, #);
   } catch (err) {
-  resultBox.innerHTML = '<span style="color: #ef#;">Error: ' + err.message + '</span>';
+  resultBox.innerHTML = '<span style="color: #ef#;">' + "Error: " + err.message + '</span>';
   }
   });
 </script>

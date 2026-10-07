@@ -163,6 +163,29 @@
         "th_status": "Status",
         "badge_active": "ACTIVE",
         "empty_state": "No custom rules configured yet."
+      },
+      "triage": {
+        "title_tag": "Triage Simulator",
+        "heading_inject": "Inject Email Thread",
+        "lbl_sender": "Sender",
+        "default_sender": "ceo@customer-enterprise.com",
+        "lbl_subject": "Subject",
+        "default_subject": "URGENT: Contract Signature Needed for Q3 Renewal",
+        "lbl_email_body": "Email Body",
+        "default_body": "Hi Depali, We need the signed enterprise SLA amendment by 5 PM today to avoid service interruption. Can you please review and sign the attached document? Also let us know your availability for a 15-minute quick sync tomorrow morning.",
+        "btn_run_pipeline": "Run Complete LangGraph Pipeline",
+        "btn_sample_promo": "Promo Sample",
+        "btn_sample_pm": "PM Task Sample",
+        "heading_diagnostic": "Execution Diagnostic",
+        "msg_awaiting_input": "Awaiting simulation input...",
+        "sample_promo_sender": "newsletter@marketing-blast.com",
+        "sample_promo_subject": "Special Offer: 50% Off Annual Cloud Subscriptions!",
+        "sample_promo_body": "Click here to claim your limited-time discount on enterprise hosting plans. Unsubscribe anytime.",
+        "sample_pm_sender": "lead-architect@internal.io",
+        "sample_pm_subject": "Sprint Action: Implement Redis rate limiter on API Gateway",
+        "sample_pm_body": "Please create an engineering ticket to implement token bucket rate limiting on /v1/auth before next sprint cutoff.",
+        "msg_executing": "Executing LangGraph workflow...",
+        "msg_error_prefix": "Error: "
       }
     }
   }

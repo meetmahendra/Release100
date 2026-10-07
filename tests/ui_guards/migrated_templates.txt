@@ -33,3 +33,4 @@ apps/mail_organizer/ui/templates/_dashboard_trace_cards.html
 apps/mail_organizer/ui/templates/drafts.html
 apps/mail_organizer/ui/templates/pm_queue.html
 apps/mail_organizer/ui/templates/rules.html
+apps/mail_organizer/ui/templates/triage.html
