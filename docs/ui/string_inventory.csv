@@ -1,0 +1,1017 @@
+file,line,kind,text,candidate_key
+core_platform/app/admin_shell/templates/entitlements.html,6,text,Groups and Access - Release100,core.entitlements.groups_and_access_release100
+core_platform/app/admin_shell/templates/entitlements.html,13,attr:aria-label,Back to platform dashboard,core.entitlements.back_to_platform_dashboard
+core_platform/app/admin_shell/templates/entitlements.html,13,text,← Platform Dashboard,core.entitlements.platform_dashboard
+core_platform/app/admin_shell/templates/entitlements.html,15,text,Groups and Access,core.entitlements.groups_and_access
+core_platform/app/admin_shell/templates/entitlements.html,18,text,Tenant:,core.entitlements.tenant
+core_platform/app/admin_shell/templates/entitlements.html,22,text,Admin:,core.entitlements.admin
+core_platform/app/admin_shell/templates/entitlements.html,34,text,"Put people (or AI assistants) into groups, then give each group a ready-made",core.entitlements.put_people_or_ai
+core_platform/app/admin_shell/templates/entitlements.html,35,text,access package,core.entitlements.access_package
+core_platform/app/admin_shell/templates/entitlements.html,35,text,. Each package explains in plain words what it allows and what it does not.,core.entitlements.each_package_explains_in
+core_platform/app/admin_shell/templates/entitlements.html,41,text,1. Groups,core.entitlements.1_groups
+core_platform/app/admin_shell/templates/entitlements.html,43,attr:placeholder,"Group name, e.g. Night shift nurses",core.entitlements.group_name_e_g
+core_platform/app/admin_shell/templates/entitlements.html,43,attr:aria-label,Group name,core.entitlements.group_name
+core_platform/app/admin_shell/templates/entitlements.html,45,attr:aria-label,Group type,core.entitlements.group_type
+core_platform/app/admin_shell/templates/entitlements.html,46,text,People,core.entitlements.people
+core_platform/app/admin_shell/templates/entitlements.html,47,text,AI assistants and integrations,core.entitlements.ai_assistants_and_integrations
+core_platform/app/admin_shell/templates/entitlements.html,49,attr:placeholder,Short description (optional),core.entitlements.short_description_optional
+core_platform/app/admin_shell/templates/entitlements.html,49,attr:aria-label,Group description,core.entitlements.group_description
+core_platform/app/admin_shell/templates/entitlements.html,51,text,Create group,core.entitlements.create_group
+core_platform/app/admin_shell/templates/entitlements.html,53,text,People groups hold your staff (picked from your user list). AI assistants and integrations groups hold API keys (shown by label only) and can never receive high-governance packages.,core.entitlements.people_groups_hold_your
+core_platform/app/admin_shell/templates/entitlements.html,62,text,2. Organization units,core.entitlements.2_organization_units
+core_platform/app/admin_shell/templates/entitlements.html,64,attr:placeholder,"Unit name, e.g. Cardiology",core.entitlements.unit_name_e_g
+core_platform/app/admin_shell/templates/entitlements.html,64,attr:aria-label,Unit name,core.entitlements.unit_name
+core_platform/app/admin_shell/templates/entitlements.html,66,attr:placeholder,"Your word for it, e.g. Ward",core.entitlements.your_word_for_it
+core_platform/app/admin_shell/templates/entitlements.html,66,attr:aria-label,Unit label,core.entitlements.unit_label
+core_platform/app/admin_shell/templates/entitlements.html,68,attr:aria-label,Parent unit,core.entitlements.parent_unit
+core_platform/app/admin_shell/templates/entitlements.html,69,text,(top level),core.entitlements.top_level
+core_platform/app/admin_shell/templates/entitlements.html,71,text,Create unit,core.entitlements.create_unit
+core_platform/app/admin_shell/templates/entitlements.html,78,text,3. Access packages,core.entitlements.3_access_packages
+core_platform/app/admin_shell/templates/entitlements.html,79,text,No access packages are available yet. They appear when an application declares them.,core.entitlements.no_access_packages_are
+core_platform/app/admin_shell/templates/entitlements.html,85,text,4. What can this person do?,core.entitlements.4_what_can_this
+core_platform/app/admin_shell/templates/entitlements.html,87,attr:placeholder,Phone number or key id,core.entitlements.phone_number_or_key
+core_platform/app/admin_shell/templates/entitlements.html,87,attr:aria-label,Person or key,core.entitlements.person_or_key
+core_platform/app/admin_shell/templates/entitlements.html,90,text,Check access,core.entitlements.check_access
+core_platform/app/admin_shell/templates/entitlements.html,100,text,Group,core.entitlements.group
+core_platform/app/admin_shell/templates/entitlements.html,102,text,How far does it reach?,core.entitlements.how_far_does_it
+core_platform/app/admin_shell/templates/entitlements.html,105,text,Which unit?,core.entitlements.which_unit
+core_platform/app/admin_shell/templates/entitlements.html,110,text,Not available to AI assistants,core.entitlements.not_available_to_ai
+core_platform/app/admin_shell/templates/entitlements.html,114,text,I understand this grants high-governance access,core.entitlements.i_understand_this_grants
+core_platform/app/admin_shell/templates/entitlements.html,119,text,Cancel,core.entitlements.cancel
+core_platform/app/admin_shell/templates/entitlements.html,120,text,Assign package,core.entitlements.assign_package
+core_platform/app/admin_shell/templates/entitlements.html,164,script,Please tick the box to confirm this high-governance package.,core.entitlements.please_tick_the_box
+core_platform/app/admin_shell/templates/entitlements.html,165,script,Not available to AI assistants.,core.entitlements.not_available_to_ai
+core_platform/app/admin_shell/templates/entitlements.html,166,script,That reach is not allowed for this package.,core.entitlements.that_reach_is_not
+core_platform/app/admin_shell/templates/entitlements.html,167,script,This group already has this package at this reach.,core.entitlements.this_group_already_has
+core_platform/app/admin_shell/templates/entitlements.html,168,script,That group no longer exists.,core.entitlements.that_group_no_longer
+core_platform/app/admin_shell/templates/entitlements.html,169,script,Pick a unit for this reach.,core.entitlements.pick_a_unit_for
+core_platform/app/admin_shell/templates/entitlements.html,171,script,Could not complete the request (,core.entitlements.could_not_complete_the
+core_platform/app/admin_shell/templates/entitlements.html,176,script,Risk level:,core.entitlements.risk_level
+core_platform/app/admin_shell/templates/entitlements.html,213,script,Who it is for:,core.entitlements.who_it_is_for
+core_platform/app/admin_shell/templates/entitlements.html,215,script,They CAN,core.entitlements.they_can
+core_platform/app/admin_shell/templates/entitlements.html,218,script,They CANNOT,core.entitlements.they_cannot
+core_platform/app/admin_shell/templates/entitlements.html,227,script,Currently assigned to,core.entitlements.currently_assigned_to
+core_platform/app/admin_shell/templates/entitlements.html,229,script,Changed since granted - review,core.entitlements.changed_since_granted_review
+core_platform/app/admin_shell/templates/entitlements.html,232,script,Conflicts with:,core.entitlements.conflicts_with
+core_platform/app/admin_shell/templates/entitlements.html,234,script,Assign to a group,core.entitlements.assign_to_a_group
+core_platform/app/admin_shell/templates/entitlements.html,251,script,+ principal +,core.entitlements.principal
+core_platform/app/admin_shell/templates/entitlements.html,260,script,+ b.scope +,core.entitlements.b_scope
+core_platform/app/admin_shell/templates/entitlements.html,265,script,No groups yet. Create the first one above.,core.entitlements.no_groups_yet_create
+core_platform/app/admin_shell/templates/entitlements.html,271,script,AI assistants and integrations,core.entitlements.ai_assistants_and_integrations
+core_platform/app/admin_shell/templates/entitlements.html,289,script,Add member to,core.entitlements.add_member_to
+core_platform/app/admin_shell/templates/entitlements.html,291,script,", pool.length ?",core.entitlements.pool_length
+core_platform/app/admin_shell/templates/entitlements.html,294,script,? p.label : (p.name +,core.entitlements.p_label_p_name
+core_platform/app/admin_shell/templates/entitlements.html,294,script,+ p.principal_id +,core.entitlements.p_principal_id
+core_platform/app/admin_shell/templates/entitlements.html,330,script,+ u.label +,core.entitlements.u_label
+core_platform/app/admin_shell/templates/entitlements.html,337,script,No units yet. Units are optional.,core.entitlements.no_units_yet_units
+core_platform/app/admin_shell/templates/entitlements.html,359,script,Members of,core.entitlements.members_of
+core_platform/app/admin_shell/templates/entitlements.html,360,script,. They will not be able to,core.entitlements.they_will_not_be
+core_platform/app/admin_shell/templates/entitlements.html,370,script,Conflicts with:,core.entitlements.conflicts_with
+core_platform/app/admin_shell/templates/entitlements.html,379,script,", e.group.name + (e.group.kind ===",core.entitlements.e_group_name_e
+core_platform/app/admin_shell/templates/entitlements.html,386,script,"Create a group first, then assign a package to it.",core.entitlements.create_a_group_first
+core_platform/app/admin_shell/templates/entitlements.html,423,script,This person has no access through groups.,core.entitlements.this_person_has_no
+core_platform/app/admin_shell/templates/entitlements.html,426,script,", r.plain_title +",core.entitlements.r_plain_title
+core_platform/app/admin_shell/templates/entitlements.html,426,script,+ r.app_title +,core.entitlements.r_app_title
+core_platform/app/admin_shell/templates/entitlements.html,426,script,+ r.via_group +,core.entitlements.r_via_group
+core_platform/app/admin_shell/templates/entitlements.html,432,script,AI assistants and integrations are API keys. They are picked by label and can never receive high-governance packages.,core.entitlements.ai_assistants_and_integrations
+core_platform/app/admin_shell/templates/entitlements.html,433,script,"People groups hold your staff, picked from your user list.",core.entitlements.people_groups_hold_your
+core_platform/app/admin_shell/templates/llm_costs.html,9,text,LLM Token & Cost Consumption Monitor,core.llm_costs.llm_token_cost_consumption
+core_platform/app/admin_shell/templates/llm_costs.html,11,text,Granular per-trigger and per-interaction token audit with real-time model pricing aggregation.,core.llm_costs.granular_per_trigger_and
+core_platform/app/admin_shell/templates/llm_costs.html,17,text,Refresh Telemetry,core.llm_costs.refresh_telemetry
+core_platform/app/admin_shell/templates/llm_costs.html,25,text,Total Operations / Triggers,core.llm_costs.total_operations_triggers
+core_platform/app/admin_shell/templates/llm_costs.html,27,text,End-to-end user workflows,core.llm_costs.end_to_end_user
+core_platform/app/admin_shell/templates/llm_costs.html,30,text,Total LLM Calls,core.llm_costs.total_llm_calls
+core_platform/app/admin_shell/templates/llm_costs.html,32,text,Individual provider requests,core.llm_costs.individual_provider_requests
+core_platform/app/admin_shell/templates/llm_costs.html,35,text,Total Tokens Consumed,core.llm_costs.total_tokens_consumed
+core_platform/app/admin_shell/templates/llm_costs.html,37,text,Prompt + Completion,core.llm_costs.prompt_completion
+core_platform/app/admin_shell/templates/llm_costs.html,40,text,Total Est. Cost (USD),core.llm_costs.total_est_cost_usd
+core_platform/app/admin_shell/templates/llm_costs.html,42,text,Live token rates,core.llm_costs.live_token_rates
+core_platform/app/admin_shell/templates/llm_costs.html,50,text,Workflow Triggers & Cost Breakdown,core.llm_costs.workflow_triggers_cost_breakdown
+core_platform/app/admin_shell/templates/llm_costs.html,52,text,Click any row to view individual LLM interactions,core.llm_costs.click_any_row_to
+core_platform/app/admin_shell/templates/llm_costs.html,59,text,Trigger / Operation ID,core.llm_costs.trigger_operation_id
+core_platform/app/admin_shell/templates/llm_costs.html,60,text,First Seen,core.llm_costs.first_seen
+core_platform/app/admin_shell/templates/llm_costs.html,61,text,LLM Calls,core.llm_costs.llm_calls
+core_platform/app/admin_shell/templates/llm_costs.html,62,text,Tokens,core.llm_costs.tokens
+core_platform/app/admin_shell/templates/llm_costs.html,63,text,Total Latency,core.llm_costs.total_latency
+core_platform/app/admin_shell/templates/llm_costs.html,64,text,Cost (USD),core.llm_costs.cost_usd
+core_platform/app/admin_shell/templates/llm_costs.html,65,text,Action,core.llm_costs.action
+core_platform/app/admin_shell/templates/llm_costs.html,85,text,ms,core.llm_costs.ms
+core_platform/app/admin_shell/templates/llm_costs.html,92,text,▼ Expand,core.llm_costs.expand
+core_platform/app/admin_shell/templates/llm_costs.html,99,text,Interaction Breakdown for,core.llm_costs.interaction_breakdown_for
+core_platform/app/admin_shell/templates/llm_costs.html,105,text,Task Type,core.llm_costs.task_type
+core_platform/app/admin_shell/templates/llm_costs.html,106,text,Provider,core.llm_costs.provider
+core_platform/app/admin_shell/templates/llm_costs.html,107,text,Model,core.llm_costs.model
+core_platform/app/admin_shell/templates/llm_costs.html,108,text,Prompt Tok.,core.llm_costs.prompt_tok
+core_platform/app/admin_shell/templates/llm_costs.html,109,text,Comp. Tok.,core.llm_costs.comp_tok
+core_platform/app/admin_shell/templates/llm_costs.html,110,text,Latency,core.llm_costs.latency
+core_platform/app/admin_shell/templates/llm_costs.html,111,text,Est. Cost,core.llm_costs.est_cost
+core_platform/app/admin_shell/templates/llm_costs.html,112,text,Status,core.llm_costs.status
+core_platform/app/admin_shell/templates/llm_costs.html,123,text,ms,core.llm_costs.ms
+core_platform/app/admin_shell/templates/llm_costs.html,129,text,✗ Fail,core.llm_costs.fail
+core_platform/app/admin_shell/templates/llm_costs.html,141,text,No LLM interactions recorded yet. Telemetry logs will automatically appear here on runtime requests.,core.llm_costs.no_llm_interactions_recorded
+core_platform/app/admin_shell/templates/llm_costs.html,158,script,▲ Hide,core.llm_costs.hide
+core_platform/app/admin_shell/templates/llm_costs.html,161,script,▼ Expand,core.llm_costs.expand
+core_platform/app/admin_shell/templates/llm_costs.html,172,script,Refresh error:,core.llm_costs.refresh_error
+core_platform/app/admin_shell/templates/login.html,6,text,— Release100,core.login.release100
+core_platform/app/admin_shell/templates/login.html,23,text,Release100 Admin,core.login.release100_admin
+core_platform/app/admin_shell/templates/login.html,27,text,Workspace:,core.login.workspace
+core_platform/app/admin_shell/templates/login.html,30,text,KioskNode Platform Control Panel,core.login.kiosknode_platform_control_panel
+core_platform/app/admin_shell/templates/login.html,47,text,"Username, Phone Number, or Email",core.login.username_phone_number_or
+core_platform/app/admin_shell/templates/login.html,48,attr:placeholder,admin or +919876543210,core.login.admin_or_919876543210
+core_platform/app/admin_shell/templates/login.html,56,text,Password,core.login.password
+core_platform/app/admin_shell/templates/login.html,68,text,Sign In,core.login.sign_in
+core_platform/app/admin_shell/templates/login.html,73,text,GEES v1.0 · Apache 2.0 · Copyright 2026 Mahendra GURAV,core.login.gees_v1_0_apache
+core_platform/app/admin_shell/templates/logs.html,6,text,Live System Logs — Release100,core.logs.live_system_logs_release100
+core_platform/app/admin_shell/templates/logs.html,27,text,Platform Dashboard,core.logs.platform_dashboard
+core_platform/app/admin_shell/templates/logs.html,31,text,Live System Logs & Observability,core.logs.live_system_logs_observability
+core_platform/app/admin_shell/templates/logs.html,35,text,Kiosk:,core.logs.kiosk
+core_platform/app/admin_shell/templates/logs.html,38,text,User:,core.logs.user
+core_platform/app/admin_shell/templates/logs.html,50,attr:placeholder,"Filter by Phone, Corr ID, Kiosk...",core.logs.filter_by_phone_corr
+core_platform/app/admin_shell/templates/logs.html,57,text,All Levels,core.logs.all_levels
+core_platform/app/admin_shell/templates/logs.html,58,text,INFO & Above,core.logs.info_above
+core_platform/app/admin_shell/templates/logs.html,59,text,WARNING & Above,core.logs.warning_above
+core_platform/app/admin_shell/templates/logs.html,60,text,ERROR Only,core.logs.error_only
+core_platform/app/admin_shell/templates/logs.html,65,text,Last 100 lines,core.logs.last_100_lines
+core_platform/app/admin_shell/templates/logs.html,66,text,Last 250 lines,core.logs.last_250_lines
+core_platform/app/admin_shell/templates/logs.html,67,text,Last 500 lines,core.logs.last_500_lines
+core_platform/app/admin_shell/templates/logs.html,68,text,Last 1000 lines,core.logs.last_1000_lines
+core_platform/app/admin_shell/templates/logs.html,76,text,Live Stream (2s),core.logs.live_stream_2s
+core_platform/app/admin_shell/templates/logs.html,80,text,Refresh,core.logs.refresh
+core_platform/app/admin_shell/templates/logs.html,85,text,Download .log,core.logs.download_log
+core_platform/app/admin_shell/templates/logs.html,90,text,Download .jsonl,core.logs.download_jsonl
+core_platform/app/admin_shell/templates/logs.html,93,text,Clear View,core.logs.clear_view
+core_platform/app/admin_shell/templates/logs.html,103,text,Connecting to live log stream...,core.logs.connecting_to_live_log
+core_platform/app/admin_shell/templates/logs.html,121,script,Failed to fetch logs:,core.logs.failed_to_fetch_logs
+core_platform/app/admin_shell/templates/logs.html,134,script,"<span class=""log-corr"">[corr:$1]</span>",core.logs.span_class_log_corr
+core_platform/app/admin_shell/templates/logs.html,135,script,"<span class=""log-kiosk"">[kiosk:$1]</span>",core.logs.span_class_log_kiosk
+core_platform/app/admin_shell/templates/logs.html,155,script,"<div class=""text-slate-500 italic"">No matching logs found.</div>",core.logs.div_class_text_slate
+core_platform/app/admin_shell/templates/logs.html,176,script,"<div class=""text-slate-500 italic"">Display cleared. New logs will appear on next interval.</div>",core.logs.div_class_text_slate
+core_platform/app/admin_shell/templates/shell.html,6,text,— Release100,core.shell.release100
+core_platform/app/admin_shell/templates/shell.html,23,text,Release100,core.shell.release100
+core_platform/app/admin_shell/templates/shell.html,38,text,Overview Dashboard,core.shell.overview_dashboard
+core_platform/app/admin_shell/templates/shell.html,43,text,Applications,core.shell.applications
+core_platform/app/admin_shell/templates/shell.html,51,text,No cartridges installed,core.shell.no_cartridges_installed
+core_platform/app/admin_shell/templates/shell.html,56,text,Workspace & Access,core.shell.workspace_access
+core_platform/app/admin_shell/templates/shell.html,61,text,Users & Team,core.shell.users_team
+core_platform/app/admin_shell/templates/shell.html,67,text,Company Profile & Vault,core.shell.company_profile_vault
+core_platform/app/admin_shell/templates/shell.html,76,text,API Keys,core.shell.api_keys
+core_platform/app/admin_shell/templates/shell.html,83,text,DevOps Control Plane,core.shell.devops_control_plane
+core_platform/app/admin_shell/templates/shell.html,90,text,DevOps Diagnostics,core.shell.devops_diagnostics
+core_platform/app/admin_shell/templates/shell.html,94,text,LLM Costs & Tokens,core.shell.llm_costs_tokens
+core_platform/app/admin_shell/templates/shell.html,99,text,Live System Logs,core.shell.live_system_logs
+core_platform/app/admin_shell/templates/shell.html,103,text,Master Settings & Keys,core.shell.master_settings_keys
+core_platform/app/admin_shell/templates/shell.html,107,text,Live Health JSON ↗,core.shell.live_health_json
+core_platform/app/admin_shell/templates/shell.html,121,attr:title,Logout,core.shell.logout
+core_platform/app/admin_shell/templates/shell.html,138,text,Node:,core.shell.node
+core_platform/app/admin_shell/templates/shell.html,139,text,( ) • 🏢 Tenant:,core.shell.tenant
+core_platform/app/admin_shell/templates/shell.html,145,text,🔶 SHADOW (DRY RUN),core.shell.shadow_dry_run
+core_platform/app/admin_shell/templates/shell.html,149,text,✅ LIVE PRODUCTION,core.shell.live_production
+core_platform/app/admin_shell/templates/shell.html,153,text,Mode:,core.shell.mode
+core_platform/app/admin_shell/templates/shell.html,163,text,Service & Credential Readiness,core.shell.service_credential_readiness
+core_platform/app/admin_shell/templates/shell.html,170,text,Google Gemini AI,core.shell.google_gemini_ai
+core_platform/app/admin_shell/templates/shell.html,172,text,READY,core.shell.ready
+core_platform/app/admin_shell/templates/shell.html,174,text,MISSING KEY,core.shell.missing_key
+core_platform/app/admin_shell/templates/shell.html,177,text,Cognitive Gateway,core.shell.cognitive_gateway
+core_platform/app/admin_shell/templates/shell.html,178,text,"Powers intent routing, OCR & stochastic reasoning.",core.shell.powers_intent_routing_ocr
+core_platform/app/admin_shell/templates/shell.html,182,text,Configure / Test Key →,core.shell.configure_test_key
+core_platform/app/admin_shell/templates/shell.html,184,text,Tenant BYOK Keys →,core.shell.tenant_byok_keys
+core_platform/app/admin_shell/templates/shell.html,193,text,WhatsApp Ingress,core.shell.whatsapp_ingress
+core_platform/app/admin_shell/templates/shell.html,195,text,CONFIGURED,core.shell.configured
+core_platform/app/admin_shell/templates/shell.html,197,text,INCOMPLETE,core.shell.incomplete
+core_platform/app/admin_shell/templates/shell.html,200,text,Field Messaging,core.shell.field_messaging
+core_platform/app/admin_shell/templates/shell.html,201,text,Handles conversational webhooks and notification outbox.,core.shell.handles_conversational_webhooks_and
+core_platform/app/admin_shell/templates/shell.html,205,text,Configure WhatsApp →,core.shell.configure_whatsapp
+core_platform/app/admin_shell/templates/shell.html,207,text,Configure WhatsApp BYOK →,core.shell.configure_whatsapp_byok
+core_platform/app/admin_shell/templates/shell.html,216,text,Outbound Relay,core.shell.outbound_relay
+core_platform/app/admin_shell/templates/shell.html,218,text,WSS TUNNEL,core.shell.wss_tunnel
+core_platform/app/admin_shell/templates/shell.html,220,text,LOCAL MODE,core.shell.local_mode
+core_platform/app/admin_shell/templates/shell.html,223,text,Zero Inbound,core.shell.zero_inbound
+core_platform/app/admin_shell/templates/shell.html,224,text,Target:,core.shell.target
+core_platform/app/admin_shell/templates/shell.html,228,text,Cloudflare Tunnel Info →,core.shell.cloudflare_tunnel_info
+core_platform/app/admin_shell/templates/shell.html,230,text,Platform Managed,core.shell.platform_managed
+core_platform/app/admin_shell/templates/shell.html,239,text,Audit Ledger,core.shell.audit_ledger
+core_platform/app/admin_shell/templates/shell.html,240,text,SHA-256,core.shell.sha_256
+core_platform/app/admin_shell/templates/shell.html,242,text,# Events,core.shell.events
+core_platform/app/admin_shell/templates/shell.html,243,text,Hash: ...,core.shell.hash
+core_platform/app/admin_shell/templates/shell.html,247,text,View Telemetry →,core.shell.view_telemetry
+core_platform/app/admin_shell/templates/shell.html,249,text,Tamper-Proof Ledger,core.shell.tamper_proof_ledger
+core_platform/app/admin_shell/templates/shell.html,256,text,Quick Action Launchpad,core.shell.quick_action_launchpad
+core_platform/app/admin_shell/templates/shell.html,265,text,Settings & Master Keys,core.shell.settings_master_keys
+core_platform/app/admin_shell/templates/shell.html,267,text,"Configure LLM providers, WhatsApp webhooks, Cloudflare tunnels, and manage configuration backups.",core.shell.configure_llm_providers_whatsapp
+core_platform/app/admin_shell/templates/shell.html,268,text,Configure System →,core.shell.configure_system
+core_platform/app/admin_shell/templates/shell.html,276,text,DevOps Control Plane,core.shell.devops_control_plane
+core_platform/app/admin_shell/templates/shell.html,278,text,"Provision tenant databases, deep-clone partitions, cutover geo-regions, and audit hash chains.",core.shell.provision_tenant_databases_deep
+core_platform/app/admin_shell/templates/shell.html,279,text,Open Operations →,core.shell.open_operations
+core_platform/app/admin_shell/templates/shell.html,287,text,Provision API Keys,core.shell.provision_api_keys
+core_platform/app/admin_shell/templates/shell.html,289,text,"Generate scoped, rate-limited SHA-256 API keys for field tablets, MCP agents, and external integrations.",core.shell.generate_scoped_rate_limited
+core_platform/app/admin_shell/templates/shell.html,290,text,Manage Keys →,core.shell.manage_keys
+core_platform/app/admin_shell/templates/shell.html,298,text,Company Profile & BYOK Vault,core.shell.company_profile_byok_vault
+core_platform/app/admin_shell/templates/shell.html,300,text,"Configure company WhatsApp integration, custom Gemini API keys, and custom domain CNAME records.",core.shell.configure_company_whatsapp_integration
+core_platform/app/admin_shell/templates/shell.html,301,text,Manage Profile & Keys →,core.shell.manage_profile_keys
+core_platform/app/admin_shell/templates/shell.html,309,text,Users & Team Directory,core.shell.users_team_directory
+core_platform/app/admin_shell/templates/shell.html,311,text,"Invite and manage team members, assign cartridge permissions, and generate instant 1-click magic links.",core.shell.invite_and_manage_team
+core_platform/app/admin_shell/templates/shell.html,312,text,Manage Users →,core.shell.manage_users
+core_platform/app/admin_shell/templates/shell.html,320,text,Scoped API Keys,core.shell.scoped_api_keys
+core_platform/app/admin_shell/templates/shell.html,322,text,Issue secure API keys scoped specifically to your organization's entitled applications.,core.shell.issue_secure_api_keys
+core_platform/app/admin_shell/templates/shell.html,323,text,Issue Keys →,core.shell.issue_keys
+core_platform/app/admin_shell/templates/shell.html,336,text,Open Cartridge Dashboard →,core.shell.open_cartridge_dashboard
+core_platform/app/admin_shell/templates/shell.html,342,text,📦 Pure Microkernel Mode — No Application Cartridges Installed,core.shell.pure_microkernel_mode_no
+core_platform/app/admin_shell/templates/shell.html,343,text,Core platform is fully operational. Install cartridges (e.g.,core.shell.core_platform_is_fully
+core_platform/app/admin_shell/templates/shell.html,343,text,pip install release100-cartridge-temperature-marker,core.shell.pip_install_release100_cartridge
+core_platform/app/admin_shell/templates/shell.html,343,text,) to enable business workflows.,core.shell.to_enable_business_workflows
+core_platform/app/admin_shell/templates/shell.html,350,text,Recent Audit Trail Activity (SHA-256 Hash Chain),core.shell.recent_audit_trail_activity
+core_platform/app/admin_shell/templates/shell.html,355,text,Seq #,core.shell.seq
+core_platform/app/admin_shell/templates/shell.html,356,text,Timestamp (UTC),core.shell.timestamp_utc
+core_platform/app/admin_shell/templates/shell.html,357,text,Action / Event,core.shell.action_event
+core_platform/app/admin_shell/templates/shell.html,358,text,Actor / User,core.shell.actor_user
+core_platform/app/admin_shell/templates/shell.html,359,text,Cryptographic Hash,core.shell.cryptographic_hash
+core_platform/app/admin_shell/templates/shell.html,373,text,Audit chain is initialized and waiting for live transactions.,core.shell.audit_chain_is_initialized
+core_platform/app/admin_shell/templates/shell.html,385,text,Create Scoped API Key,core.shell.create_scoped_api_key
+core_platform/app/admin_shell/templates/shell.html,386,text,Keys are hashed with SHA-256 before storage. Raw keys are shown once upon creation.,core.shell.keys_are_hashed_with
+core_platform/app/admin_shell/templates/shell.html,388,attr:placeholder,Key Label (e.g. Field Tablet),core.shell.key_label_e_g
+core_platform/app/admin_shell/templates/shell.html,390,attr:placeholder,Apps CSV (e.g. * or specific app),core.shell.apps_csv_e_g
+core_platform/app/admin_shell/templates/shell.html,392,attr:placeholder,Roles CSV (e.g. field_operator),core.shell.roles_csv_e_g
+core_platform/app/admin_shell/templates/shell.html,395,text,Generate Key,core.shell.generate_key
+core_platform/app/admin_shell/templates/shell.html,418,text,Label,core.shell.label
+core_platform/app/admin_shell/templates/shell.html,419,text,Principal,core.shell.principal
+core_platform/app/admin_shell/templates/shell.html,420,text,Status,core.shell.status
+core_platform/app/admin_shell/templates/shell.html,421,text,Actions,core.shell.actions
+core_platform/app/admin_shell/templates/shell.html,431,text,Revoked,core.shell.revoked
+core_platform/app/admin_shell/templates/shell.html,433,text,Active,core.shell.active
+core_platform/app/admin_shell/templates/shell.html,440,text,Revoke,core.shell.revoke
+core_platform/app/admin_shell/templates/shell.html,446,text,No API keys generated yet.,core.shell.no_api_keys_generated
+core_platform/app/admin_shell/templates/tenants.html,6,text,Company Profile & Workspace Settings — Release100,core.tenants.company_profile_workspace_settings
+core_platform/app/admin_shell/templates/tenants.html,18,text,Dashboard,core.tenants.dashboard
+core_platform/app/admin_shell/templates/tenants.html,22,text,Company Profile & Plan Settings,core.tenants.company_profile_plan_settings
+core_platform/app/admin_shell/templates/tenants.html,26,text,🏢 Tenant:,core.tenants.tenant
+core_platform/app/admin_shell/templates/tenants.html,29,text,Admin:,core.tenants.admin
+core_platform/app/admin_shell/templates/tenants.html,43,text,DevOps Super-Admin Privileges Detected,core.tenants.devops_super_admin_privileges
+core_platform/app/admin_shell/templates/tenants.html,44,text,You are viewing the scoped customer view for,core.tenants.you_are_viewing_the
+core_platform/app/admin_shell/templates/tenants.html,44,text,". To manage all tenants across the SaaS fleet, open the DevOps Control Plane.",core.tenants.to_manage_all_tenants
+core_platform/app/admin_shell/templates/tenants.html,48,text,Open DevOps Portal,core.tenants.open_devops_portal
+core_platform/app/admin_shell/templates/tenants.html,71,text,Company Workspace,core.tenants.company_workspace
+core_platform/app/admin_shell/templates/tenants.html,73,text,ID:,core.tenants.id
+core_platform/app/admin_shell/templates/tenants.html,77,text,Cloud License Tier,core.tenants.cloud_license_tier
+core_platform/app/admin_shell/templates/tenants.html,83,text,Max Users:,core.tenants.max_users
+core_platform/app/admin_shell/templates/tenants.html,87,text,Registered Users,core.tenants.registered_users
+core_platform/app/admin_shell/templates/tenants.html,89,text,Manage Directory →,core.tenants.manage_directory
+core_platform/app/admin_shell/templates/tenants.html,93,text,Credential Mode,core.tenants.credential_mode
+core_platform/app/admin_shell/templates/tenants.html,96,text,🔑 Customer BYOK,core.tenants.customer_byok
+core_platform/app/admin_shell/templates/tenants.html,100,text,☁️ Platform-Managed,core.tenants.platform_managed
+core_platform/app/admin_shell/templates/tenants.html,105,text,AES-256-GCM Vault,core.tenants.aes_256_gcm_vault
+core_platform/app/admin_shell/templates/tenants.html,114,text,Company Identity & Domain Governance,core.tenants.company_identity_domain_governance
+core_platform/app/admin_shell/templates/tenants.html,116,text,These core parameters are provisioned by Platform DevOps and locked for security isolation.,core.tenants.these_core_parameters_are
+core_platform/app/admin_shell/templates/tenants.html,118,text,Managed by DevOps,core.tenants.managed_by_devops
+core_platform/app/admin_shell/templates/tenants.html,123,text,Tenant Identifier (Slug),core.tenants.tenant_identifier_slug
+core_platform/app/admin_shell/templates/tenants.html,125,text,Immutable partition key used across database tables.,core.tenants.immutable_partition_key_used
+core_platform/app/admin_shell/templates/tenants.html,129,text,Custom Domain / Subdomain,core.tenants.custom_domain_subdomain
+core_platform/app/admin_shell/templates/tenants.html,137,text,Requests matching this Host header auto-bind to your workspace.,core.tenants.requests_matching_this_host
+core_platform/app/admin_shell/templates/tenants.html,141,text,Data Storage Region,core.tenants.data_storage_region
+core_platform/app/admin_shell/templates/tenants.html,143,text,Physical region for encrypted data & audit logs.,core.tenants.physical_region_for_encrypted
+core_platform/app/admin_shell/templates/tenants.html,153,text,AI & Messaging Credentials,core.tenants.ai_messaging_credentials
+core_platform/app/admin_shell/templates/tenants.html,155,text,Control how your company connects to Google Gemini AI and WhatsApp Business APIs.,core.tenants.control_how_your_company
+core_platform/app/admin_shell/templates/tenants.html,164,text,Customer BYOK Active:,core.tenants.customer_byok_active
+core_platform/app/admin_shell/templates/tenants.html,164,text,Your company provides its own API credentials. Keys are encrypted at rest via AES-256-GCM and never shared with other tenants.,core.tenants.your_company_provides_its
+core_platform/app/admin_shell/templates/tenants.html,169,text,Company Google Gemini API Key,core.tenants.company_google_gemini_api
+core_platform/app/admin_shell/templates/tenants.html,170,attr:placeholder,Enter custom Gemini key (or leave blank to keep existing),core.tenants.enter_custom_gemini_key
+core_platform/app/admin_shell/templates/tenants.html,172,text,Status:,core.tenants.status
+core_platform/app/admin_shell/templates/tenants.html,172,text,✓ Configured,core.tenants.configured
+core_platform/app/admin_shell/templates/tenants.html,172,text,Not set,core.tenants.not_set
+core_platform/app/admin_shell/templates/tenants.html,176,text,WhatsApp Cloud API Token,core.tenants.whatsapp_cloud_api_token
+core_platform/app/admin_shell/templates/tenants.html,177,attr:placeholder,Enter custom WABA token (or leave blank to keep existing),core.tenants.enter_custom_waba_token
+core_platform/app/admin_shell/templates/tenants.html,179,text,Status:,core.tenants.status
+core_platform/app/admin_shell/templates/tenants.html,179,text,✓ Configured,core.tenants.configured
+core_platform/app/admin_shell/templates/tenants.html,179,text,Not set,core.tenants.not_set
+core_platform/app/admin_shell/templates/tenants.html,184,text,Save Company Credentials,core.tenants.save_company_credentials
+core_platform/app/admin_shell/templates/tenants.html,197,text,Platform-Managed Cloud Plan,core.tenants.platform_managed_cloud_plan
+core_platform/app/admin_shell/templates/tenants.html,198,text,"Your organization utilizes the high-throughput, platform-managed LLM gateway and WhatsApp connectors provided with your enterprise subscription.",core.tenants.your_organization_utilizes_the
+core_platform/app/admin_shell/templates/tenants.html,203,text,Google Gemini LLM:,core.tenants.google_gemini_llm
+core_platform/app/admin_shell/templates/tenants.html,204,text,Provided by Platform (Active),core.tenants.provided_by_platform_active
+core_platform/app/admin_shell/templates/tenants.html,207,text,WhatsApp Messaging:,core.tenants.whatsapp_messaging
+core_platform/app/admin_shell/templates/tenants.html,208,text,Provided by Platform (Active),core.tenants.provided_by_platform_active
+core_platform/app/admin_shell/templates/tenants.html,211,text,"To switch to your own dedicated BYOK keys, please contact your Platform DevOps account manager.",core.tenants.to_switch_to_your
+core_platform/app/admin_shell/templates/tenants.html,222,text,Users & WhatsApp OAuth Registry,core.tenants.users_whatsapp_oauth_registry
+core_platform/app/admin_shell/templates/tenants.html,223,text,"Manage employee accounts, assign application roles, and issue magic links.",core.tenants.manage_employee_accounts_assign
+core_platform/app/admin_shell/templates/tenants.html,233,text,Mail Organizer App Settings,core.tenants.mail_organizer_app_settings
+core_platform/app/admin_shell/templates/tenants.html,234,text,"Configure email triage rules, monitored mailboxes, and VIP sender lists.",core.tenants.configure_email_triage_rules
+core_platform/app/admin_shell/templates/users.html,6,text,User & Identity Management — Release100,core.users.user_identity_management_release100
+core_platform/app/admin_shell/templates/users.html,18,text,Platform Dashboard,core.users.platform_dashboard
+core_platform/app/admin_shell/templates/users.html,22,text,Multi-Tenant User Registry & WhatsApp Entitlements,core.users.multi_tenant_user_registry
+core_platform/app/admin_shell/templates/users.html,26,text,🏢 Tenant:,core.users.tenant
+core_platform/app/admin_shell/templates/users.html,29,text,Admin:,core.users.admin
+core_platform/app/admin_shell/templates/users.html,54,text,Total Registered Users,core.users.total_registered_users
+core_platform/app/admin_shell/templates/users.html,58,text,Active WhatsApp Users,core.users.active_whatsapp_users
+core_platform/app/admin_shell/templates/users.html,62,text,Google OAuth Linked,core.users.google_oauth_linked
+core_platform/app/admin_shell/templates/users.html,66,text,Suspended / Inactive,core.users.suspended_inactive
+core_platform/app/admin_shell/templates/users.html,74,text,Register New WhatsApp User,core.users.register_new_whatsapp_user
+core_platform/app/admin_shell/templates/users.html,80,text,E.164 Phone Number *,core.users.e_164_phone_number
+core_platform/app/admin_shell/templates/users.html,81,attr:placeholder,+1234567890 or +919876543210,core.users.1234567890_or_919876543210
+core_platform/app/admin_shell/templates/users.html,86,text,Full Name *,core.users.full_name
+core_platform/app/admin_shell/templates/users.html,87,attr:placeholder,Jane Doe,core.users.jane_doe
+core_platform/app/admin_shell/templates/users.html,92,text,Tenant Partition,core.users.tenant_partition
+core_platform/app/admin_shell/templates/users.html,96,text,(Auto-scoped),core.users.auto_scoped
+core_platform/app/admin_shell/templates/users.html,102,text,Role,core.users.role
+core_platform/app/admin_shell/templates/users.html,104,text,User,core.users.user
+core_platform/app/admin_shell/templates/users.html,105,text,Supervisor,core.users.supervisor
+core_platform/app/admin_shell/templates/users.html,106,text,Administrator,core.users.administrator
+core_platform/app/admin_shell/templates/users.html,111,text,Timezone,core.users.timezone
+core_platform/app/admin_shell/templates/users.html,117,text,Web Login Password (Optional),core.users.web_login_password_optional
+core_platform/app/admin_shell/templates/users.html,123,text,Email Address (Optional),core.users.email_address_optional
+core_platform/app/admin_shell/templates/users.html,124,attr:placeholder,user@company.com,core.users.user_company_com
+core_platform/app/admin_shell/templates/users.html,129,text,Allowed Application Cartridges,core.users.allowed_application_cartridges
+core_platform/app/admin_shell/templates/users.html,134,text,📧 Mail Organizer,core.users.mail_organizer
+core_platform/app/admin_shell/templates/users.html,140,text,🌡️ Temperature Marker,core.users.temperature_marker
+core_platform/app/admin_shell/templates/users.html,155,text,Register User,core.users.register_user
+core_platform/app/admin_shell/templates/users.html,165,text,Registered Users Directory,core.users.registered_users_directory
+core_platform/app/admin_shell/templates/users.html,166,attr:placeholder,"Search phone, name, tenant...",core.users.search_phone_name_tenant
+core_platform/app/admin_shell/templates/users.html,174,text,Phone,core.users.phone
+core_platform/app/admin_shell/templates/users.html,175,text,Name,core.users.name
+core_platform/app/admin_shell/templates/users.html,176,text,Tenant,core.users.tenant
+core_platform/app/admin_shell/templates/users.html,177,text,Role,core.users.role
+core_platform/app/admin_shell/templates/users.html,178,text,Entitled Cartridges,core.users.entitled_cartridges
+core_platform/app/admin_shell/templates/users.html,179,text,Google Auth,core.users.google_auth
+core_platform/app/admin_shell/templates/users.html,180,text,Status,core.users.status
+core_platform/app/admin_shell/templates/users.html,181,text,Last Heartbeat,core.users.last_heartbeat
+core_platform/app/admin_shell/templates/users.html,182,text,Actions,core.users.actions
+core_platform/app/admin_shell/templates/users.html,201,text,None,core.users.none
+core_platform/app/admin_shell/templates/users.html,211,text,Not Linked,core.users.not_linked
+core_platform/app/admin_shell/templates/users.html,216,text,Active,core.users.active
+core_platform/app/admin_shell/templates/users.html,227,attr:title,Get WhatsApp OAuth Magic Link,core.users.get_whatsapp_oauth_magic
+core_platform/app/admin_shell/templates/users.html,228,text,🔗 Link,core.users.link
+core_platform/app/admin_shell/templates/users.html,251,text,No registered users found. Use the form above to add the first user.,core.users.no_registered_users_found
+core_platform/app/admin_shell/templates/users.html,265,text,Google OAuth Magic Link,core.users.google_oauth_magic_link
+core_platform/app/admin_shell/templates/users.html,269,text,Send this single-use signed link to the user over WhatsApp. Clicking this opens their mobile browser to securely link their Google Workspace account.,core.users.send_this_single_use
+core_platform/app/admin_shell/templates/users.html,276,text,Expires in:,core.users.expires_in
+core_platform/app/admin_shell/templates/users.html,276,text,15 minutes,core.users.15_minutes
+core_platform/app/admin_shell/templates/users.html,277,text,Copy Link,core.users.copy_link
+core_platform/app/admin_shell/templates/users.html,302,script,Failed to generate magic link.,core.users.failed_to_generate_magic
+core_platform/app/admin_shell/templates/users.html,318,script,Copy Link,core.users.copy_link
+ops_control_plane/super_admin/templates/super_admin_audit.html,6,text,SHA-256 Audit Trail —,core.ops.super_admin_audit.sha_256_audit_trail
+ops_control_plane/super_admin/templates/super_admin_audit.html,14,text,← Back to Tenants,core.ops.super_admin_audit.back_to_tenants
+ops_control_plane/super_admin/templates/super_admin_audit.html,19,text,Cryptographic Audit Trail:,core.ops.super_admin_audit.cryptographic_audit_trail
+ops_control_plane/super_admin/templates/super_admin_audit.html,25,text,SHA-256 Integrity Verified (0 Tamper Anomalies),core.ops.super_admin_audit.sha_256_integrity_verified
+ops_control_plane/super_admin/templates/super_admin_audit.html,30,text,WARNING: Tamper Detected in Audit Chain!,core.ops.super_admin_audit.warning_tamper_detected_in
+ops_control_plane/super_admin/templates/super_admin_audit.html,40,text,Immutable Audit Chain Details,core.ops.super_admin_audit.immutable_audit_chain_details
+ops_control_plane/super_admin/templates/super_admin_audit.html,41,text,Every operational lifecycle event is chained via,core.ops.super_admin_audit.every_operational_lifecycle_event
+ops_control_plane/super_admin/templates/super_admin_audit.html,42,text,SHA-256(Prev_Hash + Timestamp + Payload),core.ops.super_admin_audit.sha_256_prev_hash
+ops_control_plane/super_admin/templates/super_admin_audit.html,42,text,providing mathematical non-repudiation and tamper prevention (FDA 21 CFR Part 11 / ISO 22000 compliance).,core.ops.super_admin_audit.providing_mathematical_non_repudiation
+ops_control_plane/super_admin/templates/super_admin_audit.html,53,text,Event ID,core.ops.super_admin_audit.event_id
+ops_control_plane/super_admin/templates/super_admin_audit.html,54,text,Action,core.ops.super_admin_audit.action
+ops_control_plane/super_admin/templates/super_admin_audit.html,55,text,Operator,core.ops.super_admin_audit.operator
+ops_control_plane/super_admin/templates/super_admin_audit.html,56,text,Timestamp (UTC),core.ops.super_admin_audit.timestamp_utc
+ops_control_plane/super_admin/templates/super_admin_audit.html,57,text,Previous Hash,core.ops.super_admin_audit.previous_hash
+ops_control_plane/super_admin/templates/super_admin_audit.html,58,text,Record Hash,core.ops.super_admin_audit.record_hash
+ops_control_plane/super_admin/templates/super_admin_audit.html,59,text,Chain Verification,core.ops.super_admin_audit.chain_verification
+ops_control_plane/super_admin/templates/super_admin_audit.html,60,text,Event Payload,core.ops.super_admin_audit.event_payload
+ops_control_plane/super_admin/templates/super_admin_audit.html,79,text,VALID,core.ops.super_admin_audit.valid
+ops_control_plane/super_admin/templates/super_admin_audit.html,81,text,CORRUPTED,core.ops.super_admin_audit.corrupted
+ops_control_plane/super_admin/templates/super_admin_audit.html,90,text,No audit events recorded yet.,core.ops.super_admin_audit.no_audit_events_recorded
+ops_control_plane/super_admin/templates/super_admin_tenants.html,21,text,— Release100,core.ops.super_admin_tenants.release100
+ops_control_plane/super_admin/templates/super_admin_tenants.html,34,text,DevOps Control Plane,core.ops.super_admin_tenants.devops_control_plane
+ops_control_plane/super_admin/templates/super_admin_tenants.html,35,text,SUPER_ADMIN,core.ops.super_admin_tenants.super_admin
+ops_control_plane/super_admin/templates/super_admin_tenants.html,37,text,Two-Tier Multi-Tenant SaaS Engine & Dynamic Routing,core.ops.super_admin_tenants.two_tier_multi_tenant
+ops_control_plane/super_admin/templates/super_admin_tenants.html,44,text,Switch to Customer Admin Shell ↗,core.ops.super_admin_tenants.switch_to_customer_admin
+ops_control_plane/super_admin/templates/super_admin_tenants.html,48,text,Logout,core.ops.super_admin_tenants.logout
+ops_control_plane/super_admin/templates/super_admin_tenants.html,82,text,Provision New Enterprise Tenant Workspace,core.ops.super_admin_tenants.provision_new_enterprise_tenant
+ops_control_plane/super_admin/templates/super_admin_tenants.html,84,text,"Automates atomic DB schema creation, DNS subdomain routing, cartridge entitlements, and initial root admin setup.",core.ops.super_admin_tenants.automates_atomic_db_schema
+ops_control_plane/super_admin/templates/super_admin_tenants.html,86,text,ZERO-TRUST ISOLATION,core.ops.super_admin_tenants.zero_trust_isolation
+ops_control_plane/super_admin/templates/super_admin_tenants.html,95,text,Tenant Slug (ID) *,core.ops.super_admin_tenants.tenant_slug_id
+ops_control_plane/super_admin/templates/super_admin_tenants.html,96,attr:placeholder,e.g. acme_corp,core.ops.super_admin_tenants.e_g_acme_corp
+ops_control_plane/super_admin/templates/super_admin_tenants.html,101,text,Company Display Name *,core.ops.super_admin_tenants.company_display_name
+ops_control_plane/super_admin/templates/super_admin_tenants.html,102,attr:placeholder,Acme Corporation,core.ops.super_admin_tenants.acme_corporation
+ops_control_plane/super_admin/templates/super_admin_tenants.html,107,text,Root Admin Username / Phone,core.ops.super_admin_tenants.root_admin_username_phone
+ops_control_plane/super_admin/templates/super_admin_tenants.html,108,attr:placeholder,e.g. acme_admin or leave blank for auto,core.ops.super_admin_tenants.e_g_acme_admin
+ops_control_plane/super_admin/templates/super_admin_tenants.html,113,text,Root Admin Display Name,core.ops.super_admin_tenants.root_admin_display_name
+ops_control_plane/super_admin/templates/super_admin_tenants.html,114,attr:placeholder,e.g. Acme Enterprise Admin,core.ops.super_admin_tenants.e_g_acme_enterprise
+ops_control_plane/super_admin/templates/super_admin_tenants.html,119,text,Root Admin Password (Optional),core.ops.super_admin_tenants.root_admin_password_optional
+ops_control_plane/super_admin/templates/super_admin_tenants.html,120,attr:placeholder,Leave blank to auto-generate,core.ops.super_admin_tenants.leave_blank_to_auto
+ops_control_plane/super_admin/templates/super_admin_tenants.html,125,text,Root Admin Email (Optional),core.ops.super_admin_tenants.root_admin_email_optional
+ops_control_plane/super_admin/templates/super_admin_tenants.html,126,attr:placeholder,admin@acme.com,core.ops.super_admin_tenants.admin_acme_com
+ops_control_plane/super_admin/templates/super_admin_tenants.html,131,text,Database Mode *,core.ops.super_admin_tenants.database_mode
+ops_control_plane/super_admin/templates/super_admin_tenants.html,133,text,SQLite Partition (Default),core.ops.super_admin_tenants.sqlite_partition_default
+ops_control_plane/super_admin/templates/super_admin_tenants.html,134,text,Dedicated PostgreSQL / Cloud SQL,core.ops.super_admin_tenants.dedicated_postgresql_cloud_sql
+ops_control_plane/super_admin/templates/super_admin_tenants.html,135,text,Dedicated MySQL / Aurora,core.ops.super_admin_tenants.dedicated_mysql_aurora
+ops_control_plane/super_admin/templates/super_admin_tenants.html,140,text,Database URL (Optional),core.ops.super_admin_tenants.database_url_optional
+ops_control_plane/super_admin/templates/super_admin_tenants.html,141,attr:placeholder,postgresql://user:pass@host:5432/db,core.ops.super_admin_tenants.postgresql_user_pass_host
+ops_control_plane/super_admin/templates/super_admin_tenants.html,146,text,License Tier,core.ops.super_admin_tenants.license_tier
+ops_control_plane/super_admin/templates/super_admin_tenants.html,148,text,Standard,core.ops.super_admin_tenants.standard
+ops_control_plane/super_admin/templates/super_admin_tenants.html,149,text,Enterprise,core.ops.super_admin_tenants.enterprise
+ops_control_plane/super_admin/templates/super_admin_tenants.html,150,text,Dedicated Private Cloud,core.ops.super_admin_tenants.dedicated_private_cloud
+ops_control_plane/super_admin/templates/super_admin_tenants.html,155,text,Storage Region,core.ops.super_admin_tenants.storage_region
+ops_control_plane/super_admin/templates/super_admin_tenants.html,161,text,Custom Vanity CNAME (Optional),core.ops.super_admin_tenants.custom_vanity_cname_optional
+ops_control_plane/super_admin/templates/super_admin_tenants.html,162,attr:placeholder,e.g. mail.acmeworks.com,core.ops.super_admin_tenants.e_g_mail_acmeworks
+ops_control_plane/super_admin/templates/super_admin_tenants.html,167,text,Max User Seats,core.ops.super_admin_tenants.max_user_seats
+ops_control_plane/super_admin/templates/super_admin_tenants.html,174,text,Enabled Applications / Cartridges *,core.ops.super_admin_tenants.enabled_applications_cartridges
+ops_control_plane/super_admin/templates/super_admin_tenants.html,178,text,📦 Mail Organizer,core.ops.super_admin_tenants.mail_organizer
+ops_control_plane/super_admin/templates/super_admin_tenants.html,182,text,🌡️ Temperature Marker,core.ops.super_admin_tenants.temperature_marker
+ops_control_plane/super_admin/templates/super_admin_tenants.html,188,text,Provision Tenant & Partition,core.ops.super_admin_tenants.provision_tenant_partition
+ops_control_plane/super_admin/templates/super_admin_tenants.html,198,text,Enterprise Tenants Directory,core.ops.super_admin_tenants.enterprise_tenants_directory
+ops_control_plane/super_admin/templates/super_admin_tenants.html,199,text,Real-time DNS & DB Partition Routing,core.ops.super_admin_tenants.real_time_dns_db
+ops_control_plane/super_admin/templates/super_admin_tenants.html,206,text,Slug & Name,core.ops.super_admin_tenants.slug_name
+ops_control_plane/super_admin/templates/super_admin_tenants.html,207,text,Root Admin User,core.ops.super_admin_tenants.root_admin_user
+ops_control_plane/super_admin/templates/super_admin_tenants.html,208,text,Status,core.ops.super_admin_tenants.status
+ops_control_plane/super_admin/templates/super_admin_tenants.html,209,text,Tier,core.ops.super_admin_tenants.tier
+ops_control_plane/super_admin/templates/super_admin_tenants.html,210,text,Cartridges,core.ops.super_admin_tenants.cartridges
+ops_control_plane/super_admin/templates/super_admin_tenants.html,211,text,Domains & Routing,core.ops.super_admin_tenants.domains_routing
+ops_control_plane/super_admin/templates/super_admin_tenants.html,212,text,Credential Vault,core.ops.super_admin_tenants.credential_vault
+ops_control_plane/super_admin/templates/super_admin_tenants.html,213,text,Region & DB,core.ops.super_admin_tenants.region_db
+ops_control_plane/super_admin/templates/super_admin_tenants.html,214,text,Lifecycle Actions,core.ops.super_admin_tenants.lifecycle_actions
+ops_control_plane/super_admin/templates/super_admin_tenants.html,237,text,No admin user,core.ops.super_admin_tenants.no_admin_user
+ops_control_plane/super_admin/templates/super_admin_tenants.html,242,text,ACTIVE,core.ops.super_admin_tenants.active
+ops_control_plane/super_admin/templates/super_admin_tenants.html,244,text,ARCHIVED,core.ops.super_admin_tenants.archived
+ops_control_plane/super_admin/templates/super_admin_tenants.html,246,text,SUSPENDED,core.ops.super_admin_tenants.suspended
+ops_control_plane/super_admin/templates/super_admin_tenants.html,270,text,.release100.com,core.ops.super_admin_tenants.release100_com
+ops_control_plane/super_admin/templates/super_admin_tenants.html,276,text,CUSTOMER_BYOK,core.ops.super_admin_tenants.customer_byok
+ops_control_plane/super_admin/templates/super_admin_tenants.html,278,text,PLATFORM_MANAGED,core.ops.super_admin_tenants.platform_managed
+ops_control_plane/super_admin/templates/super_admin_tenants.html,289,text,Inspect,core.ops.super_admin_tenants.inspect
+ops_control_plane/super_admin/templates/super_admin_tenants.html,293,text,✏️ Edit,core.ops.super_admin_tenants.edit
+ops_control_plane/super_admin/templates/super_admin_tenants.html,298,text,🔑 BYOK,core.ops.super_admin_tenants.byok
+ops_control_plane/super_admin/templates/super_admin_tenants.html,303,text,📋 Clone,core.ops.super_admin_tenants.clone
+ops_control_plane/super_admin/templates/super_admin_tenants.html,308,text,🚚 Transfer,core.ops.super_admin_tenants.transfer
+ops_control_plane/super_admin/templates/super_admin_tenants.html,313,text,Audit,core.ops.super_admin_tenants.audit
+ops_control_plane/super_admin/templates/super_admin_tenants.html,318,text,🗑️ Delete,core.ops.super_admin_tenants.delete
+ops_control_plane/super_admin/templates/super_admin_tenants.html,326,text,No enterprise tenants provisioned yet.,core.ops.super_admin_tenants.no_enterprise_tenants_provisioned
+ops_control_plane/super_admin/templates/super_admin_tenants.html,342,text,Configure DevOps Vault & BYOK Keys,core.ops.super_admin_tenants.configure_devops_vault_byok
+ops_control_plane/super_admin/templates/super_admin_tenants.html,350,text,Credential Mode,core.ops.super_admin_tenants.credential_mode
+ops_control_plane/super_admin/templates/super_admin_tenants.html,352,text,PLATFORM_MANAGED (Central DevOps Keys),core.ops.super_admin_tenants.platform_managed_central_devops
+ops_control_plane/super_admin/templates/super_admin_tenants.html,353,text,CUSTOMER_BYOK (Customer-Dedicated Keys),core.ops.super_admin_tenants.customer_byok_customer_dedicated
+ops_control_plane/super_admin/templates/super_admin_tenants.html,358,text,Gemini API Key (AES-256-GCM Encrypted),core.ops.super_admin_tenants.gemini_api_key_aes
+ops_control_plane/super_admin/templates/super_admin_tenants.html,359,attr:placeholder,AIzaSy...,core.ops.super_admin_tenants.aizasy
+ops_control_plane/super_admin/templates/super_admin_tenants.html,364,text,OpenAI API Key (Optional),core.ops.super_admin_tenants.openai_api_key_optional
+ops_control_plane/super_admin/templates/super_admin_tenants.html,365,attr:placeholder,sk-...,core.ops.super_admin_tenants.sk
+ops_control_plane/super_admin/templates/super_admin_tenants.html,370,text,WhatsApp Cloud API Access Token,core.ops.super_admin_tenants.whatsapp_cloud_api_access
+ops_control_plane/super_admin/templates/super_admin_tenants.html,371,attr:placeholder,EAA...,core.ops.super_admin_tenants.eaa
+ops_control_plane/super_admin/templates/super_admin_tenants.html,376,text,WhatsApp Phone Number ID,core.ops.super_admin_tenants.whatsapp_phone_number_id
+ops_control_plane/super_admin/templates/super_admin_tenants.html,382,text,Cancel,core.ops.super_admin_tenants.cancel
+ops_control_plane/super_admin/templates/super_admin_tenants.html,383,text,Save Vault Keys,core.ops.super_admin_tenants.save_vault_keys
+ops_control_plane/super_admin/templates/super_admin_tenants.html,394,text,Deep-Clone Tenant & Data Snapshot,core.ops.super_admin_tenants.deep_clone_tenant_data
+ops_control_plane/super_admin/templates/super_admin_tenants.html,402,text,Target Tenant Slug (New ID) *,core.ops.super_admin_tenants.target_tenant_slug_new
+ops_control_plane/super_admin/templates/super_admin_tenants.html,403,attr:placeholder,e.g. acme_staging,core.ops.super_admin_tenants.e_g_acme_staging
+ops_control_plane/super_admin/templates/super_admin_tenants.html,408,text,Target Display Name,core.ops.super_admin_tenants.target_display_name
+ops_control_plane/super_admin/templates/super_admin_tenants.html,409,attr:placeholder,Acme Staging,core.ops.super_admin_tenants.acme_staging
+ops_control_plane/super_admin/templates/super_admin_tenants.html,414,text,Cancel,core.ops.super_admin_tenants.cancel
+ops_control_plane/super_admin/templates/super_admin_tenants.html,415,text,Execute Deep-Clone,core.ops.super_admin_tenants.execute_deep_clone
+ops_control_plane/super_admin/templates/super_admin_tenants.html,426,text,Migrate Tenant Database & Region,core.ops.super_admin_tenants.migrate_tenant_database_region
+ops_control_plane/super_admin/templates/super_admin_tenants.html,434,text,Target Region Code,core.ops.super_admin_tenants.target_region_code
+ops_control_plane/super_admin/templates/super_admin_tenants.html,435,attr:placeholder,eu-central-1,core.ops.super_admin_tenants.eu_central_1
+ops_control_plane/super_admin/templates/super_admin_tenants.html,440,text,Target Database Connection String (Optional),core.ops.super_admin_tenants.target_database_connection_string
+ops_control_plane/super_admin/templates/super_admin_tenants.html,441,attr:placeholder,postgresql://user:pass@db-eu:5432/tenant_db,core.ops.super_admin_tenants.postgresql_user_pass_db
+ops_control_plane/super_admin/templates/super_admin_tenants.html,446,text,Cancel,core.ops.super_admin_tenants.cancel
+ops_control_plane/super_admin/templates/super_admin_tenants.html,447,text,Cutover Transfer,core.ops.super_admin_tenants.cutover_transfer
+ops_control_plane/super_admin/templates/super_admin_tenants.html,458,text,Configure Tenant Cartridges,core.ops.super_admin_tenants.configure_tenant_cartridges
+ops_control_plane/super_admin/templates/super_admin_tenants.html,465,text,Select which application cartridges are enabled for this tenant workspace:,core.ops.super_admin_tenants.select_which_application_cartridges
+ops_control_plane/super_admin/templates/super_admin_tenants.html,470,text,📦 Mail Organizer,core.ops.super_admin_tenants.mail_organizer
+ops_control_plane/super_admin/templates/super_admin_tenants.html,471,text,(Email Ingestion & Triage),core.ops.super_admin_tenants.email_ingestion_triage
+ops_control_plane/super_admin/templates/super_admin_tenants.html,475,text,🌡️ Temperature Marker,core.ops.super_admin_tenants.temperature_marker
+ops_control_plane/super_admin/templates/super_admin_tenants.html,476,text,(KioskNode Fleet & Cold-Chain),core.ops.super_admin_tenants.kiosknode_fleet_cold_chain
+ops_control_plane/super_admin/templates/super_admin_tenants.html,481,text,Cancel,core.ops.super_admin_tenants.cancel
+ops_control_plane/super_admin/templates/super_admin_tenants.html,482,text,Save Cartridges,core.ops.super_admin_tenants.save_cartridges
+ops_control_plane/super_admin/templates/super_admin_tenants.html,495,text,Tenant Inspection,core.ops.super_admin_tenants.tenant_inspection
+ops_control_plane/super_admin/templates/super_admin_tenants.html,496,text,slug,core.ops.super_admin_tenants.slug
+ops_control_plane/super_admin/templates/super_admin_tenants.html,504,text,Status,core.ops.super_admin_tenants.status
+ops_control_plane/super_admin/templates/super_admin_tenants.html,505,text,ACTIVE,core.ops.super_admin_tenants.active
+ops_control_plane/super_admin/templates/super_admin_tenants.html,508,text,License Tier,core.ops.super_admin_tenants.license_tier
+ops_control_plane/super_admin/templates/super_admin_tenants.html,509,text,ENTERPRISE,core.ops.super_admin_tenants.enterprise
+ops_control_plane/super_admin/templates/super_admin_tenants.html,512,text,Region,core.ops.super_admin_tenants.region
+ops_control_plane/super_admin/templates/super_admin_tenants.html,513,text,us-east-1,core.ops.super_admin_tenants.us_east_1
+ops_control_plane/super_admin/templates/super_admin_tenants.html,516,text,Storage Dialect,core.ops.super_admin_tenants.storage_dialect
+ops_control_plane/super_admin/templates/super_admin_tenants.html,517,text,sqlite,core.ops.super_admin_tenants.sqlite
+ops_control_plane/super_admin/templates/super_admin_tenants.html,523,text,Custom Vanity Domain / CNAME:,core.ops.super_admin_tenants.custom_vanity_domain_cname
+ops_control_plane/super_admin/templates/super_admin_tenants.html,524,text,domain,core.ops.super_admin_tenants.domain
+ops_control_plane/super_admin/templates/super_admin_tenants.html,527,text,Credential Mode:,core.ops.super_admin_tenants.credential_mode
+ops_control_plane/super_admin/templates/super_admin_tenants.html,528,text,PLATFORM_MANAGED,core.ops.super_admin_tenants.platform_managed
+ops_control_plane/super_admin/templates/super_admin_tenants.html,531,text,Enabled Cartridges:,core.ops.super_admin_tenants.enabled_cartridges
+ops_control_plane/super_admin/templates/super_admin_tenants.html,532,text,"mail_organizer, temperature_marker",core.ops.super_admin_tenants.mail_organizer_temperature_marker
+ops_control_plane/super_admin/templates/super_admin_tenants.html,535,text,Root Admin Username:,core.ops.super_admin_tenants.root_admin_username
+ops_control_plane/super_admin/templates/super_admin_tenants.html,536,text,admin,core.ops.super_admin_tenants.admin
+ops_control_plane/super_admin/templates/super_admin_tenants.html,539,text,Root Admin Name:,core.ops.super_admin_tenants.root_admin_name
+ops_control_plane/super_admin/templates/super_admin_tenants.html,540,text,Admin,core.ops.super_admin_tenants.admin
+ops_control_plane/super_admin/templates/super_admin_tenants.html,543,text,Root Admin Email:,core.ops.super_admin_tenants.root_admin_email
+ops_control_plane/super_admin/templates/super_admin_tenants.html,547,text,Customer Workspace URL:,core.ops.super_admin_tenants.customer_workspace_url
+ops_control_plane/super_admin/templates/super_admin_tenants.html,548,text,http://127.0.0.1:8000/admin/login ↗,core.ops.super_admin_tenants.http_127_0_0
+ops_control_plane/super_admin/templates/super_admin_tenants.html,554,text,✏️ Edit Profile & Password,core.ops.super_admin_tenants.edit_profile_password
+ops_control_plane/super_admin/templates/super_admin_tenants.html,557,text,🎯 Cartridges,core.ops.super_admin_tenants.cartridges
+ops_control_plane/super_admin/templates/super_admin_tenants.html,560,text,🔑 BYOK Keys,core.ops.super_admin_tenants.byok_keys
+ops_control_plane/super_admin/templates/super_admin_tenants.html,563,text,📋 Clone,core.ops.super_admin_tenants.clone
+ops_control_plane/super_admin/templates/super_admin_tenants.html,566,text,🚚 Transfer,core.ops.super_admin_tenants.transfer
+ops_control_plane/super_admin/templates/super_admin_tenants.html,571,text,🔍 Audit Trail,core.ops.super_admin_tenants.audit_trail
+ops_control_plane/super_admin/templates/super_admin_tenants.html,574,text,🗑️ Delete,core.ops.super_admin_tenants.delete
+ops_control_plane/super_admin/templates/super_admin_tenants.html,577,text,Close,core.ops.super_admin_tenants.close
+ops_control_plane/super_admin/templates/super_admin_tenants.html,590,text,Edit Tenant & Admin Account,core.ops.super_admin_tenants.edit_tenant_admin_account
+ops_control_plane/super_admin/templates/super_admin_tenants.html,598,text,Company Display Name *,core.ops.super_admin_tenants.company_display_name
+ops_control_plane/super_admin/templates/super_admin_tenants.html,605,text,Status,core.ops.super_admin_tenants.status
+ops_control_plane/super_admin/templates/super_admin_tenants.html,607,text,ACTIVE,core.ops.super_admin_tenants.active
+ops_control_plane/super_admin/templates/super_admin_tenants.html,608,text,SUSPENDED,core.ops.super_admin_tenants.suspended
+ops_control_plane/super_admin/templates/super_admin_tenants.html,609,text,ARCHIVED,core.ops.super_admin_tenants.archived
+ops_control_plane/super_admin/templates/super_admin_tenants.html,613,text,License Tier,core.ops.super_admin_tenants.license_tier
+ops_control_plane/super_admin/templates/super_admin_tenants.html,615,text,Standard,core.ops.super_admin_tenants.standard
+ops_control_plane/super_admin/templates/super_admin_tenants.html,616,text,Enterprise,core.ops.super_admin_tenants.enterprise
+ops_control_plane/super_admin/templates/super_admin_tenants.html,617,text,Dedicated,core.ops.super_admin_tenants.dedicated
+ops_control_plane/super_admin/templates/super_admin_tenants.html,621,text,Max Users,core.ops.super_admin_tenants.max_users
+ops_control_plane/super_admin/templates/super_admin_tenants.html,628,text,Root Admin Identity & Credentials,core.ops.super_admin_tenants.root_admin_identity_credentials
+ops_control_plane/super_admin/templates/super_admin_tenants.html,630,text,Root Admin Username / Identifier,core.ops.super_admin_tenants.root_admin_username_identifier
+ops_control_plane/super_admin/templates/super_admin_tenants.html,636,text,Root Admin Display Name,core.ops.super_admin_tenants.root_admin_display_name
+ops_control_plane/super_admin/templates/super_admin_tenants.html,641,text,Root Admin Email,core.ops.super_admin_tenants.root_admin_email
+ops_control_plane/super_admin/templates/super_admin_tenants.html,647,text,Reset Root Admin Password,core.ops.super_admin_tenants.reset_root_admin_password
+ops_control_plane/super_admin/templates/super_admin_tenants.html,648,attr:placeholder,Leave blank to keep existing password,core.ops.super_admin_tenants.leave_blank_to_keep
+ops_control_plane/super_admin/templates/super_admin_tenants.html,650,text,Enter a new password here to instantly override and reset the root admin's login credential.,core.ops.super_admin_tenants.enter_a_new_password
+ops_control_plane/super_admin/templates/super_admin_tenants.html,655,text,Cancel,core.ops.super_admin_tenants.cancel
+ops_control_plane/super_admin/templates/super_admin_tenants.html,656,text,Save Changes,core.ops.super_admin_tenants.save_changes
+ops_control_plane/super_admin/templates/super_admin_tenants.html,667,text,Permanent Tenant Deletion,core.ops.super_admin_tenants.permanent_tenant_deletion
+ops_control_plane/super_admin/templates/super_admin_tenants.html,674,text,Are you sure you want to permanently delete tenant,core.ops.super_admin_tenants.are_you_sure_you
+ops_control_plane/super_admin/templates/super_admin_tenants.html,675,text,Acme,core.ops.super_admin_tenants.acme
+ops_control_plane/super_admin/templates/super_admin_tenants.html,675,text,slug,core.ops.super_admin_tenants.slug
+ops_control_plane/super_admin/templates/super_admin_tenants.html,677,text,"⚠️ This action is irreversible. All tenant database records, registered users, domains, encryption vaults, and audit logs will be permanently deleted.",core.ops.super_admin_tenants.this_action_is_irreversible
+ops_control_plane/super_admin/templates/super_admin_tenants.html,682,text,Type tenant slug to confirm:,core.ops.super_admin_tenants.type_tenant_slug_to
+ops_control_plane/super_admin/templates/super_admin_tenants.html,683,attr:placeholder,tenant slug,core.ops.super_admin_tenants.tenant_slug
+ops_control_plane/super_admin/templates/super_admin_tenants.html,688,text,Cancel,core.ops.super_admin_tenants.cancel
+ops_control_plane/super_admin/templates/super_admin_tenants.html,689,text,Permanently Delete Tenant,core.ops.super_admin_tenants.permanently_delete_tenant
+ops_control_plane/super_admin/templates/super_admin_tenants.html,698,script,Tenant ID:,core.ops.super_admin_tenants.tenant_id
+ops_control_plane/super_admin/templates/super_admin_tenants.html,706,script,Not configured,core.ops.super_admin_tenants.not_configured
+apps/mail_organizer/ui/templates/accounts.html,1,text,Accounts — Mail Organizer,apps.mail_organizer.accounts.accounts_mail_organizer
+apps/mail_organizer/ui/templates/accounts.html,7,text,Google Account,apps.mail_organizer.accounts.google_account
+apps/mail_organizer/ui/templates/accounts.html,8,text,OAuth2 authorisation status & sync settings,apps.mail_organizer.accounts.oauth2_authorisation_status_sync
+apps/mail_organizer/ui/templates/accounts.html,14,text,Connection Status,apps.mail_organizer.accounts.connection_status
+apps/mail_organizer/ui/templates/accounts.html,17,text,✅ Connected,apps.mail_organizer.accounts.connected
+apps/mail_organizer/ui/templates/accounts.html,21,text,⬛ Not Configured,apps.mail_organizer.accounts.not_configured
+apps/mail_organizer/ui/templates/accounts.html,32,text,Authorised account:,apps.mail_organizer.accounts.authorised_account
+apps/mail_organizer/ui/templates/accounts.html,37,text,"Re-authorise your Google account to refresh the OAuth2 token. This enables Gmail label application, draft creation, and Calendar free/busy lookups.",apps.mail_organizer.accounts.re_authorise_your_google
+apps/mail_organizer/ui/templates/accounts.html,49,text,Re-Authorise Google Account,apps.mail_organizer.accounts.re_authorise_google_account
+apps/mail_organizer/ui/templates/accounts.html,56,text,Sync Settings,apps.mail_organizer.accounts.sync_settings
+apps/mail_organizer/ui/templates/accounts.html,59,text,Sync Interval (seconds),apps.mail_organizer.accounts.sync_interval_seconds
+apps/mail_organizer/ui/templates/accounts.html,65,text,How often to poll Gmail inbox (min: 30s).,apps.mail_organizer.accounts.how_often_to_poll
+apps/mail_organizer/ui/templates/accounts.html,68,text,Save Settings,apps.mail_organizer.accounts.save_settings
+apps/mail_organizer/ui/templates/base.html,6,text,AI Mail Organizer - Release100,apps.mail_organizer.base.ai_mail_organizer_release100
+apps/mail_organizer/ui/templates/base.html,159,text,MAIL,apps.mail_organizer.base.mail
+apps/mail_organizer/ui/templates/base.html,160,text,AI Mail Organizer,apps.mail_organizer.base.ai_mail_organizer
+apps/mail_organizer/ui/templates/base.html,169,text,Dashboard,apps.mail_organizer.base.dashboard
+apps/mail_organizer/ui/templates/base.html,170,text,Triage Simulator,apps.mail_organizer.base.triage_simulator
+apps/mail_organizer/ui/templates/base.html,171,text,PM Action Queue,apps.mail_organizer.base.pm_action_queue
+apps/mail_organizer/ui/templates/base.html,172,text,Drafts,apps.mail_organizer.base.drafts
+apps/mail_organizer/ui/templates/base.html,173,text,Rules & VIPs,apps.mail_organizer.base.rules_vips
+apps/mail_organizer/ui/templates/base.html,174,text,← Admin Shell,apps.mail_organizer.base.admin_shell
+apps/mail_organizer/ui/templates/dashboard.html,1,text,Logic & Workflow Trace Dashboard,apps.mail_organizer.dashboard.logic_workflow_trace_dashboard
+apps/mail_organizer/ui/templates/dashboard.html,190,text,AI Mail & Calendar Organizer,apps.mail_organizer.dashboard.ai_mail_calendar_organizer
+apps/mail_organizer/ui/templates/dashboard.html,191,text,Logic & Workflow Trace,apps.mail_organizer.dashboard.logic_workflow_trace
+apps/mail_organizer/ui/templates/dashboard.html,193,text,Zero-Deletion Architecture • SHA-256 Non-Repudiation • TypeSafe System 1 + Gemini System 2,apps.mail_organizer.dashboard.zero_deletion_architecture_sha
+apps/mail_organizer/ui/templates/dashboard.html,198,text,⚡ Run Triage Simulator,apps.mail_organizer.dashboard.run_triage_simulator
+apps/mail_organizer/ui/templates/dashboard.html,199,text,📋 PM Queue ( ),apps.mail_organizer.dashboard.pm_queue
+apps/mail_organizer/ui/templates/dashboard.html,206,text,Total Emails Triaged,apps.mail_organizer.dashboard.total_emails_triaged
+apps/mail_organizer/ui/templates/dashboard.html,208,text,Deterministic L0 + Stochastic L1,apps.mail_organizer.dashboard.deterministic_l0_stochastic_l1
+apps/mail_organizer/ui/templates/dashboard.html,211,text,Pending PM Tasks,apps.mail_organizer.dashboard.pending_pm_tasks
+apps/mail_organizer/ui/templates/dashboard.html,213,text,Awaiting Human Review,apps.mail_organizer.dashboard.awaiting_human_review
+apps/mail_organizer/ui/templates/dashboard.html,216,text,Needs Review Gate,apps.mail_organizer.dashboard.needs_review_gate
+apps/mail_organizer/ui/templates/dashboard.html,218,text,Confidence < 85% Diverted,apps.mail_organizer.dashboard.confidence_85_diverted
+apps/mail_organizer/ui/templates/dashboard.html,221,text,Staged Contextual Drafts,apps.mail_organizer.dashboard.staged_contextual_drafts
+apps/mail_organizer/ui/templates/dashboard.html,223,text,Non-Destructive Assistive Mode,apps.mail_organizer.dashboard.non_destructive_assistive_mode
+apps/mail_organizer/ui/templates/dashboard.html,230,text,Intent Taxonomy Distribution,apps.mail_organizer.dashboard.intent_taxonomy_distribution
+apps/mail_organizer/ui/templates/dashboard.html,231,text,Zero-Deletion Standard,apps.mail_organizer.dashboard.zero_deletion_standard
+apps/mail_organizer/ui/templates/dashboard.html,240,text,No categorized items yet.,apps.mail_organizer.dashboard.no_categorized_items_yet
+apps/mail_organizer/ui/templates/dashboard.html,248,text,All ( ),apps.mail_organizer.dashboard.all
+apps/mail_organizer/ui/templates/dashboard.html,249,text,@Urgent,apps.mail_organizer.dashboard.urgent
+apps/mail_organizer/ui/templates/dashboard.html,250,text,@Meeting,apps.mail_organizer.dashboard.meeting
+apps/mail_organizer/ui/templates/dashboard.html,251,text,@Action,apps.mail_organizer.dashboard.action
+apps/mail_organizer/ui/templates/dashboard.html,252,text,@Promotions,apps.mail_organizer.dashboard.promotions
+apps/mail_organizer/ui/templates/dashboard.html,253,text,Diverted,apps.mail_organizer.dashboard.diverted
+apps/mail_organizer/ui/templates/dashboard.html,254,text,Expand All,apps.mail_organizer.dashboard.expand_all
+apps/mail_organizer/ui/templates/dashboard.html,255,text,Collapse All,apps.mail_organizer.dashboard.collapse_all
+apps/mail_organizer/ui/templates/dashboard.html,257,attr:placeholder,"🔍 Search sender, subject, tags, reasoning, prompts...",apps.mail_organizer.dashboard.search_sender_subject_tags
+apps/mail_organizer/ui/templates/dashboard.html,268,text,ASSISTIVE,apps.mail_organizer.dashboard.assistive
+apps/mail_organizer/ui/templates/dashboard.html,286,attr:title,Confidence < 85% Diverted,apps.mail_organizer.dashboard.confidence_85_diverted
+apps/mail_organizer/ui/templates/dashboard.html,286,text,Diverted,apps.mail_organizer.dashboard.diverted
+apps/mail_organizer/ui/templates/dashboard.html,288,attr:title,Layer 2 Safety Gate Approved,apps.mail_organizer.dashboard.layer_2_safety_gate
+apps/mail_organizer/ui/templates/dashboard.html,288,text,Safe ( %),apps.mail_organizer.dashboard.safe
+apps/mail_organizer/ui/templates/dashboard.html,290,text,s,apps.mail_organizer.dashboard.s
+apps/mail_organizer/ui/templates/dashboard.html,297,text,✉️ Email Packet,apps.mail_organizer.dashboard.email_packet
+apps/mail_organizer/ui/templates/dashboard.html,298,text,🧠 Intent & Ownership,apps.mail_organizer.dashboard.intent_ownership
+apps/mail_organizer/ui/templates/dashboard.html,299,text,🤖 LLM Prompts & Raw Outputs ( ),apps.mail_organizer.dashboard.llm_prompts_raw_outputs
+apps/mail_organizer/ui/templates/dashboard.html,300,text,🔌 Connectors & Skills ( ),apps.mail_organizer.dashboard.connectors_skills
+apps/mail_organizer/ui/templates/dashboard.html,301,text,🛣️ Step-by-Step Pipeline Trace,apps.mail_organizer.dashboard.step_by_step_pipeline
+apps/mail_organizer/ui/templates/dashboard.html,302,text,✍️ Draft & PM Actions,apps.mail_organizer.dashboard.draft_pm_actions
+apps/mail_organizer/ui/templates/dashboard.html,307,text,From:,apps.mail_organizer.dashboard.from
+apps/mail_organizer/ui/templates/dashboard.html,308,text,To:,apps.mail_organizer.dashboard.to
+apps/mail_organizer/ui/templates/dashboard.html,309,text,Cc:,apps.mail_organizer.dashboard.cc
+apps/mail_organizer/ui/templates/dashboard.html,310,text,Subject:,apps.mail_organizer.dashboard.subject
+apps/mail_organizer/ui/templates/dashboard.html,311,text,Received At:,apps.mail_organizer.dashboard.received_at
+apps/mail_organizer/ui/templates/dashboard.html,313,text,Verbatim Email Content:,apps.mail_organizer.dashboard.verbatim_email_content
+apps/mail_organizer/ui/templates/dashboard.html,320,text,Classified Category:,apps.mail_organizer.dashboard.classified_category
+apps/mail_organizer/ui/templates/dashboard.html,321,text,Urgency Rating:,apps.mail_organizer.dashboard.urgency_rating
+apps/mail_organizer/ui/templates/dashboard.html,322,text,Confidence Score:,apps.mail_organizer.dashboard.confidence_score
+apps/mail_organizer/ui/templates/dashboard.html,324,text,Context Tags:,apps.mail_organizer.dashboard.context_tags
+apps/mail_organizer/ui/templates/dashboard.html,329,text,None,apps.mail_organizer.dashboard.none
+apps/mail_organizer/ui/templates/dashboard.html,333,text,Responsibility Role:,apps.mail_organizer.dashboard.responsibility_role
+apps/mail_organizer/ui/templates/dashboard.html,335,text,Safety Status:,apps.mail_organizer.dashboard.safety_status
+apps/mail_organizer/ui/templates/dashboard.html,338,text,DIVERTED TO HUMAN REVIEW (Confidence < 85%),apps.mail_organizer.dashboard.diverted_to_human_review
+apps/mail_organizer/ui/templates/dashboard.html,340,text,APPROVED BY LAYER 2 GATE,apps.mail_organizer.dashboard.approved_by_layer_2
+apps/mail_organizer/ui/templates/dashboard.html,344,text,Reasoning:,apps.mail_organizer.dashboard.reasoning
+apps/mail_organizer/ui/templates/dashboard.html,352,text,Step:,apps.mail_organizer.dashboard.step
+apps/mail_organizer/ui/templates/dashboard.html,353,text,| ms,apps.mail_organizer.dashboard.ms
+apps/mail_organizer/ui/templates/dashboard.html,356,text,View System Prompt ( chars),apps.mail_organizer.dashboard.view_system_prompt_chars
+apps/mail_organizer/ui/templates/dashboard.html,360,text,View Human Prompt ( chars),apps.mail_organizer.dashboard.view_human_prompt_chars
+apps/mail_organizer/ui/templates/dashboard.html,364,text,RAW Model Completion:,apps.mail_organizer.dashboard.raw_model_completion
+apps/mail_organizer/ui/templates/dashboard.html,369,text,No direct stochastic LLM calls executed for this item.,apps.mail_organizer.dashboard.no_direct_stochastic_llm
+apps/mail_organizer/ui/templates/dashboard.html,378,text,Connector:,apps.mail_organizer.dashboard.connector
+apps/mail_organizer/ui/templates/dashboard.html,379,text,| ms | facts,apps.mail_organizer.dashboard.ms_facts
+apps/mail_organizer/ui/templates/dashboard.html,381,text,Query Executed:,apps.mail_organizer.dashboard.query_executed
+apps/mail_organizer/ui/templates/dashboard.html,383,text,Returned Facts / Artifacts:,apps.mail_organizer.dashboard.returned_facts_artifacts
+apps/mail_organizer/ui/templates/dashboard.html,388,text,No external connector queries dispatched.,apps.mail_organizer.dashboard.no_external_connector_queries
+apps/mail_organizer/ui/templates/dashboard.html,396,text,( ms),apps.mail_organizer.dashboard.ms
+apps/mail_organizer/ui/templates/dashboard.html,403,text,Workflow Node,apps.mail_organizer.dashboard.workflow_node
+apps/mail_organizer/ui/templates/dashboard.html,404,text,Latency,apps.mail_organizer.dashboard.latency
+apps/mail_organizer/ui/templates/dashboard.html,405,text,Routing / Execution Decision,apps.mail_organizer.dashboard.routing_execution_decision
+apps/mail_organizer/ui/templates/dashboard.html,412,text,ms,apps.mail_organizer.dashboard.ms
+apps/mail_organizer/ui/templates/dashboard.html,423,text,Staged Contextual Draft Reply:,apps.mail_organizer.dashboard.staged_contextual_draft_reply
+apps/mail_organizer/ui/templates/dashboard.html,428,text,Extracted PM Tasks Awaiting Sync:,apps.mail_organizer.dashboard.extracted_pm_tasks_awaiting
+apps/mail_organizer/ui/templates/dashboard.html,434,text,Target: | Priority: | Status:,apps.mail_organizer.dashboard.target_priority_status
+apps/mail_organizer/ui/templates/dashboard.html,436,text,Review in PM Queue,apps.mail_organizer.dashboard.review_in_pm_queue
+apps/mail_organizer/ui/templates/dashboard.html,447,text,No email triage records found in database.,apps.mail_organizer.dashboard.no_email_triage_records
+apps/mail_organizer/ui/templates/dashboard.html,448,text,Use the,apps.mail_organizer.dashboard.use_the
+apps/mail_organizer/ui/templates/dashboard.html,448,text,Triage Simulator,apps.mail_organizer.dashboard.triage_simulator
+apps/mail_organizer/ui/templates/dashboard.html,448,text,to process sample email threads through the LangGraph pipeline.,apps.mail_organizer.dashboard.to_process_sample_email
+apps/mail_organizer/ui/templates/dashboard.html,456,script,+ tabName).closest(,apps.mail_organizer.dashboard.tabname_closest
+apps/mail_organizer/ui/templates/dashboard.html,460,script,+ tabName).classList.add(,apps.mail_organizer.dashboard.tabname_classlist_add
+apps/mail_organizer/ui/templates/dashboard.html,464,script,#traceCardsList details,apps.mail_organizer.dashboard.tracecardslist_details
+apps/mail_organizer/ui/templates/dashboard.html,473,script,#traceCardsList details.scenario-card,apps.mail_organizer.dashboard.tracecardslist_details_scenario_card
+apps/mail_organizer/ui/templates/dashboard.html,488,script,#traceCardsList details.scenario-card,apps.mail_organizer.dashboard.tracecardslist_details_scenario_card
+apps/mail_organizer/ui/templates/drafts.html,1,text,Staged Drafts,apps.mail_organizer.drafts.staged_drafts
+apps/mail_organizer/ui/templates/drafts.html,8,text,Contextual Staged Drafts,apps.mail_organizer.drafts.contextual_staged_drafts
+apps/mail_organizer/ui/templates/drafts.html,9,text,Non-Destructive Assistive Gate,apps.mail_organizer.drafts.non_destructive_assistive_gate
+apps/mail_organizer/ui/templates/drafts.html,11,text,Drafts generated by the AI are saved directly to your Gmail Drafts folder. They are NEVER automatically sent without your explicit review and click.,apps.mail_organizer.drafts.drafts_generated_by_the
+apps/mail_organizer/ui/templates/drafts.html,18,text,ID,apps.mail_organizer.drafts.id
+apps/mail_organizer/ui/templates/drafts.html,19,text,Recipient,apps.mail_organizer.drafts.recipient
+apps/mail_organizer/ui/templates/drafts.html,20,text,Subject,apps.mail_organizer.drafts.subject
+apps/mail_organizer/ui/templates/drafts.html,21,text,Status,apps.mail_organizer.drafts.status
+apps/mail_organizer/ui/templates/drafts.html,22,text,Created (UTC),apps.mail_organizer.drafts.created_utc
+apps/mail_organizer/ui/templates/drafts.html,36,text,No drafts staged. Use Triage Simulator with a meeting or action request.,apps.mail_organizer.drafts.no_drafts_staged_use
+apps/mail_organizer/ui/templates/pm_queue.html,1,text,PM Action Queue,apps.mail_organizer.pm_queue.pm_action_queue
+apps/mail_organizer/ui/templates/pm_queue.html,8,text,Human-in-the-Loop PM Action Queue,apps.mail_organizer.pm_queue.human_in_the_loop
+apps/mail_organizer/ui/templates/pm_queue.html,9,text,Staged Before Execution,apps.mail_organizer.pm_queue.staged_before_execution
+apps/mail_organizer/ui/templates/pm_queue.html,11,text,Tasks extracted from emails are held in this queue. Zero unsolicited external sync occurs until explicit user confirmation.,apps.mail_organizer.pm_queue.tasks_extracted_from_emails
+apps/mail_organizer/ui/templates/pm_queue.html,18,text,ID,apps.mail_organizer.pm_queue.id
+apps/mail_organizer/ui/templates/pm_queue.html,19,text,Title,apps.mail_organizer.pm_queue.title
+apps/mail_organizer/ui/templates/pm_queue.html,20,text,Priority,apps.mail_organizer.pm_queue.priority
+apps/mail_organizer/ui/templates/pm_queue.html,21,text,Target Tool,apps.mail_organizer.pm_queue.target_tool
+apps/mail_organizer/ui/templates/pm_queue.html,22,text,Due Date,apps.mail_organizer.pm_queue.due_date
+apps/mail_organizer/ui/templates/pm_queue.html,23,text,Email Ref,apps.mail_organizer.pm_queue.email_ref
+apps/mail_organizer/ui/templates/pm_queue.html,24,text,Actions,apps.mail_organizer.pm_queue.actions
+apps/mail_organizer/ui/templates/pm_queue.html,37,text,Sync Jira,apps.mail_organizer.pm_queue.sync_jira
+apps/mail_organizer/ui/templates/pm_queue.html,38,text,Sync Linear,apps.mail_organizer.pm_queue.sync_linear
+apps/mail_organizer/ui/templates/pm_queue.html,39,text,Dismiss,apps.mail_organizer.pm_queue.dismiss
+apps/mail_organizer/ui/templates/pm_queue.html,44,text,No pending PM tasks. All tickets are synced.,apps.mail_organizer.pm_queue.no_pending_pm_tasks
+apps/mail_organizer/ui/templates/pm_queue.html,67,script,Request failed:,apps.mail_organizer.pm_queue.request_failed
+apps/mail_organizer/ui/templates/pm_queue.html,81,script,Failed to dismiss task,apps.mail_organizer.pm_queue.failed_to_dismiss_task
+apps/mail_organizer/ui/templates/rules.html,1,text,VIP & Whitelist Rules,apps.mail_organizer.rules.vip_whitelist_rules
+apps/mail_organizer/ui/templates/rules.html,8,text,Deterministic VIP & Whitelist Rules,apps.mail_organizer.rules.deterministic_vip_whitelist_rules
+apps/mail_organizer/ui/templates/rules.html,9,text,Layer 0 Safety Hardcoded,apps.mail_organizer.rules.layer_0_safety_hardcoded
+apps/mail_organizer/ui/templates/rules.html,11,text,Emails from configured VIP addresses or trusted enterprise domains automatically bypass LLM latency and receive immediate priority escalation.,apps.mail_organizer.rules.emails_from_configured_vip
+apps/mail_organizer/ui/templates/rules.html,18,text,ID,apps.mail_organizer.rules.id
+apps/mail_organizer/ui/templates/rules.html,19,text,Pattern,apps.mail_organizer.rules.pattern
+apps/mail_organizer/ui/templates/rules.html,20,text,Rule Type,apps.mail_organizer.rules.rule_type
+apps/mail_organizer/ui/templates/rules.html,21,text,Action,apps.mail_organizer.rules.action
+apps/mail_organizer/ui/templates/rules.html,22,text,Status,apps.mail_organizer.rules.status
+apps/mail_organizer/ui/templates/rules.html,32,text,ACTIVE,apps.mail_organizer.rules.active
+apps/mail_organizer/ui/templates/rules.html,36,text,No custom rules configured yet.,apps.mail_organizer.rules.no_custom_rules_configured
+apps/mail_organizer/ui/templates/triage.html,1,text,Triage Simulator,apps.mail_organizer.triage.triage_simulator
+apps/mail_organizer/ui/templates/triage.html,8,text,Inject Email Thread,apps.mail_organizer.triage.inject_email_thread
+apps/mail_organizer/ui/templates/triage.html,11,text,Sender,apps.mail_organizer.triage.sender
+apps/mail_organizer/ui/templates/triage.html,15,text,Subject,apps.mail_organizer.triage.subject
+apps/mail_organizer/ui/templates/triage.html,19,text,Email Body,apps.mail_organizer.triage.email_body
+apps/mail_organizer/ui/templates/triage.html,20,text,"Hi Depali, We need the signed enterprise SLA amendment by 5 PM today to avoid service interruption. Can you please review and sign the attached document? Also let us know your availability for a 15-minute quick sync tomorrow morning.",apps.mail_organizer.triage.hi_depali_we_need
+apps/mail_organizer/ui/templates/triage.html,23,text,Run Complete LangGraph Pipeline,apps.mail_organizer.triage.run_complete_langgraph_pipeline
+apps/mail_organizer/ui/templates/triage.html,24,text,Promo Sample,apps.mail_organizer.triage.promo_sample
+apps/mail_organizer/ui/templates/triage.html,25,text,PM Task Sample,apps.mail_organizer.triage.pm_task_sample
+apps/mail_organizer/ui/templates/triage.html,31,text,Execution Diagnostic,apps.mail_organizer.triage.execution_diagnostic
+apps/mail_organizer/ui/templates/triage.html,32,text,Awaiting simulation input...,apps.mail_organizer.triage.awaiting_simulation_input
+apps/mail_organizer/ui/templates/triage.html,42,script,Special Offer: 50% Off Annual Cloud Subscriptions!,apps.mail_organizer.triage.special_offer_50_off
+apps/mail_organizer/ui/templates/triage.html,43,script,Click here to claim your limited-time discount on enterprise hosting plans. Unsubscribe anytime.,apps.mail_organizer.triage.click_here_to_claim
+apps/mail_organizer/ui/templates/triage.html,46,script,Sprint Action: Implement Redis rate limiter on API Gateway,apps.mail_organizer.triage.sprint_action_implement_redis
+apps/mail_organizer/ui/templates/triage.html,47,script,Please create an engineering ticket to implement token bucket rate limiting on /v1/auth before next sprint cutoff.,apps.mail_organizer.triage.please_create_an_engineering
+apps/temperature_marker/ui/templates/approvals.html,1,text,Pending Operator Approvals,apps.temperature_marker.approvals.pending_operator_approvals
+apps/temperature_marker/ui/templates/approvals.html,8,text,Operator Onboarding Approvals,apps.temperature_marker.approvals.operator_onboarding_approvals
+apps/temperature_marker/ui/templates/approvals.html,9,text,Review and approve pending KioskNode operators before biometric check-in authorization.,apps.temperature_marker.approvals.review_and_approve_pending
+apps/temperature_marker/ui/templates/approvals.html,13,text,Pending Review,apps.temperature_marker.approvals.pending_review
+apps/temperature_marker/ui/templates/approvals.html,23,text,Employee ID,apps.temperature_marker.approvals.employee_id
+apps/temperature_marker/ui/templates/approvals.html,24,text,Full Name,apps.temperature_marker.approvals.full_name
+apps/temperature_marker/ui/templates/approvals.html,25,text,Phone Number,apps.temperature_marker.approvals.phone_number
+apps/temperature_marker/ui/templates/approvals.html,26,text,Role,apps.temperature_marker.approvals.role
+apps/temperature_marker/ui/templates/approvals.html,27,text,Assigned Kiosk,apps.temperature_marker.approvals.assigned_kiosk
+apps/temperature_marker/ui/templates/approvals.html,28,text,Submitted Photo,apps.temperature_marker.approvals.submitted_photo
+apps/temperature_marker/ui/templates/approvals.html,29,text,Status,apps.temperature_marker.approvals.status
+apps/temperature_marker/ui/templates/approvals.html,30,text,Registered At,apps.temperature_marker.approvals.registered_at
+apps/temperature_marker/ui/templates/approvals.html,31,text,Approval Action,apps.temperature_marker.approvals.approval_action
+apps/temperature_marker/ui/templates/approvals.html,48,text,Operator,apps.temperature_marker.approvals.operator
+apps/temperature_marker/ui/templates/approvals.html,55,attr:alt,Profile Photo,apps.temperature_marker.approvals.profile_photo
+apps/temperature_marker/ui/templates/approvals.html,59,text,Waiting Photo,apps.temperature_marker.approvals.waiting_photo
+apps/temperature_marker/ui/templates/approvals.html,64,text,AWAITING PHOTO,apps.temperature_marker.approvals.awaiting_photo
+apps/temperature_marker/ui/templates/approvals.html,66,text,PENDING APPROVAL,apps.temperature_marker.approvals.pending_approval
+apps/temperature_marker/ui/templates/approvals.html,73,text,Approve,apps.temperature_marker.approvals.approve
+apps/temperature_marker/ui/templates/approvals.html,76,text,Reject,apps.temperature_marker.approvals.reject
+apps/temperature_marker/ui/templates/approvals.html,84,text,No pending operator onboarding requests found. All staff authorized!,apps.temperature_marker.approvals.no_pending_operator_onboarding
+apps/temperature_marker/ui/templates/approvals.html,113,script,Action failed:,apps.temperature_marker.approvals.action_failed
+apps/temperature_marker/ui/templates/base.html,6,text,Fleet Telemetry & Operations Control - Release100,apps.temperature_marker.base.fleet_telemetry_operations_control
+apps/temperature_marker/ui/templates/base.html,156,text,APEX,apps.temperature_marker.base.apex
+apps/temperature_marker/ui/templates/base.html,157,text,Fleet Telemetry & Operations Control,apps.temperature_marker.base.fleet_telemetry_operations_control
+apps/temperature_marker/ui/templates/base.html,166,text,📊 Live Monitoring,apps.temperature_marker.base.live_monitoring
+apps/temperature_marker/ui/templates/base.html,167,text,Fleet Map,apps.temperature_marker.base.fleet_map
+apps/temperature_marker/ui/templates/base.html,168,text,Stepper Wizard,apps.temperature_marker.base.stepper_wizard
+apps/temperature_marker/ui/templates/base.html,169,text,Operator Approvals,apps.temperature_marker.base.operator_approvals
+apps/temperature_marker/ui/templates/base.html,170,text,← Admin Shell,apps.temperature_marker.base.admin_shell
+apps/temperature_marker/ui/templates/base.html,176,text,Release100 Industrial Automation Platform • KioskNode Multi-Kiosk Fleet • Apache-2.0 Copyright 2026 Mahendra GURAV,apps.temperature_marker.base.release100_industrial_automation_platform
+apps/temperature_marker/ui/templates/fleet.html,1,text,Multi-Kiosk Fleet Roster & Operator Assignments,apps.temperature_marker.fleet.multi_kiosk_fleet_roster
+apps/temperature_marker/ui/templates/fleet.html,8,text,Multi-Kiosk Fleet Overview & Team Management,apps.temperature_marker.fleet.multi_kiosk_fleet_overview
+apps/temperature_marker/ui/templates/fleet.html,9,text,"Register dispensing stations, configure GPS geofence boundaries, and assign operators across retail locations.",apps.temperature_marker.fleet.register_dispensing_stations_configure
+apps/temperature_marker/ui/templates/fleet.html,14,text,+ Add New Kiosk,apps.temperature_marker.fleet.add_new_kiosk
+apps/temperature_marker/ui/templates/fleet.html,17,text,+ Enroll Operator,apps.temperature_marker.fleet.enroll_operator
+apps/temperature_marker/ui/templates/fleet.html,20,text,+ Run Simulation,apps.temperature_marker.fleet.run_simulation
+apps/temperature_marker/ui/templates/fleet.html,29,text,Total Kiosks Active,apps.temperature_marker.fleet.total_kiosks_active
+apps/temperature_marker/ui/templates/fleet.html,31,text,Multi-region retail fleet,apps.temperature_marker.fleet.multi_region_retail_fleet
+apps/temperature_marker/ui/templates/fleet.html,34,text,Registered Operators,apps.temperature_marker.fleet.registered_operators
+apps/temperature_marker/ui/templates/fleet.html,36,text,Active field staff,apps.temperature_marker.fleet.active_field_staff
+apps/temperature_marker/ui/templates/fleet.html,39,text,HACCP Safe Window,apps.temperature_marker.fleet.haccp_safe_window
+apps/temperature_marker/ui/templates/fleet.html,40,text,2.0°C – 4.0°C,apps.temperature_marker.fleet.2_0_c_4
+apps/temperature_marker/ui/templates/fleet.html,41,text,Cold-chain preservation & HACCP compliance,apps.temperature_marker.fleet.cold_chain_preservation_haccp
+apps/temperature_marker/ui/templates/fleet.html,44,text,Audit Hash Chaining,apps.temperature_marker.fleet.audit_hash_chaining
+apps/temperature_marker/ui/templates/fleet.html,45,text,SHA-256,apps.temperature_marker.fleet.sha_256
+apps/temperature_marker/ui/templates/fleet.html,46,text,21 CFR Part 11 compliant,apps.temperature_marker.fleet.21_cfr_part_11
+apps/temperature_marker/ui/templates/fleet.html,53,text,Registered KioskNode Station Roster,apps.temperature_marker.fleet.registered_kiosknode_station_roster
+apps/temperature_marker/ui/templates/fleet.html,54,text,Knowledge Graph Topology,apps.temperature_marker.fleet.knowledge_graph_topology
+apps/temperature_marker/ui/templates/fleet.html,60,text,Kiosk ID,apps.temperature_marker.fleet.kiosk_id
+apps/temperature_marker/ui/templates/fleet.html,61,text,Station Name & Location,apps.temperature_marker.fleet.station_name_location
+apps/temperature_marker/ui/templates/fleet.html,62,text,"Coordinates (Lat, Lon)",apps.temperature_marker.fleet.coordinates_lat_lon
+apps/temperature_marker/ui/templates/fleet.html,63,text,Geofence,apps.temperature_marker.fleet.geofence
+apps/temperature_marker/ui/templates/fleet.html,64,text,Model,apps.temperature_marker.fleet.model
+apps/temperature_marker/ui/templates/fleet.html,65,text,Assigned Operators,apps.temperature_marker.fleet.assigned_operators
+apps/temperature_marker/ui/templates/fleet.html,66,text,Actions,apps.temperature_marker.fleet.actions
+apps/temperature_marker/ui/templates/fleet.html,83,text,m,apps.temperature_marker.fleet.m
+apps/temperature_marker/ui/templates/fleet.html,94,text,None,apps.temperature_marker.fleet.none
+apps/temperature_marker/ui/templates/fleet.html,98,text,Check-in Test,apps.temperature_marker.fleet.check_in_test
+apps/temperature_marker/ui/templates/fleet.html,101,attr:title,Calibrate Kiosk GPS using your current device location,apps.temperature_marker.fleet.calibrate_kiosk_gps_using
+apps/temperature_marker/ui/templates/fleet.html,104,text,📍 Calibrate GPS,apps.temperature_marker.fleet.calibrate_gps
+apps/temperature_marker/ui/templates/fleet.html,119,text,Team & Operator Assignments,apps.temperature_marker.fleet.team_operator_assignments
+apps/temperature_marker/ui/templates/fleet.html,120,text,Live mapping of field staff to kiosks. Selecting a new kiosk instantly updates both SQLite and Knowledge Graph routing.,apps.temperature_marker.fleet.live_mapping_of_field
+apps/temperature_marker/ui/templates/fleet.html,130,text,Emp Code,apps.temperature_marker.fleet.emp_code
+apps/temperature_marker/ui/templates/fleet.html,131,text,Operator Name,apps.temperature_marker.fleet.operator_name
+apps/temperature_marker/ui/templates/fleet.html,132,text,WhatsApp Phone,apps.temperature_marker.fleet.whatsapp_phone
+apps/temperature_marker/ui/templates/fleet.html,133,text,Assigned Kiosk,apps.temperature_marker.fleet.assigned_kiosk
+apps/temperature_marker/ui/templates/fleet.html,134,text,Reporting Manager,apps.temperature_marker.fleet.reporting_manager
+apps/temperature_marker/ui/templates/fleet.html,135,text,Status,apps.temperature_marker.fleet.status
+apps/temperature_marker/ui/templates/fleet.html,136,text,Actions,apps.temperature_marker.fleet.actions
+apps/temperature_marker/ui/templates/fleet.html,165,text,None,apps.temperature_marker.fleet.none
+apps/temperature_marker/ui/templates/fleet.html,170,text,ACTIVE,apps.temperature_marker.fleet.active
+apps/temperature_marker/ui/templates/fleet.html,172,text,PENDING APPROVAL,apps.temperature_marker.fleet.pending_approval
+apps/temperature_marker/ui/templates/fleet.html,174,attr:title,Waiting for WhatsApp selfie photo,apps.temperature_marker.fleet.waiting_for_whatsapp_selfie
+apps/temperature_marker/ui/templates/fleet.html,174,text,PENDING PHOTO,apps.temperature_marker.fleet.pending_photo
+apps/temperature_marker/ui/templates/fleet.html,180,attr:title,Edit operator profile,apps.temperature_marker.fleet.edit_operator_profile
+apps/temperature_marker/ui/templates/fleet.html,183,text,✏️ Edit,apps.temperature_marker.fleet.edit
+apps/temperature_marker/ui/templates/fleet.html,187,attr:title,Clear current photo so operator can send new photo for approval,apps.temperature_marker.fleet.clear_current_photo_so
+apps/temperature_marker/ui/templates/fleet.html,190,text,📸 Forget,apps.temperature_marker.fleet.forget
+apps/temperature_marker/ui/templates/fleet.html,194,attr:title,Request operator to submit photo on WhatsApp,apps.temperature_marker.fleet.request_operator_to_submit
+apps/temperature_marker/ui/templates/fleet.html,197,text,📲 Request Photo,apps.temperature_marker.fleet.request_photo
+apps/temperature_marker/ui/templates/fleet.html,205,text,"No operators enrolled yet. Click ""+ Enroll Operator"" to add team members.",apps.temperature_marker.fleet.no_operators_enrolled_yet
+apps/temperature_marker/ui/templates/fleet.html,219,text,+ Register New KioskNode Kiosk,apps.temperature_marker.fleet.register_new_kiosknode_kiosk
+apps/temperature_marker/ui/templates/fleet.html,224,text,Kiosk ID *,apps.temperature_marker.fleet.kiosk_id
+apps/temperature_marker/ui/templates/fleet.html,225,attr:placeholder,e.g. NODE-HYD-01,apps.temperature_marker.fleet.e_g_node_hyd
+apps/temperature_marker/ui/templates/fleet.html,229,text,Site / Mall Name *,apps.temperature_marker.fleet.site_mall_name
+apps/temperature_marker/ui/templates/fleet.html,230,attr:placeholder,e.g. Inorbit Mall Cyberabad,apps.temperature_marker.fleet.e_g_inorbit_mall
+apps/temperature_marker/ui/templates/fleet.html,234,text,City *,apps.temperature_marker.fleet.city
+apps/temperature_marker/ui/templates/fleet.html,235,attr:placeholder,e.g. Hyderabad,apps.temperature_marker.fleet.e_g_hyderabad
+apps/temperature_marker/ui/templates/fleet.html,240,text,Latitude *,apps.temperature_marker.fleet.latitude
+apps/temperature_marker/ui/templates/fleet.html,245,text,Longitude *,apps.temperature_marker.fleet.longitude
+apps/temperature_marker/ui/templates/fleet.html,250,text,📍 Auto-fill Current Browser GPS,apps.temperature_marker.fleet.auto_fill_current_browser
+apps/temperature_marker/ui/templates/fleet.html,255,text,Geofence Radius (m),apps.temperature_marker.fleet.geofence_radius_m
+apps/temperature_marker/ui/templates/fleet.html,260,text,Machine Model,apps.temperature_marker.fleet.machine_model
+apps/temperature_marker/ui/templates/fleet.html,266,text,Cancel,apps.temperature_marker.fleet.cancel
+apps/temperature_marker/ui/templates/fleet.html,267,text,Save Kiosk,apps.temperature_marker.fleet.save_kiosk
+apps/temperature_marker/ui/templates/fleet.html,277,text,+ Enroll Field Operator,apps.temperature_marker.fleet.enroll_field_operator
+apps/temperature_marker/ui/templates/fleet.html,282,text,Employee Code (Optional),apps.temperature_marker.fleet.employee_code_optional
+apps/temperature_marker/ui/templates/fleet.html,283,attr:placeholder,Leave blank to auto-generate (e.g. EMP-1045),apps.temperature_marker.fleet.leave_blank_to_auto
+apps/temperature_marker/ui/templates/fleet.html,287,text,Full Name *,apps.temperature_marker.fleet.full_name
+apps/temperature_marker/ui/templates/fleet.html,288,attr:placeholder,e.g. Ramesh Patil,apps.temperature_marker.fleet.e_g_ramesh_patil
+apps/temperature_marker/ui/templates/fleet.html,292,text,WhatsApp Phone Number *,apps.temperature_marker.fleet.whatsapp_phone_number
+apps/temperature_marker/ui/templates/fleet.html,293,attr:placeholder,e.g. 8087545430 or +918087545430,apps.temperature_marker.fleet.e_g_8087545430_or
+apps/temperature_marker/ui/templates/fleet.html,299,text,Assign to Initial Kiosk *,apps.temperature_marker.fleet.assign_to_initial_kiosk
+apps/temperature_marker/ui/templates/fleet.html,308,text,Reporting Manager / Supervisor (Optional),apps.temperature_marker.fleet.reporting_manager_supervisor_optional
+apps/temperature_marker/ui/templates/fleet.html,311,text,-- No Manager Assigned --,apps.temperature_marker.fleet.no_manager_assigned
+apps/temperature_marker/ui/templates/fleet.html,321,text,Operator Facial Photo (Optional),apps.temperature_marker.fleet.operator_facial_photo_optional
+apps/temperature_marker/ui/templates/fleet.html,324,text,"If omitted, the operator will receive an automated WhatsApp message to submit their selfie photo.",apps.temperature_marker.fleet.if_omitted_the_operator
+apps/temperature_marker/ui/templates/fleet.html,329,text,Cancel,apps.temperature_marker.fleet.cancel
+apps/temperature_marker/ui/templates/fleet.html,330,text,Enroll Operator,apps.temperature_marker.fleet.enroll_operator
+apps/temperature_marker/ui/templates/fleet.html,340,text,✏️ Edit Operator Profile,apps.temperature_marker.fleet.edit_operator_profile
+apps/temperature_marker/ui/templates/fleet.html,346,text,Employee Code,apps.temperature_marker.fleet.employee_code
+apps/temperature_marker/ui/templates/fleet.html,350,text,Full Name *,apps.temperature_marker.fleet.full_name
+apps/temperature_marker/ui/templates/fleet.html,355,text,WhatsApp Phone Number *,apps.temperature_marker.fleet.whatsapp_phone_number
+apps/temperature_marker/ui/templates/fleet.html,361,text,Assigned Kiosk *,apps.temperature_marker.fleet.assigned_kiosk
+apps/temperature_marker/ui/templates/fleet.html,370,text,Reporting Manager / Supervisor,apps.temperature_marker.fleet.reporting_manager_supervisor
+apps/temperature_marker/ui/templates/fleet.html,373,text,-- No Manager Assigned --,apps.temperature_marker.fleet.no_manager_assigned
+apps/temperature_marker/ui/templates/fleet.html,383,text,Operational Status *,apps.temperature_marker.fleet.operational_status
+apps/temperature_marker/ui/templates/fleet.html,386,text,ACTIVE (Authorized for Duty),apps.temperature_marker.fleet.active_authorized_for_duty
+apps/temperature_marker/ui/templates/fleet.html,387,text,PENDING_APPROVAL (Under Admin Review),apps.temperature_marker.fleet.pending_approval_under_admin
+apps/temperature_marker/ui/templates/fleet.html,388,text,PENDING_PHOTO (Awaiting Selfie Photo),apps.temperature_marker.fleet.pending_photo_awaiting_selfie
+apps/temperature_marker/ui/templates/fleet.html,389,text,INACTIVE (Suspended / Deactivated),apps.temperature_marker.fleet.inactive_suspended_deactivated
+apps/temperature_marker/ui/templates/fleet.html,393,text,Cancel,apps.temperature_marker.fleet.cancel
+apps/temperature_marker/ui/templates/fleet.html,394,text,Save Changes,apps.temperature_marker.fleet.save_changes
+apps/temperature_marker/ui/templates/fleet.html,410,script,Geolocation is not supported by your browser.,apps.temperature_marker.fleet.geolocation_is_not_supported
+apps/temperature_marker/ui/templates/fleet.html,418,script,Could not fetch location:,apps.temperature_marker.fleet.could_not_fetch_location
+apps/temperature_marker/ui/templates/fleet.html,445,script,Error registering kiosk:,apps.temperature_marker.fleet.error_registering_kiosk
+apps/temperature_marker/ui/templates/fleet.html,448,script,Network error:,apps.temperature_marker.fleet.network_error
+apps/temperature_marker/ui/templates/fleet.html,474,script,Geolocation is not supported by your browser.,apps.temperature_marker.fleet.geolocation_is_not_supported
+apps/temperature_marker/ui/templates/fleet.html,493,script,Error calibrating location:,apps.temperature_marker.fleet.error_calibrating_location
+apps/temperature_marker/ui/templates/fleet.html,496,script,Network error:,apps.temperature_marker.fleet.network_error
+apps/temperature_marker/ui/templates/fleet.html,499,script,Could not fetch device GPS:,apps.temperature_marker.fleet.could_not_fetch_device
+apps/temperature_marker/ui/templates/fleet.html,540,script,Error updating operator:,apps.temperature_marker.fleet.error_updating_operator
+apps/temperature_marker/ui/templates/fleet.html,542,script,Save Changes,apps.temperature_marker.fleet.save_changes
+apps/temperature_marker/ui/templates/fleet.html,545,script,Network error:,apps.temperature_marker.fleet.network_error
+apps/temperature_marker/ui/templates/fleet.html,547,script,Save Changes,apps.temperature_marker.fleet.save_changes
+apps/temperature_marker/ui/templates/fleet.html,580,script,Error enrolling operator:,apps.temperature_marker.fleet.error_enrolling_operator
+apps/temperature_marker/ui/templates/fleet.html,582,script,Enroll Operator,apps.temperature_marker.fleet.enroll_operator
+apps/temperature_marker/ui/templates/fleet.html,585,script,Network error:,apps.temperature_marker.fleet.network_error
+apps/temperature_marker/ui/templates/fleet.html,587,script,Enroll Operator,apps.temperature_marker.fleet.enroll_operator
+apps/temperature_marker/ui/templates/fleet.html,600,script,Failed to read image file.,apps.temperature_marker.fleet.failed_to_read_image
+apps/temperature_marker/ui/templates/fleet.html,602,script,Enroll Operator,apps.temperature_marker.fleet.enroll_operator
+apps/temperature_marker/ui/templates/fleet.html,627,script,❌ Reassignment failed.,apps.temperature_marker.fleet.reassignment_failed
+apps/temperature_marker/ui/templates/fleet.html,650,script,Failed to reset photo:,apps.temperature_marker.fleet.failed_to_reset_photo
+apps/temperature_marker/ui/templates/loc.html,6,text,KioskNode 1-Click Location Verification,apps.temperature_marker.loc.kiosknode_1_click_location
+apps/temperature_marker/ui/templates/loc.html,122,text,APEX KIOSK,apps.temperature_marker.loc.apex_kiosk
+apps/temperature_marker/ui/templates/loc.html,123,text,Kiosk Geolocation Check,apps.temperature_marker.loc.kiosk_geolocation_check
+apps/temperature_marker/ui/templates/loc.html,124,text,Verifying your physical proximity to KioskNode Station,apps.temperature_marker.loc.verifying_your_physical_proximity
+apps/temperature_marker/ui/templates/loc.html,129,text,Selected Kiosk Station:,apps.temperature_marker.loc.selected_kiosk_station
+apps/temperature_marker/ui/templates/loc.html,144,text,Acquiring GPS location...,apps.temperature_marker.loc.acquiring_gps_location
+apps/temperature_marker/ui/templates/loc.html,145,text,Please allow location access when prompted.,apps.temperature_marker.loc.please_allow_location_access
+apps/temperature_marker/ui/templates/loc.html,147,text,Retry Location Check,apps.temperature_marker.loc.retry_location_check
+apps/temperature_marker/ui/templates/loc.html,187,script,Acquiring GPS coordinates...,apps.temperature_marker.loc.acquiring_gps_coordinates
+apps/temperature_marker/ui/templates/loc.html,188,script,Communicating with smartphone GPS sensor...,apps.temperature_marker.loc.communicating_with_smartphone_gps
+apps/temperature_marker/ui/templates/loc.html,192,script,Geolocation is not supported by your mobile browser.,apps.temperature_marker.loc.geolocation_is_not_supported
+apps/temperature_marker/ui/templates/loc.html,198,script,Verifying kiosk geofence perimeter...,apps.temperature_marker.loc.verifying_kiosk_geofence_perimeter
+apps/temperature_marker/ui/templates/loc.html,216,script,Location Verified!,apps.temperature_marker.loc.location_verified
+apps/temperature_marker/ui/templates/loc.html,222,script,Geofence Perimeter Breach,apps.temperature_marker.loc.geofence_perimeter_breach
+apps/temperature_marker/ui/templates/loc.html,228,script,Network error communicating with kiosk server.,apps.temperature_marker.loc.network_error_communicating_with
+apps/temperature_marker/ui/templates/loc.html,232,script,Location permission denied or unavailable:,apps.temperature_marker.loc.location_permission_denied_or
+apps/temperature_marker/ui/templates/loc.html,246,script,Location Check Failed,apps.temperature_marker.loc.location_check_failed
+apps/temperature_marker/ui/templates/monitoring.html,1,text,Live Temperature & Attendance Monitoring,apps.temperature_marker.monitoring.live_temperature_attendance_monitoring
+apps/temperature_marker/ui/templates/monitoring.html,146,text,HIGH ALERT: Unresolved Safety Incident s Detected,apps.temperature_marker.monitoring.high_alert_unresolved_safety
+apps/temperature_marker/ui/templates/monitoring.html,157,text,Inspect All Alerts,apps.temperature_marker.monitoring.inspect_all_alerts
+apps/temperature_marker/ui/templates/monitoring.html,166,text,📊 Unified Fleet Monitoring & HACCP Center,apps.temperature_marker.monitoring.unified_fleet_monitoring_haccp
+apps/temperature_marker/ui/templates/monitoring.html,167,text,"Live operator attendance, multi-check chiller temperature logs, internal communications hub, and safety alert dispatch.",apps.temperature_marker.monitoring.live_operator_attendance_multi
+apps/temperature_marker/ui/templates/monitoring.html,172,text,🔄 Refresh Feed,apps.temperature_marker.monitoring.refresh_feed
+apps/temperature_marker/ui/templates/monitoring.html,181,text,Total Kiosks Monitored,apps.temperature_marker.monitoring.total_kiosks_monitored
+apps/temperature_marker/ui/templates/monitoring.html,183,text,active today,apps.temperature_marker.monitoring.active_today
+apps/temperature_marker/ui/templates/monitoring.html,188,text,Attendance Check-ins,apps.temperature_marker.monitoring.attendance_check_ins
+apps/temperature_marker/ui/templates/monitoring.html,192,text,Kiosks opened today,apps.temperature_marker.monitoring.kiosks_opened_today
+apps/temperature_marker/ui/templates/monitoring.html,195,text,Multi-Check HACCP Progress,apps.temperature_marker.monitoring.multi_check_haccp_progress
+apps/temperature_marker/ui/templates/monitoring.html,196,text,Checks,apps.temperature_marker.monitoring.checks
+apps/temperature_marker/ui/templates/monitoring.html,199,text,In safe cold zone (2°C – 4°C),apps.temperature_marker.monitoring.in_safe_cold_zone
+apps/temperature_marker/ui/templates/monitoring.html,202,text,Safety & Operational Alerts,apps.temperature_marker.monitoring.safety_operational_alerts
+apps/temperature_marker/ui/templates/monitoring.html,206,text,Immediate Action Required All Safe & Nominal,apps.temperature_marker.monitoring.immediate_action_required_all
+apps/temperature_marker/ui/templates/monitoring.html,215,text,🏪 Kiosk Fleet Live Status Matrix,apps.temperature_marker.monitoring.kiosk_fleet_live_status
+apps/temperature_marker/ui/templates/monitoring.html,216,text,Today's shift attendance & multi-point temperature cadence,apps.temperature_marker.monitoring.today_s_shift_attendance
+apps/temperature_marker/ui/templates/monitoring.html,230,text,CHECKED IN,apps.temperature_marker.monitoring.checked_in
+apps/temperature_marker/ui/templates/monitoring.html,232,text,NOT CHECKED IN,apps.temperature_marker.monitoring.not_checked_in
+apps/temperature_marker/ui/templates/monitoring.html,239,text,Operator:,apps.temperature_marker.monitoring.operator
+apps/temperature_marker/ui/templates/monitoring.html,246,text,Check-in (IST):,apps.temperature_marker.monitoring.check_in_ist
+apps/temperature_marker/ui/templates/monitoring.html,255,text,Temp Checks Cadence:,apps.temperature_marker.monitoring.temp_checks_cadence
+apps/temperature_marker/ui/templates/monitoring.html,256,text,/ Done,apps.temperature_marker.monitoring.done
+apps/temperature_marker/ui/templates/monitoring.html,269,text,Latest Reading:,apps.temperature_marker.monitoring.latest_reading
+apps/temperature_marker/ui/templates/monitoring.html,272,text,°C,apps.temperature_marker.monitoring.c
+apps/temperature_marker/ui/templates/monitoring.html,277,text,Pending Reading,apps.temperature_marker.monitoring.pending_reading
+apps/temperature_marker/ui/templates/monitoring.html,285,text,⚠️ Re-Check Overdue,apps.temperature_marker.monitoring.re_check_overdue
+apps/temperature_marker/ui/templates/monitoring.html,287,text,🚨 Hazard Active,apps.temperature_marker.monitoring.hazard_active
+apps/temperature_marker/ui/templates/monitoring.html,289,text,✅ Complete,apps.temperature_marker.monitoring.complete
+apps/temperature_marker/ui/templates/monitoring.html,291,text,In Progress,apps.temperature_marker.monitoring.in_progress
+apps/temperature_marker/ui/templates/monitoring.html,295,text,⚙️ Config,apps.temperature_marker.monitoring.config
+apps/temperature_marker/ui/templates/monitoring.html,306,text,📸 Shift Records & Live Photo Feed,apps.temperature_marker.monitoring.shift_records_live_photo
+apps/temperature_marker/ui/templates/monitoring.html,307,text,💬 Communications Hub (Who is messaging whom),apps.temperature_marker.monitoring.communications_hub_who_is
+apps/temperature_marker/ui/templates/monitoring.html,315,text,⚙️ Multi-Check HACCP Rules,apps.temperature_marker.monitoring.multi_check_haccp_rules
+apps/temperature_marker/ui/templates/monitoring.html,322,text,Captured Duty Check-ins & Verifications,apps.temperature_marker.monitoring.captured_duty_check_ins
+apps/temperature_marker/ui/templates/monitoring.html,323,text,Photos securely stored in local media vault,apps.temperature_marker.monitoring.photos_securely_stored_in
+apps/temperature_marker/ui/templates/monitoring.html,330,text,Timestamp (IST),apps.temperature_marker.monitoring.timestamp_ist
+apps/temperature_marker/ui/templates/monitoring.html,331,text,Check-in Photo,apps.temperature_marker.monitoring.check_in_photo
+apps/temperature_marker/ui/templates/monitoring.html,332,text,Operator,apps.temperature_marker.monitoring.operator
+apps/temperature_marker/ui/templates/monitoring.html,333,text,Kiosk / Site,apps.temperature_marker.monitoring.kiosk_site
+apps/temperature_marker/ui/templates/monitoring.html,334,text,Chiller Temp,apps.temperature_marker.monitoring.chiller_temp
+apps/temperature_marker/ui/templates/monitoring.html,335,text,Location & Biometrics,apps.temperature_marker.monitoring.location_biometrics
+apps/temperature_marker/ui/templates/monitoring.html,336,text,Compliance Status,apps.temperature_marker.monitoring.compliance_status
+apps/temperature_marker/ui/templates/monitoring.html,337,text,Action,apps.temperature_marker.monitoring.action
+apps/temperature_marker/ui/templates/monitoring.html,340,text,{% set has_alert = (not r.haccp_compliant) or (not r.geofence_verified) or (r.face_confidence,apps.temperature_marker.monitoring.set_has_alert_not
+apps/temperature_marker/ui/templates/monitoring.html,351,attr:alt,Photo,apps.temperature_marker.monitoring.photo
+apps/temperature_marker/ui/templates/monitoring.html,357,text,Corrupt File,apps.temperature_marker.monitoring.corrupt_file
+apps/temperature_marker/ui/templates/monitoring.html,362,text,No Pic,apps.temperature_marker.monitoring.no_pic
+apps/temperature_marker/ui/templates/monitoring.html,385,text,°C,apps.temperature_marker.monitoring.c
+apps/temperature_marker/ui/templates/monitoring.html,392,text,UNAVAILABLE,apps.temperature_marker.monitoring.unavailable
+apps/temperature_marker/ui/templates/monitoring.html,395,text,⚠️ Missing Display,apps.temperature_marker.monitoring.missing_display
+apps/temperature_marker/ui/templates/monitoring.html,403,text,📍 GPS: m,apps.temperature_marker.monitoring.gps_m
+apps/temperature_marker/ui/templates/monitoring.html,405,attr:title,Outside kiosk allowed radius,apps.temperature_marker.monitoring.outside_kiosk_allowed_radius
+apps/temperature_marker/ui/templates/monitoring.html,405,text,⚠️ GPS: m,apps.temperature_marker.monitoring.gps_m
+apps/temperature_marker/ui/templates/monitoring.html,410,text,👤 Face: %,apps.temperature_marker.monitoring.face
+apps/temperature_marker/ui/templates/monitoring.html,412,attr:title,Face similarity below 82% threshold,apps.temperature_marker.monitoring.face_similarity_below_82
+apps/temperature_marker/ui/templates/monitoring.html,412,text,👤 Face: %,apps.temperature_marker.monitoring.face
+apps/temperature_marker/ui/templates/monitoring.html,423,text,COMPLIANT,apps.temperature_marker.monitoring.compliant
+apps/temperature_marker/ui/templates/monitoring.html,425,text,NEEDS REVIEW,apps.temperature_marker.monitoring.needs_review
+apps/temperature_marker/ui/templates/monitoring.html,430,text,🛠️ Resolve,apps.temperature_marker.monitoring.resolve
+apps/temperature_marker/ui/templates/monitoring.html,437,text,No attendance or temperature records found yet. Records will stream in live from WhatsApp.,apps.temperature_marker.monitoring.no_attendance_or_temperature
+apps/temperature_marker/ui/templates/monitoring.html,453,text,Internal Operator & Supervisor Communications,apps.temperature_marker.monitoring.internal_operator_supervisor_communications
+apps/temperature_marker/ui/templates/monitoring.html,454,text,"Who is messaging whom, resolution states, and direct response center",apps.temperature_marker.monitoring.who_is_messaging_whom
+apps/temperature_marker/ui/templates/monitoring.html,456,text,Total: Messages,apps.temperature_marker.monitoring.total_messages
+apps/temperature_marker/ui/templates/monitoring.html,463,text,Time (IST),apps.temperature_marker.monitoring.time_ist
+apps/temperature_marker/ui/templates/monitoring.html,464,text,Sender (Operator),apps.temperature_marker.monitoring.sender_operator
+apps/temperature_marker/ui/templates/monitoring.html,465,text,Kiosk,apps.temperature_marker.monitoring.kiosk
+apps/temperature_marker/ui/templates/monitoring.html,466,text,Recipient (Manager),apps.temperature_marker.monitoring.recipient_manager
+apps/temperature_marker/ui/templates/monitoring.html,467,text,Message Inquiry,apps.temperature_marker.monitoring.message_inquiry
+apps/temperature_marker/ui/templates/monitoring.html,468,text,Status,apps.temperature_marker.monitoring.status
+apps/temperature_marker/ui/templates/monitoring.html,469,text,Action,apps.temperature_marker.monitoring.action
+apps/temperature_marker/ui/templates/monitoring.html,495,text,Manager Reply:,apps.temperature_marker.monitoring.manager_reply
+apps/temperature_marker/ui/templates/monitoring.html,501,text,RESOLVED,apps.temperature_marker.monitoring.resolved
+apps/temperature_marker/ui/templates/monitoring.html,503,text,CRITICAL PENDING,apps.temperature_marker.monitoring.critical_pending
+apps/temperature_marker/ui/templates/monitoring.html,505,text,PENDING,apps.temperature_marker.monitoring.pending
+apps/temperature_marker/ui/templates/monitoring.html,511,text,💬 Reply & Resolve,apps.temperature_marker.monitoring.reply_resolve
+apps/temperature_marker/ui/templates/monitoring.html,515,text,Resolved,apps.temperature_marker.monitoring.resolved
+apps/temperature_marker/ui/templates/monitoring.html,521,text,No internal operator inquiries or messages found.,apps.temperature_marker.monitoring.no_internal_operator_inquiries
+apps/temperature_marker/ui/templates/monitoring.html,535,text,⚙️ HACCP Multi-Check Frequency & Safety Thresholds,apps.temperature_marker.monitoring.haccp_multi_check_frequency
+apps/temperature_marker/ui/templates/monitoring.html,538,text,Configure temperature capture frequency requirements across all KioskNode kiosks. Overdue alarms trigger automatically when interval expires without a valid photo reading.,apps.temperature_marker.monitoring.configure_temperature_capture_frequency
+apps/temperature_marker/ui/templates/monitoring.html,545,text,Required Daily Temp Checks *,apps.temperature_marker.monitoring.required_daily_temp_checks
+apps/temperature_marker/ui/templates/monitoring.html,548,text,"e.g. 3 checks/day (Morning Check-in, Midday, Evening)",apps.temperature_marker.monitoring.e_g_3_checks
+apps/temperature_marker/ui/templates/monitoring.html,551,text,Check Interval Frequency (Hours) *,apps.temperature_marker.monitoring.check_interval_frequency_hours
+apps/temperature_marker/ui/templates/monitoring.html,554,text,Max elapsed hours before kiosk flagged as OVERDUE,apps.temperature_marker.monitoring.max_elapsed_hours_before
+apps/temperature_marker/ui/templates/monitoring.html,560,text,Min Safe Temp (°C),apps.temperature_marker.monitoring.min_safe_temp_c
+apps/temperature_marker/ui/templates/monitoring.html,565,text,Max Safe Temp (°C),apps.temperature_marker.monitoring.max_safe_temp_c
+apps/temperature_marker/ui/templates/monitoring.html,570,text,Critical Alert Limit (°C),apps.temperature_marker.monitoring.critical_alert_limit_c
+apps/temperature_marker/ui/templates/monitoring.html,578,text,Push immediate WhatsApp high-alert notification to Fleet Supervisor upon critical HACCP violation or face mismatch,apps.temperature_marker.monitoring.push_immediate_whatsapp_high
+apps/temperature_marker/ui/templates/monitoring.html,584,text,💾 Save Fleet HACCP Policy,apps.temperature_marker.monitoring.save_fleet_haccp_policy
+apps/temperature_marker/ui/templates/monitoring.html,595,attr:alt,Captured Image,apps.temperature_marker.monitoring.captured_image
+apps/temperature_marker/ui/templates/monitoring.html,596,text,Click anywhere to dismiss,apps.temperature_marker.monitoring.click_anywhere_to_dismiss
+apps/temperature_marker/ui/templates/monitoring.html,604,text,🛠️ Manual Admin Resolution,apps.temperature_marker.monitoring.manual_admin_resolution
+apps/temperature_marker/ui/templates/monitoring.html,610,text,Record ID:,apps.temperature_marker.monitoring.record_id
+apps/temperature_marker/ui/templates/monitoring.html,611,text,Operator:,apps.temperature_marker.monitoring.operator
+apps/temperature_marker/ui/templates/monitoring.html,612,text,Kiosk:,apps.temperature_marker.monitoring.kiosk
+apps/temperature_marker/ui/templates/monitoring.html,613,text,Recorded Temp:,apps.temperature_marker.monitoring.recorded_temp
+apps/temperature_marker/ui/templates/monitoring.html,617,text,Resolution Decision *,apps.temperature_marker.monitoring.resolution_decision
+apps/temperature_marker/ui/templates/monitoring.html,619,text,Approve & Override (Verified by Manager),apps.temperature_marker.monitoring.approve_override_verified_by
+apps/temperature_marker/ui/templates/monitoring.html,620,text,Reject & Invalidate (Suspected Fraud / Breach),apps.temperature_marker.monitoring.reject_invalidate_suspected_fraud
+apps/temperature_marker/ui/templates/monitoring.html,621,text,Escalate to KioskNode Technician (Chiller Warning),apps.temperature_marker.monitoring.escalate_to_kiosknode_technician
+apps/temperature_marker/ui/templates/monitoring.html,622,text,Resolved Manually,apps.temperature_marker.monitoring.resolved_manually
+apps/temperature_marker/ui/templates/monitoring.html,627,text,Administrator Audit Notes *,apps.temperature_marker.monitoring.administrator_audit_notes
+apps/temperature_marker/ui/templates/monitoring.html,628,attr:placeholder,Provide audit rationale (e.g. 'Verified physical presence via CCTV; display reflection caused false OCR reading').,apps.temperature_marker.monitoring.provide_audit_rationale_e
+apps/temperature_marker/ui/templates/monitoring.html,633,text,Cancel,apps.temperature_marker.monitoring.cancel
+apps/temperature_marker/ui/templates/monitoring.html,634,text,Save Resolution,apps.temperature_marker.monitoring.save_resolution
+apps/temperature_marker/ui/templates/monitoring.html,644,text,💬 Reply & Resolve Operator Inquiry,apps.temperature_marker.monitoring.reply_resolve_operator_inquiry
+apps/temperature_marker/ui/templates/monitoring.html,650,text,From:,apps.temperature_marker.monitoring.from
+apps/temperature_marker/ui/templates/monitoring.html,651,text,Phone:,apps.temperature_marker.monitoring.phone
+apps/temperature_marker/ui/templates/monitoring.html,653,text,Inquiry:,apps.temperature_marker.monitoring.inquiry
+apps/temperature_marker/ui/templates/monitoring.html,659,text,Supervisor Reply Message (Sent via WhatsApp) *,apps.temperature_marker.monitoring.supervisor_reply_message_sent
+apps/temperature_marker/ui/templates/monitoring.html,660,attr:placeholder,Type instructions or resolution details for the operator...,apps.temperature_marker.monitoring.type_instructions_or_resolution
+apps/temperature_marker/ui/templates/monitoring.html,665,text,Cancel,apps.temperature_marker.monitoring.cancel
+apps/temperature_marker/ui/templates/monitoring.html,666,text,Send Reply & Mark Resolved,apps.temperature_marker.monitoring.send_reply_mark_resolved
+apps/temperature_marker/ui/templates/monitoring.html,676,text,⚙️ Kiosk Schedule,apps.temperature_marker.monitoring.kiosk_schedule
+apps/temperature_marker/ui/templates/monitoring.html,682,text,Required Daily Checks,apps.temperature_marker.monitoring.required_daily_checks
+apps/temperature_marker/ui/templates/monitoring.html,687,text,Re-check Cadence Interval (Hours),apps.temperature_marker.monitoring.re_check_cadence_interval
+apps/temperature_marker/ui/templates/monitoring.html,692,text,Cancel,apps.temperature_marker.monitoring.cancel
+apps/temperature_marker/ui/templates/monitoring.html,693,text,Save Schedule,apps.temperature_marker.monitoring.save_schedule
+apps/temperature_marker/ui/templates/monitoring.html,703,text,🚨 Active Emergency & Safety Incidents,apps.temperature_marker.monitoring.active_emergency_safety_incidents
+apps/temperature_marker/ui/templates/monitoring.html,716,text,Reported at by,apps.temperature_marker.monitoring.reported_at_by
+apps/temperature_marker/ui/templates/monitoring.html,720,text,Dismiss / Ack,apps.temperature_marker.monitoring.dismiss_ack
+apps/temperature_marker/ui/templates/monitoring.html,727,text,Close,apps.temperature_marker.monitoring.close
+apps/temperature_marker/ui/templates/monitoring.html,796,script,Resolution failed:,apps.temperature_marker.monitoring.resolution_failed
+apps/temperature_marker/ui/templates/monitoring.html,798,script,Save Resolution,apps.temperature_marker.monitoring.save_resolution
+apps/temperature_marker/ui/templates/monitoring.html,801,script,Network error:,apps.temperature_marker.monitoring.network_error
+apps/temperature_marker/ui/templates/monitoring.html,803,script,Save Resolution,apps.temperature_marker.monitoring.save_resolution
+apps/temperature_marker/ui/templates/monitoring.html,829,script,Reply failed:,apps.temperature_marker.monitoring.reply_failed
+apps/temperature_marker/ui/templates/monitoring.html,831,script,Send Reply & Mark Resolved,apps.temperature_marker.monitoring.send_reply_mark_resolved
+apps/temperature_marker/ui/templates/monitoring.html,834,script,Network error:,apps.temperature_marker.monitoring.network_error
+apps/temperature_marker/ui/templates/monitoring.html,836,script,Send Reply & Mark Resolved,apps.temperature_marker.monitoring.send_reply_mark_resolved
+apps/temperature_marker/ui/templates/monitoring.html,858,script,Config update failed:,apps.temperature_marker.monitoring.config_update_failed
+apps/temperature_marker/ui/templates/monitoring.html,861,script,Network error:,apps.temperature_marker.monitoring.network_error
+apps/temperature_marker/ui/templates/monitoring.html,887,script,Fleet HACCP policy updated successfully!,apps.temperature_marker.monitoring.fleet_haccp_policy_updated
+apps/temperature_marker/ui/templates/monitoring.html,891,script,Policy update failed:,apps.temperature_marker.monitoring.policy_update_failed
+apps/temperature_marker/ui/templates/monitoring.html,893,script,💾 Save Fleet HACCP Policy,apps.temperature_marker.monitoring.save_fleet_haccp_policy
+apps/temperature_marker/ui/templates/monitoring.html,896,script,Network error:,apps.temperature_marker.monitoring.network_error
+apps/temperature_marker/ui/templates/monitoring.html,898,script,💾 Save Fleet HACCP Policy,apps.temperature_marker.monitoring.save_fleet_haccp_policy
+apps/temperature_marker/ui/templates/monitoring.html,907,script,Dismissed by admin,apps.temperature_marker.monitoring.dismissed_by_admin
+apps/temperature_marker/ui/templates/monitoring.html,913,script,Acknowledge failed:,apps.temperature_marker.monitoring.acknowledge_failed
+apps/temperature_marker/ui/templates/monitoring.html,916,script,Network error:,apps.temperature_marker.monitoring.network_error
+apps/temperature_marker/ui/templates/wizard.html,1,text,Progressive Stepper Wizard,apps.temperature_marker.wizard.progressive_stepper_wizard
+apps/temperature_marker/ui/templates/wizard.html,7,text,Progressive Stepper Check-in Simulator,apps.temperature_marker.wizard.progressive_stepper_check_in
+apps/temperature_marker/ui/templates/wizard.html,8,text,Simulate an authentic operator duty check-in and chiller verification across all safety layers.,apps.temperature_marker.wizard.simulate_an_authentic_operator
+apps/temperature_marker/ui/templates/wizard.html,17,text,Station & Operator,apps.temperature_marker.wizard.station_operator
+apps/temperature_marker/ui/templates/wizard.html,21,text,Telemetry & Reading,apps.temperature_marker.wizard.telemetry_reading
+apps/temperature_marker/ui/templates/wizard.html,25,text,Geolocation Check,apps.temperature_marker.wizard.geolocation_check
+apps/temperature_marker/ui/templates/wizard.html,29,text,Multi-Layer Safety,apps.temperature_marker.wizard.multi_layer_safety
+apps/temperature_marker/ui/templates/wizard.html,33,text,Audit & Hash,apps.temperature_marker.wizard.audit_hash
+apps/temperature_marker/ui/templates/wizard.html,40,text,Target Kiosk,apps.temperature_marker.wizard.target_kiosk
+apps/temperature_marker/ui/templates/wizard.html,50,text,Operator Phone Number,apps.temperature_marker.wizard.operator_phone_number
+apps/temperature_marker/ui/templates/wizard.html,57,text,Chiller Temperature (°C),apps.temperature_marker.wizard.chiller_temperature_c
+apps/temperature_marker/ui/templates/wizard.html,59,text,Safe Range: 2.0°C – 4.0°C | Physical Sanity: -20°C – 120°C,apps.temperature_marker.wizard.safe_range_2_0
+apps/temperature_marker/ui/templates/wizard.html,62,text,Face Match Confidence (0.0 – 1.0),apps.temperature_marker.wizard.face_match_confidence_0
+apps/temperature_marker/ui/templates/wizard.html,64,text,Threshold: ≥ 0.85 for auto-approval. < 0.85 diverts to human review.,apps.temperature_marker.wizard.threshold_0_85_for
+apps/temperature_marker/ui/templates/wizard.html,70,text,Latitude,apps.temperature_marker.wizard.latitude
+apps/temperature_marker/ui/templates/wizard.html,74,text,Longitude,apps.temperature_marker.wizard.longitude
+apps/temperature_marker/ui/templates/wizard.html,80,text,Run Verification Workflow,apps.temperature_marker.wizard.run_verification_workflow
+apps/temperature_marker/ui/templates/wizard.html,83,text,Preset: Safe 3.2°C,apps.temperature_marker.wizard.preset_safe_3_2
+apps/temperature_marker/ui/templates/wizard.html,84,text,Preset: Elevated 5.5°C,apps.temperature_marker.wizard.preset_elevated_5_5
+apps/temperature_marker/ui/templates/wizard.html,85,text,Preset: Critical 8.5°C,apps.temperature_marker.wizard.preset_critical_8_5
+apps/temperature_marker/ui/templates/wizard.html,86,text,Preset: Low Conf (0.72),apps.temperature_marker.wizard.preset_low_conf_0
+apps/temperature_marker/ui/templates/wizard.html,92,text,Workflow Execution Results,apps.temperature_marker.wizard.workflow_execution_results
+apps/temperature_marker/ui/templates/wizard.html,130,script,Evaluating through Safety Gates...,apps.temperature_marker.wizard.evaluating_through_safety_gates
+apps/temperature_marker/ui/templates/wizard.html,172,script,Within perimeter,apps.temperature_marker.wizard.within_perimeter
+apps/temperature_marker/ui/templates/wizard.html,177,script,Verified (≥85%),apps.temperature_marker.wizard.verified_85
+apps/temperature_marker/ui/templates/wizard.html,177,script,Sub-Threshold (<85%),apps.temperature_marker.wizard.sub_threshold_85
+apps/temperature_marker/ui/templates/wizard.html,197,script,Simulation error:,apps.temperature_marker.wizard.simulation_error
+apps/temperature_marker/ui/templates/wizard.html,200,script,Run Verification Workflow,apps.temperature_marker.wizard.run_verification_workflow
