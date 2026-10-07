@@ -1,0 +1,129 @@
+<!-- Tab 1: Live Records Table -->
+<div id="tab-records" class="tab-panel active">
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.1rem; font-weight: 600;">Captured Duty Check-ins & Verifications</h3>
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Photos securely stored in local media vault</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem 1rem;">Timestamp (IST)</th>
+                        <th style="padding: 0.75rem 1rem;">Check-in Photo</th>
+                        <th style="padding: 0.75rem 1rem;">Operator</th>
+                        <th style="padding: 0.75rem 1rem;">Kiosk / Site</th>
+                        <th style="padding: 0.75rem 1rem;">Chiller Temp</th>
+                        <th style="padding: 0.75rem 1rem;">Location & Biometrics</th>
+                        <th style="padding: 0.75rem 1rem;">Compliance Status</th>
+                        <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                    {% set has_alert = (not r.haccp_compliant) or (not r.geofence_verified) or (r.face_confidence < 0.82) %}
+                    <tr style="border-bottom: 1px solid var(--border-color); background: {% if has_alert %}rgba(239, 68, 68, 0.05){% else %}transparent{% endif %};">
+                        <td style="padding: 0.85rem 1rem; font-family: monospace; font-size: 0.8rem; color: #94a3b8;">
+                            {{ to_local_ist_full(r.checkin_time_utc) if r.checkin_time_utc else 'N/A' }}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            {% if r.photo_path %}
+                            {% set p_src = r.photo_path if r.photo_path.startswith('/') else '/' ~ r.photo_path %}
+                            <div style="position: relative; display: inline-block;">
+                                <img src="{{ p_src }}" alt="Photo"
+                                     onclick="previewPhoto('{{ p_src }}')"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                     style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid #475569; cursor: pointer; transition: transform 0.2s;"
+                                     onmouseover="this.style.transform='scale(1.15)'"
+                                     onmouseout="this.style.transform='scale(1.0)'" />
+                                <div style="display: none; width: 48px; height: 48px; border-radius: 6px; background: #0f172a; border: 1px dashed #ef4444; align-items: center; justify-content: center; font-size: 0.65rem; color: #f87171; text-align: center; line-height: 1.1;">
+                                    Corrupt File
+                                </div>
+                            </div>
+                            {% else %}
+                            <div style="width: 48px; height: 48px; border-radius: 6px; background: #0f172a; border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #64748b;">
+                                No Pic
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <div style="font-weight: 600; color: white;">
+                                {{ emp_map.get(r.emp_code, {}).get("full_name", r.emp_code) }}
+                            </div>
+                            <div style="font-family: monospace; font-size: 0.75rem; color: #a78bfa;">
+                                {{ r.emp_code }}
+                            </div>
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <div style="font-weight: 600; color: #38bdf8; font-family: monospace; font-size: 0.82rem;">
+                                {{ r.kiosk_id }}
+                            </div>
+                            <div style="font-size: 0.75rem; color: #94a3b8;">
+                                {{ kiosk_map.get(r.kiosk_id, {}).get("name", "KioskNode Kiosk") }}
+                            </div>
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            {% if r.chiller_temp_c is not none %}
+                                <div style="font-size: 1.05rem; font-weight: 700; font-family: monospace; color: {% if r.haccp_compliant %}#10b981{% else %}#ef4444{% endif %};">
+                                    {{ "%.1f"|format(r.chiller_temp_c) }}°C
+                                </div>
+                                <div style="font-size: 0.7rem; color: #64748b;">
+                                    {{ r.ocr_engine_used }}
+                                </div>
+                            {% else %}
+                                <div style="font-size: 0.85rem; font-weight: 700; color: #f59e0b;">
+                                    UNAVAILABLE
+                                </div>
+                                <div style="font-size: 0.7rem; color: #ef4444;">
+                                    ⚠️ Missing Display
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <div style="font-size: 0.8rem; margin-bottom: 0.2rem;">
+                                {% if r.geofence_verified %}
+                                    <span class="alert-chip chip-ok">📍 GPS: {{ "%.0f"|format(r.gps_distance_meters) }}m</span>
+                                {% else %}
+                                    <span class="alert-chip chip-danger" title="Outside kiosk allowed radius">⚠️ GPS: {{ "%.0f"|format(r.gps_distance_meters) }}m</span>
+                                {% endif %}
+                            </div>
+                            <div style="font-size: 0.8rem;">
+                                {% if r.face_confidence >= 0.82 %}
+                                    <span class="alert-chip chip-ok">👤 Face: {{ "%.0f"|format(r.face_confidence * 100) }}%</span>
+                                {% else %}
+                                    <span class="alert-chip chip-danger" title="Face similarity below 82% threshold">👤 Face: {{ "%.0f"|format(r.face_confidence * 100) }}%</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            {% if r.manual_resolution_status %}
+                                <span class="badge badge-blue">{{ r.manual_resolution_status }}</span>
+                                <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.2rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    {{ r.manual_resolution_notes or '' }}
+                                </div>
+                            {% elif r.haccp_compliant and r.geofence_verified and r.face_confidence >= 0.82 %}
+                                <span class="badge badge-green">COMPLIANT</span>
+                            {% else %}
+                                <span class="badge badge-red">NEEDS REVIEW</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem 1rem; text-align: right;">
+                            <button onclick="openResolveModal('{{ r.id }}', '{{ r.emp_code }}', '{{ r.kiosk_id }}', '{{ r.chiller_temp_c if r.chiller_temp_c is not none else 'N/A' }}', '{{ r.gps_distance_meters }}')"
+                                    class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                                🛠️ Resolve
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
+                            No attendance or temperature records found yet. Records will stream in live from WhatsApp.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,83 @@
+<!-- Tab 2: Communications Hub (Requirement 3) -->
+<div id="tab-messages" class="tab-panel">
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="font-size: 1.1rem; font-weight: 600;">Internal Operator & Supervisor Communications</h3>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">Who is messaging whom, resolution states, and direct response center</span>
+            </div>
+            <span style="font-size: 0.8rem; color: #94a3b8;">Total: {{ messages|length }} Messages</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem 1rem;">Time (IST)</th>
+                        <th style="padding: 0.75rem 1rem;">Sender (Operator)</th>
+                        <th style="padding: 0.75rem 1rem;">Kiosk</th>
+                        <th style="padding: 0.75rem 1rem;">Recipient (Manager)</th>
+                        <th style="padding: 0.75rem 1rem;">Message Inquiry</th>
+                        <th style="padding: 0.75rem 1rem;">Status</th>
+                        <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in messages %}
+                    <tr style="border-bottom: 1px solid var(--border-color); background: {% if m.priority >= 100 and m.status != 'RESOLVED' %}rgba(239, 68, 68, 0.08){% else %}transparent{% endif %};">
+                        <td style="padding: 0.85rem 1rem; font-family: monospace; font-size: 0.8rem; color: #94a3b8;">
+                            {{ to_local_ist(m.created_at_utc) }}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <div style="font-weight: 600; color: white;">{{ m.sender_name or m.sender_emp_code }}</div>
+                            <div style="font-family: monospace; font-size: 0.75rem; color: #94a3b8;">{{ m.sender_phone }}</div>
+                        </td>
+                        <td style="padding: 0.85rem 1rem; font-family: monospace; color: #38bdf8; font-weight: 600;">
+                            {{ m.kiosk_id or '—' }}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            <div style="font-weight: 600; color: #a78bfa;">{{ m.recipient_emp_code }}</div>
+                            <div style="font-family: monospace; font-size: 0.75rem; color: #94a3b8;">{{ m.recipient_phone }}</div>
+                        </td>
+                        <td style="padding: 0.85rem 1rem; max-width: 320px;">
+                            <div style="color: #f8fafc; font-size: 0.88rem; word-break: break-word;">
+                                "{{ m.message_text }}"
+                            </div>
+                            {% if m.reply_context %}
+                            <div style="margin-top: 0.4rem; padding: 0.4rem 0.6rem; background: #0f172a; border-left: 3px solid #10b981; border-radius: 4px; font-size: 0.8rem; color: #cbd5e1;">
+                                <strong>Manager Reply:</strong> {{ m.reply_context }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem 1rem;">
+                            {% if m.status == 'RESOLVED' %}
+                                <span class="badge badge-green">RESOLVED</span>
+                            {% elif m.priority >= 100 %}
+                                <span class="badge badge-red">CRITICAL PENDING</span>
+                            {% else %}
+                                <span class="badge badge-yellow">PENDING</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem 1rem; text-align: right;">
+                            {% if m.status != 'RESOLVED' %}
+                                <button onclick="openMessageReplyModal({{ m.id }}, '{{ m.sender_name or m.sender_emp_code }}', '{{ m.sender_phone }}', '{{ m.message_text|replace("'", "\\'") }}')"
+                                        class="btn btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                                    💬 Reply & Resolve
+                                </button>
+                            {% else %}
+                                <span style="font-size: 0.78rem; color: #64748b;">Resolved</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="padding: 2.5rem; text-align: center; color: var(--text-secondary);">
+                            No internal operator inquiries or messages found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
