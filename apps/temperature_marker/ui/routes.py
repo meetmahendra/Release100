@@ -677,7 +677,6 @@ async def view_verify_location(
                 resolved_kiosk_id = _kg_service.resolve_kiosk_by_phone(str(meta["phone"]))
 
     if not resolved_kiosk_id:
-        from core_platform.app.config import settings
         resolved_kiosk_id = settings.KIOSK_ID or "NODE-PUNE-05"
 
     kiosk_info = _kg_service.get_kiosk_details(resolved_kiosk_id)

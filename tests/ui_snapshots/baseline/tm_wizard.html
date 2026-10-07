@@ -1,1 +1,455 @@
-STATUS 404
+STATUS 200
+<html lang="en-US">
+<head>
+<meta charset="UTF-#">
+<meta content="width=device-width, initial-scale=#" name="viewport">
+<title>
+  Progressive Stepper Wizard
+</title>
+<link href="/ui-static/tokens.css" rel="stylesheet">
+<script src="/ui-static/tailwind.standalone.js">
+</script>
+<style type="text/tailwindcss">
+  @theme {
+  --color-page: ##;
+  --color-card: ##f#a;
+  --color-line: ##e#b;
+  --color-ink: #e#e#f#;
+  --color-muted: ##a#b#;
+  --color-primary: ##b#;
+  --color-devops: ##f#;
+  --color-preview: #f#e#b;
+  --color-danger: #f#f#e;
+  --color-info: ##bdf#;
+  }
+</style>
+<style>
+  :root {
+  --bg-main: ##;
+  --bg-card: ##f#a;
+  --bg-card-hover: ##e#b;
+  --border-color: ##;
+  --text-primary: #f#fafc;
+  --text-secondary: ##a#b#;
+  --accent-green: ##b#;
+  --accent-yellow: #f#e#b;
+  --accent-red: #ef#;
+  --accent-blue: ##b#f#;
+  }
+  .card {
+  background-color: var(--bg-card);
+  border: #px solid var(--border-color);
+  border-radius: #px;
+  padding: #.#rem;
+  margin-bottom: #.#rem;
+  box-shadow: # #px #px -#px rgba(#, #, #, #.#);
+  }
+  .badge {
+  display: inline-block;
+  padding: #.#rem #.#rem;
+  font-size: #.#rem;
+  font-weight: #;
+  border-radius: #px;
+  text-transform: uppercase;
+  }
+  .badge-green { background-color: rgba(#, #, #, #.#); color: var(--accent-green); border: #px solid var(--accent-green); }
+  .badge-yellow { background-color: rgba(#, #, #, #.#); color: var(--accent-yellow); border: #px solid var(--accent-yellow); }
+  .badge-red { background-color: rgba(#, #, #, #.#); color: var(--accent-red); border: #px solid var(--accent-red); }
+  .badge-blue { background-color: rgba(#, #, #, #.#); color: var(--accent-blue); border: #px solid var(--accent-blue); }
+  .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: #.#rem #rem;
+  font-size: #.#rem;
+  font-weight: #;
+  border-radius: #px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color #.#s ease;
+  }
+  .btn-primary { background-color: var(--accent-blue); color: white; }
+  .btn-primary:hover { background-color: ##eb; }
+  .btn-success { background-color: var(--accent-green); color: white; }
+  .btn-success:hover { background-color: ##; }
+  .btn-danger { background-color: var(--accent-red); color: white; }
+  .btn-danger:hover { background-color: #dc#; }
+</style>
+</head>
+<body class="ui-shell bg-page text-ink min-h-screen">
+<a class="ui-sr-only focus:not-sr-only" href="#main">
+  Skip to main content
+</a>
+<div class="flex min-h-screen">
+<aside aria-label="Main navigation" class="w-# shrink-# border-r border-line bg-card">
+<div class="p-# border-b border-line">
+<a class="font-semibold text-ink" href="/admin/">
+  Home
+</a>
+</div>
+<nav class="p-#">
+<ul class="space-y-#">
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/">
+  Overview Dashboard
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Applications
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/dashboard">
+  AI Email & Calendar Organizer
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Apex Industrial Temperature & Attendance Marker
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/monitoring">
+  📊 Live Monitoring
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/fleet">
+  Fleet Map
+</a>
+</li>
+<li>
+<a aria-current="page" class="block rounded-md px-# py-# text-sm bg-line text-ink font-semibold" href="/admin/apps/temperature-marker/wizard">
+  Stepper Wizard
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/approvals">
+  Operator Approvals
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Workspace & Access
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/users">
+  Users & Team
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/tenants">
+  Company Profile & Vault
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/api-keys">
+  API Keys
+</a>
+</li>
+</ul>
+</nav>
+</aside>
+<div class="flex-# min-w-# flex flex-col">
+<header class="flex items-center justify-between gap-# border-b border-line bg-card px-# py-#">
+<nav aria-label="Breadcrumb">
+<ol class="flex items-center gap-# text-sm text-muted">
+<li>
+<a class="hover:text-ink" href="/admin/">
+  Platform Dashboard
+</a>
+</li>
+<li aria-hidden="true">
+  /
+</li>
+<li>
+<a class="hover:text-ink" href="/admin/apps/temperature-marker/fleet">
+  Apex Industrial Temperature & Attendance Marker
+</a>
+</li>
+<li aria-hidden="true">
+  /
+</li>
+<li>
+<span aria-current="page" class="text-ink">
+  Stepper Wizard
+</span>
+</li>
+</ol>
+</nav>
+<div class="flex items-center gap-# text-sm">
+<span class="rounded-md border border-line px-# py-#" title="Workspace">
+  Release# Organization
+</span>
+<span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
+<span aria-hidden="true">
+  ◐
+</span>
+  Preview
+</span>
+<span class="text-muted" title="Signed in as admin">
+  admin · Administrator
+</span>
+<span aria-label="Language" class="flex items-center gap-#">
+<a aria-current="true" class="rounded px-# text-ink font-semibold" href="?lang=en_US" hreflang="en-US">
+  English (US)
+</a>
+</span>
+<a class="rounded-md border border-line px-# py-# hover:bg-line" href="/admin/logout">
+  Sign out
+</a>
+</div>
+</header>
+<div aria-label="Notifications" aria-live="polite" class="px-# pt-# empty:hidden" id="ui-alerts" role="status">
+</div>
+<main class="flex-# p-#" id="main">
+<div style="margin-bottom: #.#rem;">
+<h1 style="font-size: #.#rem; font-weight: #;">
+  Progressive Stepper Check-in Simulator
+</h1>
+<p style="color: var(--text-secondary); margin-top: #.#rem;">
+  Simulate an authentic operator duty check-in and chiller verification across all safety layers.
+</p>
+</div>
+<div class="card">
+<div style="display: flex; justify-content: space-between; margin-bottom: #rem; border-bottom: #px solid var(--border-color); padding-bottom: #rem;">
+<div style="text-align: center; flex: #;">
+<div style="width: #px; height: #px; border-radius: #%; background-color: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; margin: # auto; font-weight: #;">
+  #
+</div>
+<div style="font-size: #.#rem; margin-top: #.#rem; font-weight: #;">
+  Station & Operator
+</div>
+</div>
+<div style="text-align: center; flex: #;">
+<div style="width: #px; height: #px; border-radius: #%; background-color: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; margin: # auto; font-weight: #;">
+  #
+</div>
+<div style="font-size: #.#rem; margin-top: #.#rem; font-weight: #;">
+  Telemetry & Reading
+</div>
+</div>
+<div style="text-align: center; flex: #;">
+<div style="width: #px; height: #px; border-radius: #%; background-color: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; margin: # auto; font-weight: #;">
+  #
+</div>
+<div style="font-size: #.#rem; margin-top: #.#rem; font-weight: #;">
+  Geolocation Check
+</div>
+</div>
+<div style="text-align: center; flex: #;">
+<div style="width: #px; height: #px; border-radius: #%; background-color: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; margin: # auto; font-weight: #;">
+  #
+</div>
+<div style="font-size: #.#rem; margin-top: #.#rem; font-weight: #;">
+  Multi-Layer Safety
+</div>
+</div>
+<div style="text-align: center; flex: #;">
+<div style="width: #px; height: #px; border-radius: #%; background-color: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; margin: # auto; font-weight: #;">
+  #
+</div>
+<div style="font-size: #.#rem; margin-top: #.#rem; font-weight: #;">
+  Audit & Hash
+</div>
+</div>
+</div>
+<form id="wizardForm" onsubmit="runSimulation(event)">
+<div style="display: grid; grid-template-columns: #fr #fr; gap: #.#rem; margin-bottom: #.#rem;">
+<div>
+<label style="display: block; font-size: #.#rem; font-weight: #; margin-bottom: #.#rem;">
+  Target Kiosk
+</label>
+<select id="kiosk_id" name="kiosk_id" onchange="updateKioskCoords()" style="width: #%; padding: #.#rem; border-radius: #px; background-color: var(--bg-main); border: #px solid var(--border-color); color: var(--text-primary);">
+<option data-lat="#.#" data-lon="#.#" selected value="NODE-PUNE-#">
+  Phoenix Marketcity Food Court (NODE-PUNE-#)
+</option>
+<option data-lat="#.#" data-lon="#.#" value="NODE-PUNE-#">
+  Dassault Systemes Sky Tower (NODE-PUNE-#)
+</option>
+<option data-lat="#.#" data-lon="#.#" value="NODE-PUNE-#">
+  Eka Elitas Paud Road Kothrud (NODE-PUNE-#)
+</option>
+<option data-lat="#.#" data-lon="#.#" value="NODE-MUMBAI-#">
+  Seawoods Grand Central Mall (NODE-MUMBAI-#)
+</option>
+<option data-lat="#.#" data-lon="#.#" value="NODE-BLR-#">
+  Indiranagar Metro Station Concourse (NODE-BLR-#)
+</option>
+</select>
+</div>
+<div>
+<label style="display: block; font-size: #.#rem; font-weight: #; margin-bottom: #.#rem;">
+  Operator Phone Number
+</label>
+<input id="phone_number" name="phone_number" required style="width: #%; padding: #.#rem; border-radius: #px; background-color: var(--bg-main); border: #px solid var(--border-color); color: var(--text-primary);" type="text" value="+#">
+</div>
+</div>
+<div style="display: grid; grid-template-columns: #fr #fr; gap: #.#rem; margin-bottom: #.#rem;">
+<div>
+<label style="display: block; font-size: #.#rem; font-weight: #; margin-bottom: #.#rem;">
+  Chiller Temperature (°C)
+</label>
+<input id="temperature" name="temperature" required step="#.#" style="width: #%; padding: #.#rem; border-radius: #px; background-color: var(--bg-main); border: #px solid var(--border-color); color: var(--text-primary);" type="number" value="#.#">
+<span style="font-size: #.#rem; color: var(--text-secondary);">
+  Safe Range: #.#°C – #.#°C | Physical Sanity: -#°C – #°C
+</span>
+</div>
+<div>
+<label style="display: block; font-size: #.#rem; font-weight: #; margin-bottom: #.#rem;">
+  Face Match Confidence (#.# – #.#)
+</label>
+<input id="face_confidence" max="#" min="#" name="face_confidence" required step="#.#" style="width: #%; padding: #.#rem; border-radius: #px; background-color: var(--bg-main); border: #px solid var(--border-color); color: var(--text-primary);" type="number" value="#.#">
+<span style="font-size: #.#rem; color: var(--text-secondary);">
+  Threshold: ≥ #.# for auto-approval. < #.# diverts to human review.
+</span>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: #fr #fr; gap: #.#rem; margin-bottom: #.#rem;">
+<div>
+<label style="display: block; font-size: #.#rem; font-weight: #; margin-bottom: #.#rem;">
+  Latitude
+</label>
+<input id="latitude" name="latitude" required step="#.#" style="width: #%; padding: #.#rem; border-radius: #px; background-color: var(--bg-main); border: #px solid var(--border-color); color: var(--text-primary);" type="number" value="#.#">
+</div>
+<div>
+<label style="display: block; font-size: #.#rem; font-weight: #; margin-bottom: #.#rem;">
+  Longitude
+</label>
+<input id="longitude" name="longitude" required step="#.#" style="width: #%; padding: #.#rem; border-radius: #px; background-color: var(--bg-main); border: #px solid var(--border-color); color: var(--text-primary);" type="number" value="#.#">
+</div>
+</div>
+<div style="display: flex; gap: #rem; align-items: center;">
+<button class="btn btn-primary" id="submitBtn" style="padding: #.#rem #.#rem; font-size: #rem;" type="submit">
+  Run Verification Workflow
+</button>
+<button class="btn" onclick="setPreset('safe')" style="background-color: var(--bg-card-hover); color: var(--text-primary);" type="button">
+  Preset: Safe #.#°C
+</button>
+<button class="btn" onclick="setPreset('elevated')" style="background-color: var(--bg-card-hover); color: var(--text-primary);" type="button">
+  Preset: Elevated #.#°C
+</button>
+<button class="btn" onclick="setPreset('critical')" style="background-color: var(--bg-card-hover); color: var(--text-primary);" type="button">
+  Preset: Critical #.#°C
+</button>
+<button class="btn" onclick="setPreset('low_confidence')" style="background-color: var(--bg-card-hover); color: var(--text-primary);" type="button">
+  Preset: Low Conf (#.#)
+</button>
+</div>
+</form>
+</div>
+<div class="card" id="resultsCard" style="display: none;">
+<h2 style="font-size: #.#rem; font-weight: #; margin-bottom: #rem;">
+  Workflow Execution Results
+</h2>
+<div id="resultsContent">
+</div>
+</div>
+<script>
+  function updateKioskCoords() {
+  const sel = document.getElementById('kiosk_id');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt && opt.dataset.lat) {
+  document.getElementById('latitude').value = opt.dataset.lat;
+  document.getElementById('longitude').value = opt.dataset.lon;
+  }
+  }
+  function setPreset(preset) {
+  if (preset === 'safe') {
+  document.getElementById('temperature').value = '#.#';
+  document.getElementById('face_confidence').value = '#.#';
+  updateKioskCoords();
+  } else if (preset === 'elevated') {
+  document.getElementById('temperature').value = '#.#';
+  document.getElementById('face_confidence').value = '#.#';
+  updateKioskCoords();
+  } else if (preset === 'critical') {
+  document.getElementById('temperature').value = '#.#';
+  document.getElementById('face_confidence').value = '#.#';
+  updateKioskCoords();
+  } else if (preset === 'low_confidence') {
+  document.getElementById('temperature').value = '#.#';
+  document.getElementById('face_confidence').value = '#.#';
+  updateKioskCoords();
+  }
+  }
+  async function runSimulation(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerText = "Evaluating through Safety Gates...";
+  const payload = {
+  kiosk_id: document.getElementById('kiosk_id').value,
+  phone_number: document.getElementById('phone_number').value,
+  temperature: parseFloat(document.getElementById('temperature').value),
+  face_confidence: parseFloat(document.getElementById('face_confidence').value),
+  latitude: parseFloat(document.getElementById('latitude').value),
+  longitude: parseFloat(document.getElementById('longitude').value)
+  };
+  try {
+  const resp = await fetch('/admin/apps/temperature-marker/api/simulate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload)
+  });
+  const data = await resp.json();
+  const resultsCard = document.getElementById('resultsCard');
+  const resultsContent = document.getElementById('resultsContent');
+  resultsCard.style.display = 'block';
+  let badgeClass = 'badge-green';
+  if (data.status === 'ERROR' || data.status === 'REJECTED') badgeClass = 'badge-red';
+  else if (data.status === 'ELEVATED' || data.status === 'NEEDS_REVIEW') badgeClass = 'badge-yellow';
+  resultsContent.innerHTML = `
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: #.#rem; padding-bottom: #rem; border-bottom: #px solid var(--border-color);">
+  <div>
+  <span class="badge ${badgeClass}" style="font-size: #rem; padding: #.#rem #.#rem;">${data.status}</span>
+  <span style="font-weight: #; font-size: #.#rem; margin-left: #rem;">${data.summary_message}</span>
+  </div>
+  <div style="font-family: monospace; font-size: #.#rem; color: var(--text-secondary);">
+  Correlation ID: ${data.correlation_id}
+  </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(#px, #fr)); gap: #rem; margin-bottom: #.#rem;">
+  <div style="background-color: var(--bg-main); padding: #rem; border-radius: #px;">
+  <div style="color: var(--text-secondary); font-size: #.#rem;">Layer # Geofence</div>
+  <div style="font-weight: #; margin-top: #.#rem;">${data.geofence_status || 'VERIFIED'}</div>
+  <div style="font-size: #.#rem; color: var(--text-secondary);">${data.distance_meters ? data.distance_meters + 'm from kiosk' : 'Within perimeter'}</div>
+  </div>
+  <div style="background-color: var(--bg-main); padding: #rem; border-radius: #px;">
+  <div style="color: var(--text-secondary); font-size: #.#rem;">Layer # Face Match</div>
+  <div style="font-weight: #; margin-top: #.#rem;">${(data.face_confidence * #).toFixed(#)}% Confidence</div>
+  <div style="font-size: #.#rem; color: var(--text-secondary);">${data.face_confidence >= #.# ? 'Verified (≥#%)' : 'Sub-Threshold (<#%)'}</div>
+  </div>
+  <div style="background-color: var(--bg-main); padding: #rem; border-radius: #px;">
+  <div style="color: var(--text-secondary); font-size: #.#rem;">HACCP Chiller Status</div>
+  <div style="font-weight: #; margin-top: #.#rem;">${data.temperature}°C (${data.haccp_status || 'COMPLIANT'})</div>
+  <div style="font-size: #.#rem; color: var(--text-secondary);">Safe band: #.#°C - #.#°C</div>
+  </div>
+  <div style="background-color: var(--bg-main); padding: #rem; border-radius: #px;">
+  <div style="color: var(--text-secondary); font-size: #.#rem;">Outbox Sync Queue</div>
+  <div style="font-weight: #; margin-top: #.#rem;">${data.outbox_enqueued ? 'ENQUEUED' : 'SKIPPED'}</div>
+  <div style="font-size: #.#rem; color: var(--text-secondary);">Offline-first resilient storage</div>
+  </div>
+  </div>
+  <div style="background-color: var(--bg-main); padding: #rem; border-radius: #px; font-family: monospace; font-size: #.#rem;">
+  <div style="color: var(--text-secondary); margin-bottom: #.#rem;">Cryptographic SHA-# Audit Hash:</div>
+  <div style="color: var(--accent-yellow); word-break: break-all;">${data.audit_hash || 'SHA#:<HEX>'}</div>
+  </div>
+  `;
+  } catch (err) {
+  alert("Simulation error: " + err);
+  } finally {
+  btn.disabled = false;
+  btn.innerText = "Run Verification Workflow";
+  }
+  }
+  // Set initial coordinates
+  window.onload = updateKioskCoords;
+</script>
+</main>
+</div>
+</div>
+<script id="i#n-bundle" type="application/json">
+  {"errors.binding_already_exists": "This group already has this package at this reach.", "errors.generic": "Something went wrong. Please try again.", "errors.group_not_found": "That group no longer exists.", "errors.high_risk_confirmation_required": "Please tick the box to confirm this high-governance package.", "errors.network": "We could not reach the server. Check your connection and try again.", "errors.scope_not_allowed": "That reach is not allowed for this package.", "errors.scope_unit_required": "Pick a unit for this reach.", "errors.service_group_cannot_hold_high_risk": "Not available to AI assistants.", "errors.unknown_bundle": "That access package is not available."}
+</script>
+<script src="/ui-static/ui.js">
+</script>
+</body>
+</html>

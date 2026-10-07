@@ -18,6 +18,7 @@ Application Plugin Implementation Manifest.
 Adheres strictly to Plan 03 v1.3 and Core Platform Plugin Architecture.
 """
 
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -28,6 +29,7 @@ from apps.temperature_marker.graph.state_graph import TemperatureMarkerWorkflow
 from apps.temperature_marker.knowledge_graph.service import KnowledgeGraphService
 from core_platform.app.plugin_engine.base_plugin import BaseApplication
 from core_platform.app.telemetry.audit_engine import AuditEngine
+from core_platform.app.ui.contracts import NavItem, StatusInfo
 
 
 class TemperatureMarkerConfig(BaseModel):

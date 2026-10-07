@@ -120,7 +120,7 @@ function previewPhoneFormat(val, elementId) {
     } else {
         preview = '+' + cleaned;
     }
-    el.textContent = `${{{ t('apps.temperature_marker.fleet.phone_formatted') | tojson }}}${preview}`;
+    el.textContent = {{ t('apps.temperature_marker.fleet.phone_formatted') | tojson }} + preview;
 }
 
 function calibrateKioskLocation(kioskId, kioskName) {
