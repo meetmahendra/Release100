@@ -1,12 +1,18 @@
-# Mandatory Engineering Excellence Standard (GEES v1.0) Directives for All Agents
+# Mandatory Engineering Excellence Standard (GEES v3.0) Directives for All Agents
 
 > **INVIOLABLE OPERATIONAL DIRECTIVE FOR ALL AGENTS AND DEVELOPERS:**
-> This repository is governed by the **Global Engineering Excellence Standard (GEES v1.0)** defined in [ENGINEERING_EXCELLENCE_STANDARD_v1.0.md](./ENGINEERING_EXCELLENCE_STANDARD_v1.0.md).
+> This repository is governed by the **Global Engineering Excellence Standard (GEES v3.0)** defined in [ENGINEERING_EXCELLENCE_STANDARD_v3.0.md](./ENGINEERING_EXCELLENCE_STANDARD_v3.0.md).
 > All agents, contributors, and subagents MUST automatically and strictly follow these rules on **EVERY** task without requiring explicit user instruction or reminders.
 
 ---
 
-## 1. Multi-Layered Safety Architecture & Fail-Safe Defaults
+## 1. 4-Plane Microkernel Architecture & System Applications
+* **Plane 1 (Ingress/Edge):** Pure host normalization, TLS, and raw context synthesis. Zero DB/auth logic in ingress.
+* **Plane 2 (Slim Microkernel Substrate):** The kernel contains ZERO domain or UI concepts. Provides DI Service Locator (Protocols), Event Bus, and Polyglot DB pool.
+* **Plane 3 (System Applications):** Core functions (`tenancy`, `iam`, `rbac`, `entitlements`, `admin_shell`, `ops_control`) are autonomous, non-configurable System Apps with strict Data Sovereignty.
+* **Plane 4 (Domain Workload Cartridges):** Cartridges in `apps/<app_id>/` consume platform capabilities strictly through the injected `AppContext` SDK.
+
+## 2. Multi-Layered Safety Architecture & Fail-Safe Defaults
 * **Layer 0 (Deterministic Pre-Execution):** Always execute hardcoded Python checks (VIP whitelists, sensor physical sanity boundaries, Haversine GPS geofence checks) BEFORE any model/LLM invocation.
 * **Layer 1 (Stochastic Reasoning Engine):** All AI outputs must be constrained to structured Pydantic schemas. Temperature clamped to 0.0 – 0.2 for deterministic classification/OCR/parsing.
 * **Layer 2 (Deterministic Post-Execution):** Any classification, OCR, or face match with confidence < 85% MUST automatically divert to human review (`Needs Review` / Admin Approval Gate). Zero destructive commands (deletions, truncations) executable by autonomous models. Default mode is Shadow/Dry-Run (`DRY_RUN=True`).

@@ -1,9 +1,9 @@
 # Release100: Master Architecture Design Document (ADD)
 
-> **Document Version:** 2.0.0  
+> **Document Version:** 3.0.0  
 > **Status:** Approved / As-Built  
 > **Copyright:** Copyright 2026 Mahendra GURAV | Licensed under the Apache License, Version 2.0  
-> **Standard:** Mandated and Governed by the Global Engineering Excellence Standard (GEES v1.0)
+> **Standard:** Mandated and Governed by the Global Engineering Excellence Standard (GEES v3.0) [ENGINEERING_EXCELLENCE_STANDARD_v3.0.md](./ENGINEERING_EXCELLENCE_STANDARD_v3.0.md)
 
 ---
 
