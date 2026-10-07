@@ -27,3 +27,6 @@ apps/temperature_marker/ui/templates/_monitoring_messages.html
 apps/temperature_marker/ui/templates/_monitoring_config.html
 apps/temperature_marker/ui/templates/_monitoring_modals.html
 apps/mail_organizer/ui/templates/accounts.html
+apps/mail_organizer/ui/templates/dashboard.html
+apps/mail_organizer/ui/templates/_dashboard_header.html
+apps/mail_organizer/ui/templates/_dashboard_trace_cards.html

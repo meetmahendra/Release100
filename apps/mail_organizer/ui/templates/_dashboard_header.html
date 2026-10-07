@@ -1,0 +1,71 @@
+<div class="trace-header">
+    <div>
+        <h1 style="margin: 0; font-size: 1.5rem; font-weight: 800;">
+            {{ t('apps.mail_organizer.dashboard.header_title_part1') }} <span style="color: #38bdf8;">•</span> {{ t('apps.mail_organizer.dashboard.header_title_part2') }}
+        </h1>
+        <p style="margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 0.85rem;">
+            {{ t('apps.mail_organizer.dashboard.header_subtitle') }}
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <a href="/admin/apps/mail-organizer/triage" class="btn" style="text-decoration: none; font-size: 0.85rem;">{{ t('apps.mail_organizer.dashboard.btn_run_triage') }}</a>
+        <a href="/admin/apps/mail-organizer/pm-queue" class="btn btn-secondary" style="text-decoration: none; font-size: 0.85rem;">{{ t('apps.mail_organizer.dashboard.btn_pm_queue', count=metrics.pending_pm_tasks) }}</a>
+    </div>
+</div>
+
+<!-- KPI Overview Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="card" style="margin-bottom: 0;">
+        <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">{{ t('apps.mail_organizer.dashboard.kpi_total_triaged') }}</div>
+        <div style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin-top: 0.25rem;">{{ metrics.total_processed }}</div>
+        <div style="color: var(--accent-green); font-size: 0.75rem; margin-top: 0.25rem;">{{ t('apps.mail_organizer.dashboard.kpi_total_triaged_sub') }}</div>
+    </div>
+    <div class="card" style="margin-bottom: 0;">
+        <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">{{ t('apps.mail_organizer.dashboard.kpi_pending_pm') }}</div>
+        <div style="font-size: 2rem; font-weight: 800; color: var(--accent-amber); margin-top: 0.25rem;">{{ metrics.pending_pm_tasks }}</div>
+        <div style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.25rem;">{{ t('apps.mail_organizer.dashboard.kpi_pending_pm_sub') }}</div>
+    </div>
+    <div class="card" style="margin-bottom: 0;">
+        <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">{{ t('apps.mail_organizer.dashboard.kpi_needs_review') }}</div>
+        <div style="font-size: 2rem; font-weight: 800; color: #f43f5e; margin-top: 0.25rem;">{{ metrics.needs_review }}</div>
+        <div style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.25rem;">{{ t('apps.mail_organizer.dashboard.kpi_needs_review_sub') }}</div>
+    </div>
+    <div class="card" style="margin-bottom: 0;">
+        <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">{{ t('apps.mail_organizer.dashboard.kpi_staged_drafts') }}</div>
+        <div style="font-size: 2rem; font-weight: 800; color: var(--accent-primary); margin-top: 0.25rem;">{{ metrics.drafts_staged }}</div>
+        <div style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.25rem;">{{ t('apps.mail_organizer.dashboard.kpi_staged_drafts_sub') }}</div>
+    </div>
+</div>
+
+<!-- Category Breakdown Bar -->
+<div class="card" style="padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h3 style="font-size: 0.95rem; font-weight: 700;">{{ t('apps.mail_organizer.dashboard.taxonomy_title') }}</h3>
+        <span class="badge badge-success">{{ t('apps.mail_organizer.dashboard.badge_zero_deletion') }}</span>
+    </div>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        {% for cat, count in metrics.category_breakdown.items() %}
+        <div style="background: var(--bg-card-hover); padding: 0.4rem 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.8rem;">
+            <span style="font-weight: 600; color: var(--text-secondary);">{{ cat }}:</span>
+            <span style="font-weight: 800; color: var(--text-primary); margin-left: 0.35rem;">{{ count }}</span>
+        </div>
+        {% else %}
+        <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ t('apps.mail_organizer.dashboard.taxonomy_empty') }}</span>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Controls Bar -->
+<div class="controls-bar">
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+        <button class="btn-filter active" onclick="filterCategory('all', this)">{{ t('apps.mail_organizer.dashboard.btn_filter_all', count=recent_emails|length) }}</button>
+        <button class="btn-filter" onclick="filterCategory('@Urgent', this)">{{ t('apps.mail_organizer.dashboard.btn_filter_urgent') }}</button>
+        <button class="btn-filter" onclick="filterCategory('@Meeting', this)">{{ t('apps.mail_organizer.dashboard.btn_filter_meeting') }}</button>
+        <button class="btn-filter" onclick="filterCategory('@Action', this)">{{ t('apps.mail_organizer.dashboard.btn_filter_action') }}</button>
+        <button class="btn-filter" onclick="filterCategory('@Promotions', this)">{{ t('apps.mail_organizer.dashboard.btn_filter_promotions') }}</button>
+        <button class="btn-filter" onclick="filterCategory('diverted', this)">{{ t('apps.mail_organizer.dashboard.btn_filter_diverted') }}</button>
+        <button class="btn btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;" onclick="toggleAllDetails(true)">{{ t('apps.mail_organizer.dashboard.btn_expand_all') }}</button>
+        <button class="btn btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;" onclick="toggleAllDetails(false)">{{ t('apps.mail_organizer.dashboard.btn_collapse_all') }}</button>
+    </div>
+    <input type="text" id="traceSearchInput" class="search-box" placeholder="{{ t('apps.mail_organizer.dashboard.search_placeholder') }}" oninput="filterTraceCards()" />
+</div>
