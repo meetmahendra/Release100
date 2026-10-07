@@ -1,71 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live System Logs — Release100</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .log-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; line-height: 1.6; }
-    .log-ERROR { color: #f87171; }
-    .log-WARNING { color: #fbbf24; }
-    .log-INFO { color: #94a3b8; }
-    .log-tag { color: #38bdf8; font-weight: 600; }
-    .log-corr { color: #a78bfa; font-weight: 600; }
-    .log-kiosk { color: #34d399; font-weight: 600; }
-  </style>
-</head>
-<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+{% extends "base_shell.html" %}
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{% block title %}{{ t('core.logs.title_tag') }}{% endblock %}
 
-  <!-- Header / Nav -->
-  <header class="h-16 bg-slate-800/90 border-b border-slate-700/60 px-6 flex items-center justify-between shrink-0">
-    <div class="flex items-center gap-4">
-      <a href="/admin/" class="flex items-center gap-2 text-slate-300 hover:text-white transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-        </svg>
-        <span class="font-bold text-white">Platform Dashboard</span>
-      </a>
-      <span class="text-slate-500">/</span>
-      <h1 class="text-lg font-semibold text-emerald-400 flex items-center gap-2">
-        <span>📑</span> Live System Logs & Observability
-      </h1>
-    </div>
-    <div class="flex items-center gap-3 text-xs">
-      <span class="px-2.5 py-1 rounded bg-slate-700/60 text-slate-300 border border-slate-600/50">
-        Kiosk: <strong class="text-white">{{ kiosk_id }}</strong>
-      </span>
-      <span class="px-2.5 py-1 rounded bg-slate-700/60 text-slate-300 border border-slate-600/50">
-        User: <strong class="text-white">{{ principal }}</strong>
-      </span>
-    </div>
-  </header>
+{% block content %}
+<style>
+  .log-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; line-height: 1.6; }
+  .log-ERROR { color: #f87171; }
+  .log-WARNING { color: #fbbf24; }
+  .log-INFO { color: #94a3b8; }
+  .log-tag { color: #38bdf8; font-weight: 600; }
+  .log-corr { color: #a78bfa; font-weight: 600; }
+  .log-kiosk { color: #34d399; font-weight: 600; }
+</style>
 
+<div class="space-y-4">
   <!-- Controls Bar -->
-  <div class="bg-slate-800/60 border-b border-slate-700/60 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
     <!-- Left: Filters & Search -->
     <div class="flex flex-wrap items-center gap-3">
       <div class="flex items-center gap-1.5 bg-slate-900/80 rounded-lg px-3 py-1.5 border border-slate-700/60 text-sm">
         <span class="text-slate-400">🔍</span>
-        <input id="searchInput" type="text" placeholder="Filter by Phone, Corr ID, Kiosk..."
+        <input id="searchInput" type="text" placeholder="{{ t('core.logs.ph_filter') }}"
                class="bg-transparent border-none outline-none text-slate-200 placeholder-slate-500 text-xs w-64"
                oninput="applyFilter()" />
       </div>
 
       <select id="levelFilter" onchange="applyFilter()"
               class="bg-slate-900/80 border border-slate-700/60 text-slate-300 text-xs rounded-lg px-3 py-1.5 outline-none focus:border-emerald-500">
-        <option value="ALL">All Levels</option>
-        <option value="INFO">INFO & Above</option>
-        <option value="WARNING">WARNING & Above</option>
-        <option value="ERROR">ERROR Only</option>
+        <option value="ALL">{{ t('core.logs.level_all') }}</option>
+        <option value="INFO">{{ t('core.logs.level_info') }}</option>
+        <option value="WARNING">{{ t('core.logs.level_warning') }}</option>
+        <option value="ERROR">{{ t('core.logs.level_error') }}</option>
       </select>
 
       <select id="lineCount" onchange="fetchLogs()"
               class="bg-slate-900/80 border border-slate-700/60 text-slate-300 text-xs rounded-lg px-3 py-1.5 outline-none focus:border-emerald-500">
-        <option value="100">Last 100 lines</option>
-        <option value="250" selected>Last 250 lines</option>
-        <option value="500">Last 500 lines</option>
-        <option value="1000">Last 1000 lines</option>
+        <option value="100">{{ t('core.logs.lines_100') }}</option>
+        <option value="250" selected>{{ t('core.logs.lines_250') }}</option>
+        <option value="500">{{ t('core.logs.lines_500') }}</option>
+        <option value="1000">{{ t('core.logs.lines_1000') }}</option>
       </select>
     </div>
 
@@ -73,112 +46,106 @@
     <div class="flex items-center gap-3">
       <label class="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-300">
         <input id="autoRefreshToggle" type="checkbox" checked class="accent-emerald-500 rounded cursor-pointer" onchange="toggleAutoRefresh()" />
-        <span>Live Stream (2s)</span>
+        <span>{{ t('core.logs.live_stream') }}</span>
       </label>
 
       <button onclick="fetchLogs()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded-lg font-medium transition-colors flex items-center gap-1.5">
-        <span>🔄</span> Refresh
+        <span>🔄</span> {{ t('core.logs.btn_refresh') }}
       </button>
 
       <a href="/admin/api/logs/download?format=log" download
          class="px-3 py-1.5 bg-emerald-600/80 hover:bg-emerald-600 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1.5 shadow-sm">
-        <span>💾</span> Download .log
+        <span>💾</span> {{ t('core.logs.btn_download_log') }}
       </a>
 
       <a href="/admin/api/logs/download?format=jsonl" download
          class="px-3 py-1.5 bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1.5 shadow-sm">
-        <span>📊</span> Download .jsonl
+        <span>📊</span> {{ t('core.logs.btn_download_jsonl') }}
       </a>
 
       <button onclick="clearDisplay()" class="px-3 py-1.5 bg-red-900/40 hover:bg-red-800/60 text-red-300 border border-red-700/50 text-xs rounded-lg font-medium transition-colors">
-        Clear View
+        {{ t('core.logs.btn_clear') }}
       </button>
     </div>
   </div>
 
   <!-- Terminal Window -->
-  <main class="flex-1 p-6 flex flex-col min-h-0">
-    <div class="flex-1 bg-black/90 rounded-xl border border-slate-700/80 p-4 overflow-y-auto font-mono text-xs flex flex-col" id="terminalContainer">
-      <div id="logOutput" class="space-y-0.5">
-        <div class="text-slate-500 italic">Connecting to live log stream...</div>
-      </div>
+  <div class="bg-black/90 rounded-xl border border-slate-700/80 p-4 h-[600px] overflow-y-auto font-mono text-xs flex flex-col" id="terminalContainer">
+    <div id="logOutput" class="space-y-0.5">
+      <div class="text-slate-500 italic">{{ t('core.logs.connecting') }}</div>
     </div>
-  </main>
+  </div>
+</div>
 
-  <script>
-    let rawLines = [];
-    let autoRefreshInterval = null;
+<script>
+  let rawLines = [];
+  let autoRefreshInterval = null;
 
-    async function fetchLogs() {
-      const lineCount = document.getElementById("lineCount").value;
-      try {
-        const resp = await fetch(`/admin/api/logs/tail?lines=${lineCount}`);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = await resp.json();
-        rawLines = data.lines || [];
-        applyFilter();
-      } catch (err) {
-        console.error("Failed to fetch logs:", err);
-      }
+  async function fetchLogs() {
+    const lineCount = document.getElementById("lineCount").value;
+    try {
+      const resp = await fetch(`/admin/api/logs/tail?lines=${lineCount}`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      rawLines = data.lines || [];
+      applyFilter();
+    } catch (err) {
+      console.error("Failed to fetch logs:", err);
+    }
+  }
+
+  function formatLine(line) {
+    let escaped = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
+    let levelClass = "log-INFO";
+    if (line.includes("[ERROR]")) levelClass = "log-ERROR";
+    else if (line.includes("[WARNING]")) levelClass = "log-WARNING";
+
+    escaped = escaped.replace(/\[corr:([^\]]+)\]/g, '<span class="log-corr">[corr:$1]</span>');
+    escaped = escaped.replace(/\[kiosk:([^\]]+)\]/g, '<span class="log-kiosk">[kiosk:$1]</span>');
+
+    return `<div class="log-line ${levelClass}">${escaped}</div>`;
+  }
+
+  function applyFilter() {
+    const search = document.getElementById("searchInput").value.toLowerCase();
+    const level = document.getElementById("levelFilter").value;
+
+    const container = document.getElementById("logOutput");
+    const filtered = rawLines.filter(line => {
+      if (level === "ERROR" && !line.includes("[ERROR]")) return false;
+      if (level === "WARNING" && !line.includes("[ERROR]") && !line.includes("[WARNING]")) return false;
+      if (level === "INFO" && !line.includes("[ERROR]") && !line.includes("[WARNING]") && !line.includes("[INFO]")) return false;
+
+      if (search && !line.toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="text-slate-500 italic">{{ t("core.logs.no_matching") }}</div>';
+    } else {
+      container.innerHTML = filtered.map(formatLine).join("");
     }
 
-    function formatLine(line) {
-      // Escape HTML
-      let escaped = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      
-      let levelClass = "log-INFO";
-      if (line.includes("[ERROR]")) levelClass = "log-ERROR";
-      else if (line.includes("[WARNING]")) levelClass = "log-WARNING";
+    const terminal = document.getElementById("terminalContainer");
+    terminal.scrollTop = terminal.scrollHeight;
+  }
 
-      // Color tags
-      escaped = escaped.replace(/\[corr:([^\]]+)\]/g, '<span class="log-corr">[corr:$1]</span>');
-      escaped = escaped.replace(/\[kiosk:([^\]]+)\]/g, '<span class="log-kiosk">[kiosk:$1]</span>');
-
-      return `<div class="log-line ${levelClass}">${escaped}</div>`;
+  function toggleAutoRefresh() {
+    const isChecked = document.getElementById("autoRefreshToggle").checked;
+    if (isChecked) {
+      if (!autoRefreshInterval) autoRefreshInterval = setInterval(fetchLogs, 2000);
+    } else {
+      if (autoRefreshInterval) { clearInterval(autoRefreshInterval); autoRefreshInterval = null; }
     }
+  }
 
-    function applyFilter() {
-      const search = document.getElementById("searchInput").value.toLowerCase();
-      const level = document.getElementById("levelFilter").value;
+  function clearDisplay() {
+    rawLines = [];
+    document.getElementById("logOutput").innerHTML = '<div class="text-slate-500 italic">{{ t("core.logs.display_cleared") }}</div>';
+  }
 
-      const container = document.getElementById("logOutput");
-      const filtered = rawLines.filter(line => {
-        if (level === "ERROR" && !line.includes("[ERROR]")) return false;
-        if (level === "WARNING" && !line.includes("[ERROR]") && !line.includes("[WARNING]")) return false;
-        if (level === "INFO" && !line.includes("[ERROR]") && !line.includes("[WARNING]") && !line.includes("[INFO]")) return false;
-
-        if (search && !line.toLowerCase().includes(search)) return false;
-        return true;
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = '<div class="text-slate-500 italic">No matching logs found.</div>';
-      } else {
-        container.innerHTML = filtered.map(formatLine).join("");
-      }
-
-      // Auto-scroll to bottom
-      const terminal = document.getElementById("terminalContainer");
-      terminal.scrollTop = terminal.scrollHeight;
-    }
-
-    function toggleAutoRefresh() {
-      const isChecked = document.getElementById("autoRefreshToggle").checked;
-      if (isChecked) {
-        if (!autoRefreshInterval) autoRefreshInterval = setInterval(fetchLogs, 2000);
-      } else {
-        if (autoRefreshInterval) { clearInterval(autoRefreshInterval); autoRefreshInterval = null; }
-      }
-    }
-
-    function clearDisplay() {
-      rawLines = [];
-      document.getElementById("logOutput").innerHTML = '<div class="text-slate-500 italic">Display cleared. New logs will appear on next interval.</div>';
-    }
-
-    // Initial load
-    fetchLogs();
-    autoRefreshInterval = setInterval(fetchLogs, 2000);
-  </script>
-</body>
-</html>
+  fetchLogs();
+  autoRefreshInterval = setInterval(fetchLogs, 2000);
+</script>
+{% endblock %}

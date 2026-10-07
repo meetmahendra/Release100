@@ -351,6 +351,27 @@
       "quick_users_desc": "Manage employee accounts, assign application roles, and issue magic links.",
       "quick_mail_title": "Mail Organizer App Settings",
       "quick_mail_desc": "Configure email triage rules, monitored mailboxes, and VIP sender lists."
+    },
+    "logs": {
+      "title_tag": "Live System Logs \u2014 Release100",
+      "heading": "Live System Logs & Observability",
+      "ph_filter": "Filter by Phone, Corr ID, Kiosk...",
+      "level_all": "All Levels",
+      "level_info": "INFO & Above",
+      "level_warning": "WARNING & Above",
+      "level_error": "ERROR Only",
+      "lines_100": "Last 100 lines",
+      "lines_250": "Last 250 lines",
+      "lines_500": "Last 500 lines",
+      "lines_1000": "Last 1000 lines",
+      "live_stream": "Live Stream (2s)",
+      "btn_refresh": "Refresh",
+      "btn_download_log": "Download .log",
+      "btn_download_jsonl": "Download .jsonl",
+      "btn_clear": "Clear View",
+      "connecting": "Connecting to live log stream...",
+      "no_matching": "No matching logs found.",
+      "display_cleared": "Display cleared. New logs will appear on next interval."
     }
   },
   "errors": {

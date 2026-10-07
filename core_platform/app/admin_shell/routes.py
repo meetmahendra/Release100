@@ -933,6 +933,16 @@ async def view_logs(
 ) -> HTMLResponse:
     """Render the live log observability console."""
     nav_apps = _build_nav_apps(ctx)
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=[a["id"] for a in nav_apps],
+        tenant_name=settings.ORGANIZATION_NAME or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
+            Breadcrumb(label_key="core.nav.logs"),
+        ],
+    )
     return templates.TemplateResponse(
         request=request,
         name="logs.html",
@@ -944,6 +954,7 @@ async def view_logs(
             "organization": settings.ORGANIZATION_NAME,
             "kiosk_id": settings.KIOSK_ID,
             "section": "logs",
+            "ui": ui_ctx,
         },
     )
 

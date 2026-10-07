@@ -1,13 +1,126 @@
 STATUS 200
-<html lang="en">
+<html lang="en-US">
 <head>
 <meta charset="UTF-#">
-<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<meta content="width=device-width, initial-scale=#" name="viewport">
 <title>
   Live System Logs — Release#
 </title>
-<script src="https://cdn.tailwindcss.com">
+<link href="/ui-static/tokens.css" rel="stylesheet">
+<script src="/ui-static/tailwind.standalone.js">
 </script>
+<style type="text/tailwindcss">
+  @theme {
+  --color-page: ##;
+  --color-card: ##f#a;
+  --color-line: ##e#b;
+  --color-ink: #e#e#f#;
+  --color-muted: ##a#b#;
+  --color-primary: ##b#;
+  --color-devops: ##f#;
+  --color-preview: #f#e#b;
+  --color-danger: #f#f#e;
+  --color-info: ##bdf#;
+  }
+</style>
+</head>
+<body class="ui-shell bg-page text-ink min-h-screen">
+<a class="ui-sr-only focus:not-sr-only" href="#main">
+  Skip to main content
+</a>
+<div class="flex min-h-screen">
+<aside aria-label="Main navigation" class="w-# shrink-# border-r border-line bg-card">
+<div class="p-# border-b border-line">
+<a class="font-semibold text-ink" href="/admin/">
+  Home
+</a>
+</div>
+<nav class="p-#">
+<ul class="space-y-#">
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/">
+  Overview Dashboard
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Applications
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/dashboard">
+  AI Email & Calendar Organizer
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/fleet">
+  Apex Industrial Temperature & Attendance Marker
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Workspace & Access
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/users">
+  Users & Team
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/tenants">
+  Company Profile & Vault
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/api-keys">
+  API Keys
+</a>
+</li>
+</ul>
+</nav>
+</aside>
+<div class="flex-# min-w-# flex flex-col">
+<header class="flex items-center justify-between gap-# border-b border-line bg-card px-# py-#">
+<nav aria-label="Breadcrumb">
+<ol class="flex items-center gap-# text-sm text-muted">
+<li>
+<a class="hover:text-ink" href="/admin/">
+  Platform Dashboard
+</a>
+</li>
+<li aria-hidden="true">
+  /
+</li>
+<li>
+<span aria-current="page" class="text-ink">
+  Live System Logs
+</span>
+</li>
+</ol>
+</nav>
+<div class="flex items-center gap-# text-sm">
+<span class="rounded-md border border-line px-# py-#" title="Workspace">
+  Release# Organization
+</span>
+<span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
+<span aria-hidden="true">
+  ◐
+</span>
+  Preview
+</span>
+<span class="text-muted" title="Signed in as admin">
+  admin · Administrator
+</span>
+<span aria-label="Language" class="flex items-center gap-#">
+<a aria-current="true" class="rounded px-# text-ink font-semibold" href="?lang=en_US" hreflang="en-US">
+  English (US)
+</a>
+</span>
+<a class="rounded-md border border-line px-# py-# hover:bg-line" href="/admin/logout">
+  Sign out
+</a>
+</div>
+</header>
+<div aria-label="Notifications" aria-live="polite" class="px-# pt-# empty:hidden" id="ui-alerts" role="status">
+</div>
+<main class="flex-# p-#" id="main">
 <style>
   .log-line { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: #px; line-height: #.#; }
   .log-ERROR { color: #f#; }
@@ -17,44 +130,8 @@ STATUS 200
   .log-corr { color: #a#bfa; font-weight: #; }
   .log-kiosk { color: ##d#; font-weight: #; }
 </style>
-</head>
-<body class="min-h-screen bg-slate-# text-slate-# flex flex-col">
-<header class="h-# bg-slate-#/# border-b border-slate-#/# px-# flex items-center justify-between shrink-#">
-<div class="flex items-center gap-#">
-<a class="flex items-center gap-# text-slate-# hover:text-white transition-colors" href="/admin/">
-<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
-<path d="M# #l-#-#m# #l#-#m-# #h#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
-</svg>
-<span class="font-bold text-white">
-  Platform Dashboard
-</span>
-</a>
-<span class="text-slate-#">
-  /
-</span>
-<h1 class="text-lg font-semibold text-emerald-# flex items-center gap-#">
-<span>
-  📑
-</span>
-  Live System Logs & Observability
-</h1>
-</div>
-<div class="flex items-center gap-# text-xs">
-<span class="px-#.# py-# rounded bg-slate-#/# text-slate-# border border-slate-#/#">
-  Kiosk:
-<strong class="text-white">
-  NODE-#
-</strong>
-</span>
-<span class="px-#.# py-# rounded bg-slate-#/# text-slate-# border border-slate-#/#">
-  User:
-<strong class="text-white">
-  admin
-</strong>
-</span>
-</div>
-</header>
-<div class="bg-slate-#/# border-b border-slate-#/# px-# py-# flex flex-wrap items-center justify-between gap-#">
+<div class="space-y-#">
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# flex flex-wrap items-center justify-between gap-#">
 <div class="flex flex-wrap items-center gap-#">
 <div class="flex items-center gap-#.# bg-slate-#/# rounded-lg px-# py-#.# border border-slate-#/# text-sm">
 <span class="text-slate-#">
@@ -121,15 +198,14 @@ STATUS 200
 </button>
 </div>
 </div>
-<main class="flex-# p-# flex flex-col min-h-#">
-<div class="flex-# bg-black/# rounded-xl border border-slate-#/# p-# overflow-y-auto font-mono text-xs flex flex-col" id="terminalContainer">
+<div class="bg-black/# rounded-xl border border-slate-#/# p-# h-[#px] overflow-y-auto font-mono text-xs flex flex-col" id="terminalContainer">
 <div class="space-y-#.#" id="logOutput">
 <div class="text-slate-# italic">
   Connecting to live log stream...
 </div>
 </div>
 </div>
-</main>
+</div>
 <script>
   let rawLines = [];
   let autoRefreshInterval = null;
@@ -146,12 +222,10 @@ STATUS 200
   }
   }
   function formatLine(line) {
-  // Escape HTML
   let escaped = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   let levelClass = "log-INFO";
   if (line.includes("[ERROR]")) levelClass = "log-ERROR";
   else if (line.includes("[WARNING]")) levelClass = "log-WARNING";
-  // Color tags
   escaped = escaped.replace(/\[corr:([^\]]+)\]/g, '<span class="log-corr">[corr:$#]</span>');
   escaped = escaped.replace(/\[kiosk:([^\]]+)\]/g, '<span class="log-kiosk">[kiosk:$#]</span>');
   return `<div class="log-line ${levelClass}">${escaped}</div>`;
@@ -172,7 +246,6 @@ STATUS 200
   } else {
   container.innerHTML = filtered.map(formatLine).join("");
   }
-  // Auto-scroll to bottom
   const terminal = document.getElementById("terminalContainer");
   terminal.scrollTop = terminal.scrollHeight;
   }
@@ -188,9 +261,16 @@ STATUS 200
   rawLines = [];
   document.getElementById("logOutput").innerHTML = '<div class="text-slate-# italic">Display cleared. New logs will appear on next interval.</div>';
   }
-  // Initial load
   fetchLogs();
   autoRefreshInterval = setInterval(fetchLogs, #);
+</script>
+</main>
+</div>
+</div>
+<script id="i#n-bundle" type="application/json">
+  {"errors.binding_already_exists": "This group already has this package at this reach.", "errors.generic": "Something went wrong. Please try again.", "errors.group_not_found": "That group no longer exists.", "errors.high_risk_confirmation_required": "Please tick the box to confirm this high-governance package.", "errors.network": "We could not reach the server. Check your connection and try again.", "errors.scope_not_allowed": "That reach is not allowed for this package.", "errors.scope_unit_required": "Pick a unit for this reach.", "errors.service_group_cannot_hold_high_risk": "Not available to AI assistants.", "errors.unknown_bundle": "That access package is not available."}
+</script>
+<script src="/ui-static/ui.js">
 </script>
 </body>
 </html>
