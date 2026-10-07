@@ -29,6 +29,29 @@
       "shadow": "Shadow",
       "enforce": "Enforce",
       "unknown": "Unknown"
+    },
+    "shell": {
+      "skip_to_content": "Skip to main content",
+      "main_nav": "Main navigation",
+      "breadcrumb": "Breadcrumb",
+      "home": "Home",
+      "workspace": "Workspace",
+      "platform_scope": "All workspaces",
+      "mode_label": "Protection mode",
+      "mode_live": "Live",
+      "mode_preview": "Preview",
+      "mode_off": "Off",
+      "mode_live_help": "Access rules are enforced.",
+      "mode_preview_help": "Access rules are checked and logged but not enforced.",
+      "mode_off_help": "Access rules are not checked.",
+      "language": "Language",
+      "sign_out": "Sign out",
+      "alerts": "Notifications",
+      "signed_in_as": "Signed in as {name}",
+      "dismiss": "Dismiss"
+    },
+    "locale": {
+      "en_us": "English (US)"
     }
   }
 }

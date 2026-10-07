@@ -29,12 +29,13 @@ never marked safe.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any, Callable, List, Mapping, Optional, Sequence
 
 import jinja2
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
 
+from core_platform.app.config import settings
 from core_platform.app.i18n.catalog import get_catalog
 from core_platform.app.ui.contracts import StatusInfo
 from core_platform.app.ui.status_registry import get_status_registry
@@ -74,6 +75,11 @@ def status_badge(context: jinja2.runtime.Context, code: str, app_id: Optional[st
     ).format(tone=escape(info.tone), code=escape(info.code), icon=escape(info.icon), label=escape(label))
 
 
+def ui_locales() -> List[str]:
+    """Jinja global returning the supported UI locale codes (from settings)."""
+    return list(settings.UI_SUPPORTED_LOCALES)
+
+
 def build_templates(
     own_dirs: Sequence[Path],
     extra_filters: Optional[Mapping[str, Callable[..., Any]]] = None,
@@ -97,6 +103,7 @@ def build_templates(
     env.globals["t"] = translate
     env.globals["status_info"] = status_info
     env.globals["status_badge"] = status_badge
+    env.globals["ui_locales"] = ui_locales
     for name, func in (extra_filters or {}).items():
         env.filters[name] = func
     for name, value in (extra_globals or {}).items():

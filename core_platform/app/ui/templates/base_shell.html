@@ -1,0 +1,76 @@
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{#- Unified shell (Plan 11, T12). Pages extend this and fill: title, extra_head, content, scripts. -#}
+{%- set _ui = ui if ui is defined else none -%}
+{%- set _bare = (_ui is none) or (_ui.shell_mode == "bare") -%}
+{%- set _locale = request.state.locale if (request is defined and request.state.locale is defined) else "en_US" -%}
+<!DOCTYPE html>
+<html lang="{{ _locale | replace('_', '-') }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %}</title>
+  <link rel="stylesheet" href="/ui-static/tokens.css">
+  <script src="/ui-static/tailwind.standalone.js"></script>
+  {% include "components/_tokens.html" %}
+  {% block head %}{% endblock %}
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="ui-shell bg-page text-ink min-h-screen">
+{% if not _bare %}
+  <a href="#main" class="ui-sr-only focus:not-sr-only">{{ t('core.shell.skip_to_content') }}</a>
+  <div class="flex min-h-screen">
+    <aside class="w-60 shrink-0 border-r border-line bg-card" aria-label="{{ t('core.shell.main_nav') }}">
+      <div class="p-4 border-b border-line">
+        <a href="/admin/" class="font-semibold text-ink">{{ t('core.shell.home') }}</a>
+      </div>
+      <nav class="p-2">
+        <ul class="space-y-1">
+          {% for item in _ui.nav %}
+          <li><a class="block rounded-md px-3 py-2 text-sm text-muted hover:text-ink hover:bg-line" href="{{ item.path }}">{{ t(item.label_key) }}</a></li>
+          {% endfor %}
+        </ul>
+      </nav>
+    </aside>
+    <div class="flex-1 min-w-0 flex flex-col">
+      <header class="flex items-center justify-between gap-4 border-b border-line bg-card px-6 py-3">
+        <nav aria-label="{{ t('core.shell.breadcrumb') }}">
+          <ol class="flex items-center gap-2 text-sm text-muted">
+            {% for crumb in _ui.breadcrumbs %}
+            <li>{% if crumb.path and not loop.last %}<a class="hover:text-ink" href="{{ crumb.path }}">{{ t(crumb.label_key) }}</a>{% else %}<span {% if loop.last %}aria-current="page" class="text-ink"{% endif %}>{{ t(crumb.label_key) }}</span>{% endif %}</li>
+            {% if not loop.last %}<li aria-hidden="true">/</li>{% endif %}
+            {% endfor %}
+          </ol>
+        </nav>
+        <div class="flex items-center gap-3 text-sm">
+          <span class="rounded-md border border-line px-2 py-1" title="{{ t('core.shell.workspace') }}">
+            {{ _ui.tenant_name if _ui.tenant_name else t('core.shell.platform_scope') }}
+          </span>
+          <span class="rounded-md border px-2 py-1 {% if _ui.runtime_mode == 'live' %}border-primary text-primary{% elif _ui.runtime_mode == 'preview' %}border-preview text-preview{% else %}border-line text-muted{% endif %}"
+                title="{{ t('core.shell.mode_label') }}: {{ t('core.shell.mode_' ~ _ui.runtime_mode ~ '_help') }}"
+                data-runtime-mode="{{ _ui.runtime_mode }}">
+            <span aria-hidden="true">{% if _ui.runtime_mode == 'live' %}&#9679;{% elif _ui.runtime_mode == 'preview' %}&#9680;{% else %}&#9675;{% endif %}</span>
+            {{ t('core.shell.mode_' ~ _ui.runtime_mode) }}
+          </span>
+          {% if _ui.principal_label %}
+          <span class="text-muted" title="{{ t('core.shell.signed_in_as', name=_ui.principal_label) }}">{{ _ui.principal_label }} &middot; {{ t(_ui.role_label_key) }}</span>
+          {% endif %}
+          <span class="flex items-center gap-1" aria-label="{{ t('core.shell.language') }}">
+            {% for code in ui_locales() %}
+            <a class="rounded px-1 {% if code == _locale %}text-ink font-semibold{% else %}text-muted hover:text-ink{% endif %}" href="?lang={{ code }}" hreflang="{{ code | replace('_', '-') }}" {% if code == _locale %}aria-current="true"{% endif %}>{{ t('core.locale.' ~ (code | lower)) }}</a>
+            {% endfor %}
+          </span>
+          <a class="rounded-md border border-line px-3 py-1 hover:bg-line" href="/admin/logout">{{ t('core.shell.sign_out') }}</a>
+        </div>
+      </header>
+      <div id="ui-alerts" role="status" aria-live="polite" aria-label="{{ t('core.shell.alerts') }}" class="px-6 pt-4 empty:hidden">{% block alerts %}{% endblock %}</div>
+{% endif %}
+      <main id="main" class="{% if _bare %}min-h-screen flex items-center justify-center p-6{% else %}flex-1 p-6{% endif %}">
+        {% block content %}{% endblock %}
+      </main>
+{% if not _bare %}
+    </div>
+  </div>
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

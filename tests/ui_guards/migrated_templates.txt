@@ -1,2 +1,3 @@
 # Templates that are fully migrated to catalog text, one repo-relative path per line.
 # Each migration task appends its file here; the hardcoded-text guard then enforces it.
+core_platform/app/ui/templates/base_shell.html
