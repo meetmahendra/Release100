@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}Multi-Kiosk Fleet Roster & Operator Assignments{% endblock %}
+{% block title %}{{ t('apps.temperature_marker.fleet.title_tag') }}{% endblock %}
 
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
     <div>
-        <h1 style="font-size: 1.75rem; font-weight: 700;">Multi-Kiosk Fleet Overview & Team Management</h1>
+        <h1 style="font-size: 1.75rem; font-weight: 700;">{{ t('apps.temperature_marker.fleet.header_title') }}</h1>
         <p style="color: var(--text-secondary); margin-top: 0.25rem;">
-            Register dispensing stations, configure GPS geofence boundaries, and assign operators across retail locations.
+            {{ t('apps.temperature_marker.fleet.header_subtitle') }}
         </p>
     </div>
     <div style="display: flex; gap: 0.75rem;">
         <button onclick="openModal('kioskModal')" class="btn btn-primary" style="background-color: #10b981; border-color: #10b981;">
-            + Add New Kiosk
+            {{ t('apps.temperature_marker.fleet.btn_add_kiosk') }}
         </button>
         <button onclick="openModal('operatorModal')" class="btn btn-secondary">
-            + Enroll Operator
+            {{ t('apps.temperature_marker.fleet.btn_enroll_operator') }}
         </button>
         <a href="/admin/apps/temperature-marker/wizard" class="btn btn-primary">
-            + Run Simulation
+            {{ t('apps.temperature_marker.fleet.btn_run_simulation') }}
         </a>
     </div>
 </div>
@@ -26,24 +26,24 @@
 <!-- Metrics Cards -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
     <div class="card" style="margin-bottom: 0;">
-        <div style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Total Kiosks Active</div>
+        <div style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">{{ t('apps.temperature_marker.fleet.metric_kiosks_active') }}</div>
         <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue); margin-top: 0.5rem;">{{ kiosks|length }}</div>
-        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">Multi-region retail fleet</div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">{{ t('apps.temperature_marker.fleet.metric_kiosks_sub') }}</div>
     </div>
     <div class="card" style="margin-bottom: 0;">
-        <div style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Registered Operators</div>
+        <div style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">{{ t('apps.temperature_marker.fleet.metric_operators_registered') }}</div>
         <div style="font-size: 2rem; font-weight: 700; color: #10b981; margin-top: 0.5rem;">{{ employees|length }}</div>
-        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">Active field staff</div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">{{ t('apps.temperature_marker.fleet.metric_operators_sub') }}</div>
     </div>
     <div class="card" style="margin-bottom: 0;">
-        <div style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">HACCP Safe Window</div>
-        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green); margin-top: 0.5rem;">2.0°C – 4.0°C</div>
-        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">Cold-chain preservation & HACCP compliance</div>
+        <div style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">{{ t('apps.temperature_marker.fleet.metric_haccp_window') }}</div>
+        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green); margin-top: 0.5rem;">{{ t('apps.temperature_marker.fleet.metric_haccp_val') }}</div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">{{ t('apps.temperature_marker.fleet.metric_haccp_sub') }}</div>
     </div>
     <div class="card" style="margin-bottom: 0;">
-        <div style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Audit Hash Chaining</div>
-        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-yellow); margin-top: 0.5rem;">SHA-256</div>
-        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">21 CFR Part 11 compliant</div>
+        <div style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">{{ t('apps.temperature_marker.fleet.metric_audit_chaining') }}</div>
+        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-yellow); margin-top: 0.5rem;">{{ t('apps.temperature_marker.fleet.metric_audit_val') }}</div>
+        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem;">{{ t('apps.temperature_marker.fleet.metric_audit_sub') }}</div>
     </div>
 </div>
 
@@ -61,7 +61,7 @@ function closeModal(id) {
 
 function detectBrowserLocation() {
     if (!navigator.geolocation) {
-        alert("Geolocation is not supported by your browser.");
+        alert({{ t('apps.temperature_marker.fleet.err_geo_not_supported') | tojson }});
         return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -69,7 +69,7 @@ function detectBrowserLocation() {
             document.getElementById('newLat').value = pos.coords.latitude.toFixed(6);
             document.getElementById('newLon').value = pos.coords.longitude.toFixed(6);
         },
-        err => alert("Could not fetch location: " + err.message),
+        err => alert({{ t('apps.temperature_marker.fleet.err_fetch_location') | tojson }} + err.message),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
 }
@@ -96,10 +96,10 @@ async function submitNewKiosk(e) {
             window.location.reload();
         } else {
             const err = await resp.json();
-            alert("Error registering kiosk: " + (err.detail || JSON.stringify(err)));
+            alert({{ t('apps.temperature_marker.fleet.err_register_kiosk') | tojson }} + (err.detail || JSON.stringify(err)));
         }
     } catch (err) {
-        alert("Network error: " + err.message);
+        alert({{ t('apps.temperature_marker.fleet.err_network') | tojson }} + err.message);
     }
 }
 
@@ -120,12 +120,12 @@ function previewPhoneFormat(val, elementId) {
     } else {
         preview = '+' + cleaned;
     }
-    el.textContent = `Formatted E.164: ${preview}`;
+    el.textContent = `${{{ t('apps.temperature_marker.fleet.phone_formatted') | tojson }}}${preview}`;
 }
 
 function calibrateKioskLocation(kioskId, kioskName) {
     if (!navigator.geolocation) {
-        alert("Geolocation is not supported by your browser.");
+        alert({{ t('apps.temperature_marker.fleet.err_geo_not_supported') | tojson }});
         return;
     }
     if (!confirm(`Calibrate physical location for ${kioskName} (${kioskId}) using your current device GPS coordinates?`)) return;
@@ -144,13 +144,13 @@ function calibrateKioskLocation(kioskId, kioskName) {
                     alert(`✅ Location Calibrated!\n${kioskId} updated to (${lat.toFixed(6)}, ${lon.toFixed(6)})`);
                     window.location.reload();
                 } else {
-                    alert("Error calibrating location: " + (res.detail || JSON.stringify(res)));
+                    alert({{ t('apps.temperature_marker.fleet.err_calibrate') | tojson }} + (res.detail || JSON.stringify(res)));
                 }
             } catch (err) {
-                alert("Network error: " + err.message);
+                alert({{ t('apps.temperature_marker.fleet.err_network') | tojson }} + err.message);
             }
         },
-        err => alert("Could not fetch device GPS: " + err.message),
+        err => alert({{ t('apps.temperature_marker.fleet.err_fetch_gps') | tojson }} + err.message),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
 }
@@ -171,7 +171,7 @@ async function submitEditMember(e) {
     e.preventDefault();
     const btn = document.getElementById('editSubmitBtn');
     btn.disabled = true;
-    btn.textContent = 'Saving...';
+    btn.textContent = {{ t('apps.temperature_marker.fleet.btn_saving') | tojson }};
     const empCode = document.getElementById('editEmpCode').value;
     const payload = {
         full_name: document.getElementById('editFullName').value.trim(),
@@ -191,14 +191,14 @@ async function submitEditMember(e) {
             window.location.reload();
         } else {
             const err = await resp.json();
-            alert("Error updating operator: " + (err.detail || JSON.stringify(err)));
+            alert({{ t('apps.temperature_marker.fleet.err_update_operator') | tojson }} + (err.detail || JSON.stringify(err)));
             btn.disabled = false;
-            btn.textContent = 'Save Changes';
+            btn.textContent = {{ t('apps.temperature_marker.fleet.btn_save_changes') | tojson }};
         }
     } catch (err) {
-        alert("Network error: " + err.message);
+        alert({{ t('apps.temperature_marker.fleet.err_network') | tojson }} + err.message);
         btn.disabled = false;
-        btn.textContent = 'Save Changes';
+        btn.textContent = {{ t('apps.temperature_marker.fleet.btn_save_changes') | tojson }};
     }
 }
 
@@ -206,7 +206,7 @@ async function submitNewOperator(e) {
     e.preventDefault();
     const submitBtn = document.getElementById('enrollSubmitBtn');
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Enrolling...';
+    submitBtn.textContent = {{ t('apps.temperature_marker.fleet.btn_enrolling') | tojson }};
 
     const empCodeVal = document.getElementById('newEmpCode').value.trim();
     const mgrVal = document.getElementById('newReportingManager').value.trim();
@@ -231,14 +231,14 @@ async function submitNewOperator(e) {
                 window.location.reload();
             } else {
                 const err = await resp.json();
-                alert("Error enrolling operator: " + (err.detail || JSON.stringify(err)));
+                alert({{ t('apps.temperature_marker.fleet.err_enroll_operator') | tojson }} + (err.detail || JSON.stringify(err)));
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Enroll Operator';
+                submitBtn.textContent = {{ t('apps.temperature_marker.fleet.btn_enroll_submit') | tojson }};
             }
         } catch (err) {
-            alert("Network error: " + err.message);
+            alert({{ t('apps.temperature_marker.fleet.err_network') | tojson }} + err.message);
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Enroll Operator';
+            submitBtn.textContent = {{ t('apps.temperature_marker.fleet.btn_enroll_submit') | tojson }};
         }
     };
 
@@ -251,9 +251,9 @@ async function submitNewOperator(e) {
             finishSubmit();
         };
         reader.onerror = function() {
-            alert("Failed to read image file.");
+            alert({{ t('apps.temperature_marker.fleet.err_read_image') | tojson }});
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Enroll Operator';
+            submitBtn.textContent = {{ t('apps.temperature_marker.fleet.btn_enroll_submit') | tojson }};
         };
         reader.readAsDataURL(fileInput.files[0]);
     } else {
@@ -278,7 +278,7 @@ async function reassignOperator(empCode, newKioskId) {
             setTimeout(() => { statusEl.textContent = ''; }, 3500);
         } else {
             statusEl.style.color = '#f87171';
-            statusEl.textContent = `❌ Reassignment failed.`;
+            statusEl.textContent = {{ t('apps.temperature_marker.fleet.err_reassign_failed') | tojson }};
         }
     } catch (err) {
         statusEl.style.color = '#f87171';
@@ -301,7 +301,7 @@ async function forgetOperatorPhoto(empCode, name) {
             alert("Error: " + (data.detail || JSON.stringify(data)));
         }
     } catch (err) {
-        alert("Failed to reset photo: " + err.message);
+        alert({{ t('apps.temperature_marker.fleet.err_reset_photo') | tojson }} + err.message);
     }
 }
 </script>

@@ -16,3 +16,7 @@ ops_control_plane/super_admin/templates/_tenant_modals.html
 apps/temperature_marker/ui/templates/approvals.html
 apps/temperature_marker/ui/templates/wizard.html
 apps/temperature_marker/ui/templates/loc.html
+apps/temperature_marker/ui/templates/fleet.html
+apps/temperature_marker/ui/templates/_fleet_kiosks.html
+apps/temperature_marker/ui/templates/_fleet_operators.html
+apps/temperature_marker/ui/templates/_fleet_modals.html

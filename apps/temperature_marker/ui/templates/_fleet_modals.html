@@ -2,55 +2,55 @@
 <div id="kioskModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
     <div class="card" style="width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; background: #1e293b; border: 1px solid #334155;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 700; color: white;">+ Register New KioskNode Kiosk</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: white;">{{ t('apps.temperature_marker.fleet.modal_add_kiosk_title') }}</h3>
             <button onclick="closeModal('kioskModal')" style="background: none; border: none; color: #94a3b8; font-size: 1.25rem; cursor: pointer;">✕</button>
         </div>
         <form onsubmit="submitNewKiosk(event)" style="display: flex; flex-direction: column; gap: 1rem;">
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Kiosk ID *</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_kiosk_id') }}</label>
                 <input id="newKioskId" required placeholder="e.g. NODE-HYD-01"
                        style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white; font-family: monospace;" />
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Site / Mall Name *</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_site_name') }}</label>
                 <input id="newSiteName" required placeholder="e.g. Inorbit Mall Cyberabad"
                        style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">City *</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_city') }}</label>
                 <input id="newCity" required placeholder="e.g. Hyderabad"
                        style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div>
-                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Latitude *</label>
+                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_latitude') }}</label>
                     <input id="newLat" required type="number" step="any" placeholder="17.4348"
-                           style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white; font-family: monospace;" />
+                       style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white; font-family: monospace;" />
                 </div>
                 <div>
-                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Longitude *</label>
+                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_longitude') }}</label>
                     <input id="newLon" required type="number" step="any" placeholder="78.3867"
-                           style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white; font-family: monospace;" />
+                       style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white; font-family: monospace;" />
                 </div>
             </div>
             <button type="button" onclick="detectBrowserLocation()" class="btn btn-secondary" style="padding: 0.4rem; font-size: 0.8rem; align-self: flex-start;">
-                📍 Auto-fill Current Browser GPS
+                {{ t('apps.temperature_marker.fleet.btn_autofill_gps') }}
             </button>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div>
-                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Geofence Radius (m)</label>
+                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_geofence_radius') }}</label>
                     <input id="newRadius" type="number" value="100"
                            style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
                 </div>
                 <div>
-                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Machine Model</label>
+                    <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_machine_model') }}</label>
                     <input id="newModel" value="ChillerNode-Pro-X1"
                            style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
                 </div>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
-                <button type="button" onclick="closeModal('kioskModal')" class="btn btn-secondary">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="background-color: #10b981; border-color: #10b981;">Save Kiosk</button>
+                <button type="button" onclick="closeModal('kioskModal')" class="btn btn-secondary">{{ t('apps.temperature_marker.fleet.btn_cancel') }}</button>
+                <button type="submit" class="btn btn-primary" style="background-color: #10b981; border-color: #10b981;">{{ t('apps.temperature_marker.fleet.btn_save_kiosk') }}</button>
             </div>
         </form>
     </div>
@@ -60,29 +60,29 @@
 <div id="operatorModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
     <div class="card" style="width: 100%; max-width: 480px; background: #1e293b; border: 1px solid #334155;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 700; color: white;">+ Enroll Field Operator</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: white;">{{ t('apps.temperature_marker.fleet.modal_enroll_operator_title') }}</h3>
             <button onclick="closeModal('operatorModal')" style="background: none; border: none; color: #94a3b8; font-size: 1.25rem; cursor: pointer;">✕</button>
         </div>
         <form onsubmit="submitNewOperator(event)" style="display: flex; flex-direction: column; gap: 1rem;">
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Employee Code (Optional)</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_emp_code_optional') }}</label>
                 <input id="newEmpCode" placeholder="Leave blank to auto-generate (e.g. EMP-1045)"
                        style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white; font-family: monospace;" />
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Full Name *</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_full_name') }}</label>
                 <input id="newFullName" required placeholder="e.g. Ramesh Patil"
                        style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">WhatsApp Phone Number *</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_whatsapp_phone') }}</label>
                 <input id="newPhone" required placeholder="e.g. 8087545430 or +918087545430"
                        oninput="previewPhoneFormat(this.value, 'newPhonePreview')"
                        style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white; font-family: monospace;" />
                 <span id="newPhonePreview" style="color: #38bdf8; font-size: 0.75rem; display: block; margin-top: 0.2rem; font-family: monospace;"></span>
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Assign to Initial Kiosk *</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_assign_initial_kiosk') }}</label>
                 <select id="newAssignedKiosk" required
                         style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;">
                     {% for k in kiosks %}
@@ -91,10 +91,10 @@
                 </select>
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Reporting Manager / Supervisor (Optional)</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_reporting_manager_optional') }}</label>
                 <select id="newReportingManager"
                         style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;">
-                    <option value="">-- No Manager Assigned --</option>
+                    <option value="">{{ t('apps.temperature_marker.fleet.opt_no_manager') }}</option>
                     {% for m in managers %}
                     <option value="{{ m.emp_code }}">{{ m.full_name }} ({{ m.emp_code }})</option>
                     {% endfor %}
@@ -104,16 +104,16 @@
                 </select>
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Operator Facial Photo (Optional)</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_photo_optional') }}</label>
                 <input type="file" id="newPhoto" accept="image/*"
                        style="width: 100%; padding: 0.5rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: #94a3b8; font-size: 0.85rem;" />
                 <span style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 0.2rem;">
-                    If omitted, the operator will receive an automated WhatsApp message to submit their selfie photo.
+                    {{ t('apps.temperature_marker.fleet.hint_photo_omitted') }}
                 </span>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
-                <button type="button" onclick="closeModal('operatorModal')" class="btn btn-secondary">Cancel</button>
-                <button type="submit" class="btn btn-primary" id="enrollSubmitBtn">Enroll Operator</button>
+                <button type="button" onclick="closeModal('operatorModal')" class="btn btn-secondary">{{ t('apps.temperature_marker.fleet.btn_cancel') }}</button>
+                <button type="submit" class="btn btn-primary" id="enrollSubmitBtn">{{ t('apps.temperature_marker.fleet.btn_enroll_submit') }}</button>
             </div>
         </form>
     </div>
@@ -123,28 +123,28 @@
 <div id="editMemberModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
     <div class="card" style="width: 100%; max-width: 480px; background: #1e293b; border: 1px solid #334155;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-            <h3 style="font-size: 1.25rem; font-weight: 700; color: white;">✏️ Edit Operator Profile</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: white;">{{ t('apps.temperature_marker.fleet.modal_edit_operator_title') }}</h3>
             <button onclick="closeModal('editMemberModal')" style="background: none; border: none; color: #94a3b8; font-size: 1.25rem; cursor: pointer;">✕</button>
         </div>
         <form onsubmit="submitEditMember(event)" style="display: flex; flex-direction: column; gap: 1rem;">
             <input type="hidden" id="editEmpCode" />
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Employee Code</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_emp_code') }}</label>
                 <div id="editEmpCodeDisplay" style="padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: #a78bfa; font-family: monospace; font-weight: 600;"></div>
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Full Name *</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_full_name') }}</label>
                 <input id="editFullName" required
                        style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;" />
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">WhatsApp Phone Number *</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_whatsapp_phone') }}</label>
                 <input id="editPhone" required oninput="previewPhoneFormat(this.value, 'editPhonePreview')"
                        style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white; font-family: monospace;" />
                 <span id="editPhonePreview" style="color: #38bdf8; font-size: 0.75rem; display: block; margin-top: 0.2rem; font-family: monospace;"></span>
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Assigned Kiosk *</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_assign_initial_kiosk') }}</label>
                 <select id="editAssignedKiosk" required
                         style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;">
                     {% for k in kiosks %}
@@ -153,10 +153,10 @@
                 </select>
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Reporting Manager / Supervisor</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_reporting_manager') }}</label>
                 <select id="editReportingManager"
                         style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;">
-                    <option value="">-- No Manager Assigned --</option>
+                    <option value="">{{ t('apps.temperature_marker.fleet.opt_no_manager') }}</option>
                     {% for m in managers %}
                     <option value="{{ m.emp_code }}">{{ m.full_name }} ({{ m.emp_code }})</option>
                     {% endfor %}
@@ -166,18 +166,18 @@
                 </select>
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Operational Status *</label>
+                <label style="font-size: 0.85rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">{{ t('apps.temperature_marker.fleet.label_operational_status') }}</label>
                 <select id="editStatus" required
                         style="width: 100%; padding: 0.6rem; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: white;">
-                    <option value="ACTIVE">ACTIVE (Authorized for Duty)</option>
-                    <option value="PENDING_APPROVAL">PENDING_APPROVAL (Under Admin Review)</option>
-                    <option value="PENDING_PHOTO">PENDING_PHOTO (Awaiting Selfie Photo)</option>
-                    <option value="INACTIVE">INACTIVE (Suspended / Deactivated)</option>
+                    <option value="ACTIVE">{{ t('apps.temperature_marker.fleet.opt_status_active') }}</option>
+                    <option value="PENDING_APPROVAL">{{ t('apps.temperature_marker.fleet.opt_status_pending_approval') }}</option>
+                    <option value="PENDING_PHOTO">{{ t('apps.temperature_marker.fleet.opt_status_pending_photo') }}</option>
+                    <option value="INACTIVE">{{ t('apps.temperature_marker.fleet.opt_status_inactive') }}</option>
                 </select>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
-                <button type="button" onclick="closeModal('editMemberModal')" class="btn btn-secondary">Cancel</button>
-                <button type="submit" class="btn btn-primary" id="editSubmitBtn">Save Changes</button>
+                <button type="button" onclick="closeModal('editMemberModal')" class="btn btn-secondary">{{ t('apps.temperature_marker.fleet.btn_cancel') }}</button>
+                <button type="submit" class="btn btn-primary" id="editSubmitBtn">{{ t('apps.temperature_marker.fleet.btn_save_changes') }}</button>
             </div>
         </form>
     </div>

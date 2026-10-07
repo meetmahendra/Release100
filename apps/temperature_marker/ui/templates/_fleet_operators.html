@@ -2,9 +2,9 @@
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <div>
-            <h2 style="font-size: 1.25rem; font-weight: 600;">Team & Operator Assignments</h2>
+            <h2 style="font-size: 1.25rem; font-weight: 600;">{{ t('apps.temperature_marker.fleet.operators_table_title') }}</h2>
             <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
-                Live mapping of field staff to kiosks. Selecting a new kiosk instantly updates both SQLite and Knowledge Graph routing.
+                {{ t('apps.temperature_marker.fleet.operators_table_sub') }}
             </p>
         </div>
         <span id="reassignStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
@@ -13,13 +13,13 @@
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
                 <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.85rem;">
-                    <th style="padding: 0.75rem 1rem;">Emp Code</th>
-                    <th style="padding: 0.75rem 1rem;">Operator Name</th>
-                    <th style="padding: 0.75rem 1rem;">WhatsApp Phone</th>
-                    <th style="padding: 0.75rem 1rem;">Assigned Kiosk</th>
-                    <th style="padding: 0.75rem 1rem;">Reporting Manager</th>
-                    <th style="padding: 0.75rem 1rem;">Status</th>
-                    <th style="padding: 0.75rem 1rem;">Actions</th>
+                    <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.fleet.col_emp_code') }}</th>
+                    <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.fleet.col_operator_name') }}</th>
+                    <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.fleet.col_whatsapp_phone') }}</th>
+                    <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.fleet.col_assigned_kiosk') }}</th>
+                    <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.fleet.col_reporting_manager') }}</th>
+                    <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.fleet.col_status') }}</th>
+                    <th style="padding: 0.75rem 1rem;">{{ t('apps.temperature_marker.fleet.col_actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -48,16 +48,16 @@
                         {% if emp.reporting_manager_emp_code %}
                             {{ emp.reporting_manager_emp_code }}
                         {% else %}
-                            <span style="color: var(--text-secondary); font-style: italic;">None</span>
+                            <span style="color: var(--text-secondary); font-style: italic;">{{ t('apps.temperature_marker.fleet.val_none') }}</span>
                         {% endif %}
                     </td>
                     <td style="padding: 1rem;">
                         {% if emp.status == 'ACTIVE' %}
-                            <span class="badge badge-green">ACTIVE</span>
+                            <span class="badge badge-green">{{ t('apps.temperature_marker.fleet.status_active') }}</span>
                         {% elif emp.status == 'PENDING_APPROVAL' %}
-                            <span class="badge badge-yellow">PENDING APPROVAL</span>
+                            <span class="badge badge-yellow">{{ t('apps.temperature_marker.fleet.status_pending_approval') }}</span>
                         {% elif emp.status in ['PENDING_BIOMETRICS', 'PENDING_PHOTO'] %}
-                            <span class="badge badge-yellow" title="Waiting for WhatsApp selfie photo">PENDING PHOTO</span>
+                            <span class="badge badge-yellow" title="{{ t('apps.temperature_marker.fleet.title_waiting_photo') }}">{{ t('apps.temperature_marker.fleet.status_pending_photo') }}</span>
                         {% else %}
                             <span class="badge badge-red">{{ emp.status }}</span>
                         {% endif %}
@@ -66,22 +66,22 @@
                         <button onclick="openEditMemberModal('{{ emp.emp_code }}', '{{ emp.full_name | escape }}', '{{ emp.phone_number }}', '{{ emp.assigned_kiosk_id }}', '{{ emp.reporting_manager_emp_code or '' }}', '{{ emp.status }}')"
                                 class="btn btn-secondary"
                                 style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #334155; border: 1px solid #64748b;"
-                                title="Edit operator profile">
-                            ✏️ Edit
+                                title="{{ t('apps.temperature_marker.fleet.title_edit_profile') }}">
+                            {{ t('apps.temperature_marker.fleet.btn_edit') }}
                         </button>
                         {% if emp.encrypted_face_embedding %}
                             <button onclick="forgetOperatorPhoto('{{ emp.emp_code }}', '{{ emp.full_name | escape }}')"
                                     class="btn btn-secondary"
                                     style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #334155; border: 1px solid #475569;"
-                                    title="Clear current photo so operator can send new photo for approval">
-                                📸 Forget
+                                    title="{{ t('apps.temperature_marker.fleet.title_clear_photo') }}">
+                                {{ t('apps.temperature_marker.fleet.btn_forget') }}
                             </button>
                         {% else %}
                             <button onclick="forgetOperatorPhoto('{{ emp.emp_code }}', '{{ emp.full_name | escape }}')"
                                     class="btn btn-secondary"
                                     style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #1e293b; border: 1px dashed #64748b;"
-                                    title="Request operator to submit photo on WhatsApp">
-                                📲 Request Photo
+                                    title="{{ t('apps.temperature_marker.fleet.title_request_photo') }}">
+                                {{ t('apps.temperature_marker.fleet.btn_request_photo') }}
                             </button>
                         {% endif %}
                     </td>
@@ -89,7 +89,7 @@
                 {% else %}
                 <tr>
                     <td colspan="7" style="padding: 2rem; text-align: center; color: var(--text-secondary);">
-                        No operators enrolled yet. Click "+ Enroll Operator" to add team members.
+                        {{ t('apps.temperature_marker.fleet.empty_operators') }}
                     </td>
                 </tr>
                 {% endfor %}

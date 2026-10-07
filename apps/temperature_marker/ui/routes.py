@@ -159,6 +159,19 @@ async def view_fleet(
     kiosks = _kg_service.list_all_kiosks(tenant_id=eff_tenant)
     employees = _db_service.get_all_employees(tenant_id=eff_tenant)
     managers = [e for e in employees if e.role in ("MANAGER", "SUPERVISOR") or e.emp_code.startswith("MGR")]
+
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name=str(tenant_name or ""),
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
+            Breadcrumb(label_key="apps.temperature_marker.name", path="/admin/apps/temperature-marker/fleet"),
+            Breadcrumb(label_key="apps.temperature_marker.nav.fleet"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="fleet.html",
@@ -171,6 +184,7 @@ async def view_fleet(
             "kiosks": kiosks,
             "employees": employees,
             "managers": managers,
+            "ui": ui_ctx,
         },
     )
 
