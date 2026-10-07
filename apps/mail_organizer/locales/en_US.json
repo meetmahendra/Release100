@@ -18,6 +18,21 @@
         "active": "Active",
         "connected": "Connected",
         "disconnected": "Disconnected"
+      },
+      "accounts": {
+        "title_tag": "Accounts — Mail Organizer",
+        "header_title": "Google Account",
+        "header_subtitle": "OAuth2 authorisation status & sync settings",
+        "connection_status": "Connection Status",
+        "badge_connected": "✅ Connected",
+        "badge_not_configured": "⬛ Not Configured",
+        "lbl_authorised_account": "Authorised account:",
+        "reauth_description": "Re-authorise your Google account to refresh the OAuth2 token. This enables Gmail label application, draft creation, and Calendar free/busy lookups.",
+        "btn_reauth": "Re-Authorise Google Account",
+        "sync_settings_title": "Sync Settings",
+        "lbl_sync_interval": "Sync Interval (seconds)",
+        "hint_sync_interval": "How often to poll Gmail inbox (min: 30s).",
+        "btn_save_settings": "Save Settings"
       }
     }
   }

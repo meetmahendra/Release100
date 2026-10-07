@@ -1,25 +1,25 @@
 {% extends "base.html" %}
-{% block title %}Accounts — Mail Organizer{% endblock %}
+{% block title %}{{ t('apps.mail_organizer.accounts.title_tag') }}{% endblock %}
 {% block content %}
 <div class="max-w-2xl mx-auto">
 
   <div class="mb-6">
-    <h1 class="text-xl font-bold text-white">Google Account</h1>
-    <p class="text-slate-400 text-sm mt-1">OAuth2 authorisation status &amp; sync settings</p>
+    <h1 class="text-xl font-bold text-white">{{ t('apps.mail_organizer.accounts.header_title') }}</h1>
+    <p class="text-slate-400 text-sm mt-1">{{ t('apps.mail_organizer.accounts.header_subtitle') }}</p>
   </div>
 
   <!-- OAuth Status Card -->
   <div class="bg-white/5 border border-white/10 rounded-xl p-6 mb-5">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-sm font-semibold text-white">Connection Status</h2>
+      <h2 class="text-sm font-semibold text-white">{{ t('apps.mail_organizer.accounts.connection_status') }}</h2>
 
       {% if oauth_status in ("ok", "token_present") %}
       <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium border border-emerald-500/30">
-        ✅ Connected
+        {{ t('apps.mail_organizer.accounts.badge_connected') }}
       </span>
       {% elif oauth_status == "not_configured" %}
       <span class="px-2.5 py-1 rounded-full bg-slate-600/40 text-slate-400 text-xs font-medium">
-        ⬛ Not Configured
+        {{ t('apps.mail_organizer.accounts.badge_not_configured') }}
       </span>
       {% else %}
       <span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-medium border border-amber-500/30">
@@ -30,13 +30,12 @@
 
     {% if oauth_email %}
     <p class="text-sm text-slate-300 mb-4">
-      Authorised account: <span class="font-mono text-emerald-300">{{ oauth_email }}</span>
+      {{ t('apps.mail_organizer.accounts.lbl_authorised_account') }} <span class="font-mono text-emerald-300">{{ oauth_email }}</span>
     </p>
     {% endif %}
 
     <p class="text-xs text-slate-500 mb-5">
-      Re-authorise your Google account to refresh the OAuth2 token. This enables Gmail label
-      application, draft creation, and Calendar free/busy lookups.
+      {{ t('apps.mail_organizer.accounts.reauth_description') }}
     </p>
 
     <a href="/admin/apps/mail-organizer/accounts/reauth"
@@ -47,26 +46,26 @@
           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581
              m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
       </svg>
-      Re-Authorise Google Account
+      {{ t('apps.mail_organizer.accounts.btn_reauth') }}
     </a>
   </div>
 
   <!-- Sync Settings -->
   <div class="bg-white/5 border border-white/10 rounded-xl p-6">
-    <h2 class="text-sm font-semibold text-white mb-4">Sync Settings</h2>
+    <h2 class="text-sm font-semibold text-white mb-4">{{ t('apps.mail_organizer.accounts.sync_settings_title') }}</h2>
     <form method="post" action="/admin/apps/mail-organizer/accounts/settings" class="space-y-4">
       <div>
-        <label class="block text-sm text-slate-300 mb-1">Sync Interval (seconds)</label>
+        <label class="block text-sm text-slate-300 mb-1">{{ t('apps.mail_organizer.accounts.lbl_sync_interval') }}</label>
         <input
           type="number" name="sync_interval" value="{{ sync_interval }}" min="30" max="3600"
           class="w-40 px-3 py-2 rounded-lg bg-white/5 border border-white/15 text-white text-sm
                  focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
-        <p class="text-xs text-slate-500 mt-1">How often to poll Gmail inbox (min: 30s).</p>
+        <p class="text-xs text-slate-500 mt-1">{{ t('apps.mail_organizer.accounts.hint_sync_interval') }}</p>
       </div>
       <button type="submit"
               class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">
-        Save Settings
+        {{ t('apps.mail_organizer.accounts.btn_save_settings') }}
       </button>
     </form>
   </div>
