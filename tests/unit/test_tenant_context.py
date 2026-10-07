@@ -125,3 +125,30 @@ def test_tenant_middleware_header_resolution() -> None:
     assert resp_default.status_code == 200
     assert resp_default.headers["X-Tenant-ID"] == "default_test_tenant"
     assert resp_default.json()["state_tenant"] == "default_test_tenant"
+
+
+def test_is_tunnel_domain_and_is_customer_subdomain() -> None:
+    """Verify tunnel detection and customer subdomain resolution logic."""
+    from core_platform.app.middleware.tenant_context import is_customer_subdomain, is_tunnel_domain
+
+    # Tunnel domains
+    assert is_tunnel_domain("overshoot-outfit-uncaring.ngrok-free.dev") is True
+    assert is_tunnel_domain("my-kiosk.loca.lt:443") is True
+    assert is_tunnel_domain("sub.pinggy.io") is True
+    assert is_tunnel_domain("release100.com") is False
+
+    # Customer subdomains
+    assert is_customer_subdomain("acme.release100.com") is True
+    assert is_customer_subdomain("hospital-north.apex.io") is True
+    
+    # Platform / Local / Tunnel hosts (NOT customer subdomains)
+    assert is_customer_subdomain("localhost") is False
+    assert is_customer_subdomain("127.0.0.1:8000") is False
+    assert is_customer_subdomain("overshoot-outfit-uncaring.ngrok-free.dev") is False
+    assert is_customer_subdomain("ops.release100.com") is False
+    assert is_customer_subdomain("ops-admin.release100.com") is False
+    assert is_customer_subdomain("admin.release100.com") is False
+    assert is_customer_subdomain("www.release100.com") is False
+    assert is_customer_subdomain("api.release100.com") is False
+    assert is_customer_subdomain("public.release100.com") is False
+

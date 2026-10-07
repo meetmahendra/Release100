@@ -229,14 +229,9 @@ def require_devops(
 ) -> SecurityContext:
     """FastAPI dependency: require DevOps Super-Admin / Platform Operator privileges."""
     # Guard: DevOps Control Plane is strictly barred on customer tenant domains/subdomains
+    from core_platform.app.middleware.tenant_context import is_customer_subdomain
     host = request.headers.get("host", "").split(":")[0].strip().lower()
-    is_customer_subdomain = False
-    if "." in host and not host.replace(".", "").isdigit() and "localhost" not in host:
-        parts = host.split(".")
-        if len(parts) >= 3 and parts[0] not in ("www", "api", "app", "public", "ops", "ops-admin", "admin"):
-            is_customer_subdomain = True
-
-    if is_customer_subdomain:
+    if is_customer_subdomain(host):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="DevOps Control Plane is not accessible on customer tenant domains.",

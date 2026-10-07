@@ -283,6 +283,43 @@ def verify_tenant_exists(tenant_id: str) -> Optional[str]:
     return None
 
 
+TUNNEL_DOMAINS: tuple[str, ...] = (
+    "ngrok-free.dev",
+    "ngrok-free.app",
+    "ngrok.app",
+    "ngrok.io",
+    "loca.lt",
+    "lhr.life",
+    "pinggy.link",
+    "pinggy.io",
+    "localhost.run",
+)
+
+
+def is_tunnel_domain(host: str) -> bool:
+    """Check if host is a public development tunnel domain (ngrok, loca.lt, pinggy, etc.)."""
+    clean_host = host.lower().split(":")[0].strip()
+    return any(clean_host.endswith(td) for td in TUNNEL_DOMAINS)
+
+
+def is_customer_subdomain(host: str) -> bool:
+    """
+    Check if the host is a customer tenant subdomain (e.g. acme.release100.com).
+    Returns False for localhost, IP addresses, tunnel domains (ngrok), and platform subdomains (ops, admin, public, api, www, etc.).
+    """
+    clean_host = host.lower().split(":")[0].strip()
+    if not clean_host or "localhost" in clean_host or clean_host.replace(".", "").isdigit():
+        return False
+    if is_tunnel_domain(clean_host):
+        return False
+    if "." not in clean_host:
+        return False
+    parts = clean_host.split(".")
+    if len(parts) >= 3 and parts[0] not in ("www", "api", "app", "public", "ops", "ops-admin", "admin", "kiosk"):
+        return True
+    return False
+
+
 class TenantContextMiddleware(BaseHTTPMiddleware):
     """
     FastAPI / Starlette Middleware that resolves tenant context per HTTP request.
@@ -378,9 +415,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
                 return resolved
 
             # 4. Host Subdomain (requires at least 3 domain segments, e.g. 'acme.release100.com' -> 'acme')
-            tunnel_domains = ("ngrok-free.dev", "ngrok-free.app", "ngrok.app", "loca.lt", "lhr.life", "pinggy.link", "pinggy.io", "localhost.run")
-            is_tunnel = any(host.endswith(td) for td in tunnel_domains)
-            if not is_tunnel and "." in host and not host.replace(".", "").isdigit() and "localhost" not in host:
+            if not is_tunnel_domain(host) and "." in host and not host.replace(".", "").isdigit() and "localhost" not in host:
                 parts = host.split(".")
                 if len(parts) >= 3:
                     subdomain = parts[0].strip()
