@@ -1,0 +1,64 @@
+<!-- Section 1: Registered KioskNode Station Roster -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600;">Registered KioskNode Station Roster</h2>
+        <span style="font-size: 0.85rem; color: var(--text-secondary);">Knowledge Graph Topology</span>
+    </div>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.85rem;">
+                    <th style="padding: 0.75rem 1rem;">Kiosk ID</th>
+                    <th style="padding: 0.75rem 1rem;">Station Name &amp; Location</th>
+                    <th style="padding: 0.75rem 1rem;">Coordinates (Lat, Lon)</th>
+                    <th style="padding: 0.75rem 1rem;">Geofence</th>
+                    <th style="padding: 0.75rem 1rem;">Model</th>
+                    <th style="padding: 0.75rem 1rem;">Assigned Operators</th>
+                    <th style="padding: 0.75rem 1rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for k in kiosks %}
+                <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.9rem;">
+                    <td style="padding: 1rem; font-family: monospace; font-weight: 600; color: var(--accent-blue);">
+                        {{ k.kiosk_id }}
+                    </td>
+                    <td style="padding: 1rem;">
+                        <div style="font-weight: 600;">{{ k.name }}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.8rem;">{{ k.city }}</div>
+                    </td>
+                    <td style="padding: 1rem; font-family: monospace; font-size: 0.85rem;">
+                        {{ k.latitude }}, {{ k.longitude }}
+                    </td>
+                    <td style="padding: 1rem;">
+                        <span class="badge badge-blue">{{ k.radius_meters }}m</span>
+                    </td>
+                    <td style="padding: 1rem; color: var(--text-secondary);">
+                        {{ k.machine_model }}
+                    </td>
+                    <td style="padding: 1rem; font-size: 0.85rem;">
+                        {% if k.primary_operator_phones %}
+                            {% for p in k.primary_operator_phones %}
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-family: monospace; margin-right: 0.25rem;">{{ p }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span style="color: var(--text-secondary); font-style: italic;">None</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; display: flex; gap: 0.35rem; align-items: center;">
+                        <a href="/admin/apps/temperature-marker/wizard?kiosk_id={{ k.kiosk_id }}" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+                            Check-in Test
+                        </a>
+                        <button onclick="calibrateKioskLocation('{{ k.kiosk_id }}', '{{ k.name | escape }}')"
+                                class="btn btn-secondary"
+                                style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #0284c7; border: 1px solid #38bdf8;"
+                                title="Calibrate Kiosk GPS using your current device location">
+                            📍 Calibrate GPS
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

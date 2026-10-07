@@ -1,0 +1,99 @@
+<!-- Section 2: Team & Operator Assignments -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+            <h2 style="font-size: 1.25rem; font-weight: 600;">Team & Operator Assignments</h2>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">
+                Live mapping of field staff to kiosks. Selecting a new kiosk instantly updates both SQLite and Knowledge Graph routing.
+            </p>
+        </div>
+        <span id="reassignStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
+    </div>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.85rem;">
+                    <th style="padding: 0.75rem 1rem;">Emp Code</th>
+                    <th style="padding: 0.75rem 1rem;">Operator Name</th>
+                    <th style="padding: 0.75rem 1rem;">WhatsApp Phone</th>
+                    <th style="padding: 0.75rem 1rem;">Assigned Kiosk</th>
+                    <th style="padding: 0.75rem 1rem;">Reporting Manager</th>
+                    <th style="padding: 0.75rem 1rem;">Status</th>
+                    <th style="padding: 0.75rem 1rem;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.9rem;">
+                    <td style="padding: 1rem; font-family: monospace; font-weight: 600; color: #a78bfa;">
+                        {{ emp.emp_code }}
+                    </td>
+                    <td style="padding: 1rem; font-weight: 600;">
+                        {{ emp.full_name }}
+                    </td>
+                    <td style="padding: 1rem; font-family: monospace; font-size: 0.85rem; color: #38bdf8;">
+                        {{ emp.phone_number }}
+                    </td>
+                    <td style="padding: 1rem;">
+                        <select onchange="reassignOperator('{{ emp.emp_code }}', this.value)"
+                                style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.85rem;">
+                            {% for k in kiosks %}
+                            <option value="{{ k.kiosk_id }}" {% if emp.assigned_kiosk_id == k.kiosk_id %}selected{% endif %}>
+                                {{ k.kiosk_id }} ({{ k.city }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td style="padding: 1rem; font-family: monospace; font-size: 0.85rem; color: #f472b6;">
+                        {% if emp.reporting_manager_emp_code %}
+                            {{ emp.reporting_manager_emp_code }}
+                        {% else %}
+                            <span style="color: var(--text-secondary); font-style: italic;">None</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if emp.status == 'ACTIVE' %}
+                            <span class="badge badge-green">ACTIVE</span>
+                        {% elif emp.status == 'PENDING_APPROVAL' %}
+                            <span class="badge badge-yellow">PENDING APPROVAL</span>
+                        {% elif emp.status in ['PENDING_BIOMETRICS', 'PENDING_PHOTO'] %}
+                            <span class="badge badge-yellow" title="Waiting for WhatsApp selfie photo">PENDING PHOTO</span>
+                        {% else %}
+                            <span class="badge badge-red">{{ emp.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem; display: flex; gap: 0.35rem; align-items: center;">
+                        <button onclick="openEditMemberModal('{{ emp.emp_code }}', '{{ emp.full_name | escape }}', '{{ emp.phone_number }}', '{{ emp.assigned_kiosk_id }}', '{{ emp.reporting_manager_emp_code or '' }}', '{{ emp.status }}')"
+                                class="btn btn-secondary"
+                                style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #334155; border: 1px solid #64748b;"
+                                title="Edit operator profile">
+                            ✏️ Edit
+                        </button>
+                        {% if emp.encrypted_face_embedding %}
+                            <button onclick="forgetOperatorPhoto('{{ emp.emp_code }}', '{{ emp.full_name | escape }}')"
+                                    class="btn btn-secondary"
+                                    style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #334155; border: 1px solid #475569;"
+                                    title="Clear current photo so operator can send new photo for approval">
+                                📸 Forget
+                            </button>
+                        {% else %}
+                            <button onclick="forgetOperatorPhoto('{{ emp.emp_code }}', '{{ emp.full_name | escape }}')"
+                                    class="btn btn-secondary"
+                                    style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #1e293b; border: 1px dashed #64748b;"
+                                    title="Request operator to submit photo on WhatsApp">
+                                📲 Request Photo
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                        No operators enrolled yet. Click "+ Enroll Operator" to add team members.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
