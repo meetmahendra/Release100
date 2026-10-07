@@ -15,3 +15,4 @@ ops_control_plane/super_admin/templates/_tenant_table.html
 ops_control_plane/super_admin/templates/_tenant_modals.html
 apps/temperature_marker/ui/templates/approvals.html
 apps/temperature_marker/ui/templates/wizard.html
+apps/temperature_marker/ui/templates/loc.html

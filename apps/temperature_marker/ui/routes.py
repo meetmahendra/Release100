@@ -669,6 +669,14 @@ async def view_verify_location(
     kiosk_info = _kg_service.get_kiosk_details(resolved_kiosk_id)
     all_kiosks = _kg_service.list_all_kiosks()
 
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=None,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name="",
+        breadcrumbs=[],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="loc.html",
@@ -680,6 +688,7 @@ async def view_verify_location(
             "radius_meters": kiosk_info.get("radius_meters", 150.0) if kiosk_info else 150.0,
             "session_id": session_id,
             "all_kiosks": all_kiosks,
+            "ui": ui_ctx,
         },
     )
 

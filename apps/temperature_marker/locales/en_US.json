@@ -84,6 +84,27 @@
         "audit_hash_label": "Cryptographic SHA-256 Audit Hash:",
         "correlation_id": "Correlation ID: {id}",
         "error_simulation": "Simulation error: "
+      },
+      "loc": {
+        "title_tag": "KioskNode 1-Click Location Verification",
+        "badge": "APEX KIOSK",
+        "heading": "Kiosk Geolocation Check",
+        "subtext_prefix": "Verifying your physical proximity to KioskNode Station",
+        "label_selected_kiosk": "Selected Kiosk Station:",
+        "status_acquiring_gps": "Acquiring GPS location...",
+        "allow_location_access": "Please allow location access when prompted.",
+        "btn_retry": "Retry Location Check",
+        "acquiring_coords": "Acquiring GPS coordinates...",
+        "communicating_sensor": "Communicating with smartphone GPS sensor...",
+        "err_geo_not_supported": "Geolocation is not supported by your mobile browser.",
+        "verifying_perimeter": "Verifying kiosk geofence perimeter...",
+        "status_verified": "Location Verified!",
+        "status_breach": "Geofence Perimeter Breach",
+        "status_failed": "Location Check Failed",
+        "err_network": "Network error communicating with kiosk server.",
+        "err_permission": "Location permission denied or unavailable: ",
+        "verified_msg_template": "You are <strong>{distance}m</strong> from KioskNode Station <strong>{station}</strong> ({kiosk_id}).<br><br>Return to WhatsApp to complete duty check-in.",
+        "breach_msg_template": "You appear to be <strong>{distance}m</strong> away from <strong>{station}</strong> ({kiosk_id}). Allowed radius is {radius}m.<br><br><small style=\"color: #94a3b8\">If you are at a different kiosk, select it from the dropdown above.</small>"
       }
     }
   }

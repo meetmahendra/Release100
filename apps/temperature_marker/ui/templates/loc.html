@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ ui.locale if ui else 'en-US' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KioskNode 1-Click Location Verification</title>
+    <title>{{ t('apps.temperature_marker.loc.title_tag') }}</title>
     <style>
         :root {
             --bg-main: #0f172a;
@@ -119,14 +119,14 @@
 </head>
 <body>
     <div class="container">
-        <div class="logo-badge">APEX KIOSK</div>
-        <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Kiosk Geolocation Check</h2>
+        <div class="logo-badge">{{ t('apps.temperature_marker.loc.badge') }}</div>
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">{{ t('apps.temperature_marker.loc.heading') }}</h2>
         <p id="subtext" style="color: var(--text-secondary); font-size: 0.9rem;">
-            Verifying your physical proximity to KioskNode Station <span id="kioskLabel" style="color: var(--text-primary); font-weight: 600;">{{ kiosk_name or kiosk_id }}</span>.
+            {{ t('apps.temperature_marker.loc.subtext_prefix') }} <span id="kioskLabel" style="color: var(--text-primary); font-weight: 600;">{{ kiosk_name or kiosk_id }}</span>.
         </p>
 
         <div class="kiosk-select-container">
-            <label for="kioskSelect">Selected Kiosk Station:</label>
+            <label for="kioskSelect">{{ t('apps.temperature_marker.loc.label_selected_kiosk') }}</label>
             <select id="kioskSelect" onchange="onKioskChanged()">
                 {% if all_kiosks %}
                     {% for k in all_kiosks %}
@@ -141,10 +141,10 @@
         </div>
 
         <div id="statusIcon" class="status-icon status-loading">📍</div>
-        <div id="statusMessage" style="font-weight: 600; font-size: 1.05rem; margin-bottom: 0.5rem;">Acquiring GPS location...</div>
-        <div id="distanceDetail" style="color: var(--text-secondary); font-size: 0.85rem;">Please allow location access when prompted.</div>
+        <div id="statusMessage" style="font-weight: 600; font-size: 1.05rem; margin-bottom: 0.5rem;">{{ t('apps.temperature_marker.loc.status_acquiring_gps') }}</div>
+        <div id="distanceDetail" style="color: var(--text-secondary); font-size: 0.85rem;">{{ t('apps.temperature_marker.loc.allow_location_access') }}</div>
 
-        <button id="retryBtn" class="btn" style="display: none;" onclick="requestLocation()">Retry Location Check</button>
+        <button id="retryBtn" class="btn" style="display: none;" onclick="requestLocation()">{{ t('apps.temperature_marker.loc.btn_retry') }}</button>
     </div>
 
     <script>
@@ -184,18 +184,18 @@
 
             icon.className = 'status-icon status-loading';
             icon.innerText = '📍';
-            msg.innerText = 'Acquiring GPS coordinates...';
-            detail.innerText = 'Communicating with smartphone GPS sensor...';
+            msg.innerText = {{ t('apps.temperature_marker.loc.acquiring_coords') | tojson }};
+            detail.innerText = {{ t('apps.temperature_marker.loc.communicating_sensor') | tojson }};
             retry.style.display = 'none';
 
             if (!navigator.geolocation) {
-                showError('Geolocation is not supported by your mobile browser.');
+                showError({{ t('apps.temperature_marker.loc.err_geo_not_supported') | tojson }});
                 return;
             }
 
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
-                    msg.innerText = 'Verifying kiosk geofence perimeter...';
+                    msg.innerText = {{ t('apps.temperature_marker.loc.verifying_perimeter') | tojson }};
                     try {
                         const resp = await fetch('/admin/apps/temperature-marker/api/verify-location', {
                             method: 'POST',
@@ -213,23 +213,23 @@
                         if (data.within_geofence) {
                             icon.className = 'status-icon status-success';
                             icon.innerText = '✓';
-                            msg.innerText = 'Location Verified!';
+                            msg.innerText = {{ t('apps.temperature_marker.loc.status_verified') | tojson }};
                             const stationName = data.kiosk_name || kioskId;
                             detail.innerHTML = `You are <strong>${data.distance_meters}m</strong> from KioskNode Station <strong>${stationName}</strong> (${kioskId}).<br><br>Return to WhatsApp to complete duty check-in.`;
                         } else {
                             icon.className = 'status-icon status-error';
                             icon.innerText = '✕';
-                            msg.innerText = 'Geofence Perimeter Breach';
+                            msg.innerText = {{ t('apps.temperature_marker.loc.status_breach') | tojson }};
                             const stationName = data.kiosk_name || kioskId;
                             detail.innerHTML = `You appear to be <strong>${data.distance_meters}m</strong> away from <strong>${stationName}</strong> (${kioskId}). Allowed radius is ${data.radius_meters}m.<br><br><small style="color: #94a3b8">If you are at a different kiosk, select it from the dropdown above.</small>`;
                             retry.style.display = 'block';
                         }
                     } catch (err) {
-                        showError('Network error communicating with kiosk server.');
+                        showError({{ t('apps.temperature_marker.loc.err_network') | tojson }});
                     }
                 },
                 (err) => {
-                    showError('Location permission denied or unavailable: ' + err.message);
+                    showError({{ t('apps.temperature_marker.loc.err_permission') | tojson }} + err.message);
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
@@ -243,7 +243,7 @@
 
             icon.className = 'status-icon status-error';
             icon.innerText = '✕';
-            msg.innerText = 'Location Check Failed';
+            msg.innerText = {{ t('apps.temperature_marker.loc.status_failed') | tojson }};
             detail.innerText = text;
             retry.style.display = 'block';
         }
