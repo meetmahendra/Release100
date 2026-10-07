@@ -22,7 +22,12 @@ template changes. Used to prove Pass A migrations keep the page equivalent.
 
 from __future__ import annotations
 
+import json
+import os
 import re
+import subprocess
+import sys
+import tempfile
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
@@ -32,6 +37,7 @@ from fastapi.testclient import TestClient
 
 from core_platform.app.auth.jwt_utils import create_jwt_token
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
 BASELINE_DIR = Path(__file__).resolve().parent / "baseline"
 ADMIN_APPS = ["all", "mail_organizer", "temperature_marker"]
 TM_BASE = "/admin/apps/temperature-marker"
@@ -209,9 +215,41 @@ def capture_page(spec: PageSpec) -> str:
     return "STATUS 200\n" + normalize_html(response.text)
 
 
-def capture_all() -> Dict[str, str]:
-    """Capture every page in :data:`PAGES`, keyed by snapshot name."""
+def capture_in_process() -> Dict[str, str]:
+    """Capture every page in :data:`PAGES` using the current process and its database."""
     return {spec.name: capture_page(spec) for spec in PAGES}
+
+
+def capture_all() -> Dict[str, str]:
+    """Capture every page against a fresh, empty database in a child process.
+
+    A child process keeps the snapshots independent of data and settings that other tests leave
+    behind, and makes every baseline a clean-slate (zero tenants, zero rows) rendering.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "snapshots.json"
+        env = dict(os.environ)
+        env["DATABASE_URL"] = "sqlite:///" + (Path(tmp) / "snapshot.db").as_posix()
+        subprocess.run(
+            [sys.executable, "-m", "tests.ui_snapshots.snapshot_lib", str(out)],
+            cwd=str(REPO_ROOT),
+            env=env,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        data: Dict[str, str] = json.loads(out.read_text(encoding="utf-8"))
+        return data
+
+
+if __name__ == "__main__":
+    from core_platform.main import app as _app
+
+    from core_platform.app.identity.service import get_user_identity_service
+
+    get_user_identity_service()  # creates the identity tables in the fresh database
+    with TestClient(_app):  # run startup so a fresh database gets its other tables
+        Path(sys.argv[1]).write_text(json.dumps(capture_in_process()), encoding="utf-8")
 
 
 def baseline_path(name: str) -> Path:

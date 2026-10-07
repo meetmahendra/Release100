@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+import difflib
+
 import pytest
 
 from tests.ui_snapshots import snapshot_lib
@@ -50,4 +52,7 @@ def test_normalizer_scrubs_volatile_values() -> None:
 def test_page_matches_baseline(spec: snapshot_lib.PageSpec, captured: dict[str, str]) -> None:
     target = snapshot_lib.baseline_path(spec.name)
     assert target.exists(), f"missing baseline: run scripts/capture_ui_snapshots.py --update ({spec.name})"
-    assert captured[spec.name] == target.read_text(encoding="utf-8")
+    expected = target.read_text(encoding="utf-8")
+    if captured[spec.name] != expected:
+        diff = difflib.unified_diff(expected.splitlines(), captured[spec.name].splitlines(), "baseline", "actual", lineterm="", n=0)
+        pytest.fail("\n".join(list(diff)[:40]))
