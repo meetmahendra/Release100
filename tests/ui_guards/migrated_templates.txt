@@ -8,3 +8,4 @@ core_platform/app/admin_shell/templates/login.html
 core_platform/app/admin_shell/templates/users.html
 core_platform/app/admin_shell/templates/tenants.html
 core_platform/app/admin_shell/templates/logs.html
+core_platform/app/admin_shell/templates/llm_costs.html

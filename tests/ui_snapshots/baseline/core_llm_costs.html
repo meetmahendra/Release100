@@ -25,7 +25,102 @@ STATUS 200
 </style>
 </head>
 <body class="ui-shell bg-page text-ink min-h-screen">
-<main class="min-h-screen flex items-center justify-center p-#" id="main">
+<a class="ui-sr-only focus:not-sr-only" href="#main">
+  Skip to main content
+</a>
+<div class="flex min-h-screen">
+<aside aria-label="Main navigation" class="w-# shrink-# border-r border-line bg-card">
+<div class="p-# border-b border-line">
+<a class="font-semibold text-ink" href="/admin/">
+  Home
+</a>
+</div>
+<nav class="p-#">
+<ul class="space-y-#">
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/">
+  Overview Dashboard
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Applications
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/dashboard">
+  AI Email & Calendar Organizer
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/fleet">
+  Apex Industrial Temperature & Attendance Marker
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Workspace & Access
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/users">
+  Users & Team
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/tenants">
+  Company Profile & Vault
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/api-keys">
+  API Keys
+</a>
+</li>
+</ul>
+</nav>
+</aside>
+<div class="flex-# min-w-# flex flex-col">
+<header class="flex items-center justify-between gap-# border-b border-line bg-card px-# py-#">
+<nav aria-label="Breadcrumb">
+<ol class="flex items-center gap-# text-sm text-muted">
+<li>
+<a class="hover:text-ink" href="/admin/">
+  Platform Dashboard
+</a>
+</li>
+<li aria-hidden="true">
+  /
+</li>
+<li>
+<span aria-current="page" class="text-ink">
+  LLM Costs & Tokens
+</span>
+</li>
+</ol>
+</nav>
+<div class="flex items-center gap-# text-sm">
+<span class="rounded-md border border-line px-# py-#" title="Workspace">
+  Release# Organization
+</span>
+<span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
+<span aria-hidden="true">
+  ◐
+</span>
+  Preview
+</span>
+<span class="text-muted" title="Signed in as admin">
+  admin · Administrator
+</span>
+<span aria-label="Language" class="flex items-center gap-#">
+<a aria-current="true" class="rounded px-# text-ink font-semibold" href="?lang=en_US" hreflang="en-US">
+  English (US)
+</a>
+</span>
+<a class="rounded-md border border-line px-# py-# hover:bg-line" href="/admin/logout">
+  Sign out
+</a>
+</div>
+</header>
+<div aria-label="Notifications" aria-live="polite" class="px-# pt-# empty:hidden" id="ui-alerts" role="status">
+</div>
+<main class="flex-# p-#" id="main">
 <div class="space-y-#">
 <div class="flex items-center justify-between">
 <div>
@@ -164,6 +259,8 @@ STATUS 200
   }
 </script>
 </main>
+</div>
+</div>
 <script id="i#n-bundle" type="application/json">
   {"errors.binding_already_exists": "This group already has this package at this reach.", "errors.generic": "Something went wrong. Please try again.", "errors.group_not_found": "That group no longer exists.", "errors.high_risk_confirmation_required": "Please tick the box to confirm this high-governance package.", "errors.network": "We could not reach the server. Check your connection and try again.", "errors.scope_not_allowed": "That reach is not allowed for this package.", "errors.scope_unit_required": "Pick a unit for this reach.", "errors.service_group_cannot_hold_high_risk": "Not available to AI assistants.", "errors.unknown_bundle": "That access package is not available."}
 </script>

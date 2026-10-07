@@ -1014,6 +1014,16 @@ async def llm_costs_page(
 
     # Determine nav_apps for the sidebar
     nav_apps = _build_nav_apps(ctx)
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=[a["id"] for a in nav_apps],
+        tenant_name=settings.ORGANIZATION_NAME or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
+            Breadcrumb(label_key="core.nav.llm_costs"),
+        ],
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -1028,6 +1038,7 @@ async def llm_costs_page(
             "section": "llm_costs",
             "summary": summary,
             "operations": operations,
+            "ui": ui_ctx,
         },
     )
 
