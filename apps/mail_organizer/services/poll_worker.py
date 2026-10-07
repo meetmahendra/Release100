@@ -33,7 +33,7 @@ import sys
 import threading
 import time
 from types import FrameType
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from apps.mail_organizer.connectors.gmail_connector import GmailConnector
 from apps.mail_organizer.database.db_service import MailDatabaseService
@@ -269,7 +269,7 @@ class MailPollWorker:
 
         return count
 
-    async def _dispatch_urgent_whatsapp_push(self, user: Any, state: Dict[str, Any]) -> None:
+    async def _dispatch_urgent_whatsapp_push(self, user: Any, state: Union[Dict[str, Any], MailOrganizerState]) -> None:
         """Dispatch proactive WhatsApp alert adhering strictly to Meta 24-hour customer care window."""
         phone = user.phone_number
         is_allowed = user.is_within_24h_window() if hasattr(user, "is_within_24h_window") else False

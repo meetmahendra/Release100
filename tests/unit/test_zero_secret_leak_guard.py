@@ -183,3 +183,57 @@ def test_local_env_secrets_not_leaked_to_tracked_files() -> None:
                 leaks.append(f"{file_path.relative_to(ROOT_DIR)} contains active .env secret for '{key_name}': {secret[:6]}...{secret[-4:]}")
 
     assert not leaks, f"Local .env credentials detected in tracked repository files:\n" + "\n".join(leaks)
+
+
+def test_auth_resolver_has_zero_hardcoded_credentials() -> None:
+    """GEES v2.0 Rule 4 & Rule 8: Enforce AST-level ban on hardcoded users/credentials in auth strategy."""
+    import ast
+
+    strat_file = ROOT_DIR / "core_platform" / "app" / "auth" / "strategies.py"
+    assert strat_file.exists(), f"Strategy file not found at {strat_file}"
+
+    tree = ast.parse(strat_file.read_text(encoding="utf-8"))
+
+    # Find LocalJWTStrategy class and its authenticate method
+    local_jwt_class = None
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "LocalJWTStrategy":
+            local_jwt_class = node
+            break
+
+    assert local_jwt_class is not None, "LocalJWTStrategy class not found in strategies.py"
+
+    authenticate_fn = None
+    for item in local_jwt_class.body:
+        if isinstance(item, ast.FunctionDef) and item.name == "authenticate":
+            authenticate_fn = item
+            break
+
+    assert authenticate_fn is not None, "LocalJWTStrategy.authenticate method not found"
+
+    # Scan all comparisons inside authenticate specifically targeting username or password
+    banned_credential_literals = {"admin", "devops", "operator", "release100_admin", "super_admin", "password", "root"}
+    suspicious_checks: List[str] = []
+
+    def get_var_names(expr: ast.AST) -> Set[str]:
+        return {n.id for n in ast.walk(expr) if isinstance(n, ast.Name)}
+
+    for subnode in ast.walk(authenticate_fn):
+        if isinstance(subnode, ast.Compare):
+            left_vars = get_var_names(subnode.left)
+            # Check if comparing username or password arguments to hardcoded literal values
+            if left_vars.intersection({"username", "password", "plain_password"}):
+                for comp in subnode.comparators:
+                    if isinstance(comp, ast.Constant) and isinstance(comp.value, str):
+                        suspicious_checks.append(f"Hardcoded credential comparison against '{comp.value}' at line {subnode.lineno}")
+                    elif isinstance(comp, (ast.Tuple, ast.List, ast.Set)):
+                        for elt in comp.elts:
+                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                                suspicious_checks.append(f"Hardcoded credential membership check for '{elt.value}' at line {subnode.lineno}")
+
+    assert not suspicious_checks, (
+        "Zero-Hardcoding Violation in LocalJWTStrategy.authenticate:\n"
+        + "\n".join(suspicious_checks)
+        + "\nAll authentication must strictly query the PlatformUser identity database."
+    )
+

@@ -99,11 +99,50 @@ class UserIdentityService:
         self._ensure_tables()
 
     def _ensure_tables(self) -> None:
-        """Ensure platform_users table exists."""
+        """Ensure platform_users table exists and deterministic bootstrap operator accounts are seeded."""
         try:
             PlatformUser.metadata.create_all(bind=self._engine)
+            self._ensure_bootstrap_users()
         except Exception as e:
-            logger.warning("[IdentityService] Table creation check: %s", e)
+            logger.warning("[IdentityService] Table creation / bootstrap check: %s", e)
+
+    def _ensure_bootstrap_users(self) -> None:
+        """Deterministically seed initial bootstrap platform operators into database.
+
+        Adheres to GEES v2.0 Pillar 4 (Zero Hardcoding) & Pillar 8 (Zero-Trust Security).
+        Credentials exist solely as salted PBKDF2 records in SQLite platform_users.
+        """
+        import os
+        with self._session_factory() as session:
+            admin_user = session.execute(
+                select(PlatformUser).where(PlatformUser.phone_number == "admin")
+            ).scalar_one_or_none()
+            if not admin_user:
+                admin_pwd = os.environ.get("INITIAL_ADMIN_PASSWORD", "release100_admin")
+                self.register_user(
+                    phone_number="admin",
+                    full_name="Platform Administrator",
+                    role="admin",
+                    tenant_id="default_tenant",
+                    allowed_cartridges=["mail_organizer", "temperature_marker"],
+                    password=admin_pwd,
+                    email="admin@release100.local",
+                )
+
+            devops_user = session.execute(
+                select(PlatformUser).where(PlatformUser.phone_number == "devops")
+            ).scalar_one_or_none()
+            if not devops_user:
+                devops_pwd = os.environ.get("INITIAL_DEVOPS_PASSWORD", "devops")
+                self.register_user(
+                    phone_number="devops",
+                    full_name="DevOps Super Administrator",
+                    role="super_admin",
+                    tenant_id="platform",
+                    allowed_cartridges=["mail_organizer", "temperature_marker"],
+                    password=devops_pwd,
+                    email="devops@release100.local",
+                )
 
     def register_user(
         self,

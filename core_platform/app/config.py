@@ -91,22 +91,6 @@ class PlatformSettings(BaseSettings):
     )
 
     # Biometrics & Security (ISSUE-001 Commercial Compliance & SEC-2)
-    ADMIN_USERNAME: str = Field(
-        default="admin",
-        description="Platform Admin username",
-    )
-    ADMIN_PASSWORD_HASH: str = Field(
-        default="09a90aa59b326bd017f7ab55d475269d0f3f38ae7426ace6a3fb007ee2c09790",
-        description="SHA-256 or PBKDF2 hash of master admin password (default: release100_admin)",
-    )
-    DEVOPS_USERNAME: str = Field(
-        default="devops",
-        description="DevOps Super-Admin username",
-    )
-    DEVOPS_PASSWORD_HASH: str = Field(
-        default="",
-        description="Optional SHA-256 or PBKDF2 hash of master devops password",
-    )
     JWT_SECRET_KEY: str = Field(
         default="release100_dev_secret_change_in_prod",
         description="HMAC secret key for HS256 JWT tokens",

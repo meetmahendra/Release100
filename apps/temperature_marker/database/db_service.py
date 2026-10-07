@@ -22,11 +22,11 @@ attendance records, and local offline outbox transactions.
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 import uuid
 from sqlalchemy import create_engine, or_
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Query, Session, sessionmaker
 
 from core_platform.app.middleware.tenant_context import get_current_tenant_id
 from apps.temperature_marker.database.models import (
@@ -38,8 +38,10 @@ from apps.temperature_marker.database.models import (
     OutboxItem,
 )
 
+_T = TypeVar("_T")
 
-def _apply_tenant_filter(query: Any, model_col: Any, eff_tenant: Optional[str]) -> Any:
+
+def _apply_tenant_filter(query: Query[_T], model_col: Any, eff_tenant: Optional[str]) -> Query[_T]:
     """Apply tenant isolation filter with fallback for default workspaces."""
     if eff_tenant in ("platform", "*"):
         return query
