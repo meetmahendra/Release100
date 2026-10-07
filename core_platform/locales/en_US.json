@@ -1,0 +1,27 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "close": "Close",
+    "search": "Search",
+    "loading": "Loading...",
+    "records_found_one": "{count} record found",
+    "records_found_other": "{count} records found"
+  },
+  "core": {
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "success": "Success",
+      "warning": "Warning",
+      "failed": "Failed",
+      "off": "Off",
+      "shadow": "Shadow",
+      "enforce": "Enforce"
+    }
+  }
+}
