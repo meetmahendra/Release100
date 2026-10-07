@@ -64,7 +64,7 @@ def build_ui_context(
     locale: str,
     ctx: Optional[SecurityContext],
     allowed_apps: Iterable[str] = (),
-    tenant_name: str = "",
+    tenant_name: Optional[str] = "",
     breadcrumbs: Iterable[Breadcrumb] = (),
     shell_mode: ShellMode = "full",
 ) -> UiContext:
@@ -85,7 +85,7 @@ def build_ui_context(
     slug = "" if principal.tenant_id in _PLATFORM_TENANTS else principal.tenant_id
     return UiContext(
         locale=locale,
-        tenant_name=tenant_name,
+        tenant_name=str(tenant_name or ""),
         tenant_slug=slug,
         principal_label=principal.principal_id if principal.is_authenticated else "",
         role_label_key=_role_key(principal),

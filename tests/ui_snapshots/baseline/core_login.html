@@ -1,15 +1,32 @@
 STATUS 200
-<html lang="en">
+<html lang="en-US">
 <head>
 <meta charset="UTF-#">
-<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<meta content="width=device-width, initial-scale=#" name="viewport">
 <title>
   Admin Login — Release#
 </title>
-<script src="https://cdn.tailwindcss.com">
+<link href="/ui-static/tokens.css" rel="stylesheet">
+<script src="/ui-static/tailwind.standalone.js">
 </script>
+<style type="text/tailwindcss">
+  @theme {
+  --color-page: ##;
+  --color-card: ##f#a;
+  --color-line: ##e#b;
+  --color-ink: #e#e#f#;
+  --color-muted: ##a#b#;
+  --color-primary: ##b#;
+  --color-devops: ##f#;
+  --color-preview: #f#e#b;
+  --color-danger: #f#f#e;
+  --color-info: ##bdf#;
+  }
+</style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-# via-slate-# to-slate-# flex items-center justify-center">
+<body class="ui-shell bg-page text-ink min-h-screen">
+<main class="min-h-screen flex items-center justify-center p-#" id="main">
+<div class="min-h-screen flex items-center justify-center -m-# sm:-m-#">
 <div class="w-full max-w-md px-#">
 <div class="bg-white/# border border-white/# rounded-#xl p-# shadow-#xl backdrop-blur">
 <div class="text-center mb-#">
@@ -48,5 +65,12 @@ STATUS 200
 </p>
 </div>
 </div>
+</div>
+</main>
+<script id="i#n-bundle" type="application/json">
+  {"errors.binding_already_exists": "This group already has this package at this reach.", "errors.generic": "Something went wrong. Please try again.", "errors.group_not_found": "That group no longer exists.", "errors.high_risk_confirmation_required": "Please tick the box to confirm this high-governance package.", "errors.network": "We could not reach the server. Check your connection and try again.", "errors.scope_not_allowed": "That reach is not allowed for this package.", "errors.scope_unit_required": "Pick a unit for this reach.", "errors.service_group_cannot_hold_high_risk": "Not available to AI assistants.", "errors.unknown_bundle": "That access package is not available."}
+</script>
+<script src="/ui-static/ui.js">
+</script>
 </body>
 </html>

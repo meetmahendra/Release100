@@ -230,6 +230,18 @@
       "key_active": "Active",
       "key_revoke": "Revoke",
       "key_empty": "No API keys generated yet."
+    },
+    "login": {
+      "title_suffix": "\u2014 Release100",
+      "brand_title": "Release100 Admin",
+      "workspace_badge": "Workspace: {name}",
+      "brand_subtitle": "KioskNode Platform Control Panel",
+      "username_label": "Username, Phone Number, or Email",
+      "username_placeholder": "admin or +919876543210",
+      "password_label": "Password",
+      "password_placeholder": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+      "sign_in": "Sign In",
+      "footer": "GEES v1.0 \u00b7 Apache 2.0 \u00b7 Copyright 2026 Mahendra GURAV"
     }
   },
   "errors": {

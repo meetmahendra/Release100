@@ -1,12 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ title }} — Release100</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+{% extends "base_shell.html" %}
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{% block title %}{{ title }} {{ t('core.login.title_suffix') }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center -m-6 sm:-m-8">
   <div class="w-full max-w-md px-4">
     <div class="bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl backdrop-blur">
 
@@ -20,14 +17,14 @@
                  9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
           </svg>
         </div>
-        <h1 class="text-2xl font-bold text-white">Release100 Admin</h1>
+        <h1 class="text-2xl font-bold text-white">{{ t('core.login.brand_title') }}</h1>
         {% if tenant and tenant.name %}
         <div class="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>Workspace: {{ tenant.name }}</span>
+          <span>{{ t('core.login.workspace_badge', name=tenant.name) }}</span>
         </div>
         {% else %}
-        <p class="text-slate-400 text-sm mt-1">KioskNode Platform Control Panel</p>
+        <p class="text-slate-400 text-sm mt-1">{{ t('core.login.brand_subtitle') }}</p>
         {% endif %}
       </div>
 
@@ -44,21 +41,21 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
         {% endif %}
         <div>
-          <label for="username" class="block text-sm font-medium text-slate-300 mb-1">Username, Phone Number, or Email</label>
+          <label for="username" class="block text-sm font-medium text-slate-300 mb-1">{{ t('core.login.username_label') }}</label>
           <input
             id="username" name="username" type="text" required autocomplete="username"
             class="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/15 text-white
                    placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            placeholder="admin or +919876543210"
+            placeholder="{{ t('core.login.username_placeholder') }}"
           />
         </div>
         <div>
-          <label for="password" class="block text-sm font-medium text-slate-300 mb-1">Password</label>
+          <label for="password" class="block text-sm font-medium text-slate-300 mb-1">{{ t('core.login.password_label') }}</label>
           <input
             id="password" name="password" type="password" required autocomplete="current-password"
             class="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-white/15 text-white
                    placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            placeholder="••••••••"
+            placeholder="{{ t('core.login.password_placeholder') }}"
           />
         </div>
         <button
@@ -66,14 +63,14 @@
           class="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold
                  transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-400"
         >
-          Sign In
+          {{ t('core.login.sign_in') }}
         </button>
       </form>
 
       <p class="text-center text-slate-500 text-xs mt-6">
-        GEES v1.0 · Apache 2.0 · Copyright 2026 Mahendra GURAV
+        {{ t('core.login.footer') }}
       </p>
     </div>
   </div>
-</body>
-</html>
+</div>
+{% endblock %}

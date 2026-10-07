@@ -76,10 +76,17 @@ def _render_login_view(
         if tenant_id and tenant_id not in ("public", "default", "default_tenant"):
             tenant_info = {"id": tenant_id, "name": tenant_name}
 
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=None,
+        shell_mode="bare",
+        tenant_name=tenant_info.get("name") if tenant_info else None,
+    )
+
     resp = templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"title": "Admin Login", "error": error, "csrf_token": csrf_token, "tenant": tenant_info},
+        context={"title": "Admin Login", "error": error, "csrf_token": csrf_token, "tenant": tenant_info, "ui": ui_ctx},
         status_code=status_code,
     )
     resp.set_cookie(

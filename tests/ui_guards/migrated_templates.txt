@@ -4,3 +4,4 @@ core_platform/app/ui/templates/base_shell.html
 core_platform/app/ui/templates/components/macros.html
 core_platform/app/admin_shell/templates/entitlements.html
 core_platform/app/admin_shell/templates/shell.html
+core_platform/app/admin_shell/templates/login.html
