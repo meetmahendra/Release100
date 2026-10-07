@@ -70,7 +70,7 @@ def test_build_top10_digest_with_messages() -> None:
         sender_name="Operator Amit",
         recipient_phone=mgr_phone,
         message_text="Need 100 paper cups urgently",
-        kiosk_id="CANEBOT-PUNE-01",
+        kiosk_id="NODE-PUNE-01",
         priority=50,
     )
     m2 = db.enqueue_internal_message(
@@ -78,7 +78,7 @@ def test_build_top10_digest_with_messages() -> None:
         sender_name="Operator Rohan",
         recipient_phone=mgr_phone,
         message_text="Chiller temp sensor reading 14.5C - warning!",
-        kiosk_id="CANEBOT-MUMBAI-02",
+        kiosk_id="NODE-MUMBAI-02",
         priority=75,
     )
 
@@ -92,8 +92,8 @@ def test_build_top10_digest_with_messages() -> None:
     # Priority 75 should come first in digest
     assert "Hello Priya Singh!" in digest
     assert "messages pending" in digest
-    assert "CANEBOT-MUMBAI-02" in digest
-    assert "CANEBOT-PUNE-01" in digest
+    assert "NODE-MUMBAI-02" in digest
+    assert "NODE-PUNE-01" in digest
 
     # Message 1 shown in full
     assert "👉 Message 1 of" in digest
@@ -120,7 +120,7 @@ def test_handle_manager_navigation_next_and_all() -> None:
         sender_name="Operator Vikas",
         recipient_phone=mgr_phone,
         message_text="First message from Vikas",
-        kiosk_id="CANEBOT-PUNE-03",
+        kiosk_id="NODE-PUNE-03",
         priority=25,
     )
     m2 = db.enqueue_internal_message(
@@ -128,7 +128,7 @@ def test_handle_manager_navigation_next_and_all() -> None:
         sender_name="Operator Sunita",
         recipient_phone=mgr_phone,
         message_text="Second message from Sunita",
-        kiosk_id="CANEBOT-PUNE-04",
+        kiosk_id="NODE-PUNE-04",
         priority=25,
     )
 
@@ -161,8 +161,8 @@ def test_handle_manager_reply_two_way_relay() -> None:
         sender_phone="+919700000005",
         sender_name="Operator Nilesh",
         recipient_phone=mgr_phone,
-        message_text="Running out of cane stalks for evening",
-        kiosk_id="CANEBOT-PUNE-05",
+        message_text="Running out of inventory for evening",
+        kiosk_id="NODE-PUNE-05",
         priority=50,
     )
 
@@ -188,9 +188,9 @@ def test_handle_manager_reply_two_way_relay() -> None:
     assert op_phone == "+919700000005"
     assert op_msg is not None
     assert "Reply from Supervisor Supervisor Rajesh" in op_msg
-    assert 'Re: "Running out of cane stalks for evening"' in op_msg
+    assert 'Re: "Running out of inventory for evening"' in op_msg
     assert "Supply truck dispatched, ETA 20 mins." in op_msg
-    assert "CANEBOT-PUNE-05" in op_msg
+    assert "NODE-PUNE-05" in op_msg
 
     # Verify message is marked RESOLVED in database
     with db.SessionLocal() as session:
@@ -213,7 +213,7 @@ def test_handle_manager_numbered_reply() -> None:
         sender_name="Op 1",
         recipient_phone=mgr_phone,
         message_text="Need cleaning cloth",
-        kiosk_id="CANEBOT-01",
+        kiosk_id="NODE-01",
         priority=25,
     )
     m2 = db.enqueue_internal_message(
@@ -221,7 +221,7 @@ def test_handle_manager_numbered_reply() -> None:
         sender_name="Op 2",
         recipient_phone=mgr_phone,
         message_text="Freezer compressor sound",
-        kiosk_id="CANEBOT-02",
+        kiosk_id="NODE-02",
         priority=75,
     )
 
@@ -251,7 +251,7 @@ async def test_send_urgent_meta_template_alert_simulated(monkeypatch: pytest.Mon
     res = await send_urgent_meta_template_alert(
         recipient_phone="+919800000008",
         operator_name="Operator Test",
-        kiosk_id="CANEBOT-PUNE-01",
+        kiosk_id="NODE-PUNE-01",
         alert_summary="Chiller failure critical",
     )
     assert res is True
@@ -273,7 +273,7 @@ async def test_send_urgent_meta_template_alert_success(monkeypatch: pytest.Monke
     res = await send_urgent_meta_template_alert(
         recipient_phone="+919800000008",
         operator_name="Operator Test",
-        kiosk_id="CANEBOT-PUNE-01",
+        kiosk_id="NODE-PUNE-01",
         alert_summary="Chiller failure critical",
     )
     assert res is True
@@ -289,7 +289,7 @@ def test_webhook_manager_greeting_and_reply_flow() -> None:
         emp_code="MGR-9901",
         full_name="Anjali Patil",
         phone_number=mgr_phone,
-        assigned_kiosk_id="CANEBOT-PUNE-01",
+        assigned_kiosk_id="NODE-PUNE-01",
         role="SUPERVISOR",
         status="ACTIVE",
     )
@@ -300,7 +300,7 @@ def test_webhook_manager_greeting_and_reply_flow() -> None:
         emp_code="EMP-9902",
         full_name="Ganesh Jadhav",
         phone_number=op_phone,
-        assigned_kiosk_id="CANEBOT-PUNE-01",
+        assigned_kiosk_id="NODE-PUNE-01",
         role="OPERATOR",
         reporting_manager_emp_code="MGR-9901",
         status="ACTIVE",

@@ -47,16 +47,12 @@ def _route_after_guardrail(state: MailOrganizerState) -> str:
     if state.get("safety_override", False):
         # Sub-threshold confidence (< 0.85): bypass drafting and calendar
         return "action_planner"
-    return "ownership"
 
-
-def _route_after_ownership(state: MailOrganizerState) -> str:
-    """Route based on recipient role and email category."""
     role = state.get("responsibility_role", "PRIMARY_ACTIONEE")
     cat = state.get("category", "")
 
-    # Suppress drafting and task extraction for promotional emails
-    if cat == "@Promotions":
+    # Suppress drafting and task extraction for promotional emails or observer-only emails
+    if cat == "@Promotions" or role == "OBSERVER_ONLY":
         return "action_planner"
 
     # Route meeting requests to calendar enrichment
@@ -99,9 +95,9 @@ class MailOrganizerWorkflow:
             return await pre_check_node(s, vip_senders=all_vips)
 
         workflow.add_node("pre_check", _pre_check_step)
+        workflow.add_node("ownership", ownership_node)
         workflow.add_node("classify", classify_node)
         workflow.add_node("guardrail", guardrail_node)
-        workflow.add_node("ownership", ownership_node)
         async def _calendar_step(s: MailOrganizerState) -> MailOrganizerState:
             return await calendar_node(s, calendar_connector=self.calendar_connector)
 
@@ -121,23 +117,14 @@ class MailOrganizerWorkflow:
 
         # 2. Wire edges
         workflow.set_entry_point("pre_check")
-        workflow.add_edge("pre_check", "classify")
+        workflow.add_edge("pre_check", "ownership")
+        workflow.add_edge("ownership", "classify")
         workflow.add_edge("classify", "guardrail")
 
         # Layer 2 Guardrail conditional routing
         workflow.add_conditional_edges(
             "guardrail",
             _route_after_guardrail,
-            {
-                "ownership": "ownership",
-                "action_planner": "action_planner",
-            },
-        )
-
-        # Ownership conditional routing
-        workflow.add_conditional_edges(
-            "ownership",
-            _route_after_ownership,
             {
                 "calendar": "calendar",
                 "draft": "draft",

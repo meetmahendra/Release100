@@ -40,6 +40,7 @@ class MailOrganizerState(TypedDict, total=False):
     # Layer 0: Deterministic Pre-Check Flags
     is_vip: bool
     is_no_reply: bool
+    is_auto_reply: bool
     has_critical_subject: bool
 
     # Layer 1: Stochastic Reasoning Outputs

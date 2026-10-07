@@ -51,6 +51,22 @@ async def pre_check_node(
     elif "auto-submitted" in headers or "list-unsubscribe" in headers:
         is_no_reply = True
 
+    # 1.5 Auto-Reply / Out of Office (OOO) detection
+    is_auto_reply = False
+    auto_reply_subjects = ["automatic reply:", "out of office:", "autoreply:", "ooo:", "auto-reply:"]
+    if any(subject.startswith(prefix) for prefix in auto_reply_subjects):
+        is_auto_reply = True
+    elif "auto-submitted" in headers and headers.get("auto-submitted") == "auto-replied":
+        is_auto_reply = True
+    elif any(phrase in (state.get("body") or "").lower() for phrase in [
+        "i am currently out of the office",
+        "i am on annual leave",
+        "i am out of office until",
+        "i am away from the office",
+        "i will have limited access to email",
+    ]):
+        is_auto_reply = True
+
     # 2. VIP match
     is_vip = any(vip in sender for vip in vips)
 
@@ -58,6 +74,7 @@ async def pre_check_node(
     has_critical_subject = any(kw in subject for kw in keywords)
 
     state["is_no_reply"] = is_no_reply
+    state["is_auto_reply"] = is_auto_reply
     state["is_vip"] = is_vip
     state["has_critical_subject"] = has_critical_subject
 

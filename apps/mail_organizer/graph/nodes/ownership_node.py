@@ -43,9 +43,9 @@ async def ownership_node(
         for addr in [
             user_email,
             state.get("user_email"),
-            "depali@company.com",
-            "user@canectar.com",
-            "me@canectar.com",
+            "user@company.com",
+            "user@apex.com",
+            "me@apex.com",
         ]
         if addr
     ]

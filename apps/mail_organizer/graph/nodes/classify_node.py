@@ -71,10 +71,31 @@ async def classify_node(state: MailOrganizerState) -> MailOrganizerState:
     matched_projects = resolve_active_projects(f"{subject} {body}")
     project_tags = [p.get("name", "").lower() for p in matched_projects if p.get("name")]
 
-    # Step 1: Layer 0 Deterministic Pre-Execution Filter (VIP Fast-Path & Newsletters)
+    # Step 1: Layer 0 Deterministic Pre-Execution Filter (Auto-Replies, VIP Fast-Path & Newsletters)
     llm_result: Optional[EmailClassificationOutput] = None
 
-    if is_vip:
+    if state.get("is_auto_reply"):
+        llm_result = EmailClassificationOutput(
+            category="@FYI",
+            urgency_score=1,
+            confidence_score=0.99,
+            reasoning="Automated Out-of-Office (OOO) or auto-reply notification.",
+            context_tags=["auto_reply", "ooo", "fyi"],
+            is_reply_necessary=False,
+            is_scheduling_request=False,
+        )
+    elif has_critical:
+        llm_result = EmailClassificationOutput(
+            category="@Urgent",
+            urgency_score=10,
+            confidence_score=0.99,
+            reasoning="Deterministic emergency critical keyword incident triage (@Urgent)",
+            context_tags=["emergency", "critical", "incident"],
+            is_reply_necessary=True,
+            reply_necessity_reason="Critical emergency escalation requires immediate response",
+            is_scheduling_request=False,
+        )
+    elif is_vip:
         llm_result = EmailClassificationOutput(
             category="@Action",
             urgency_score=8,
