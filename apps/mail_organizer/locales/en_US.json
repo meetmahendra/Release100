@@ -1,0 +1,24 @@
+{
+  "apps": {
+    "mail_organizer": {
+      "name": "AI Email & Calendar Organizer",
+      "nav": {
+        "dashboard": "📊 Executive Dashboard",
+        "triage": "⚡ Triage Simulator",
+        "drafts": "✍️ Staged Drafts",
+        "pm_queue": "📋 PM Action Queue",
+        "rules": "⚙️ Classification Rules",
+        "accounts": "📬 Connected Accounts"
+      },
+      "status": {
+        "pending": "Pending",
+        "synced": "Synced",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "active": "Active",
+        "connected": "Connected",
+        "disconnected": "Disconnected"
+      }
+    }
+  }
+}

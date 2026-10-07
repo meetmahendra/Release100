@@ -37,9 +37,13 @@ from apps.mail_organizer.database.db_service import MailDatabaseService
 from apps.mail_organizer.graph.state import MailOrganizerState
 from apps.mail_organizer.graph.state_graph import MailOrganizerWorkflow
 from apps.mail_organizer.pm.task_manager import PMTaskManager
+from core_platform.app.common.timezone import to_local_ist, to_local_ist_full
+from core_platform.app.config import settings
 from core_platform.app.entitlements.dependencies import require_action
 from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
 from core_platform.app.rbac.permissions import get_web_security_context, require_app
+from core_platform.app.ui.templating import build_templates
+from core_platform.app.ui.ui_context import Breadcrumb, build_ui_context
 
 router = APIRouter(
     prefix="/admin/apps/mail-organizer",
@@ -48,7 +52,11 @@ router = APIRouter(
 )
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
-templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
+templates = build_templates([_TEMPLATES_DIR])
+templates.env.filters["to_local_ist"] = to_local_ist
+templates.env.filters["to_local_ist_full"] = to_local_ist_full
+templates.env.globals["to_local_ist"] = to_local_ist
+templates.env.globals["to_local_ist_full"] = to_local_ist_full
 
 # Service instances
 _db_service = MailDatabaseService()
@@ -87,6 +95,17 @@ async def view_dashboard(request: Request) -> HTMLResponse:
     drafts = _db_service.get_all_drafts(tenant_id=tenant_id)
     recent_emails = _db_service.get_recent_emails(limit=50, tenant_id=tenant_id)
 
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=None,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name=org_name or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.dashboard", path="/admin/apps/mail-organizer/dashboard"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
@@ -100,6 +119,7 @@ async def view_dashboard(request: Request) -> HTMLResponse:
             "pending_tasks": pending_tasks,
             "drafts": drafts,
             "recent_emails": recent_emails,
+            "ui": ui_ctx,
         },
     )
 
@@ -109,6 +129,18 @@ async def view_triage(request: Request) -> HTMLResponse:
     """Render Triage Simulator."""
     tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
     emails = _db_service.get_recent_emails(limit=25, tenant_id=tenant_id)
+
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=None,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name=org_name or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.triage", path="/admin/apps/mail-organizer/triage"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="triage.html",
@@ -119,6 +151,7 @@ async def view_triage(request: Request) -> HTMLResponse:
             "tenant_name": org_name,
             "active_tenant": active_tenant,
             "emails": emails,
+            "ui": ui_ctx,
         },
     )
 
@@ -189,6 +222,18 @@ async def view_pm_queue(request: Request) -> HTMLResponse:
     """Render Human-in-the-Loop PM Action Queue."""
     tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
     pending_tasks = _db_service.get_pending_pm_tasks(tenant_id=tenant_id)
+
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=None,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name=org_name or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.pm_queue", path="/admin/apps/mail-organizer/pm-queue"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="pm_queue.html",
@@ -199,6 +244,7 @@ async def view_pm_queue(request: Request) -> HTMLResponse:
             "tenant_name": org_name,
             "active_tenant": active_tenant,
             "tasks": pending_tasks,
+            "ui": ui_ctx,
         },
     )
 
@@ -228,6 +274,18 @@ async def view_rules(request: Request) -> HTMLResponse:
     rules = _db_service.get_all_rules(rule_type=None)
     if tenant_id and tenant_id not in ("platform", "*"):
         rules = [r for r in rules if getattr(r, "tenant_id", "public") == tenant_id]
+
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=None,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name=org_name or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.rules", path="/admin/apps/mail-organizer/rules"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="rules.html",
@@ -238,6 +296,7 @@ async def view_rules(request: Request) -> HTMLResponse:
             "tenant_name": org_name,
             "active_tenant": active_tenant,
             "rules": rules,
+            "ui": ui_ctx,
         },
     )
 
@@ -247,6 +306,18 @@ async def view_drafts(request: Request) -> HTMLResponse:
     """Render Contextual Draft Replies."""
     tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
     drafts = _db_service.get_all_drafts(tenant_id=tenant_id)
+
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=None,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name=org_name or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.drafts", path="/admin/apps/mail-organizer/drafts"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="drafts.html",
@@ -257,6 +328,7 @@ async def view_drafts(request: Request) -> HTMLResponse:
             "tenant_name": org_name,
             "active_tenant": active_tenant,
             "drafts": drafts,
+            "ui": ui_ctx,
         },
     )
 
@@ -300,6 +372,17 @@ async def view_accounts(request: Request) -> HTMLResponse:
     except Exception:
         oauth_status = "connector_error"
 
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=None,
+        allowed_apps=["temperature_marker", "mail_organizer"],
+        tenant_name=org_name or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.accounts", path="/admin/apps/mail-organizer/accounts"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="accounts.html",
@@ -312,6 +395,7 @@ async def view_accounts(request: Request) -> HTMLResponse:
             "oauth_status": oauth_status,
             "oauth_email": oauth_email,
             "sync_interval": sync_interval,
+            "ui": ui_ctx,
         },
     )
 

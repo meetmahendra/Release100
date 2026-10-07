@@ -18,6 +18,7 @@ Mail Organizer Application Cartridge Plugin.
 Adheres strictly to Plan 04 v1.0 Section 2 and Core Platform Plugin Architecture.
 """
 
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
@@ -30,6 +31,7 @@ from apps.mail_organizer.mcp.tools import get_mail_organizer_mcp_tools
 from apps.mail_organizer.pm.task_manager import PMTaskManager
 from core_platform.app.plugin_engine.base_plugin import BaseApplication
 from core_platform.app.telemetry.audit_engine import AuditEngine
+from core_platform.app.ui.contracts import NavItem, StatusInfo
 
 
 class MailOrganizerConfig(BaseModel):
@@ -110,6 +112,34 @@ class MailOrganizerApplication(BaseApplication):
         """Return the FastAPI router for Admin Web Shell."""
         from apps.mail_organizer.ui.routes import router
         return router
+
+    def get_locale_dir(self) -> Optional[Path]:
+        """Return the directory holding this cartridge's locales."""
+        d = Path(__file__).parent / "locales"
+        return d if d.is_dir() else None
+
+    def get_ui_nav(self) -> List[NavItem]:
+        """Return sidebar navigation items for Mail Organizer."""
+        return [
+            NavItem(label_key="apps.mail_organizer.nav.dashboard", path="/admin/apps/mail-organizer/dashboard", group_key="apps.mail_organizer.name"),
+            NavItem(label_key="apps.mail_organizer.nav.triage", path="/admin/apps/mail-organizer/triage", group_key="apps.mail_organizer.name"),
+            NavItem(label_key="apps.mail_organizer.nav.drafts", path="/admin/apps/mail-organizer/drafts", group_key="apps.mail_organizer.name"),
+            NavItem(label_key="apps.mail_organizer.nav.pm_queue", path="/admin/apps/mail-organizer/pm-queue", group_key="apps.mail_organizer.name"),
+            NavItem(label_key="apps.mail_organizer.nav.rules", path="/admin/apps/mail-organizer/rules", group_key="apps.mail_organizer.name"),
+            NavItem(label_key="apps.mail_organizer.nav.accounts", path="/admin/apps/mail-organizer/accounts", group_key="apps.mail_organizer.name"),
+        ]
+
+    def get_ui_statuses(self) -> Dict[str, StatusInfo]:
+        """Return status display mappings for Mail Organizer."""
+        return {
+            "MAIL_PENDING": StatusInfo(code="MAIL_PENDING", tone="warning", icon="clock", label_key="apps.mail_organizer.status.pending"),
+            "MAIL_SYNCED": StatusInfo(code="MAIL_SYNCED", tone="success", icon="check", label_key="apps.mail_organizer.status.synced"),
+            "MAIL_APPROVED": StatusInfo(code="MAIL_APPROVED", tone="success", icon="check", label_key="apps.mail_organizer.status.approved"),
+            "MAIL_REJECTED": StatusInfo(code="MAIL_REJECTED", tone="danger", icon="alert", label_key="apps.mail_organizer.status.rejected"),
+            "MAIL_ACTIVE": StatusInfo(code="MAIL_ACTIVE", tone="success", icon="check", label_key="apps.mail_organizer.status.active"),
+            "MAIL_CONNECTED": StatusInfo(code="MAIL_CONNECTED", tone="success", icon="check", label_key="apps.mail_organizer.status.connected"),
+            "MAIL_DISCONNECTED": StatusInfo(code="MAIL_DISCONNECTED", tone="danger", icon="alert", label_key="apps.mail_organizer.status.disconnected"),
+        }
 
     def get_mcp_tools(self) -> List[Dict[str, Any]]:
         """Return the domain tools exported to Core MCP Server."""

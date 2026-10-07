@@ -1,11 +1,28 @@
 STATUS 200
-<html lang="en">
+<html lang="en-US">
 <head>
 <meta charset="UTF-#">
-<meta content="width=device-width, initial-scale=#.#" name="viewport">
+<meta content="width=device-width, initial-scale=#" name="viewport">
 <title>
-  Logic & Workflow Trace Dashboard - Release#
+  Logic & Workflow Trace Dashboard
 </title>
+<link href="/ui-static/tokens.css" rel="stylesheet">
+<script src="/ui-static/tailwind.standalone.js">
+</script>
+<style type="text/tailwindcss">
+  @theme {
+  --color-page: ##;
+  --color-card: ##f#a;
+  --color-line: ##e#b;
+  --color-ink: #e#e#f#;
+  --color-muted: ##a#b#;
+  --color-primary: ##b#;
+  --color-devops: ##f#;
+  --color-preview: #f#e#b;
+  --color-danger: #f#f#e;
+  --color-info: ##bdf#;
+  }
+</style>
 <style>
   :root {
   --bg-main: ##b#f#;
@@ -21,77 +38,13 @@ STATUS 200
   --accent-purple: ##b#cf#;
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
-  * {
-  box-sizing: border-box;
-  margin: #;
-  padding: #;
-  }
-  body {
-  font-family: var(--font-family);
-  background-color: var(--bg-main);
-  color: var(--text-primary);
-  min-height: #vh;
-  display: flex;
-  flex-direction: column;
-  }
-  header {
-  background-color: var(--bg-card);
-  border-bottom: #px solid var(--border-color);
-  padding: #rem #rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  }
-  .brand {
-  display: flex;
-  align-items: center;
-  gap: #.#rem;
-  text-decoration: none;
-  color: var(--text-primary);
-  }
-  .brand-badge {
-  background: linear-gradient(#deg, ##f#, ##ca);
-  color: white;
-  font-weight: #;
-  font-size: #.#rem;
-  padding: #.#rem #.#rem;
-  border-radius: #px;
-  letter-spacing: #.#em;
-  }
-  .brand-title {
-  font-size: #.#rem;
-  font-weight: #;
-  }
-  nav {
-  display: flex;
-  gap: #rem;
-  }
-  nav a {
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: #.#rem;
-  font-weight: #;
-  padding: #.#rem #.#rem;
-  border-radius: #px;
-  transition: all #.#s ease;
-  }
-  nav a:hover, nav a.active {
-  color: var(--text-primary);
-  background-color: var(--bg-card-hover);
-  }
-  main {
-  flex: #;
-  padding: #rem;
-  max-width: #px;
-  margin: # auto;
-  width: #%;
-  }
   .card {
   background-color: var(--bg-card);
   border: #px solid var(--border-color);
   border-radius: #px;
   padding: #.#rem;
   margin-bottom: #.#rem;
+  box-shadow: # #px #px -#px rgba(#, #, #, #.#);
   }
   .badge {
   display: inline-block;
@@ -108,19 +61,29 @@ STATUS 200
   .badge-needs-review { background: rgba(#, #, #, #.#); color: #fbcfe#; border: #px solid #ec#; }
   .badge-success { background: rgba(#, #, #, #.#); color: #a#f#d#; border: #px solid ##b#; }
   .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background-color: var(--accent-primary);
   color: white;
   border: none;
-  padding: #.#rem #.#rem;
+  padding: #.#rem #rem;
   border-radius: #px;
+  font-size: #.#rem;
   font-weight: #;
   cursor: pointer;
+  text-decoration: none;
   transition: all #.#s ease;
   }
   .btn:hover { opacity: #.#; }
-  .btn-success { background-color: var(--accent-green); }
-  .btn-danger { background-color: var(--accent-red); }
-  .btn-secondary { background-color: ##; }
+  .btn-primary { background-color: var(--accent-primary); color: white; }
+  .btn-primary:hover { background-color: ##f#e#; }
+  .btn-success { background-color: var(--accent-green); color: white; }
+  .btn-success:hover { background-color: ##; }
+  .btn-danger { background-color: var(--accent-red); color: white; }
+  .btn-danger:hover { background-color: #dc#; }
+  .btn-secondary { background-color: ##; color: white; }
+  .btn-secondary:hover { background-color: ##; }
   table {
   width: #%;
   border-collapse: collapse;
@@ -139,51 +102,67 @@ STATUS 200
   }
 </style>
 </head>
-<body>
-<header>
-<div style="display: flex; align-items: center; gap: #rem;">
-<a class="brand" href="/admin/apps/mail-organizer/dashboard">
-<span class="brand-badge">
-  MAIL
-</span>
-<span class="brand-title">
-  AI Mail Organizer
-</span>
+<body class="ui-shell bg-page text-ink min-h-screen">
+<a class="ui-sr-only focus:not-sr-only" href="#main">
+  Skip to main content
 </a>
-<span class="badge" style="background: rgba(#, #, #, #.#); color: #c#d#fe; border: #px solid ##f#; font-family: monospace; font-size: #.#rem; padding: #.#rem #.#rem; border-radius: #px; display: inline-flex; align-items: center; gap: #.#rem;">
-<span>
-  🏢
-</span>
-<strong style="color: #ffffff;">
-  Release# Organization
-</strong>
-<span style="opacity: #.#;">
-  (default_tenant)
-</span>
-</span>
+<div class="flex min-h-screen">
+<aside aria-label="Main navigation" class="w-# shrink-# border-r border-line bg-card">
+<div class="p-# border-b border-line">
+<a class="font-semibold text-ink" href="/admin/">
+  Home
+</a>
 </div>
-<nav style="display: flex; align-items: center; gap: #rem;">
-<a class="active" href="/admin/apps/mail-organizer/dashboard">
-  Dashboard
-</a>
-<a class="" href="/admin/apps/mail-organizer/triage">
-  Triage Simulator
-</a>
-<a class="" href="/admin/apps/mail-organizer/pm-queue">
-  PM Action Queue
-</a>
-<a class="" href="/admin/apps/mail-organizer/drafts">
-  Drafts
-</a>
-<a class="" href="/admin/apps/mail-organizer/rules">
-  Rules & VIPs
-</a>
-<a href="/admin/" style="color: ##a#b#; font-size: #.#rem; border-left: #px solid var(--border-color); padding-left: #.#rem;">
-  ← Admin Shell
-</a>
+<nav class="p-#">
+<ul class="space-y-#">
+<li class="px-# py-#.# text-xs italic text-muted">
+  No cartridges installed
+</li>
+</ul>
 </nav>
+</aside>
+<div class="flex-# min-w-# flex flex-col">
+<header class="flex items-center justify-between gap-# border-b border-line bg-card px-# py-#">
+<nav aria-label="Breadcrumb">
+<ol class="flex items-center gap-# text-sm text-muted">
+<li>
+<a class="hover:text-ink" href="/admin/apps/mail-organizer/dashboard">
+  AI Email & Calendar Organizer
+</a>
+</li>
+<li aria-hidden="true">
+  /
+</li>
+<li>
+<span aria-current="page" class="text-ink">
+  📊 Executive Dashboard
+</span>
+</li>
+</ol>
+</nav>
+<div class="flex items-center gap-# text-sm">
+<span class="rounded-md border border-line px-# py-#" title="Workspace">
+  Release# Organization
+</span>
+<span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
+<span aria-hidden="true">
+  ◐
+</span>
+  Preview
+</span>
+<span aria-label="Language" class="flex items-center gap-#">
+<a aria-current="true" class="rounded px-# text-ink font-semibold" href="?lang=en_US" hreflang="en-US">
+  English (US)
+</a>
+</span>
+<a class="rounded-md border border-line px-# py-# hover:bg-line" href="/admin/logout">
+  Sign out
+</a>
+</div>
 </header>
-<main>
+<div aria-label="Notifications" aria-live="polite" class="px-# pt-# empty:hidden" id="ui-alerts" role="status">
+</div>
+<main class="flex-# p-#" id="main">
 <style>
   .trace-container { max-width: #%; }
   .trace-header {
@@ -530,5 +509,12 @@ STATUS 200
   }
 </script>
 </main>
+</div>
+</div>
+<script id="i#n-bundle" type="application/json">
+  {"errors.binding_already_exists": "This group already has this package at this reach.", "errors.generic": "Something went wrong. Please try again.", "errors.group_not_found": "That group no longer exists.", "errors.high_risk_confirmation_required": "Please tick the box to confirm this high-governance package.", "errors.network": "We could not reach the server. Check your connection and try again.", "errors.scope_not_allowed": "That reach is not allowed for this package.", "errors.scope_unit_required": "Pick a unit for this reach.", "errors.service_group_cannot_hold_high_risk": "Not available to AI assistants.", "errors.unknown_bundle": "That access package is not available."}
+</script>
+<script src="/ui-static/ui.js">
+</script>
 </body>
 </html>

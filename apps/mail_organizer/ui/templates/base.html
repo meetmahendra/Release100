@@ -1,181 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}AI Mail Organizer{% endblock %} - Release100</title>
-    <style>
-        :root {
-            --bg-main: #0b0f19;
-            --bg-card: #151d2f;
-            --bg-card-hover: #1e293b;
-            --border-color: #27354f;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-primary: #6366f1;
-            --accent-green: #10b981;
-            --accent-amber: #f59e0b;
-            --accent-red: #ef4444;
-            --accent-purple: #8b5cf6;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
+{% extends "base_shell.html" %}
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+{% block title %}{{ t('apps.mail_organizer.name') }} — Release100{% endblock %}
 
-        body {
-            font-family: var(--font-family);
-            background-color: var(--bg-main);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+{% block extra_head %}
+<style>
+  :root {
+    --bg-main: #0b0f19;
+    --bg-card: #151d2f;
+    --bg-card-hover: #1e293b;
+    --border-color: #27354f;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-primary: #6366f1;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-purple: #8b5cf6;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
 
-        header {
-            background-color: var(--bg-card);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+  .card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+  }
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            text-decoration: none;
-            color: var(--text-primary);
-        }
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .badge-urgent { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; }
+  .badge-action { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid #f59e0b; }
+  .badge-meeting { background: rgba(99, 102, 241, 0.2); color: #c7d2fe; border: 1px solid #6366f1; }
+  .badge-promotions { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid #64748b; }
+  .badge-needs-review { background: rgba(236, 72, 153, 0.2); color: #fbcfe8; border: 1px solid #ec4899; }
+  .badge-success { background: rgba(16, 185, 129, 0.2); color: #a7f3d0; border: 1px solid #10b981; }
 
-        .brand-badge {
-            background: linear-gradient(135deg, #6366f1, #4338ca);
-            color: white;
-            font-weight: 700;
-            font-size: 0.85rem;
-            padding: 0.25rem 0.6rem;
-            border-radius: 4px;
-            letter-spacing: 0.05em;
-        }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--accent-primary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn-primary { background-color: var(--accent-primary); color: white; }
+  .btn-primary:hover { background-color: #4f46e5; }
+  .btn-success { background-color: var(--accent-green); color: white; }
+  .btn-success:hover { background-color: #059669; }
+  .btn-danger { background-color: var(--accent-red); color: white; }
+  .btn-danger:hover { background-color: #dc2626; }
+  .btn-secondary { background-color: #475569; color: white; }
+  .btn-secondary:hover { background-color: #334155; }
 
-        .brand-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  th {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+</style>
+{% block head %}{% endblock %}
+{% endblock %}
 
-        nav {
-            display: flex;
-            gap: 1rem;
-        }
-
-        nav a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: 500;
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-
-        nav a:hover, nav a.active {
-            color: var(--text-primary);
-            background-color: var(--bg-card-hover);
-        }
-
-        main {
-            flex: 1;
-            padding: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        .card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .badge-urgent { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; }
-        .badge-action { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid #f59e0b; }
-        .badge-meeting { background: rgba(99, 102, 241, 0.2); color: #c7d2fe; border: 1px solid #6366f1; }
-        .badge-promotions { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid #64748b; }
-        .badge-needs-review { background: rgba(236, 72, 153, 0.2); color: #fbcfe8; border: 1px solid #ec4899; }
-        .badge-success { background: rgba(16, 185, 129, 0.2); color: #a7f3d0; border: 1px solid #10b981; }
-
-        .btn {
-            background-color: var(--accent-primary);
-            color: white;
-            border: none;
-            padding: 0.6rem 1.2rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .btn:hover { opacity: 0.9; }
-        .btn-success { background-color: var(--accent-green); }
-        .btn-danger { background-color: var(--accent-red); }
-        .btn-secondary { background-color: #475569; }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        th, td {
-            text-align: left;
-            padding: 0.75rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-        th {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-    </style>
-    {% block head %}{% endblock %}
-</head>
-<body>
-    <header>
-        <div style="display: flex; align-items: center; gap: 1rem;">
-            <a href="/admin/apps/mail-organizer/dashboard" class="brand">
-                <span class="brand-badge">MAIL</span>
-                <span class="brand-title">AI Mail Organizer</span>
-            </a>
-            <span class="badge" style="background: rgba(99, 102, 241, 0.25); color: #c7d2fe; border: 1px solid #6366f1; font-family: monospace; font-size: 0.82rem; padding: 0.25rem 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.4rem;">
-                <span>🏢</span>
-                <strong style="color: #ffffff;">{{ organization or tenant_name or (active_tenant.name if active_tenant else 'Public Organization') }}</strong>
-                <span style="opacity: 0.75;">({{ tenant_id or 'public' }})</span>
-            </span>
-        </div>
-        <nav style="display: flex; align-items: center; gap: 1rem;">
-            <a href="/admin/apps/mail-organizer/dashboard" class="{% if active_tab == 'dashboard' %}active{% endif %}">Dashboard</a>
-            <a href="/admin/apps/mail-organizer/triage" class="{% if active_tab == 'triage' %}active{% endif %}">Triage Simulator</a>
-            <a href="/admin/apps/mail-organizer/pm-queue" class="{% if active_tab == 'pm-queue' %}active{% endif %}">PM Action Queue</a>
-            <a href="/admin/apps/mail-organizer/drafts" class="{% if active_tab == 'drafts' %}active{% endif %}">Drafts</a>
-            <a href="/admin/apps/mail-organizer/rules" class="{% if active_tab == 'rules' %}active{% endif %}">Rules & VIPs</a>
-            <a href="/admin/" style="color: #94a3b8; font-size: 0.85rem; border-left: 1px solid var(--border-color); padding-left: 0.75rem;">← Admin Shell</a>
-        </nav>
-    </header>
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-</body>
-</html>
+{% block content %}
+{% endblock %}
