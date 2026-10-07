@@ -30,3 +30,4 @@ apps/mail_organizer/ui/templates/accounts.html
 apps/mail_organizer/ui/templates/dashboard.html
 apps/mail_organizer/ui/templates/_dashboard_header.html
 apps/mail_organizer/ui/templates/_dashboard_trace_cards.html
+apps/mail_organizer/ui/templates/drafts.html
