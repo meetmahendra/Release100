@@ -22,7 +22,8 @@ variables with safe defaults. Adheres to GEES v1.0 fail-safe defaults (DRY_RUN=T
 import os
 from pathlib import Path
 from typing import List, Literal, Optional
-from pydantic import Field
+import re
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -199,6 +200,47 @@ class PlatformSettings(BaseSettings):
         default="entitlements.json",
         description="File name of the entitlement manifest shipped inside each cartridge package",
     )
+
+    # Unified UI, content SSOT and NLS (Plan 11)
+    UI_DEFAULT_LOCALE: str = Field(
+        default="en_US",
+        description="Locale used when no explicit, cookie or Accept-Language match is found",
+    )
+    UI_SUPPORTED_LOCALES: List[str] = Field(
+        default_factory=lambda: ["en_US"],
+        description="Locales the UI may serve, for example [\"en_US\", \"hi_IN\"]",
+    )
+    UI_LOCALE_COOKIE_NAME: str = Field(
+        default="ui_locale",
+        description="Name of the cookie that stores the user's chosen UI locale",
+    )
+    UI_MISSING_KEY_POLICY: Literal["marker", "key"] = Field(
+        default="marker",
+        description="Missing translation key rendering: marker -> [[key]] | key -> the key itself",
+    )
+
+    @field_validator("UI_DEFAULT_LOCALE")
+    @classmethod
+    def _validate_default_locale(cls, value: str) -> str:
+        if re.fullmatch(r"[a-z]{2,3}_[A-Z]{2}", value) is None:
+            raise ValueError("UI_DEFAULT_LOCALE must look like en_US")
+        return value
+
+    @field_validator("UI_SUPPORTED_LOCALES")
+    @classmethod
+    def _validate_supported_locales(cls, value: List[str]) -> List[str]:
+        if not value:
+            raise ValueError("UI_SUPPORTED_LOCALES must not be empty")
+        for item in value:
+            if re.fullmatch(r"[a-z]{2,3}_[A-Z]{2}", item) is None:
+                raise ValueError(f"Invalid locale code: {item}")
+        return value
+
+    @model_validator(mode="after")
+    def _default_locale_is_supported(self) -> "PlatformSettings":
+        if self.UI_DEFAULT_LOCALE not in self.UI_SUPPORTED_LOCALES:
+            raise ValueError("UI_DEFAULT_LOCALE must be listed in UI_SUPPORTED_LOCALES")
+        return self
 
 
 # Singleton settings instance
