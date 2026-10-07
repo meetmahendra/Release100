@@ -1,0 +1,41 @@
+/* Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 */
+/* Design tokens for the unified UI shell (Plan 11, T11). Colours are never the only signal (D17). */
+:root {
+  --ui-bg: #020617;
+  --ui-card: #0f172a;
+  --ui-border: #1e293b;
+  --ui-text: #e2e8f0;
+  --ui-text-muted: #94a3b8;
+  --ui-primary: #10b981;
+  --ui-primary-contrast: #022c22;
+  --ui-devops: #6366f1;
+  --ui-preview: #f59e0b;
+  --ui-danger: #f43f5e;
+  --ui-info: #38bdf8;
+  --ui-radius: 0.75rem;
+  --ui-radius-sm: 0.5rem;
+  --ui-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ui-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ui-focus: 0 0 0 3px rgba(16, 185, 129, 0.45);
+}
+
+body.ui-shell {
+  margin: 0;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
+
+.ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus);
+}

@@ -116,6 +116,9 @@ _photos_vault = Path("logs/photos")
 _photos_vault.mkdir(parents=True, exist_ok=True)
 app.mount("/logs/photos", StaticFiles(directory=str(_photos_vault)), name="logs_photos")
 
+# Offline UI assets (Tailwind build, design tokens, ui.js); no CDN is used (Plan 11, D16).
+app.mount("/ui-static", StaticFiles(directory=str(Path(__file__).parent / "app" / "ui" / "static")), name="ui_static")
+
 
 
 @app.middleware("http")
