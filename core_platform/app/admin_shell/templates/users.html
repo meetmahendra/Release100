@@ -1,322 +1,292 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>User & Identity Management — Release100</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+{% extends "base_shell.html" %}
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{% block title %}{{ t('core.users.title_tag') }}{% endblock %}
 
-  <!-- Header -->
-  <header class="h-16 bg-slate-800/90 border-b border-slate-700/60 px-6 flex items-center justify-between shrink-0">
-    <div class="flex items-center gap-4">
-      <a href="/admin/" class="flex items-center gap-2 text-slate-300 hover:text-white transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-        </svg>
-        <span class="font-bold text-white">Platform Dashboard</span>
-      </a>
-      <span class="text-slate-500">/</span>
-      <h1 class="text-lg font-semibold text-emerald-400 flex items-center gap-2">
-        <span>👥</span> Multi-Tenant User Registry & WhatsApp Entitlements
-      </h1>
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Flash message -->
+  {% if message %}
+  <div class="bg-emerald-900/40 border border-emerald-500/50 rounded-xl p-4 text-emerald-300 text-sm flex items-center justify-between">
+    <span>{{ message }}</span>
+    <button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-white">✕</button>
+  </div>
+  {% endif %}
+  {% if error %}
+  <div class="bg-red-900/40 border border-red-500/50 rounded-xl p-4 text-red-300 text-sm flex items-center justify-between">
+    <span>{{ error }}</span>
+    <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-white">✕</button>
+  </div>
+  {% endif %}
+
+  <!-- Metric Counters -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
+      <p class="text-xs text-slate-400 uppercase tracking-wider">{{ t('core.users.stat_total') }}</p>
+      <p class="text-2xl font-bold text-white mt-1">{{ users|length }}</p>
     </div>
-    <div class="flex items-center gap-3 text-xs">
-      <span class="px-2.5 py-1 rounded bg-slate-700/60 text-slate-300 border border-slate-600/50">
-        🏢 Tenant: <strong class="text-white">{{ organization or tenant_name or active_tenant or 'public' }}</strong> <span class="text-emerald-400 font-mono">({{ tenant_id or active_tenant or 'public' }})</span>
-      </span>
-      <span class="px-2.5 py-1 rounded bg-slate-700/60 text-slate-300 border border-slate-600/50">
-        Admin: <strong class="text-white">{{ principal }}</strong>
-      </span>
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
+      <p class="text-xs text-slate-400 uppercase tracking-wider">{{ t('core.users.stat_active') }}</p>
+      <p class="text-2xl font-bold text-emerald-400 mt-1">{{ users|selectattr('status', 'equalto', 'active')|list|length }}</p>
     </div>
-  </header>
-
-  <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
-
-    <!-- Flash message -->
-    {% if message %}
-    <div class="bg-emerald-900/40 border border-emerald-500/50 rounded-xl p-4 text-emerald-300 text-sm flex items-center justify-between">
-      <span>{{ message }}</span>
-      <button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-white">✕</button>
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
+      <p class="text-xs text-slate-400 uppercase tracking-wider">{{ t('core.users.stat_google') }}</p>
+      <p class="text-2xl font-bold text-sky-400 mt-1">{{ users|selectattr('google_email')|list|length }}</p>
     </div>
-    {% endif %}
-    {% if error %}
-    <div class="bg-red-900/40 border border-red-500/50 rounded-xl p-4 text-red-300 text-sm flex items-center justify-between">
-      <span>{{ error }}</span>
-      <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-white">✕</button>
-    </div>
-    {% endif %}
-
-    <!-- Metric Counters -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 uppercase tracking-wider">Total Registered Users</p>
-        <p class="text-2xl font-bold text-white mt-1">{{ users|length }}</p>
-      </div>
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 uppercase tracking-wider">Active WhatsApp Users</p>
-        <p class="text-2xl font-bold text-emerald-400 mt-1">{{ users|selectattr('status', 'equalto', 'active')|list|length }}</p>
-      </div>
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 uppercase tracking-wider">Google OAuth Linked</p>
-        <p class="text-2xl font-bold text-sky-400 mt-1">{{ users|selectattr('google_email')|list|length }}</p>
-      </div>
-      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
-        <p class="text-xs text-slate-400 uppercase tracking-wider">Suspended / Inactive</p>
-        <p class="text-2xl font-bold text-amber-400 mt-1">{{ users|rejectattr('status', 'equalto', 'active')|list|length }}</p>
-      </div>
-    </div>
-
-    <!-- Registration Section -->
-    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
-      <h2 class="text-base font-semibold text-white mb-4 flex items-center gap-2">
-        <span>➕</span> Register New WhatsApp User
-      </h2>
-      <form action="/admin/users" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-        
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">E.164 Phone Number *</label>
-          <input type="text" name="phone_number" placeholder="+1234567890 or +919876543210" required
-                 class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Full Name *</label>
-          <input type="text" name="full_name" placeholder="Jane Doe" required
-                 class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Tenant Partition</label>
-          <div class="flex items-center gap-2 px-3 py-2 bg-slate-950/60 border border-slate-700/80 rounded-lg text-slate-300 text-sm font-mono">
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>{{ active_tenant or 'public' }}</span>
-            <span class="text-xs text-slate-500 ml-auto font-sans">(Auto-scoped)</span>
-          </div>
-          <input type="hidden" name="tenant_id" value="{{ active_tenant or 'public' }}" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Role</label>
-          <select name="role" class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 outline-none">
-            <option value="user" selected>User</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="admin">Administrator</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Timezone</label>
-          <input type="text" name="timezone" value="UTC"
-                 class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Web Login Password (Optional)</label>
-          <input type="password" name="password" placeholder="••••••••"
-                 class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Email Address (Optional)</label>
-          <input type="email" name="email" placeholder="user@company.com"
-                 class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Allowed Application Cartridges</label>
-          <div class="flex flex-wrap items-center gap-4 mt-2">
-            {% if 'mail_organizer' in tenant_cartridges %}
-            <label class="flex items-center gap-2 text-xs text-slate-300">
-              <input type="checkbox" name="cartridges" value="mail_organizer" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-              <span>📧 Mail Organizer</span>
-            </label>
-            {% endif %}
-            {% if 'temperature_marker' in tenant_cartridges %}
-            <label class="flex items-center gap-2 text-xs text-slate-300">
-              <input type="checkbox" name="cartridges" value="temperature_marker" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-              <span>🌡️ Temperature Marker</span>
-            </label>
-            {% endif %}
-            {% for c in tenant_cartridges %}
-            {% if c not in ['mail_organizer', 'temperature_marker'] %}
-            <label class="flex items-center gap-2 text-xs text-slate-300">
-              <input type="checkbox" name="cartridges" value="{{ c }}" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-              <span>📦 {{ c }}</span>
-            </label>
-            {% endif %}
-            {% endfor %}
-          </div>
-        </div>
-
-        <div class="md:col-span-3 flex justify-end">
-          <button type="submit" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-sm text-white transition-colors shadow-lg shadow-emerald-600/20">
-            Register User
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Users Table -->
-    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg">
-      <div class="p-4 border-b border-slate-700/60 flex flex-wrap items-center justify-between gap-4">
-        <h3 class="text-base font-semibold text-white">Registered Users Directory</h3>
-        <input id="tableSearch" type="text" placeholder="Search phone, name, tenant..." oninput="filterTable()"
-               class="bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 w-64 outline-none focus:border-emerald-500" />
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-slate-300" id="usersTable">
-          <thead class="bg-slate-900/60 uppercase text-slate-400 border-b border-slate-700/60 font-semibold">
-            <tr>
-              <th class="px-4 py-3">Phone</th>
-              <th class="px-4 py-3">Name</th>
-              <th class="px-4 py-3">Tenant</th>
-              <th class="px-4 py-3">Role</th>
-              <th class="px-4 py-3">Entitled Cartridges</th>
-              <th class="px-4 py-3">Google Auth</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3">Last Heartbeat</th>
-              <th class="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-700/40">
-            {% for u in users %}
-            <tr class="hover:bg-slate-700/30 transition-colors user-row">
-              <td class="px-4 py-3 font-mono font-bold text-white">{{ u.phone_number }}</td>
-              <td class="px-4 py-3 font-medium text-slate-200">{{ u.full_name }}</td>
-              <td class="px-4 py-3">
-                <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono">{{ u.tenant_id }}</span>
-              </td>
-              <td class="px-4 py-3">
-                <span class="capitalize">{{ u.role }}</span>
-              </td>
-              <td class="px-4 py-3">
-                <div class="flex flex-wrap gap-1">
-                  {% for c in u.allowed_cartridges %}
-                  <span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-950 border border-emerald-700 text-emerald-300 font-mono">{{ c }}</span>
-                  {% else %}
-                  <span class="text-slate-500 italic">None</span>
-                  {% endfor %}
-                </div>
-              </td>
-              <td class="px-4 py-3">
-                {% if u.google_email %}
-                <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-700 text-sky-300 flex items-center gap-1 max-w-[160px] truncate" title="{{ u.google_email }}">
-                  <span>✓</span> {{ u.google_email }}
-                </span>
-                {% else %}
-                <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400">Not Linked</span>
-                {% endif %}
-              </td>
-              <td class="px-4 py-3">
-                {% if u.status == 'active' %}
-                <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">Active</span>
-                {% else %}
-                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold capitalize">{{ u.status }}</span>
-                {% endif %}
-              </td>
-              <td class="px-4 py-3 text-slate-400">
-                {{ u.last_whatsapp_interaction_at.strftime('%Y-%m-%d %H:%M') if u.last_whatsapp_interaction_at else 'Never' }}
-              </td>
-              <td class="px-4 py-3 text-right">
-                <div class="flex items-center justify-end gap-2">
-                  <!-- Magic Link Button -->
-                  <button onclick="getMagicLink('{{ u.id }}', '{{ u.phone_number }}')" title="Get WhatsApp OAuth Magic Link"
-                          class="px-2 py-1 rounded bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 border border-sky-500/40 font-semibold transition-colors">
-                    🔗 Link
-                  </button>
-                  <!-- Toggle Status -->
-                  <form action="/admin/users/{{ u.id }}/status" method="POST" class="inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-                    <input type="hidden" name="status" value="{{ 'suspended' if u.status == 'active' else 'active' }}" />
-                    <button type="submit" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors">
-                      {{ 'Suspend' if u.status == 'active' else 'Activate' }}
-                    </button>
-                  </form>
-                  <!-- Delete User -->
-                  <form action="/admin/users/{{ u.id }}/delete" method="POST" class="inline" onsubmit="return confirm('Delete user {{ u.phone_number }}?');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-                    <button type="submit" class="px-2 py-1 rounded bg-red-900/30 hover:bg-red-800/50 text-red-300 border border-red-700/40 transition-colors">
-                      ✕
-                    </button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="9" class="px-4 py-8 text-center text-slate-500 italic">No registered users found. Use the form above to add the first user.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </main>
-
-  <!-- Magic Link Modal -->
-  <div id="magicModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
-      <div class="flex items-center justify-between">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <span>🔗</span> Google OAuth Magic Link
-        </h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-white">✕</button>
-      </div>
-      <p class="text-xs text-slate-300">
-        Send this single-use signed link to the user over WhatsApp. Clicking this opens their mobile browser to securely link their Google Workspace account.
-      </p>
-      <div class="bg-slate-900 rounded-lg p-3 border border-slate-700">
-        <p id="magicLinkText" class="text-xs font-mono text-emerald-300 break-all select-all"></p>
-      </div>
-      <div class="flex justify-between items-center text-xs text-slate-400">
-        <span>Expires in: <strong>15 minutes</strong></span>
-        <button onclick="copyMagicLink()" id="copyBtn" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-white transition-colors">
-          Copy Link
-        </button>
-      </div>
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4">
+      <p class="text-xs text-slate-400 uppercase tracking-wider">{{ t('core.users.stat_suspended') }}</p>
+      <p class="text-2xl font-bold text-amber-400 mt-1">{{ users|rejectattr('status', 'equalto', 'active')|list|length }}</p>
     </div>
   </div>
 
-  <script>
-    function filterTable() {
-      const q = document.getElementById('tableSearch').value.toLowerCase();
-      const rows = document.querySelectorAll('.user-row');
-      rows.forEach(r => {
-        const text = r.innerText.toLowerCase();
-        r.style.display = text.includes(q) ? '' : 'none';
-      });
-    }
+  <!-- Registration Section -->
+  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
+    <h2 class="text-base font-semibold text-white mb-4 flex items-center gap-2">
+      <span>➕</span> {{ t('core.users.register_title') }}
+    </h2>
+    <form action="/admin/users" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_phone') }}</label>
+        <input type="text" name="phone_number" placeholder="{{ t('core.users.ph_phone') }}" required
+               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
+      </div>
 
-    async function getMagicLink(userId, phone) {
-      try {
-        const resp = await fetch(`/admin/users/${userId}/magic-link`);
-        if (resp.ok) {
-          const data = await resp.json();
-          document.getElementById('magicLinkText').innerText = data.magic_link;
-          document.getElementById('magicModal').classList.remove('hidden');
-        } else {
-          alert('Failed to generate magic link.');
-        }
-      } catch (err) {
-        alert('Error: ' + err);
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_name') }}</label>
+        <input type="text" name="full_name" placeholder="{{ t('core.users.ph_name') }}" required
+               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_tenant') }}</label>
+        <div class="flex items-center gap-2 px-3 py-2 bg-slate-950/60 border border-slate-700/80 rounded-lg text-slate-300 text-sm font-mono">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>{{ active_tenant or 'public' }}</span>
+          <span class="text-xs text-slate-500 ml-auto font-sans">{{ t('core.users.auto_scoped') }}</span>
+        </div>
+        <input type="hidden" name="tenant_id" value="{{ active_tenant or 'public' }}" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_role') }}</label>
+        <select name="role" class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 outline-none">
+          <option value="user" selected>{{ t('core.users.role_user') }}</option>
+          <option value="supervisor">{{ t('core.users.role_supervisor') }}</option>
+          <option value="admin">{{ t('core.users.role_admin') }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_timezone') }}</label>
+        <input type="text" name="timezone" value="UTC"
+               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_password') }}</label>
+        <input type="password" name="password" placeholder="{{ t('core.users.ph_password') }}"
+               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_email') }}</label>
+        <input type="email" name="email" placeholder="{{ t('core.users.ph_email') }}"
+               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_cartridges') }}</label>
+        <div class="flex flex-wrap items-center gap-4 mt-2">
+          {% if 'mail_organizer' in tenant_cartridges %}
+          <label class="flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" name="cartridges" value="mail_organizer" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+            <span>{{ t('core.users.cartridge_mail') }}</span>
+          </label>
+          {% endif %}
+          {% if 'temperature_marker' in tenant_cartridges %}
+          <label class="flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" name="cartridges" value="temperature_marker" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+            <span>{{ t('core.users.cartridge_temp') }}</span>
+          </label>
+          {% endif %}
+          {% for c in tenant_cartridges %}
+          {% if c not in ['mail_organizer', 'temperature_marker'] %}
+          <label class="flex items-center gap-2 text-xs text-slate-300">
+            <input type="checkbox" name="cartridges" value="{{ c }}" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+            <span>📦 {{ c }}</span>
+          </label>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="md:col-span-3 flex justify-end">
+        <button type="submit" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-sm text-white transition-colors shadow-lg shadow-emerald-600/20">
+          {{ t('core.users.submit_register') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Users Table -->
+  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg">
+    <div class="p-4 border-b border-slate-700/60 flex flex-wrap items-center justify-between gap-4">
+      <h3 class="text-base font-semibold text-white">{{ t('core.users.table_title') }}</h3>
+      <input id="tableSearch" type="text" placeholder="{{ t('core.users.ph_search') }}" oninput="filterTable()"
+             class="bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 w-64 outline-none focus:border-emerald-500" />
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs text-slate-300" id="usersTable">
+        <thead class="bg-slate-900/60 uppercase text-slate-400 border-b border-slate-700/60 font-semibold">
+          <tr>
+            <th class="px-4 py-3">{{ t('core.users.col_phone') }}</th>
+            <th class="px-4 py-3">{{ t('core.users.col_name') }}</th>
+            <th class="px-4 py-3">{{ t('core.users.col_tenant') }}</th>
+            <th class="px-4 py-3">{{ t('core.users.col_role') }}</th>
+            <th class="px-4 py-3">{{ t('core.users.col_cartridges') }}</th>
+            <th class="px-4 py-3">{{ t('core.users.col_google') }}</th>
+            <th class="px-4 py-3">{{ t('core.users.col_status') }}</th>
+            <th class="px-4 py-3">{{ t('core.users.col_heartbeat') }}</th>
+            <th class="px-4 py-3 text-right">{{ t('core.users.col_actions') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-700/40">
+          {% for u in users %}
+          <tr class="hover:bg-slate-700/30 transition-colors user-row">
+            <td class="px-4 py-3 font-mono font-bold text-white">{{ u.phone_number }}</td>
+            <td class="px-4 py-3 font-medium text-slate-200">{{ u.full_name }}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono">{{ u.tenant_id }}</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="capitalize">{{ u.role }}</span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex flex-wrap gap-1">
+                {% for c in u.allowed_cartridges %}
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-950 border border-emerald-700 text-emerald-300 font-mono">{{ c }}</span>
+                {% else %}
+                <span class="text-slate-500 italic">{{ t('core.users.cartridges_none') }}</span>
+                {% endfor %}
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              {% if u.google_email %}
+              <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-700 text-sky-300 flex items-center gap-1 max-w-[160px] truncate" title="{{ u.google_email }}">
+                <span>✓</span> {{ u.google_email }}
+              </span>
+              {% else %}
+              <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400">{{ t('core.users.not_linked') }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if u.status == 'active' %}
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">{{ t('core.users.status_active') }}</span>
+              {% else %}
+              <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold capitalize">{{ u.status }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-slate-400">
+              {{ u.last_whatsapp_interaction_at.strftime('%Y-%m-%d %H:%M') if u.last_whatsapp_interaction_at else t('core.users.heartbeat_never') }}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <!-- Magic Link Button -->
+                <button onclick="getMagicLink('{{ u.id }}', '{{ u.phone_number }}')" title="{{ t('core.users.link_title') }}"
+                        class="px-2 py-1 rounded bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 border border-sky-500/40 font-semibold transition-colors">
+                  {{ t('core.users.btn_link') }}
+                </button>
+                <!-- Toggle Status -->
+                <form action="/admin/users/{{ u.id }}/status" method="POST" class="inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+                  <input type="hidden" name="status" value="{{ 'suspended' if u.status == 'active' else 'active' }}" />
+                  <button type="submit" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors">
+                    {{ t('core.users.btn_suspend') if u.status == 'active' else t('core.users.btn_activate') }}
+                  </button>
+                </form>
+                <!-- Delete User -->
+                <form action="/admin/users/{{ u.id }}/delete" method="POST" class="inline" onsubmit="return confirm('{{ t('core.users.confirm_delete', phone=u.phone_number) }}');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+                  <button type="submit" class="px-2 py-1 rounded bg-red-900/30 hover:bg-red-800/50 text-red-300 border border-red-700/40 transition-colors">
+                    ✕
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="px-4 py-8 text-center text-slate-500 italic">{{ t('core.users.empty_users') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Magic Link Modal -->
+<div id="magicModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+  <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-bold text-white flex items-center gap-2">
+        <span>🔗</span> {{ t('core.users.modal_title') }}
+      </h3>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-white">✕</button>
+    </div>
+    <p class="text-xs text-slate-300">
+      {{ t('core.users.modal_desc') }}
+    </p>
+    <div class="bg-slate-900 rounded-lg p-3 border border-slate-700">
+      <p id="magicLinkText" class="text-xs font-mono text-emerald-300 break-all select-all"></p>
+    </div>
+    <div class="flex justify-between items-center text-xs text-slate-400">
+      <span>{{ t('core.users.modal_expires_prefix') }}<strong>{{ t('core.users.modal_expires_time') }}</strong></span>
+      <button onclick="copyMagicLink()" id="copyBtn" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-white transition-colors">
+        {{ t('core.users.modal_copy') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function filterTable() {
+    const q = document.getElementById('tableSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('.user-row');
+    rows.forEach(r => {
+      const text = r.innerText.toLowerCase();
+      r.style.display = text.includes(q) ? '' : 'none';
+    });
+  }
+
+  async function getMagicLink(userId, phone) {
+    try {
+      const resp = await fetch(`/admin/users/${userId}/magic-link`);
+      if (resp.ok) {
+        const data = await resp.json();
+        document.getElementById('magicLinkText').innerText = data.magic_link;
+        document.getElementById('magicModal').classList.remove('hidden');
+      } else {
+        alert('{{ t("core.users.msg_link_failed") }}');
       }
+    } catch (err) {
+      alert('{{ t("core.users.msg_error_prefix") }}' + err);
     }
+  }
 
-    function closeModal() {
-      document.getElementById('magicModal').classList.add('hidden');
-    }
+  function closeModal() {
+    document.getElementById('magicModal').classList.add('hidden');
+  }
 
-    function copyMagicLink() {
-      const txt = document.getElementById('magicLinkText').innerText;
-      navigator.clipboard.writeText(txt);
-      const btn = document.getElementById('copyBtn');
-      btn.innerText = 'Copied!';
-      setTimeout(() => { btn.innerText = 'Copy Link'; }, 2000);
-    }
-  </script>
-</body>
-</html>
+  function copyMagicLink() {
+    const txt = document.getElementById('magicLinkText').innerText;
+    navigator.clipboard.writeText(txt);
+    const btn = document.getElementById('copyBtn');
+    btn.innerText = '{{ t("core.users.modal_copied") }}';
+    setTimeout(() => { btn.innerText = '{{ t("core.users.modal_copy") }}'; }, 2000);
+  }
+</script>
+{% endblock %}

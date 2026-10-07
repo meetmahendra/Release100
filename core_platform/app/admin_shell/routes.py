@@ -495,6 +495,17 @@ async def view_users(
 
     tenant_cartridges = tenant_obj.allowed_cartridges if (tenant_obj and hasattr(tenant_obj, "allowed_cartridges")) else ["mail_organizer", "temperature_marker"]
 
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=[a["id"] for a in nav_apps],
+        tenant_name=str(tenant_name),
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
+            Breadcrumb(label_key="core.nav.users"),
+        ],
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="users.html",
@@ -514,6 +525,7 @@ async def view_users(
             "csrf_token": csrf_token,
             "message": message,
             "error": error,
+            "ui": ui_ctx,
         },
     )
 
