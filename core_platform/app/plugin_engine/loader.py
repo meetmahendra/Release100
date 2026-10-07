@@ -35,6 +35,7 @@ from typing import Any, Dict, List, Optional, Type, cast
 from fastapi import FastAPI
 
 from core_platform.app.entitlements.registry import EntitlementRegistry
+from core_platform.app.i18n.catalog import I18nCatalog
 from core_platform.app.plugin_engine.base_plugin import BaseApplication
 
 logger = logging.getLogger("core_platform.plugin_engine")
@@ -223,6 +224,29 @@ class PluginLoader:
                 logger.error("[PluginLoader] Entitlement manifest error for '%s': %s", app_id, exc)
                 registry.rejected.setdefault(app_id, []).append(str(exc))
 
+    def register_ui_text(self, catalog: I18nCatalog) -> Dict[str, str]:
+        """Load the UI translation catalogs of every loaded cartridge into `catalog`.
+
+        Each cartridge is processed in isolation: a malformed or namespace-violating
+        catalog is logged and returned in the result, and never blocks other cartridges.
+
+        Args:
+            catalog: Target translation catalog.
+
+        Returns:
+            Mapping of app_id to the error message for each cartridge that was rejected.
+        """
+        rejected: Dict[str, str] = {}
+        for app_id, instance in self._loaded.items():
+            try:
+                directory = instance.get_locale_dir()
+                if directory is None:
+                    continue
+                catalog.load_app(app_id, directory)
+            except Exception as exc:  # noqa: BLE001 - isolation boundary: log and record, never propagate
+                logger.error("[PluginLoader] UI catalog error for '%s': %s", app_id, exc)
+                rejected[app_id] = str(exc)
+        return rejected
     def _load_single(self, app_id: str) -> Optional[BaseApplication]:
         """Import and instantiate a single application cartridge by ID.
 

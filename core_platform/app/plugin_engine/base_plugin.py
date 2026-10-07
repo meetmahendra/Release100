@@ -34,6 +34,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 from pydantic import BaseModel
 
 from core_platform.app.config import settings
+from core_platform.app.ui.contracts import NavItem, StatusInfo
 
 
 class BaseApplication(ABC):
@@ -195,6 +196,37 @@ class BaseApplication(ABC):
             raise ValueError(f"Entitlement manifest at {manifest_path} must be a JSON object")
         return parsed
 
+    # -- Unified UI hooks (Plan 11): translations, navigation, status presentation --
+
+    def get_locale_dir(self) -> Optional[Path]:
+        """Return the directory holding this cartridge's `<locale>.json` UI catalogs.
+
+        By convention this is a `locales` folder next to the module that defines the
+        cartridge class. Keys inside must live under `apps.<app_id>.`.
+
+        Returns:
+            The directory path, or None when the cartridge ships no UI catalogs.
+        """
+        candidate = Path(inspect.getfile(type(self))).parent / "locales"
+        return candidate if candidate.is_dir() else None
+
+    def get_ui_nav(self) -> List[NavItem]:
+        """Return sidebar entries (catalog-key labels) this cartridge contributes.
+
+        Returns:
+            Navigation items; empty by default.
+        """
+        return []
+
+    def get_ui_statuses(self) -> Dict[str, StatusInfo]:
+        """Return cartridge-specific status presentation, keyed by status code.
+
+        Label keys must live under `apps.<app_id>.status.`.
+
+        Returns:
+            Mapping of status code to presentation data; empty by default.
+        """
+        return {}
     custom_database_url: Optional[str] = None
     """Optional custom database connection URL for cartridge-autonomous / 3rd-party persistence.
     If None, the cartridge operates in Core-Facilitated mode, sharing the platform database."""

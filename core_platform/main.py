@@ -251,6 +251,15 @@ try:
     emit_startup_audits(_ent_registry, _ent_repo, _ent_auditor)
 except Exception as _ent_exc:  # noqa: BLE001
     logger.error("[Main] Entitlement subsystem failed to initialise (mode off): %s", _ent_exc)
+# -- Unified UI text (Plan 11): cartridge translation catalogs; failures never block boot --
+try:
+    from core_platform.app.i18n.catalog import get_catalog as _get_ui_catalog
+
+    _ui_rejected = plugin_loader.register_ui_text(_get_ui_catalog())
+    if _ui_rejected:
+        logger.error("[Main] UI catalogs rejected: %s", _ui_rejected)
+except Exception as _ui_exc:  # noqa: BLE001
+    logger.error("[Main] UI catalog subsystem failed to initialise: %s", _ui_exc)
 # Register semantic descriptors dynamically from loaded cartridges
 for app_id, app_instance in loaded_apps.items():
     desc = getattr(app_instance, "description", "") or app_instance.name
