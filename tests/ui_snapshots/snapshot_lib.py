@@ -172,6 +172,8 @@ def _is_token(attrs: List[Tuple[str, Optional[str]]]) -> bool:
 
 def normalize_html(html: str) -> str:
     """Return the normalised skeleton of ``html`` (deterministic, newline separated)."""
+    # Employee-roster options come from the shared DB and vary with test order.
+    html = re.sub(r"<option[^>]*value=""EMP-[^""]*""[^>]*>.*?</option>", "", html, flags=re.S)
     parser = _Skeleton()
     parser.feed(html)
     parser.close()

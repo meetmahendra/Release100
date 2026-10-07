@@ -493,6 +493,300 @@ STATUS 200
   ASSISTIVE
 </span>
 <code style="color: ##a#b#; font-size: #.#rem;">
+  msg_e#b#b
+</code>
+<span style="color: var(--text-primary); font-size: #.#rem;">
+  Follow up on seed round terms
+</span>
+</div>
+<div style="display: flex; gap: #.#rem; align-items: center;">
+<span class="badge badge-action">
+  @Action
+</span>
+<span class="badge badge-needs-review" title="Confidence < #% Diverted">
+  Diverted
+</span>
+<span style="font-weight: #; font-size: #.#rem; color: ##bdf#;">
+  #.#s
+</span>
+</div>
+</summary>
+<div class="scenario-body">
+<div class="tab-bar">
+<button class="tab-btn active" onclick="switchTraceTab('card_#', 'packet', event)">
+  ✉️ Email Packet
+</button>
+<button class="tab-btn" onclick="switchTraceTab('card_#', 'intel', event)">
+  🧠 Intent & Ownership
+</button>
+<button class="tab-btn" onclick="switchTraceTab('card_#', 'llm', event)">
+  🤖 LLM Prompts & Raw Outputs (#)
+</button>
+<button class="tab-btn" onclick="switchTraceTab('card_#', 'connectors', event)">
+  🔌 Connectors & Skills (#)
+</button>
+<button class="tab-btn" onclick="switchTraceTab('card_#', 'trace', event)">
+  🛣️ Step-by-Step Pipeline Trace
+</button>
+<button class="tab-btn" onclick="switchTraceTab('card_#', 'draft', event)">
+  ✍️ Draft & PM Actions
+</button>
+</div>
+<div class="tab-pane active" id="card_#_packet">
+<div class="meta-row">
+<span class="meta-label">
+  From:
+</span>
+<span>
+<strong>
+  investor@venture-capital.com
+</strong>
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  To:
+</span>
+<span>
+  depali@apex.com
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  Cc:
+</span>
+<span>
+  None
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  Subject:
+</span>
+<span>
+<strong>
+  Follow up on seed round terms
+</strong>
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  Received At:
+</span>
+<span>
+  <TS>
+</span>
+</div>
+<div style="margin-top: #.#rem;">
+<span style="font-weight: #; color: var(--text-secondary); font-size: #.#rem; text-transform: uppercase;">
+  Verbatim Email Content:
+</span>
+<div class="content-box">
+  Please review the updated term sheet and let us know your thoughts.
+</div>
+</div>
+</div>
+<div class="tab-pane" id="card_#_intel">
+<div class="meta-row">
+<span class="meta-label">
+  Classified Category:
+</span>
+<span>
+<strong>
+  @Action
+</strong>
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  Urgency Rating:
+</span>
+<span>
+<strong>
+  # / #
+</strong>
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  Confidence Score:
+</span>
+<span>
+<strong>
+  #.#%
+</strong>
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  Context Tags:
+</span>
+<span>
+<span class="tag-chip">
+  system#_triaged
+</span>
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  Responsibility Role:
+</span>
+<span>
+<code>
+  PRIMARY_ACTIONEE
+</code>
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  Safety Status:
+</span>
+<span>
+<span class="badge badge-needs-review">
+  DIVERTED TO HUMAN REVIEW (Confidence < #%)
+</span>
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  Reasoning:
+</span>
+<span>
+<em>
+  TypeSafe System # calibrated decision (@Action)
+</em>
+</span>
+</div>
+</div>
+<div class="tab-pane" id="card_#_llm">
+<div class="sub-card">
+<div style="display: flex; justify-content: space-between; margin-bottom: #.#rem; align-items: center;">
+<strong style="color: ##bdf#; font-size: #.#rem;">
+  Step: INTENT_CLASSIFICATION
+</strong>
+<span class="badge-mode">
+  jev-latest | #.#ms
+</span>
+</div>
+<details style="margin-bottom: #.#rem;">
+<summary style="font-size: #.#rem; color: var(--text-secondary); cursor: pointer; font-weight: #;">
+  View System Prompt (# chars)
+</summary>
+<div class="content-box" style="max-height: #px; margin-top: #.#rem;">
+  You are an executive email triage and categorization assistant.
+</div>
+</details>
+<details style="margin-bottom: #.#rem;">
+<summary style="font-size: #.#rem; color: var(--text-secondary); cursor: pointer; font-weight: #;">
+  View Human Prompt (# chars)
+</summary>
+<div class="content-box" style="max-height: #px; margin-top: #.#rem;">
+  From: investor@venture-capital.com Subject: Follow up on seed round terms Body: Please review the updated term sheet and let us know your thoughts.
+</div>
+</details>
+<div style="margin-top: #.#rem;">
+<span style="font-size: #.#rem; color: var(--text-secondary); font-weight: #; text-transform: uppercase;">
+  RAW Model Completion:
+</span>
+<div class="content-box" style="max-height: #px; margin-top: #.#rem;">
+  {"category": "@Action", "confidence_score": #.#, "urgency_score": #, "responsibility_role": "PRIMARY_ACTIONEE", "reasoning": "TypeSafe System # calibrated decision (@Action)"}
+</div>
+</div>
+</div>
+</div>
+<div class="tab-pane" id="card_#_connectors">
+<div class="sub-card">
+<div style="display: flex; justify-content: space-between; margin-bottom: #.#rem; align-items: center;">
+<strong style="color: ##bdf#; font-size: #.#rem;">
+  Connector: gmail_connector
+</strong>
+<span class="badge-mode">
+  SUCCESS | #.#ms | # facts
+</span>
+</div>
+<div class="meta-row">
+<span class="meta-label">
+  Query Executed:
+</span>
+<span>
+<code>
+  threads.get(id='thread_#')
+</code>
+</span>
+</div>
+<div style="margin-top: #.#rem;">
+<span style="font-size: #.#rem; color: var(--text-secondary); font-weight: #; text-transform: uppercase;">
+  Returned Facts / Artifacts:
+</span>
+<div class="content-box" style="max-height: #px; margin-top: #.#rem;">
+  Retrieved email header and body for thread thread_#
+</div>
+</div>
+</div>
+</div>
+<div class="tab-pane" id="card_#_trace">
+<div class="breadcrumb-trail" style="margin-bottom: #rem;">
+<span class="breadcrumb-node">
+  pre_check (#.#ms)
+</span>
+  ➔
+<span class="breadcrumb-node">
+  classify (#.#ms)
+</span>
+  ➔
+<span class="breadcrumb-node">
+  guardrail (#.#ms)
+</span>
+  ➔
+<span class="breadcrumb-node">
+  ownership (#.#ms)
+</span>
+  ➔
+<span class="breadcrumb-node">
+  execution_gate (#.#ms)
+</span>
+</div>
+<table>
+<thead>
+<tr>
+<th>
+  Workflow Node
+</th>
+<th>
+  Latency
+</th>
+<th>
+  Routing / Execution Decision
+</th>
+</tr>
+</thead>
+<tbody>
+...
+</tbody>
+</table>
+</div>
+<div class="tab-pane" id="card_#_draft">
+<div style="margin-bottom: #rem;">
+<span style="font-weight: #; color: var(--text-secondary); font-size: #.#rem; text-transform: uppercase;">
+  Staged Contextual Draft Reply:
+</span>
+<div class="content-box" style="margin-top: #.#rem;">
+  No draft reply staged for this category.
+</div>
+</div>
+</div>
+</div>
+</details>
+<details class="scenario-card" data-category="@action" data-diverted="true">
+<summary class="scenario-header">
+<div style="display: flex; align-items: center; gap: #.#rem; font-weight: #; flex-wrap: wrap;">
+<span class="badge-source">
+  Simulator
+</span>
+<span class="badge-mode">
+  ASSISTIVE
+</span>
+<code style="color: ##a#b#; font-size: #.#rem;">
   msg_a#aacbb#
 </code>
 <span style="color: var(--text-primary); font-size: #.#rem;">

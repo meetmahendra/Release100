@@ -46,11 +46,12 @@ from core_platform.app.config import settings
 from core_platform.app.ingress.rate_limiter import get_platform_rate_limiter
 from core_platform.app.llm.gateway import get_platform_llm_gateway
 from core_platform.app.rbac.permissions import get_web_security_context
+from core_platform.app.ui.templating import build_templates
 
 logger = logging.getLogger("core_platform.admin_shell")
 
 router = APIRouter(prefix="/admin", tags=["Admin Shell"])
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+templates = build_templates([Path(__file__).parent / "templates"])
 
 
 # ── Auth Routes ───────────────────────────────────────────────────────────────
