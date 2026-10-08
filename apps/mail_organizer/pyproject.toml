@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "release100-cartridge-mail-organizer"
-version = "1.0.0"
+version = "1.0.1"
 description = "Autonomous AI Email Triage & Calendar Task Management Cartridge for Release100"
 authors = [{ name = "Mahendra GURAV" }]
 requires-python = ">=3.10"

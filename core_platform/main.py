@@ -89,9 +89,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     db_mgr.shutdown()
 
 
+from core_platform.app import __version__
+
 app = FastAPI(
     title="Release100 Core Platform",
-    version="1.3.0",
+    version=__version__,
     lifespan=lifespan,
 )
 
@@ -188,7 +190,7 @@ async def health_check() -> Dict[str, Any]:
         "status": "healthy",
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime_sec,
-        "version": "1.3.0",
+        "version": __version__,
         "execution_mode": settings.EXECUTION_MODE,
         "tenant_id": settings.TENANT_ID,
         "kiosk_id": settings.KIOSK_ID,
