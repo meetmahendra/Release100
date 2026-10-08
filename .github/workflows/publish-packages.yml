@@ -18,11 +18,17 @@ on:
   push:
     branches:
       - main
+      - intent-router
     tags:
       - 'v*'
   release:
     types: [created, published]
   workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Target Distribution Channel (main or intent-router)'
+        required: false
+        default: 'auto'
 
 permissions:
   contents: write
@@ -30,11 +36,24 @@ permissions:
 
 jobs:
   build-and-publish:
-    name: Build Wheels & Publish to GitHub Packages
+    name: Build Wheels & Publish Multi-Channel Package Index
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+
+      - name: Determine Distribution Channel
+        id: channel-step
+        run: |
+          if [ "${{ github.event.inputs.channel }}" != "" ] && [ "${{ github.event.inputs.channel }}" != "auto" ]; then
+            CHANNEL="${{ github.event.inputs.channel }}"
+          elif [ "${{ github.ref_name }}" = "main" ]; then
+            CHANNEL="main"
+          else
+            CHANNEL="intent-router"
+          fi
+          echo "Target distribution channel: $CHANNEL"
+          echo "TARGET_CHANNEL=$CHANNEL" >> $GITHUB_ENV
 
       - name: Set up Python Runtime
         uses: actions/setup-python@v5
@@ -65,9 +84,9 @@ jobs:
           cp dist/wheels/*/* dist/all_wheels/
           ls -la dist/all_wheels/
 
-      - name: Generate PEP 503 Simple Index Tree
+      - name: Generate PEP 503 Simple Index Tree for Channel
         run: |
-          python packaging/generate_simple_index.py
+          python packaging/generate_simple_index.py --channel ${{ env.TARGET_CHANNEL }}
           ls -la dist/simple/
 
       - name: Upload Wheels & Simple Index to GitHub Release Assets
@@ -79,9 +98,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deploy Simple Index to GitHub Pages
+      - name: Deploy Channel Simple Index to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist/simple
+          destination_dir: ${{ env.TARGET_CHANNEL }}
+          keep_files: true
+
