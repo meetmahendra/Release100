@@ -354,8 +354,8 @@ try:
     @app.get("/devops/audit", response_class=RedirectResponse, include_in_schema=False)
     async def super_admin_audit_alias() -> RedirectResponse:
         return RedirectResponse(url="/ops/audit", status_code=302)
-except ImportError:
-    pass
+except Exception as ops_exc:
+    logger.error("[Main] Failed to mount DevOps Super-Admin Control Plane: %s", ops_exc)
 
 
 

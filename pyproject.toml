@@ -51,12 +51,13 @@ release100 = "core_platform.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["core_platform*", "deployment*"]
+include = ["core_platform*", "ops_control_plane*", "deployment*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.html", "*.css", "*.js", "*.json", "*.svg", "*.ico", "*.png", "*.sql"]
 "core_platform.app.admin_shell" = ["templates/*.html", "templates/**/*.html"]
 "core_platform.app.diagnostics" = ["templates/*.html", "templates/**/*.html"]
+"ops_control_plane.super_admin" = ["templates/*.html", "templates/**/*.html"]
 
 [tool.mypy]
 strict = true
