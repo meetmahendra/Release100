@@ -12,14 +12,18 @@ requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 dependencies = [
     "fastapi>=0.100.0",
+    "starlette>=0.27.0",
     "uvicorn>=0.22.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "sqlalchemy>=2.0.0",
     "jinja2>=3.1.0",
+    "markupsafe>=2.1.0",
     "certifi",
     "numpy>=1.24.0",
     "pillow>=9.0.0",
+    "opencv-python-headless>=4.8.0",
+    "onnxruntime>=1.15.0",
     "cryptography>=41.0.0",
     "httpx>=0.24.0",
     "python-dotenv>=1.0.0",
