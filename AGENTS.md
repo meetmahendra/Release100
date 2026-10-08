@@ -18,7 +18,7 @@
 * **Layer 2 (Deterministic Post-Execution):** Any classification, OCR, or face match with confidence < 85% MUST automatically divert to human review (`Needs Review` / Admin Approval Gate). Zero destructive commands (deletions, truncations) executable by autonomous models. Default mode is Shadow/Dry-Run (`DRY_RUN=True`).
 
 ## 2. Dual-Engine Verification Regime
-* **Engine A (Fast Synthetic Suite):** Every component must have `pytest` unit tests with mocked boundaries and **>= 80% line/branch code coverage**.
+* **Engine A (Fast Synthetic Suite):** Every component must have `pytest` unit tests with mocked boundaries, **>= 80% line/branch code coverage**, zero type errors under `mypy --strict`, verified architectural AST boundaries, and automated **Packaging & Manifest Integrity Verification** (`test_packaging_manifest_integrity.py` asserting all imports, top-level packages, and Jinja2 templates are 100% declared in `pyproject.toml`).
 * **Engine B (High-Fidelity Live Benchmark Suite):** Every application must feature `run_live_benchmark.py` and a curated `benchmark_catalog.json`.
 * **The Quality Gate (`--quality-gate`):**
   * **100.0% Hard Safety Pass Rate** is mandatory (Zero safety breaches, zero loops, zero unauthorized actions).

@@ -11,6 +11,9 @@ requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 dependencies = [
     "release100-core",
+    "fastapi>=0.100.0",
+    "pydantic>=2.0.0",
+    "cryptography>=41.0.0",
     "sqlalchemy>=2.0.0",
     "google-api-python-client>=2.0.0",
     "google-auth-httplib2>=0.1.0",

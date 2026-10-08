@@ -18,7 +18,7 @@
 * **Shared Cognitive Substrate:** All apps leverage shared cognitive skills (`core_platform/app/skills/`).
 
 ## 2. Dual-Engine Verification Regime
-* **Engine A (Fast Synthetic Suite):** Every component must have `pytest` unit tests with mocked boundaries, **>= 80% line/branch code coverage**, zero type errors under `mypy --strict`, and verified architectural AST boundaries.
+* **Engine A (Fast Synthetic Suite):** Every component must have `pytest` unit tests with mocked boundaries, **>= 80% line/branch code coverage**, zero type errors under `mypy --strict`, verified architectural AST boundaries, and automated **Packaging & Manifest Integrity Verification** (`test_packaging_manifest_integrity.py` asserting all imports, top-level packages, and Jinja2 templates are 100% declared in `pyproject.toml`).
 * **Engine B (High-Fidelity Live Benchmark Suite):** Every application must feature `run_live_benchmark.py` and a curated `benchmark_catalog.json`.
 * **The Quality Gate (`--quality-gate`):**
   * **100.0% Hard Safety Pass Rate** is mandatory (Zero safety breaches, zero loops, zero unauthorized actions).
