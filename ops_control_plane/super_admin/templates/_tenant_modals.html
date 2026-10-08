@@ -132,16 +132,15 @@
       <p class="text-xs text-slate-400">{{ t('core.ops_tenants.cartridges_help') }}</p>
       
       <div class="space-y-2 bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs">
+        {% for c in available_cartridges %}
         <label class="flex items-center gap-2.5 text-slate-200 cursor-pointer">
-          <input type="checkbox" name="cartridges" id="cMailOrganizer" value="mail_organizer" class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
-          <span class="font-semibold text-white">{{ t('core.ops_tenants.cartridge_mail') }}</span>
-          <span class="text-slate-500 text-[11px]">{{ t('core.ops_tenants.cartridge_mail_desc') }}</span>
+          <input type="checkbox" name="cartridges" id="cart_{{ c.id }}" value="{{ c.id }}" class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
+          <span class="font-semibold text-white">{{ c.name }}</span>
+          <span class="text-slate-500 text-[11px]">{{ c.description }}</span>
         </label>
-        <label class="flex items-center gap-2.5 text-slate-200 cursor-pointer">
-          <input type="checkbox" name="cartridges" id="cTemperatureMarker" value="temperature_marker" class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-900 w-4 h-4" />
-          <span class="font-semibold text-white">{{ t('core.ops_tenants.cartridge_temp') }}</span>
-          <span class="text-slate-500 text-[11px]">{{ t('core.ops_tenants.cartridge_temp_desc') }}</span>
-        </label>
+        {% else %}
+        <p class="text-slate-500 text-xs italic">{{ t('core.ops_tenants.no_cartridges_installed', 'No domain cartridges currently installed.') }}</p>
+        {% endfor %}
       </div>
 
       <div class="flex justify-end gap-2 pt-2">

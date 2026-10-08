@@ -8,7 +8,7 @@
     document.getElementById('inspectDbMode').textContent = dbMode;
     document.getElementById('inspectDomain').textContent = domain;
     document.getElementById('inspectCredMode').textContent = credMode;
-    document.getElementById('inspectCartridges').textContent = cartridges || 'mail_organizer, temperature_marker';
+    document.getElementById('inspectCartridges').textContent = cartridges || 'None';
     document.getElementById('inspectAdminUser').textContent = adminUser || 'Not configured';
     document.getElementById('inspectAdminName').textContent = adminName || '-';
     document.getElementById('inspectAdminEmail').textContent = adminEmail || '-';
@@ -80,9 +80,11 @@
 
   function openCartridgesModal(slug, currentCartridges) {
     document.getElementById('cartridgesForm').action = '/ops/tenants/' + slug + '/cartridges';
-    var list = (currentCartridges || '').split(',');
-    document.getElementById('cMailOrganizer').checked = list.includes('mail_organizer') || !currentCartridges;
-    document.getElementById('cTemperatureMarker').checked = list.includes('temperature_marker') || !currentCartridges;
+    var list = (currentCartridges || '').split(',').map(function(s) { return s.trim(); });
+    var checkboxes = document.querySelectorAll('#cartridgesForm input[name="cartridges"]');
+    checkboxes.forEach(function(cb) {
+      cb.checked = list.includes(cb.value) || !currentCartridges;
+    });
     document.getElementById('cartridgesModal').classList.remove('hidden');
   }
   function closeCartridgesModal() {

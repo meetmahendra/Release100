@@ -25,11 +25,17 @@ from typing import Dict, List
 class DisambiguationEngine:
     """Generates user-facing clarification prompts for ambiguous intents."""
 
-    # Human-friendly app labels for the clarification message.
-    _APP_LABELS: Dict[str, str] = {
-        "temperature_marker": "📷 Temperature & Attendance Check-in",
-        "mail_organizer": "📧 Email Triage & Calendar Management",
-    }
+    @classmethod
+    def _resolve_app_label(cls, app_id: str) -> str:
+        """Dynamically resolve human-friendly application label from registry."""
+        try:
+            from core_platform.app.plugin_engine.registry import ApplicationRegistry
+            desc = ApplicationRegistry.get_instance().get(app_id)
+            if desc and desc.name:
+                return desc.name
+        except Exception:
+            pass
+        return app_id.replace("_", " ").title()
 
     @classmethod
     def build_clarification_message(
@@ -48,7 +54,7 @@ class DisambiguationEngine:
         """
         options = []
         for i, app_id in enumerate(candidate_apps, start=1):
-            label = cls._APP_LABELS.get(app_id, app_id)
+            label = cls._resolve_app_label(app_id)
             options.append(f"{i}. {label}")
 
         options_text = "\n".join(options)

@@ -124,7 +124,7 @@ class UserIdentityService:
                     full_name="Platform Administrator",
                     role="admin",
                     tenant_id="default_tenant",
-                    allowed_cartridges=["mail_organizer", "temperature_marker"],
+                    allowed_cartridges=["*"],
                     password=admin_pwd,
                     email="admin@release100.local",
                 )
@@ -139,7 +139,7 @@ class UserIdentityService:
                     full_name="DevOps Super Administrator",
                     role="super_admin",
                     tenant_id="platform",
-                    allowed_cartridges=["mail_organizer", "temperature_marker"],
+                    allowed_cartridges=["*"],
                     password=devops_pwd,
                     email="devops@release100.local",
                 )
@@ -196,7 +196,7 @@ class UserIdentityService:
             raise ValueError("User full_name cannot be empty.")
 
         effective_tz = timezone_str or timezone or "UTC"
-        cartridges = allowed_cartridges if allowed_cartridges is not None else ["mail_organizer"]
+        cartridges = allowed_cartridges if allowed_cartridges is not None else ["*"]
         clean_cartridges = [str(c).strip() for c in cartridges if str(c).strip()]
 
         from core_platform.app.auth.strategies import hash_password

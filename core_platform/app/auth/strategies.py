@@ -208,8 +208,8 @@ class LocalJWTStrategy:
                                 from core_platform.main import plugin_loader
                                 permitted_apps = list(plugin_loader.get_all_applications().keys())
                             except Exception:
-                                permitted_apps = ["mail_organizer", "temperature_marker"]
-                        cartridges = permitted_apps
+                                permitted_apps = ["*"]
+                        cartridges = permitted_apps or ["*"]
 
                     return SecurityContext(
                         principal_id=user.phone_number,

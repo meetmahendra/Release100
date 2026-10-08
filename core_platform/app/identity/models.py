@@ -159,7 +159,7 @@ class Tenant(Base, TimestampMixin):
     storage_region: Mapped[str] = mapped_column(String(64), default="ap-south-1", nullable=False)
     allowed_cartridges_json: Mapped[str] = mapped_column(
         Text,
-        default='["mail_organizer", "temperature_marker"]',
+        default='["*"]',
         nullable=False,
     )
     metadata_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
@@ -171,9 +171,9 @@ class Tenant(Base, TimestampMixin):
             parsed = json.loads(self.allowed_cartridges_json or "[]")
             if isinstance(parsed, list):
                 return [str(item) for item in parsed]
-            return ["mail_organizer", "temperature_marker"]
+            return ["*"]
         except Exception:
-            return ["mail_organizer", "temperature_marker"]
+            return ["*"]
 
     @allowed_cartridges.setter
     def allowed_cartridges(self, cartridges: List[str]) -> None:

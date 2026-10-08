@@ -361,6 +361,23 @@ except Exception as ops_exc:
 
 
 
+@app.get("/", include_in_schema=False)
+async def root_landing(request: Request) -> RedirectResponse:
+    """Redirect root landing page to appropriate console based on authentication status."""
+    token = request.cookies.get("admin_token")
+    if token:
+        try:
+            from core_platform.app.auth.strategies import AuthResolver
+            from core_platform.app.rbac.permissions import is_devops_context
+            ctx = AuthResolver.resolve_web(f"Bearer {token}")
+            if ctx and ctx.is_authenticated:
+                target_url = "/ops/tenants" if is_devops_context(ctx) else "/admin/"
+                return RedirectResponse(url=target_url, status_code=302)
+        except Exception:
+            pass
+    return RedirectResponse(url="/admin/login", status_code=302)
+
+
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon() -> Response:
     """Lightweight 204 No Content for browser favicon requests."""

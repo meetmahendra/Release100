@@ -149,7 +149,7 @@ class TenantLifecycleManager:
     ) -> Dict[str, Any]:
         """Atomically provision a new tenant, its isolated database, and root admin user."""
         clean_slug = slug.lower().strip().replace(" ", "_").replace("-", "_")
-        cartridges = allowed_cartridges if allowed_cartridges is not None else ["mail_organizer", "temperature_marker"]
+        cartridges = allowed_cartridges if allowed_cartridges is not None else ["*"]
         effective_pwd = admin_password.strip() if admin_password and admin_password.strip() else f"{clean_slug.capitalize()}@2026"
 
         with self.session_factory() as session:

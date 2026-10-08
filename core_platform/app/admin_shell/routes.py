@@ -100,16 +100,18 @@ def _render_login_view(
     return resp
 
 
-@router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request) -> HTMLResponse:
-    """Render the login page with anti-CSRF token (SEC-3).
-
-    Args:
-        request: FastAPI request.
-
-    Returns:
-        Rendered login.html template with CSRF cookie set.
-    """
+@router.get("/login")
+async def login_page(request: Request) -> Any:
+    """Render the login page with anti-CSRF token, or auto-redirect if session is active."""
+    token = request.cookies.get("admin_token")
+    if token:
+        try:
+            ctx = AuthResolver.resolve_web(f"Bearer {token}")
+            if ctx and ctx.is_authenticated:
+                target_url = "/ops/tenants" if is_devops_context(ctx) else "/admin/"
+                return RedirectResponse(url=target_url, status_code=status.HTTP_302_FOUND)
+        except Exception:
+            pass
     return _render_login_view(request)
 
 
@@ -493,7 +495,11 @@ async def view_users(
     nav_apps = _build_nav_apps(ctx, tenant_obj)
     csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
 
-    tenant_cartridges = tenant_obj.allowed_cartridges if (tenant_obj and hasattr(tenant_obj, "allowed_cartridges")) else ["mail_organizer", "temperature_marker"]
+    installed_app_ids = [a["id"] for a in nav_apps]
+    if tenant_obj and hasattr(tenant_obj, "allowed_cartridges") and tenant_obj.allowed_cartridges is not None:
+        tenant_cartridges = [c for c in tenant_obj.allowed_cartridges if c in installed_app_ids or c == "*"]
+    else:
+        tenant_cartridges = installed_app_ids
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
@@ -521,6 +527,7 @@ async def view_users(
             "tenant_name": tenant_name,
             "organization": tenant_name,
             "tenant_cartridges": tenant_cartridges,
+            "available_cartridges": nav_apps,
             "section": "users",
             "csrf_token": csrf_token,
             "message": message,

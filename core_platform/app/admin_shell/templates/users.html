@@ -103,25 +103,15 @@
       <div>
         <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_cartridges') }}</label>
         <div class="flex flex-wrap items-center gap-4 mt-2">
-          {% if 'mail_organizer' in tenant_cartridges %}
-          <label class="flex items-center gap-2 text-xs text-slate-300">
-            <input type="checkbox" name="cartridges" value="mail_organizer" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-            <span>{{ t('core.users.cartridge_mail') }}</span>
+          {% for app in available_cartridges %}
+          {% if app.id in tenant_cartridges or '*' in tenant_cartridges %}
+          <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" name="cartridges" value="{{ app.id }}" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+            <span>📦 {{ app.label }}</span>
           </label>
           {% endif %}
-          {% if 'temperature_marker' in tenant_cartridges %}
-          <label class="flex items-center gap-2 text-xs text-slate-300">
-            <input type="checkbox" name="cartridges" value="temperature_marker" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-            <span>{{ t('core.users.cartridge_temp') }}</span>
-          </label>
-          {% endif %}
-          {% for c in tenant_cartridges %}
-          {% if c not in ['mail_organizer', 'temperature_marker'] %}
-          <label class="flex items-center gap-2 text-xs text-slate-300">
-            <input type="checkbox" name="cartridges" value="{{ c }}" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-            <span>📦 {{ c }}</span>
-          </label>
-          {% endif %}
+          {% else %}
+          <span class="text-xs text-slate-500 italic">{{ t('core.users.no_cartridges', 'No active domain cartridges installed.') }}</span>
           {% endfor %}
         </div>
       </div>

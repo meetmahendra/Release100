@@ -128,6 +128,16 @@ async def super_admin_tenants_dashboard(
                 "has_custom_waba": bool(t_cfg and t_cfg.encrypted_waba_token),
             })
 
+    try:
+        from core_platform.main import plugin_loader
+        all_apps = plugin_loader.get_all_applications()
+    except Exception:
+        all_apps = {}
+    available_cartridges = [
+        {"id": app_id, "name": getattr(app_inst, "name", app_id), "description": getattr(app_inst, "description", "")}
+        for app_id, app_inst in all_apps.items()
+    ]
+
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
         ctx=ctx,
@@ -146,6 +156,7 @@ async def super_admin_tenants_dashboard(
             "title": "DevOps Multi-Tenant Control Plane",
             "principal": ctx.principal_id,
             "tenants": tenant_cards,
+            "available_cartridges": available_cartridges,
             "csrf_token": csrf_token,
             "message": message,
             "error": error,
@@ -181,7 +192,7 @@ async def provision_tenant_action(
 
     mgr = TenantLifecycleManager()
     try:
-        selected_cartridges = cartridges if cartridges else ["mail_organizer", "temperature_marker"]
+        selected_cartridges = cartridges if cartridges is not None else []
         res = mgr.provision_tenant(
             slug=slug,
             name=name,

@@ -128,7 +128,13 @@ class TenantSchemaProvisioner:
                 if em not in all_metadata:
                     all_metadata.append(em)
 
-        active_cartridges = cartridges or ["mail_organizer", "temperature_marker"]
+        active_cartridges = list(cartridges) if cartridges else []
+        if not active_cartridges:
+            try:
+                from core_platform.main import plugin_loader
+                active_cartridges = list(plugin_loader.get_all_applications().keys())
+            except Exception:
+                active_cartridges = []
         import importlib
         for cartridge_name in active_cartridges:
             try:

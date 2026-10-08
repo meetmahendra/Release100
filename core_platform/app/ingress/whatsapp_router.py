@@ -369,26 +369,29 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
             except Exception as ex:
                 logger.warning("[WhatsApp Ingress] SemanticRouter routing attempt failed: %s", ex)
 
-        # Priority 3: If sender is a registered employee in workforce cartridge
-        if not target_app and "temperature_marker" in candidate_apps:
-            try:
-                tm = candidate_apps["temperature_marker"]
-                if hasattr(tm, "db_service") and tm.db_service is not None:
-                    if tm.db_service.get_employee_by_phone(sender_phone) is not None:
-                        target_app = tm
-            except Exception:
-                pass
+        # Priority 3: If sender is a registered employee in any loaded cartridge
+        if not target_app:
+            for app_inst in candidate_apps.values():
+                db_svc = getattr(app_inst, "db_service", None)
+                if db_svc and hasattr(db_svc, "get_employee_by_phone"):
+                    try:
+                        if db_svc.get_employee_by_phone(sender_phone) is not None:
+                            target_app = app_inst
+                            break
+                    except Exception:
+                        pass
 
-        # Priority 4: If image submitted, default to first vision/attendance cartridge
+        # Priority 4: If image submitted, default to first vision/photo cartridge
         if not target_app and is_image:
             for app_inst in candidate_apps.values():
-                if "temperature_marker" in getattr(app_inst, "app_id", "") or "photo" in getattr(app_inst, "keywords", []):
+                keywords = getattr(app_inst, "keywords", [])
+                if any(k in ("photo", "image", "camera", "vision", "face", "temperature") for k in keywords):
                     target_app = app_inst
                     break
 
-        # Priority 5: Primary kiosk app or first loaded application fallback
+        # Priority 5: First available application fallback
         if not target_app and candidate_apps:
-            target_app = candidate_apps.get("temperature_marker") or next(iter(candidate_apps.values()))
+            target_app = next(iter(candidate_apps.values()))
 
 
     # Delegate execution to matched cartridge handler

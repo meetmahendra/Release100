@@ -80,7 +80,7 @@ class SecurityContext(BaseModel):
             principal_id="system",
             tenant_id="system",
             user_roles=["admin"],
-            permitted_apps=["temperature_marker", "mail_organizer"],
+            permitted_apps=["*"],
             auth_strategy="system",
             is_authenticated=True,
         )

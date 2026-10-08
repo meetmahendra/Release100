@@ -115,3 +115,39 @@ def test_function_signatures_have_type_annotations() -> None:
         f"GEES v2.0 TYPING VIOLATIONS: The following functions lack return type annotations:\n"
         + "\n".join(f"  - {path} -> {fn}() on line {line}" for path, fn, line in untyped_functions)
     )
+
+
+def test_core_templates_have_zero_hardcoded_cartridge_names() -> None:
+    """GEES v3.0 Pillar 3 & 4: Core Jinja2 templates must NEVER hardcode domain cartridge names or routes."""
+    banned_cartridge_tokens = [
+        "mail_organizer",
+        "temperature_marker",
+        "/apps/mail-organizer",
+        "/apps/temperature-marker",
+    ]
+    template_dirs = [
+        CORE_DIR / "app" / "admin_shell" / "templates",
+        ROOT_DIR / "ops_control_plane" / "super_admin" / "templates",
+    ]
+
+    violations: List[Tuple[str, int, str]] = []
+
+    for template_dir in template_dirs:
+        if not template_dir.exists():
+            continue
+        for root, _, files in os.walk(template_dir):
+            for file in files:
+                if file.endswith(".html"):
+                    file_path = Path(root) / file
+                    rel_path = file_path.relative_to(ROOT_DIR)
+                    lines = file_path.read_text(encoding="utf-8", errors="ignore").splitlines()
+                    for lineno, line in enumerate(lines, 1):
+                        for token in banned_cartridge_tokens:
+                            if token in line:
+                                violations.append((str(rel_path), lineno, f"Contains hardcoded domain cartridge reference: '{token}'"))
+
+    assert not violations, (
+        "GEES v3.0 HARDCODING VIOLATION IN CORE TEMPLATES: Core UI templates must discover cartridges dynamically via plugin loader:\n"
+        + "\n".join(f"  - {path}:{line} -> {msg}" for path, line, msg in violations)
+    )
+
