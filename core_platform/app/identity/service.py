@@ -114,6 +114,39 @@ class UserIdentityService:
         """
         import os
         with self._session_factory() as session:
+            from core_platform.app.identity.models import Tenant, TenantDomain
+
+            default_tenant = session.execute(
+                select(Tenant).where(Tenant.id == "default_tenant")
+            ).scalar_one_or_none()
+            if not default_tenant:
+                org_name = os.environ.get("ORGANIZATION_NAME", "Release100 Organization")
+                session.add(
+                    Tenant(
+                        id="default_tenant",
+                        name=org_name,
+                        status="ACTIVE",
+                        license_tier="STANDARD",
+                        db_mode="SQLITE_WAL",
+                        max_users=50,
+                        storage_region="ap-south-1",
+                        allowed_cartridges_json='["*"]',
+                    )
+                )
+                dom = session.execute(
+                    select(TenantDomain).where(TenantDomain.tenant_id == "default_tenant")
+                ).scalar_one_or_none()
+                if not dom:
+                    session.add(
+                        TenantDomain(
+                            tenant_id="default_tenant",
+                            domain_name="default.release100.local",
+                            is_primary=True,
+                            is_verified=True,
+                        )
+                    )
+                session.commit()
+
             admin_user = session.execute(
                 select(PlatformUser).where(PlatformUser.phone_number == "admin")
             ).scalar_one_or_none()

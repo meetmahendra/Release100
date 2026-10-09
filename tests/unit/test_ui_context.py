@@ -53,7 +53,7 @@ GATED = NavItem(label_key="apps.x.nav.gated", path="/x/g", required_action="x.do
 
 def test_platform_admin_context() -> None:
     ui = build_ui_context("en_US", _ctx(["devops_admin"], tenant="platform", pid="devops_admin"))
-    assert ui.tenant_slug == ""
+    assert ui.tenant_slug == "platform"
     assert ui.role_label_key == "core.role.devops"
     assert ui.principal_label == "devops_admin"
 

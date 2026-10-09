@@ -88,7 +88,7 @@ def build_ui_context(
         An immutable ``UiContext``.
     """
     principal = ctx if ctx is not None else SecurityContext.unauthenticated()
-    slug = "" if principal.tenant_id in _PLATFORM_TENANTS else principal.tenant_id
+    slug = principal.tenant_id if (principal.is_authenticated and principal.tenant_id) else ""
     eff_tenant_name = str(tenant_name or (settings.ORGANIZATION_NAME if principal.is_authenticated else "") or "")
     eff_node_id = str(node_id if node_id is not None else (settings.NODE_ID or "NODE-01") if principal.is_authenticated else "")
     eff_station_name = str(station_name if station_name is not None else (settings.STATION_NAME or "Release100 Node #01") if principal.is_authenticated else "")

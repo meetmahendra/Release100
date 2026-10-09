@@ -397,3 +397,15 @@ Each cartridge declares what it can do in `apps/<app_id>/entitlements.json`: nam
 - **Fail closed:** an evaluator error denies under `enforce`. Unmapped MCP tools are denied under `enforce` for an onboarded tenant.
 - **Audit:** every decision event goes through `AuditEngine` (SHA-256 chained, JSONL, CSV and HTML).
 - **Boundary:** `core_platform/app/entitlements/` never imports `apps/`. See Plan 10 in `plans/10_decentralized_entitlement_architecture_v1.0.md`.
+
+---
+
+## 12. Multi-Tenancy & SaaS Control Plane Architecture
+
+Release100 implements a strict **Control Plane vs. Data Plane** separation:
+* **System Control Plane (`platform`):** Host infrastructure scope assigned to `devops` super-admin (managing hardware, global AI gateway credentials, reverse tunnels, and dynamic tenant lifecycle operations).
+* **Customer Tenant Workspaces (`default_tenant`, `acme_corp`):** Isolated client database partitions (SQLite WAL / dedicated PostgreSQL) with BYOK vaults and tenant-scoped RBAC.
+
+For complete architectural details, real-world analogies, and comparison with AWS SaaS Factory, Keycloak, Kubernetes, and Salesforce, refer to:
+* **[MULTI_TENANT_ARCHITECTURE_GUIDE.md](./docs/MULTI_TENANT_ARCHITECTURE_GUIDE.md)**
+

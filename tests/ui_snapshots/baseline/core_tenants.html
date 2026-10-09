@@ -43,62 +43,6 @@ STATUS 200
 </a>
 </li>
 <li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
-  AI Email & Calendar Organizer
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/dashboard">
-  📊 Executive Dashboard
-</a>
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/triage">
-  ⚡ Triage Simulator
-</a>
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/drafts">
-  ✍️ Staged Drafts
-</a>
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/pm-queue">
-  📋 PM Action Queue
-</a>
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/rules">
-  ⚙️ Classification Rules
-</a>
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/accounts">
-  📬 Connected Accounts
-</a>
-</li>
-<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
-  Apex Industrial Temperature & Attendance Marker
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/monitoring">
-  📊 Live Monitoring
-</a>
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/fleet">
-  Fleet Map
-</a>
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/wizard">
-  Stepper Wizard
-</a>
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/approvals">
-  Operator Approvals
-</a>
-</li>
-<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
   Workspace & Access
 </li>
 <li>
@@ -159,6 +103,9 @@ STATUS 200
 <strong class="text-ink">
   Release# Organization
 </strong>
+<span class="font-mono text-primary">
+  (default_tenant)
+</span>
 </span>
 <span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
 <span aria-hidden="true">
@@ -195,7 +142,7 @@ STATUS 200
 <p class="text-xs text-indigo-#/#">
   You are viewing the scoped customer view for
 <strong class="font-mono">
-  public
+  default_tenant
 </strong>
   . To manage all tenants across the SaaS fleet, open the DevOps Control Plane.
 </p>
@@ -213,10 +160,10 @@ STATUS 200
   Company Workspace
 </p>
 <p class="text-lg font-bold text-white mt-# truncate">
-  Public Organization
+  Release# Organization
 </p>
 <p class="text-xs text-slate-# font-mono mt-#.#">
-  ID: public
+  ID: default_tenant
 </p>
 </div>
 <div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
@@ -225,11 +172,11 @@ STATUS 200
 </p>
 <div class="flex items-center gap-# mt-#">
 <span class="px-#.# py-#.# rounded-full text-xs font-bold bg-emerald-#/# text-emerald-# border border-emerald-#/#">
-  ENTERPRISE
+  STANDARD
 </span>
 </div>
 <p class="text-xs text-slate-# mt-#.#">
-  Max Users: Unlimited
+  Max Users: #
 </p>
 </div>
 <div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
@@ -280,7 +227,7 @@ STATUS 200
   Tenant Identifier (Slug)
 </p>
 <p class="text-sm font-mono text-white mt-#">
-  public
+  default_tenant
 </p>
 <p class="text-slate-# text-[#px] mt-#">
   Immutable partition key used across database tables.
@@ -291,7 +238,6 @@ STATUS 200
   Custom Domain / Subdomain
 </p>
 <p class="text-sm font-mono text-emerald-# mt-#">
-  public.intentrouter.io
 </p>
 <p class="text-slate-# text-[#px] mt-#">
   Requests matching this Host header auto-bind to your workspace.
@@ -302,7 +248,7 @@ STATUS 200
   Data Storage Region
 </p>
 <p class="text-sm font-mono text-white mt-#">
-  us-east-#
+  ap-south-#
 </p>
 <p class="text-slate-# text-[#px] mt-#">
   Physical region for encrypted data & audit logs.
@@ -373,42 +319,6 @@ STATUS 200
 </p>
 <p class="text-xs text-slate-#">
   Manage employee accounts, assign application roles, and issue magic links.
-</p>
-</div>
-</div>
-<span class="text-slate-# group-hover:text-emerald-# transition-colors">
-  →
-</span>
-</a>
-<a class="bg-slate-#/# hover:bg-slate-# border border-slate-#/# rounded-xl p-# transition-colors flex items-center justify-between group" href="/admin/apps/mail-organizer/dashboard">
-<div class="flex items-center gap-#">
-<span class="text-#xl">
-  📦
-</span>
-<div>
-<p class="text-sm font-bold text-white group-hover:text-emerald-# transition-colors">
-  AI Email & Calendar Organizer
-</p>
-<p class="text-xs text-slate-#">
-  Email triage, meeting scheduling, and PM task extraction for executives.
-</p>
-</div>
-</div>
-<span class="text-slate-# group-hover:text-emerald-# transition-colors">
-  →
-</span>
-</a>
-<a class="bg-slate-#/# hover:bg-slate-# border border-slate-#/# rounded-xl p-# transition-colors flex items-center justify-between group" href="/admin/apps/temperature-marker/fleet">
-<div class="flex items-center gap-#">
-<span class="text-#xl">
-  📦
-</span>
-<div>
-<p class="text-sm font-bold text-white group-hover:text-emerald-# transition-colors">
-  Apex Industrial Temperature & Attendance Marker
-</p>
-<p class="text-xs text-slate-#">
-  Factory floor attendance and chiller temperature recording via selfie photo and OCR.
 </p>
 </div>
 </div>
