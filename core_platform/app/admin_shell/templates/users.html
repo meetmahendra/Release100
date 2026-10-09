@@ -160,7 +160,7 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex flex-wrap gap-1">
-                {% if u.role in ('super_admin', 'devops') or '*' in u.allowed_cartridges %}
+                {% if '*' in u.allowed_cartridges %}
                 <span class="px-2 py-0.5 rounded text-[10px] bg-sky-950 border border-sky-700 text-sky-300 font-mono">🌐 {{ t('core.users.all_cartridges') }}</span>
                 {% elif u.allowed_cartridges %}
                 {% for c in u.allowed_cartridges %}
