@@ -1981,7 +1981,7 @@ wheels = [
 
 [[package]]
 name = "release100-core"
-version = "3.0.5"
+version = "3.0.6"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },

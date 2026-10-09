@@ -405,7 +405,6 @@ async def root_redirect(request: Request) -> RedirectResponse:
     ctx = verify_jwt_token(token)
     if ctx and not is_customer_domain and (
         ctx.principal_id in ("devops_admin", "master_admin", "system")
-        or (ctx.principal_id == "admin" and ctx.tenant_id in ("default_tenant", "public", "system", None))
         or "super_admin" in ctx.user_roles
         or "devops_admin" in ctx.user_roles
     ):

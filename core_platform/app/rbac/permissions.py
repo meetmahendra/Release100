@@ -215,7 +215,6 @@ def is_devops_context(ctx: SecurityContext) -> bool:
     """Helper to determine if SecurityContext holds DevOps Super-Admin authority."""
     return (
         ctx.principal_id in ("devops_admin", "master_admin", "system")
-        or (ctx.principal_id == "admin" and ctx.tenant_id in ("default_tenant", "public", "system", "platform", None))
         or "super_admin" in ctx.user_roles
         or "devops_admin" in ctx.user_roles
     )

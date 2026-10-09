@@ -116,6 +116,34 @@ STATUS 200
   API Keys
 </a>
 </li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/ops/tenants">
+  DevOps Control Plane
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  DevOps Diagnostics
+</li>
+<li>
+<a aria-current="page" class="block rounded-md px-# py-# text-sm bg-line text-ink font-semibold" href="/admin/llm-costs">
+  LLM Costs & Tokens
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/logs">
+  Live System Logs
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/settings">
+  Master Settings & Keys
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/health">
+  Live Health JSON
+</a>
+</li>
 </ul>
 </nav>
 </aside>
@@ -160,7 +188,7 @@ STATUS 200
   Release# Organization
 </strong>
 <span class="font-mono text-primary">
-  (default_tenant)
+  (platform)
 </span>
 </span>
 <span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
@@ -169,8 +197,8 @@ STATUS 200
 </span>
   Preview
 </span>
-<span class="text-muted" title="Signed in as admin">
-  admin · Administrator
+<span class="text-muted" title="Signed in as devops_admin">
+  devops_admin · Platform operations
 </span>
 <span aria-label="Language" class="flex items-center gap-#">
 <a aria-current="true" class="rounded px-# text-ink font-semibold" href="?lang=en_US" hreflang="en-US">

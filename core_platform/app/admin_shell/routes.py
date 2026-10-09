@@ -247,7 +247,7 @@ async def admin_dashboard(
     active_tenant_slug = eff_tenant
 
     is_devops = (
-        ctx.principal_id in ("devops_admin", "master_admin", "system", "admin")
+        ctx.principal_id in ("devops_admin", "master_admin", "system")
         or "super_admin" in ctx.user_roles
         or "devops_admin" in ctx.user_roles
     )
@@ -750,7 +750,7 @@ async def view_tenants(
     active_tenant_slug = eff_tenant
 
     is_devops = (
-        ctx.principal_id in ("devops_admin", "master_admin", "system", "admin")
+        ctx.principal_id in ("devops_admin", "master_admin", "system")
         or "super_admin" in ctx.user_roles
         or "devops_admin" in ctx.user_roles
     )

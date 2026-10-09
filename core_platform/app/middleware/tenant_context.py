@@ -472,7 +472,7 @@ def resolve_effective_tenant_info(
     if ctx:
         is_devops = (
             getattr(ctx, "is_devops", False)
-            or getattr(ctx, "principal_id", "") in ("devops_admin", "master_admin", "system", "admin")
+            or getattr(ctx, "principal_id", "") in ("devops_admin", "master_admin", "system")
             or "super_admin" in getattr(ctx, "user_roles", [])
             or "devops_admin" in getattr(ctx, "user_roles", [])
         )

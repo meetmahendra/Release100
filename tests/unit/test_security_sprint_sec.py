@@ -401,7 +401,7 @@ def test_admin_shell_observability_endpoints(tmp_path: Path) -> None:
     from core_platform.main import app
 
     client = TestClient(app, follow_redirects=False)
-    token = create_jwt_token("admin", ["admin"], ["temperature_marker", "mail_organizer"])
+    token = create_jwt_token("devops_admin", ["devops_admin", "super_admin"], ["temperature_marker", "mail_organizer"], tenant_id="platform")
     client.cookies.set("admin_token", token)
 
     # 1. Logs page

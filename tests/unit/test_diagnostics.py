@@ -49,7 +49,7 @@ def client() -> TestClient:
     if not plugin_loader.get_all_applications():
         plugin_loader.load_all()
     c = TestClient(app)
-    token = create_jwt_token("admin", ["admin"], ["all"])
+    token = create_jwt_token("devops_admin", ["devops_admin", "super_admin"], ["all"], tenant_id="platform")
     c.cookies.set("admin_token", token)
     return c
 
