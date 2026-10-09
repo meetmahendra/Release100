@@ -117,18 +117,47 @@ def test_function_signatures_have_type_annotations() -> None:
     )
 
 
-def test_core_templates_have_zero_hardcoded_cartridge_names() -> None:
-    """GEES v3.0 Pillar 3 & 4: Core Jinja2 templates must NEVER hardcode domain cartridge names or routes."""
-    banned_cartridge_tokens = [
-        "mail_organizer",
-        "temperature_marker",
-        "/apps/mail-organizer",
-        "/apps/temperature-marker",
-    ]
+def _discover_all_cartridge_identifiers() -> set[str]:
+    """Dynamically discover all cartridge identifiers from apps/ directory and pyproject entry points."""
+    cartridges: set[str] = set()
+    if APPS_DIR.exists():
+        for item in APPS_DIR.iterdir():
+            if item.is_dir() and not item.name.startswith((".", "_")):
+                cartridges.add(item.name)
+                cartridges.add(item.name.replace("_", "-"))
+                # Also check pyproject.toml entry-points if present
+                pyproject = item / "pyproject.toml"
+                if pyproject.exists():
+                    try:
+                        import tomllib
+                        with open(pyproject, "rb") as fp:
+                            data = tomllib.load(fp)
+                        entry_points = data.get("project", {}).get("entry-points", {}).get("release100.cartridges", {})
+                        for ep_key in entry_points.keys():
+                            cartridges.add(ep_key)
+                            cartridges.add(ep_key.replace("_", "-"))
+                    except Exception:
+                        pass
+    return cartridges
+
+
+def test_core_templates_have_zero_hardcoded_cartridge_names_or_routes() -> None:
+    """GEES v3.0 Pillar 3 & 4: Core Jinja2 templates must NEVER hardcode domain cartridge names or routes.
+    
+    Dynamically discovers all existing and future cartridges from apps/ so no manual test updates are ever required.
+    Also structurally bans any static (non-Jinja) '/apps/...' hrefs or literal cartridge input values.
+    """
+    import re
+
+    discovered_cartridges = _discover_all_cartridge_identifiers()
     template_dirs = [
         CORE_DIR / "app" / "admin_shell" / "templates",
         ROOT_DIR / "ops_control_plane" / "super_admin" / "templates",
     ]
+
+    # Regex patterns for structural violations
+    static_app_href_pattern = re.compile(r'href=["\'](?:/admin)?/apps/([^"\'\{\}]+)["\']')
+    static_cartridge_input_pattern = re.compile(r'name=["\']cartridges["\'][^>]*value=["\']([^"\'\{\}]+)["\']')
 
     violations: List[Tuple[str, int, str]] = []
 
@@ -142,12 +171,37 @@ def test_core_templates_have_zero_hardcoded_cartridge_names() -> None:
                     rel_path = file_path.relative_to(ROOT_DIR)
                     lines = file_path.read_text(encoding="utf-8", errors="ignore").splitlines()
                     for lineno, line in enumerate(lines, 1):
-                        for token in banned_cartridge_tokens:
-                            if token in line:
-                                violations.append((str(rel_path), lineno, f"Contains hardcoded domain cartridge reference: '{token}'"))
+                        # 1. Structural check: No hardcoded static /apps/ or /admin/apps/ URLs
+                        match_href = static_app_href_pattern.search(line)
+                        if match_href:
+                            violations.append((
+                                str(rel_path),
+                                lineno,
+                                f"Structural violation: Hardcoded static cartridge route '{match_href.group(0)}'. Must use dynamic '{{{{ app.url }}}}'."
+                            ))
+
+                        # 2. Structural check: No hardcoded static cartridge checkbox values
+                        match_input = static_cartridge_input_pattern.search(line)
+                        if match_input:
+                            violations.append((
+                                str(rel_path),
+                                lineno,
+                                f"Structural violation: Hardcoded static cartridge value '{match_input.group(0)}'. Must use dynamic '{{{{ c.id }}}}' loop."
+                            ))
+
+                        # 3. Dynamic cartridge check: No dynamically discovered cartridge names appearing in core templates
+                        for cartridge_id in discovered_cartridges:
+                            if cartridge_id in line:
+                                violations.append((
+                                    str(rel_path),
+                                    lineno,
+                                    f"Dynamic domain violation: Hardcoded cartridge identifier '{cartridge_id}' detected in Core template."
+                                ))
 
     assert not violations, (
-        "GEES v3.0 HARDCODING VIOLATION IN CORE TEMPLATES: Core UI templates must discover cartridges dynamically via plugin loader:\n"
+        "GEES v3.0 HARDCODING VIOLATIONS IN CORE TEMPLATES:\n"
+        "Core UI templates must discover all cartridges dynamically at runtime via plugin loader.\n"
         + "\n".join(f"  - {path}:{line} -> {msg}" for path, line, msg in violations)
     )
+
 
