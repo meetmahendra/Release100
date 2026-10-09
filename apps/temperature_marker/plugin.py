@@ -98,7 +98,7 @@ class TemperatureMarkerApplication(BaseApplication):
         "attendance", "check-in", "checkin", "punch", "kiosk", "duty",
         "chiller", "temperature", "temp", "kiosk", "selfie", "photo", "face",
         "hello", "hi", "namaste", "register", "status", "start", "help",
-        "station", "cups", "supply", "fleet",
+        "station", "cups", "supply", "fleet", "location", "gps", "geofence", "loc",
     ]
 
 

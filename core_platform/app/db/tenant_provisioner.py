@@ -128,13 +128,17 @@ class TenantSchemaProvisioner:
                 if em not in all_metadata:
                     all_metadata.append(em)
 
-        active_cartridges = list(cartridges) if cartridges else []
-        if not active_cartridges:
+        active_cartridges = [c for c in cartridges if c != "*"] if cartridges else []
+        if not active_cartridges or (cartridges and "*" in cartridges):
             try:
                 from core_platform.main import plugin_loader
                 active_cartridges = list(plugin_loader.get_all_applications().keys())
             except Exception:
                 active_cartridges = []
+            if not active_cartridges:
+                apps_dir = Path("apps")
+                if apps_dir.is_dir():
+                    active_cartridges = [d.name for d in apps_dir.iterdir() if d.is_dir() and not d.name.startswith(("_", "."))]
         import importlib
         for cartridge_name in active_cartridges:
             try:

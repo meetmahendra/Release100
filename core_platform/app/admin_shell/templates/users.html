@@ -48,18 +48,18 @@
     <h2 class="text-base font-semibold text-white mb-4 flex items-center gap-2">
       <span>➕</span> {{ t('core.users.register_title') }}
     </h2>
-    <form action="/admin/users" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <form action="/admin/users" method="POST" autocomplete="off" class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
       
       <div>
         <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_phone') }}</label>
-        <input type="text" name="phone_number" placeholder="{{ t('core.users.ph_phone') }}" required
+        <input type="text" name="phone_number" placeholder="{{ t('core.users.ph_phone') }}" required autocomplete="off"
                class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
       </div>
 
       <div>
         <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_name') }}</label>
-        <input type="text" name="full_name" placeholder="{{ t('core.users.ph_name') }}" required
+        <input type="text" name="full_name" placeholder="{{ t('core.users.ph_name') }}" required autocomplete="off"
                class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
       </div>
 
@@ -84,19 +84,19 @@
 
       <div>
         <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_timezone') }}</label>
-        <input type="text" name="timezone" value="UTC"
+        <input type="text" name="timezone" value="UTC" autocomplete="off"
                class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
       </div>
 
       <div>
         <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_password') }}</label>
-        <input type="password" name="password" placeholder="{{ t('core.users.ph_password') }}"
+        <input type="password" name="password" placeholder="{{ t('core.users.ph_password') }}" autocomplete="new-password"
                class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
       </div>
 
       <div>
         <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_email') }}</label>
-        <input type="email" name="email" placeholder="{{ t('core.users.ph_email') }}"
+        <input type="email" name="email" placeholder="{{ t('core.users.ph_email') }}" autocomplete="off"
                class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
       </div>
 
@@ -160,11 +160,15 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex flex-wrap gap-1">
+                {% if u.role in ('super_admin', 'devops') or '*' in u.allowed_cartridges %}
+                <span class="px-2 py-0.5 rounded text-[10px] bg-sky-950 border border-sky-700 text-sky-300 font-mono">🌐 {{ t('core.users.all_cartridges') }}</span>
+                {% elif u.allowed_cartridges %}
                 {% for c in u.allowed_cartridges %}
                 <span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-950 border border-emerald-700 text-emerald-300 font-mono">{{ c }}</span>
+                {% endfor %}
                 {% else %}
                 <span class="text-slate-500 italic">{{ t('core.users.cartridges_none') }}</span>
-                {% endfor %}
+                {% endif %}
               </div>
             </td>
             <td class="px-4 py-3">

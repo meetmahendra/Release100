@@ -50,9 +50,22 @@
             {% endfor %}
           </ol>
         </nav>
-        <div class="flex items-center gap-3 text-sm">
-          <span class="rounded-md border border-line px-2 py-1" title="{{ t('core.shell.workspace') }}">
-            {{ _ui.tenant_name if _ui.tenant_name else t('core.shell.platform_scope') }}{% if _ui.tenant_slug %} <span class="font-mono text-primary">({{ _ui.tenant_slug }})</span>{% endif %}
+        <div class="flex items-center gap-3 text-xs md:text-sm flex-wrap">
+          <!-- Global Node Badge -->
+          {% if _ui.node_id %}
+          <span class="rounded-md border border-line px-2.5 py-1 text-xs text-muted flex items-center gap-1.5" title="{{ t('core.shell.node_tooltip') }}">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span class="font-medium text-ink">{{ t('core.shell.node_prefix') }}:</span>
+            <span class="font-mono text-primary font-bold">{{ _ui.node_id }}</span>
+            {% if _ui.station_name %}<span class="text-muted hidden sm:inline">({{ _ui.station_name }})</span>{% endif %}
+          </span>
+          {% endif %}
+
+          <!-- Global Tenant Badge -->
+          <span class="rounded-md border border-line px-2.5 py-1 text-xs text-muted flex items-center gap-1.5" title="{{ t('core.shell.tenant_tooltip') }}">
+            <span class="font-medium text-ink">&#127970; {{ t('core.shell.tenant_prefix') }}:</span>
+            <strong class="text-ink">{{ _ui.tenant_name if _ui.tenant_name else t('core.shell.platform_scope') }}</strong>
+            {% if _ui.tenant_slug %}<span class="font-mono text-primary">({{ _ui.tenant_slug }})</span>{% endif %}
           </span>
           <span class="rounded-md border px-2 py-1 {% if _ui.runtime_mode == 'live' %}border-primary text-primary{% elif _ui.runtime_mode == 'preview' %}border-preview text-preview{% else %}border-line text-muted{% endif %}"
                 title="{{ t('core.shell.mode_label') }}: {{ t('core.shell.mode_' ~ _ui.runtime_mode ~ '_help') }}"

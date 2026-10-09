@@ -138,9 +138,27 @@ STATUS 200
 </li>
 </ol>
 </nav>
-<div class="flex items-center gap-# text-sm">
-<span class="rounded-md border border-line px-# py-#" title="Workspace">
+<div class="flex items-center gap-# text-xs md:text-sm flex-wrap">
+<span class="rounded-md border border-line px-#.# py-# text-xs text-muted flex items-center gap-#.#" title="Physical/logical host node identifier">
+<span class="w-#.# h-#.# rounded-full bg-emerald-#">
+</span>
+<span class="font-medium text-ink">
+  Node:
+</span>
+<span class="font-mono text-primary font-bold">
+  NODE-#
+</span>
+<span class="text-muted hidden sm:inline">
+  (Release# Node ##)
+</span>
+</span>
+<span class="rounded-md border border-line px-#.# py-# text-xs text-muted flex items-center gap-#.#" title="Current active tenant scope">
+<span class="font-medium text-ink">
+  🏢 Tenant:
+</span>
+<strong class="text-ink">
   Release# Organization
+</strong>
 </span>
 <span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
 <span aria-hidden="true">
@@ -211,19 +229,19 @@ STATUS 200
 </span>
   Register New WhatsApp User
 </h2>
-<form action="/admin/users" class="grid grid-cols-# md:grid-cols-# gap-#" method="POST">
+<form action="/admin/users" autocomplete="off" class="grid grid-cols-# md:grid-cols-# gap-#" method="POST">
 <input name="csrf_token" type="hidden" value="<TOKEN>">
 <div>
 <label class="block text-xs font-medium text-slate-# mb-#">
   E.# Phone Number *
 </label>
-<input class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="phone_number" placeholder="+# or +#" required type="text">
+<input autocomplete="off" class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="phone_number" placeholder="+# or +#" required type="text">
 </div>
 <div>
 <label class="block text-xs font-medium text-slate-# mb-#">
   Full Name *
 </label>
-<input class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="full_name" placeholder="Jane Doe" required type="text">
+<input autocomplete="off" class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="full_name" placeholder="Jane Doe" required type="text">
 </div>
 <div>
 <label class="block text-xs font-medium text-slate-# mb-#">
@@ -261,35 +279,35 @@ STATUS 200
 <label class="block text-xs font-medium text-slate-# mb-#">
   Timezone
 </label>
-<input class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="timezone" type="text" value="UTC">
+<input autocomplete="off" class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="timezone" type="text" value="UTC">
 </div>
 <div>
 <label class="block text-xs font-medium text-slate-# mb-#">
   Web Login Password (Optional)
 </label>
-<input class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="password" placeholder="••••••••" type="password">
+<input autocomplete="new-password" class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="password" placeholder="••••••••" type="password">
 </div>
 <div>
 <label class="block text-xs font-medium text-slate-# mb-#">
   Email Address (Optional)
 </label>
-<input class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="email" placeholder="user@company.com" type="email">
+<input autocomplete="off" class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-emerald-# outline-none" name="email" placeholder="user@company.com" type="email">
 </div>
 <div>
 <label class="block text-xs font-medium text-slate-# mb-#">
   Allowed Application Cartridges
 </label>
 <div class="flex flex-wrap items-center gap-# mt-#">
-<label class="flex items-center gap-# text-xs text-slate-#">
+<label class="flex items-center gap-# text-xs text-slate-# cursor-pointer">
 <input checked class="rounded bg-slate-# border-slate-# text-emerald-# focus:ring-#" name="cartridges" type="checkbox" value="mail_organizer">
 <span>
-  📧 Mail Organizer
+  📦 AI Email & Calendar Organizer
 </span>
 </label>
-<label class="flex items-center gap-# text-xs text-slate-#">
+<label class="flex items-center gap-# text-xs text-slate-# cursor-pointer">
 <input checked class="rounded bg-slate-# border-slate-# text-emerald-# focus:ring-#" name="cartridges" type="checkbox" value="temperature_marker">
 <span>
-  🌡️ Temperature Marker
+  📦 Apex Industrial Temperature & Attendance Marker
 </span>
 </label>
 </div>

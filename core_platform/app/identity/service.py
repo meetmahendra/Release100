@@ -128,6 +128,9 @@ class UserIdentityService:
                     password=admin_pwd,
                     email="admin@release100.local",
                 )
+            elif admin_user.allowed_cartridges != ["*"]:
+                admin_user.allowed_cartridges = ["*"]
+                session.commit()
 
             devops_user = session.execute(
                 select(PlatformUser).where(PlatformUser.phone_number == "devops")
@@ -143,6 +146,9 @@ class UserIdentityService:
                     password=devops_pwd,
                     email="devops@release100.local",
                 )
+            elif devops_user.allowed_cartridges != ["*"]:
+                devops_user.allowed_cartridges = ["*"]
+                session.commit()
 
     def register_user(
         self,

@@ -86,7 +86,7 @@ class DisambiguationEngine:
 
         # Keyword match against app_id or label.
         for app_id in candidate_apps:
-            label = cls._APP_LABELS.get(app_id, app_id).lower()
+            label = cls._resolve_app_label(app_id).lower()
             if app_id in text or any(kw in text for kw in label.split()):
                 return app_id
 

@@ -138,9 +138,27 @@ STATUS 200
 </li>
 </ol>
 </nav>
-<div class="flex items-center gap-# text-sm">
-<span class="rounded-md border border-line px-# py-#" title="Workspace">
+<div class="flex items-center gap-# text-xs md:text-sm flex-wrap">
+<span class="rounded-md border border-line px-#.# py-# text-xs text-muted flex items-center gap-#.#" title="Physical/logical host node identifier">
+<span class="w-#.# h-#.# rounded-full bg-emerald-#">
+</span>
+<span class="font-medium text-ink">
+  Node:
+</span>
+<span class="font-mono text-primary font-bold">
+  NODE-#
+</span>
+<span class="text-muted hidden sm:inline">
+  (Release# Node ##)
+</span>
+</span>
+<span class="rounded-md border border-line px-#.# py-# text-xs text-muted flex items-center gap-#.#" title="Current active tenant scope">
+<span class="font-medium text-ink">
+  🏢 Tenant:
+</span>
+<strong class="text-ink">
   Release# Organization
+</strong>
 </span>
 <span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
 <span aria-hidden="true">
@@ -321,20 +339,20 @@ STATUS 200
 </div>
 </div>
 <div class="grid grid-cols-# md:grid-cols-# gap-# pt-# text-xs">
-<div class="bg-slate-# p-# rounded-lg border border-slate-#">
+<div class="bg-slate-# p-# rounded-lg border border-slate-# flex items-center justify-between">
 <span class="text-slate-#">
   Google Gemini LLM:
 </span>
-<span class="text-sky-# font-semibold ml-#">
-  Provided by Platform (Active)
+<span class="text-emerald-# font-semibold">
+  ✓ Active (Configured)
 </span>
 </div>
-<div class="bg-slate-# p-# rounded-lg border border-slate-#">
+<div class="bg-slate-# p-# rounded-lg border border-slate-# flex items-center justify-between">
 <span class="text-slate-#">
   WhatsApp Messaging:
 </span>
-<span class="text-sky-# font-semibold ml-#">
-  Provided by Platform (Active)
+<span class="text-emerald-# font-semibold">
+  ✓ Active (Configured)
 </span>
 </div>
 </div>
@@ -362,17 +380,35 @@ STATUS 200
   →
 </span>
 </a>
-<a class="bg-slate-#/# hover:bg-slate-# border border-slate-#/# rounded-xl p-# transition-colors flex items-center justify-between group" href="/admin/apps/mail-organizer/">
+<a class="bg-slate-#/# hover:bg-slate-# border border-slate-#/# rounded-xl p-# transition-colors flex items-center justify-between group" href="/admin/apps/mail-organizer/dashboard">
 <div class="flex items-center gap-#">
 <span class="text-#xl">
   📦
 </span>
 <div>
 <p class="text-sm font-bold text-white group-hover:text-emerald-# transition-colors">
-  Mail Organizer App Settings
+  AI Email & Calendar Organizer
 </p>
 <p class="text-xs text-slate-#">
-  Configure email triage rules, monitored mailboxes, and VIP sender lists.
+  Email triage, meeting scheduling, and PM task extraction for executives.
+</p>
+</div>
+</div>
+<span class="text-slate-# group-hover:text-emerald-# transition-colors">
+  →
+</span>
+</a>
+<a class="bg-slate-#/# hover:bg-slate-# border border-slate-#/# rounded-xl p-# transition-colors flex items-center justify-between group" href="/admin/apps/temperature-marker/fleet">
+<div class="flex items-center gap-#">
+<span class="text-#xl">
+  📦
+</span>
+<div>
+<p class="text-sm font-bold text-white group-hover:text-emerald-# transition-colors">
+  Apex Industrial Temperature & Attendance Marker
+</p>
+<p class="text-xs text-slate-#">
+  Factory floor attendance and chiller temperature recording via selfie photo and OCR.
 </p>
 </div>
 </div>

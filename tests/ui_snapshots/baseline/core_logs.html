@@ -138,9 +138,27 @@ STATUS 200
 </li>
 </ol>
 </nav>
-<div class="flex items-center gap-# text-sm">
-<span class="rounded-md border border-line px-# py-#" title="Workspace">
+<div class="flex items-center gap-# text-xs md:text-sm flex-wrap">
+<span class="rounded-md border border-line px-#.# py-# text-xs text-muted flex items-center gap-#.#" title="Physical/logical host node identifier">
+<span class="w-#.# h-#.# rounded-full bg-emerald-#">
+</span>
+<span class="font-medium text-ink">
+  Node:
+</span>
+<span class="font-mono text-primary font-bold">
+  NODE-#
+</span>
+<span class="text-muted hidden sm:inline">
+  (Release# Node ##)
+</span>
+</span>
+<span class="rounded-md border border-line px-#.# py-# text-xs text-muted flex items-center gap-#.#" title="Current active tenant scope">
+<span class="font-medium text-ink">
+  🏢 Tenant:
+</span>
+<strong class="text-ink">
   Release# Organization
+</strong>
 </span>
 <span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
 <span aria-hidden="true">

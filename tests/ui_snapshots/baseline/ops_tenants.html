@@ -110,9 +110,27 @@ STATUS 200
 </li>
 </ol>
 </nav>
-<div class="flex items-center gap-# text-sm">
-<span class="rounded-md border border-line px-# py-#" title="Workspace">
+<div class="flex items-center gap-# text-xs md:text-sm flex-wrap">
+<span class="rounded-md border border-line px-#.# py-# text-xs text-muted flex items-center gap-#.#" title="Physical/logical host node identifier">
+<span class="w-#.# h-#.# rounded-full bg-emerald-#">
+</span>
+<span class="font-medium text-ink">
+  Node:
+</span>
+<span class="font-mono text-primary font-bold">
+  NODE-#
+</span>
+<span class="text-muted hidden sm:inline">
+  (Release# Node ##)
+</span>
+</span>
+<span class="rounded-md border border-line px-#.# py-# text-xs text-muted flex items-center gap-#.#" title="Current active tenant scope">
+<span class="font-medium text-ink">
+  🏢 Tenant:
+</span>
+<strong class="text-ink">
   Release# Organization
+</strong>
 </span>
 <span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
 <span aria-hidden="true">
@@ -256,13 +274,13 @@ STATUS 200
 <label class="flex items-center gap-# text-xs text-slate-# cursor-pointer">
 <input checked class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" name="cartridges" type="checkbox" value="mail_organizer">
 <span class="font-medium text-white">
-  📦 Mail Organizer
+  AI Email & Calendar Organizer
 </span>
 </label>
 <label class="flex items-center gap-# text-xs text-slate-# cursor-pointer">
 <input checked class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" name="cartridges" type="checkbox" value="temperature_marker">
 <span class="font-medium text-white">
-  🌡️ Temperature Marker
+  Apex Industrial Temperature & Attendance Marker
 </span>
 </label>
 </div>
@@ -482,21 +500,21 @@ STATUS 200
 </p>
 <div class="space-y-# bg-slate-# p-# rounded-lg border border-slate-# text-xs">
 <label class="flex items-center gap-#.# text-slate-# cursor-pointer">
-<input class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" id="cMailOrganizer" name="cartridges" type="checkbox" value="mail_organizer">
+<input class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" id="cart_mail_organizer" name="cartridges" type="checkbox" value="mail_organizer">
 <span class="font-semibold text-white">
-  📦 Mail Organizer
+  AI Email & Calendar Organizer
 </span>
 <span class="text-slate-# text-[#px]">
-  (Email Ingestion & Triage)
+  Email triage, meeting scheduling, and PM task extraction for executives.
 </span>
 </label>
 <label class="flex items-center gap-#.# text-slate-# cursor-pointer">
-<input class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" id="cTemperatureMarker" name="cartridges" type="checkbox" value="temperature_marker">
+<input class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" id="cart_temperature_marker" name="cartridges" type="checkbox" value="temperature_marker">
 <span class="font-semibold text-white">
-  🌡️ Temperature Marker
+  Apex Industrial Temperature & Attendance Marker
 </span>
 <span class="text-slate-# text-[#px]">
-  (KioskNode Fleet & Cold-Chain)
+  Factory floor attendance and chiller temperature recording via selfie photo and OCR.
 </span>
 </label>
 </div>
@@ -812,7 +830,7 @@ STATUS 200
   document.getElementById('inspectDbMode').textContent = dbMode;
   document.getElementById('inspectDomain').textContent = domain;
   document.getElementById('inspectCredMode').textContent = credMode;
-  document.getElementById('inspectCartridges').textContent = cartridges || 'mail_organizer, temperature_marker';
+  document.getElementById('inspectCartridges').textContent = cartridges || 'None';
   document.getElementById('inspectAdminUser').textContent = adminUser || 'Not configured';
   document.getElementById('inspectAdminName').textContent = adminName || '-';
   document.getElementById('inspectAdminEmail').textContent = adminEmail || '-';
@@ -878,9 +896,11 @@ STATUS 200
   }
   function openCartridgesModal(slug, currentCartridges) {
   document.getElementById('cartridgesForm').action = '/ops/tenants/' + slug + '/cartridges';
-  var list = (currentCartridges || '').split(',');
-  document.getElementById('cMailOrganizer').checked = list.includes('mail_organizer') || !currentCartridges;
-  document.getElementById('cTemperatureMarker').checked = list.includes('temperature_marker') || !currentCartridges;
+  var list = (currentCartridges || '').split(',').map(function(s) { return s.trim(); });
+  var checkboxes = document.querySelectorAll('#cartridgesForm input[name="cartridges"]');
+  checkboxes.forEach(function(cb) {
+  cb.checked = list.includes(cb.value) || !currentCartridges;
+  });
   document.getElementById('cartridgesModal').classList.remove('hidden');
   }
   function closeCartridgesModal() {

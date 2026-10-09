@@ -137,16 +137,16 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_gemini_key') }}</label>
-          <input type="password" name="gemini_api_key" placeholder="{{ t('core.tenants.ph_gemini_key') }}"
+          <input type="password" name="gemini_api_key" placeholder="{{ t('core.tenants.ph_gemini_key') }}" autocomplete="new-password"
                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
-          <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if config.encrypted_gemini_api_key %}<span class="text-emerald-400">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
+          <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if has_byok_gemini or (config and config.encrypted_gemini_api_key) %}<span class="text-emerald-400">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_waba_token') }}</label>
-          <input type="password" name="waba_token" placeholder="{{ t('core.tenants.ph_waba_token') }}"
+          <input type="password" name="waba_token" placeholder="{{ t('core.tenants.ph_waba_token') }}" autocomplete="new-password"
                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
-          <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if config.encrypted_waba_access_token %}<span class="text-emerald-400">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
+          <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if has_byok_whatsapp or (config and config.encrypted_waba_access_token) %}<span class="text-emerald-400">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
         </div>
       </div>
 
@@ -169,13 +169,21 @@
         </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
-        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
           <span class="text-slate-400">{{ t('core.tenants.platform_gemini_label') }}</span>
-          <span class="text-sky-400 font-semibold ml-2">{{ t('core.tenants.platform_active') }}</span>
+          {% if has_platform_gemini %}
+          <span class="text-emerald-400 font-semibold">✓ {{ t('core.tenants.active_configured') }}</span>
+          {% else %}
+          <span class="text-amber-400 font-semibold">⚠ {{ t('core.tenants.not_configured') }}</span>
+          {% endif %}
         </div>
-        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
           <span class="text-slate-400">{{ t('core.tenants.platform_wa_label') }}</span>
-          <span class="text-sky-400 font-semibold ml-2">{{ t('core.tenants.platform_active') }}</span>
+          {% if has_platform_whatsapp %}
+          <span class="text-emerald-400 font-semibold">✓ {{ t('core.tenants.active_configured') }}</span>
+          {% else %}
+          <span class="text-amber-400 font-semibold">⚠ {{ t('core.tenants.not_configured') }}</span>
+          {% endif %}
         </div>
       </div>
       <p class="text-[11px] text-slate-500 italic">{{ t('core.tenants.platform_byok_hint') }}</p>

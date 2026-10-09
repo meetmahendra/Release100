@@ -48,6 +48,8 @@ class UiContext(BaseModel):
     breadcrumbs: List[Breadcrumb]
     nav: List[NavItem]
     shell_mode: ShellMode = "full"
+    node_id: str = ""
+    station_name: str = ""
 
 
 def _role_key(ctx: SecurityContext) -> str:
@@ -67,6 +69,8 @@ def build_ui_context(
     tenant_name: Optional[str] = "",
     breadcrumbs: Iterable[Breadcrumb] = (),
     shell_mode: ShellMode = "full",
+    node_id: Optional[str] = None,
+    station_name: Optional[str] = None,
 ) -> UiContext:
     """Build a ``UiContext``; tolerates no principal and no tenant (clean-slate boot).
 
@@ -77,15 +81,20 @@ def build_ui_context(
         tenant_name: Display name of the active tenant, empty when none.
         breadcrumbs: Breadcrumb trail for the page.
         shell_mode: ``full`` for the whole shell, ``bare`` for login-style pages.
+        node_id: Host node identifier (defaults to settings.NODE_ID).
+        station_name: Host station display name (defaults to settings.STATION_NAME).
 
     Returns:
         An immutable ``UiContext``.
     """
     principal = ctx if ctx is not None else SecurityContext.unauthenticated()
     slug = "" if principal.tenant_id in _PLATFORM_TENANTS else principal.tenant_id
+    eff_tenant_name = str(tenant_name or (settings.ORGANIZATION_NAME if principal.is_authenticated else "") or "")
+    eff_node_id = str(node_id if node_id is not None else (settings.NODE_ID or "NODE-01") if principal.is_authenticated else "")
+    eff_station_name = str(station_name if station_name is not None else (settings.STATION_NAME or "Release100 Node #01") if principal.is_authenticated else "")
     return UiContext(
         locale=locale,
-        tenant_name=str(tenant_name or ""),
+        tenant_name=eff_tenant_name,
         tenant_slug=slug,
         principal_label=principal.principal_id if principal.is_authenticated else "",
         role_label_key=_role_key(principal),
@@ -93,4 +102,6 @@ def build_ui_context(
         breadcrumbs=list(breadcrumbs),
         nav=compose_nav(principal, allowed_apps) if principal.is_authenticated else [],
         shell_mode=shell_mode,
+        node_id=eff_node_id,
+        station_name=eff_station_name,
     )

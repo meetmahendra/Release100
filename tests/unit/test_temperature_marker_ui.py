@@ -24,8 +24,12 @@ from core_platform.app.auth.jwt_utils import create_jwt_token
 from core_platform.main import app
 
 client = TestClient(app)
-token = create_jwt_token("admin", ["admin"], ["all", "temperature_marker"])
-client.cookies.set("admin_token", token)
+
+
+@pytest.fixture(autouse=True)
+def _ensure_authenticated_client() -> None:
+    token = create_jwt_token("admin", ["admin"], ["all", "temperature_marker"])
+    client.cookies.set("admin_token", token)
 
 
 def test_ui_root_redirect() -> None:

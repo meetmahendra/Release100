@@ -1,0 +1,574 @@
+{% extends "base_shell.html" %}
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{% block title %}{{ t('core.settings.title_tag') }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
+    <div>
+      <h1 class="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+        <span>⚙️</span> {{ t('core.settings.heading') }}
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">
+        {{ t('core.settings.subheading') }}
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="saveAllConfig()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-xs text-white transition-colors shadow-lg shadow-emerald-600/20 flex items-center gap-1.5">
+        <span>💾</span> {{ t('core.settings.btn_save_all') }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="flex border-b border-line gap-2" role="tablist">
+    <button onclick="switchTab('tab-diag')" id="btn-tab-diag" class="tab-btn active px-4 py-2 text-xs font-semibold border-b-2 border-emerald-500 text-emerald-400 transition-colors">
+      🧪 {{ t('core.settings.tab_live_test') }}
+    </button>
+    <button onclick="switchTab('tab-config')" id="btn-tab-config" class="tab-btn px-4 py-2 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-colors">
+      ⚙️ {{ t('core.settings.tab_config') }}
+    </button>
+    <button onclick="switchTab('tab-apps')" id="btn-tab-apps" class="tab-btn px-4 py-2 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-colors">
+      📦 {{ t('core.settings.tab_apps') }}
+    </button>
+  </div>
+
+  <!-- TAB 1: LIVE TESTING & DIAGNOSTICS -->
+  <div id="tab-diag" class="tab-panel space-y-4">
+
+    <!-- 1. Google Gemini AI -->
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>✨</span> {{ t('core.settings.gemini_card_title') }}
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">{{ t('core.settings.gemini_card_desc') }}</p>
+        </div>
+        <span class="px-2 py-0.5 rounded text-[11px] font-bold {% if gemini_key %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-amber-500/20 text-amber-300 border border-amber-500/30{% endif %}">
+          {% if gemini_key %}KEY CONFIGURED{% else %}NO KEY{% endif %}
+        </span>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">Gemini API Key</label>
+        <div class="flex gap-2">
+          <input type="password" id="test-gemini-key" value="{{ gemini_key }}" placeholder="AIzaSy..." autocomplete="new-password"
+                 class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none font-mono" />
+          <button type="button" onclick="toggleVisibility('test-gemini-key')" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs">👁️</button>
+          <button type="button" onclick="runVerifyGemini()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-xs text-white">Test Key</button>
+          <button type="button" onclick="quickSaveGemini()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 font-semibold text-xs text-white">💾 Save .env</button>
+        </div>
+      </div>
+      <div id="res-gemini" class="mt-3 text-xs empty:hidden"></div>
+    </div>
+
+    <!-- 2. TypeSafe / Jev Decision Engine -->
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>⚡</span> {{ t('core.settings.typesafe_card_title') }}
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">{{ t('core.settings.typesafe_card_desc') }}</p>
+        </div>
+        <span class="px-2 py-0.5 rounded text-[11px] font-bold {% if typesafe_key %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-slate-700 text-slate-400{% endif %}">
+          {% if typesafe_key %}KEY CONFIGURED{% else %}OPTIONAL{% endif %}
+        </span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">TypeSafe Base URL</label>
+          <input type="text" id="test-typesafe-url" value="{{ typesafe_url }}" placeholder="https://api.typesafe.ai/v1" autocomplete="off"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Decision Model</label>
+          <input type="text" id="test-typesafe-model" value="{{ typesafe_model }}" placeholder="jev-1" autocomplete="off"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 outline-none" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">TypeSafe API Key</label>
+        <div class="flex gap-2">
+          <input type="password" id="test-typesafe-key" value="{{ typesafe_key }}" placeholder="ts_live_..." autocomplete="new-password"
+                 class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none font-mono" />
+          <button type="button" onclick="toggleVisibility('test-typesafe-key')" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs">👁️</button>
+          <button type="button" onclick="runVerifyTypeSafe()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-xs text-white">Test TypeSafe</button>
+          <button type="button" onclick="quickSaveTypeSafe()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 font-semibold text-xs text-white">💾 Save .env</button>
+        </div>
+      </div>
+      <div id="res-typesafe" class="mt-3 text-xs empty:hidden"></div>
+    </div>
+
+    <!-- 3. WhatsApp Cloud API -->
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>💬</span> {{ t('core.settings.wa_card_title') }}
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">{{ t('core.settings.wa_card_desc') }}</p>
+        </div>
+        <span class="px-2 py-0.5 rounded text-[11px] font-bold {% if wa_token and wa_phone %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-amber-500/20 text-amber-300 border border-amber-500/30{% endif %}">
+          {% if wa_token and wa_phone %}CONFIGURED{% else %}INCOMPLETE{% endif %}
+        </span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Phone Number ID</label>
+          <input type="text" id="test-wa-phone" value="{{ wa_phone }}" placeholder="105948392019485" autocomplete="off"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Access Token</label>
+          <div class="flex gap-2">
+            <input type="password" id="test-wa-token" value="{{ wa_token }}" placeholder="EAA..." autocomplete="new-password"
+                   class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 outline-none" />
+            <button type="button" onclick="toggleVisibility('test-wa-token')" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs">👁️</button>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" onclick="runVerifyWhatsApp()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-xs text-white">Test WhatsApp Profile</button>
+        <button type="button" onclick="quickSaveWhatsApp()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 font-semibold text-xs text-white">💾 Save .env</button>
+      </div>
+      <div id="res-whatsapp" class="mt-3 text-xs empty:hidden"></div>
+    </div>
+
+    <!-- 4. Webhook Ingress Challenge & HMAC -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Webhook Ingress -->
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-1">
+          <span>📥</span> {{ t('core.settings.webhook_card_title') }}
+        </h3>
+        <p class="text-xs text-slate-400 mb-3">{{ t('core.settings.webhook_card_desc') }}</p>
+        <div class="flex gap-2">
+          <input type="text" id="test-wa-verify" value="{{ wa_verify }}" placeholder="Verify Token" autocomplete="off"
+                 class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 outline-none" />
+          <button type="button" onclick="runVerifyWebhook()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-xs text-white">Test Challenge</button>
+        </div>
+        <div id="res-webhook" class="mt-3 text-xs empty:hidden"></div>
+      </div>
+
+      <!-- HMAC App Secret -->
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-1">
+          <span>🔐</span> {{ t('core.settings.hmac_card_title') }}
+        </h3>
+        <p class="text-xs text-slate-400 mb-3">{{ t('core.settings.hmac_card_desc') }}</p>
+        <div class="flex gap-2">
+          <input type="password" id="test-wa-secret" value="{{ wa_secret }}" placeholder="Meta App Secret" autocomplete="new-password"
+                 class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 outline-none" />
+          <button type="button" onclick="toggleVisibility('test-wa-secret')" class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs">👁️</button>
+          <button type="button" onclick="runVerifyHMAC()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-xs text-white">Verify HMAC</button>
+        </div>
+        <div id="res-hmac" class="mt-3 text-xs empty:hidden"></div>
+      </div>
+    </div>
+
+    <!-- 5. Outbound Cloud Relay -->
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
+      <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-1">
+        <span>🌐</span> {{ t('core.settings.relay_card_title') }}
+      </h3>
+      <p class="text-xs text-slate-400 mb-2">{{ t('core.settings.relay_card_desc') }}</p>
+      <div class="p-3 bg-sky-950/40 border border-sky-500/30 rounded-lg text-sky-300 text-xs mb-3">
+        💡 {{ t('core.settings.relay_tip') }}
+      </div>
+      <div class="flex gap-2">
+        <input type="text" id="test-relay-url" value="{{ relay_url }}" placeholder="https://release100-relay.xyz.workers.dev" autocomplete="off" oninput="updateRelayPreview()"
+               class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 outline-none" />
+        <button type="button" onclick="runVerifyRelay()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-xs text-white">Test Relay</button>
+        <button type="button" onclick="quickSaveRelay()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 font-semibold text-xs text-white">💾 Save</button>
+      </div>
+      <div id="relay-preview" class="text-[11px] font-mono text-sky-400 mt-2"></div>
+      <div id="res-cloud_relay" class="mt-3 text-xs empty:hidden"></div>
+    </div>
+
+    <!-- 6. Outbound WhatsApp Ping & Ports -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Outbound Ping -->
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-1">
+          <span>📤</span> {{ t('core.settings.wa_send_card_title') }}
+        </h3>
+        <p class="text-xs text-slate-400 mb-3">{{ t('core.settings.wa_send_card_desc') }}</p>
+        <div class="space-y-2">
+          <input type="text" id="wa-test-recipient" placeholder="+919876543210" autocomplete="off"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 outline-none" />
+          <div class="flex gap-2">
+            <input type="text" id="wa-test-message" value="Release100 System Diagnostic Egress Ping" autocomplete="off"
+                   class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-emerald-500 outline-none" />
+            <button type="button" onclick="sendTestWhatsApp()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-xs text-white">Send</button>
+          </div>
+        </div>
+        <div id="res-wa_send" class="mt-3 text-xs empty:hidden"></div>
+      </div>
+
+      <!-- Local Ports -->
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg flex flex-col justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-1">
+            <span>🔌</span> {{ t('core.settings.ports_card_title') }}
+          </h3>
+          <p class="text-xs text-slate-400 mb-3">{{ t('core.settings.ports_card_desc', port=port, mcp_port=mcp_port) }}</p>
+        </div>
+        <div>
+          <button type="button" onclick="runVerifyPorts()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 font-semibold text-xs text-white">Check Port Bindings</button>
+          <div id="res-ports" class="mt-3 text-xs empty:hidden"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB 2: SYSTEM CONFIGURATION EDITOR -->
+  <div id="tab-config" class="tab-panel space-y-6 hidden">
+    
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg space-y-4">
+      <h2 class="text-base font-bold text-white border-b border-slate-700/60 pb-3">Operational Identity & Security Parameters</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Node ID (NODE_ID / KIOSK_ID)</label>
+          <input type="text" id="cfg-node-id" value="{{ node_id }}" autocomplete="off"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Station / Kiosk Friendly Name</label>
+          <input type="text" id="cfg-station-name" value="{{ station_name }}" autocomplete="off"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-emerald-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Client Organization Name</label>
+          <input type="text" id="cfg-org-name" value="{{ org_name }}" autocomplete="off"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-emerald-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Tenant ID (TENANT_ID)</label>
+          <input type="text" id="cfg-tenant" value="{{ tenant_id }}" autocomplete="off"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Execution Mode</label>
+          <select id="cfg-exec-mode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-emerald-500 outline-none">
+            <option value="shadow" {% if exec_mode == 'shadow' %}selected{% endif %}>Shadow (Simulate actions)</option>
+            <option value="assistive" {% if exec_mode == 'assistive' %}selected{% endif %}>Assistive (Draft mode)</option>
+            <option value="autonomous" {% if exec_mode == 'autonomous' %}selected{% endif %}>Autonomous (Production live)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Dry Run Safety Lock (DRY_RUN)</label>
+          <select id="cfg-dry-run" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-emerald-500 outline-none">
+            <option value="true" {% if dry_run_val %}selected{% endif %}>True (Prevent destructive writes)</option>
+            <option value="false" {% if not dry_run_val %}selected{% endif %}>False (Allow live external writes)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-700/60 flex items-center justify-between">
+        <button type="button" onclick="saveAllConfig()" class="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-xs text-white shadow-lg shadow-emerald-600/20">
+          💾 {{ t('core.settings.btn_save_all') }}
+        </button>
+        <span id="save-status" class="text-xs font-semibold"></span>
+      </div>
+    </div>
+
+    <!-- Historical Configuration Snapshots -->
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg space-y-3">
+      <h3 class="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-700/60 pb-2">
+        <span>🗂️</span> {{ t('core.settings.backup_title') }}
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-900/60 text-slate-400 uppercase font-semibold border-b border-slate-700/60">
+            <tr>
+              <th class="px-3 py-2">{{ t('core.settings.col_backup_filename') }}</th>
+              <th class="px-3 py-2">{{ t('core.settings.col_backup_date') }}</th>
+              <th class="px-3 py-2">{{ t('core.settings.col_backup_size') }}</th>
+              <th class="px-3 py-2 text-right">{{ t('core.settings.col_backup_action') }}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-700/40">
+            {% for b in backups %}
+            <tr class="hover:bg-slate-750">
+              <td class="px-3 py-2.5 font-mono text-emerald-300">{{ b.filename }}</td>
+              <td class="px-3 py-2.5 text-slate-400">{{ b.modified_utc[:19] }}</td>
+              <td class="px-3 py-2.5 text-slate-400">{{ (b.size_bytes / 1024) | round(1) }} KB</td>
+              <td class="px-3 py-2.5 text-right">
+                <button type="button" onclick="restoreBackup('{{ b.filename }}')" class="px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs">
+                  {{ t('core.settings.btn_restore') }}
+                </button>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="px-3 py-6 text-center text-slate-500 italic">{{ t('core.settings.no_backups') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB 3: ACTIVE APPLICATIONS -->
+  <div id="tab-apps" class="tab-panel space-y-4 hidden">
+    <p class="text-xs text-slate-400">
+      {{ t('core.settings.apps_desc') }}
+    </p>
+
+    {% for app in apps %}
+    <div class="bg-slate-800/80 border {% if app.is_active %}border-emerald-500/40{% else %}border-slate-700/60{% endif %} rounded-xl p-5 shadow-lg">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <span>📦</span> {{ app.title }}
+          </h3>
+          <p class="text-xs text-slate-400 mt-1">{{ app.description }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {% if app.is_active %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-slate-700 text-slate-400{% endif %}">
+            {% if app.is_active %}ACTIVE{% else %}INACTIVE{% endif %}
+          </span>
+          <a href="{{ app.dashboard_url }}" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium">
+            {{ t('core.settings.btn_open_dashboard') }}
+          </a>
+          <button type="button" onclick="toggleApp('{{ app.app_name }}')" class="px-3 py-1.5 rounded-lg {% if app.is_active %}bg-red-900/40 hover:bg-red-800/50 text-red-300 border border-red-700/40{% else %}bg-emerald-600 hover:bg-emerald-500 text-white{% endif %} text-xs font-medium">
+            {% if app.is_active %}{{ t('core.settings.btn_disable') }}{% else %}{{ t('core.settings.btn_enable') }}{% endif %}
+          </button>
+        </div>
+      </div>
+
+      {% if app.has_poller %}
+      <div class="mt-4 p-3.5 bg-slate-900/80 border border-slate-700/60 rounded-lg flex items-center justify-between">
+        <div>
+          <span class="text-xs font-semibold text-slate-200">{{ t('core.settings.poller_title') }}</span>
+          <span class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold {% if app.poller_status == 'RUNNING' %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-red-500/20 text-red-300 border border-red-500/30{% endif %}">
+            {{ app.poller_status }}
+          </span>
+          <p class="text-[11px] text-slate-400 mt-0.5">{{ t('core.settings.poller_desc') }}</p>
+        </div>
+        <button type="button" onclick="togglePoller('{{ app.app_name }}')" class="px-3 py-1.5 rounded-lg {% if app.poller_status == 'RUNNING' %}bg-red-900/40 hover:bg-red-800/50 text-red-300 border border-red-700/40{% else %}bg-emerald-600 hover:bg-emerald-500 text-white{% endif %} text-xs font-medium">
+          {% if app.poller_status == 'RUNNING' %}{{ t('core.settings.btn_stop_poller') }}{% else %}{{ t('core.settings.btn_start_poller') }}{% endif %}
+        </button>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-8 text-center text-slate-500 italic">
+      {{ t('core.nav.no_apps') }}
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active', 'border-emerald-500', 'text-emerald-400');
+    b.classList.add('border-transparent', 'text-slate-400');
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+  
+  const activeBtn = document.getElementById('btn-' + tabId);
+  if (activeBtn) {
+    activeBtn.classList.add('active', 'border-emerald-500', 'text-emerald-400');
+    activeBtn.classList.remove('border-transparent', 'text-slate-400');
+  }
+  const activePanel = document.getElementById(tabId);
+  if (activePanel) {
+    activePanel.classList.remove('hidden');
+  }
+}
+
+function toggleVisibility(inputId) {
+  const el = document.getElementById(inputId);
+  if (el) {
+    el.type = el.type === 'password' ? 'text' : 'password';
+  }
+}
+
+function updateRelayPreview() {
+  const raw = (document.getElementById('test-relay-url').value || '').trim();
+  const preview = document.getElementById('relay-preview');
+  if (!raw) {
+    preview.innerText = '';
+    return;
+  }
+  let transformed = raw.replace(/^http:\/\//i, 'ws://').replace(/^https:\/\//i, 'wss://');
+  if (!transformed.startsWith('ws://') && !transformed.startsWith('wss://')) {
+    transformed = 'wss://' + transformed;
+  }
+  if (!transformed.includes('/ws/')) {
+    transformed = transformed.replace(/\/+$/, '') + '/ws/{{ node_id }}';
+  }
+  preview.innerText = 'Transformed Relay URL: ' + transformed;
+}
+
+async function postJSON(url, data) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  });
+  return await res.json();
+}
+
+function showResult(elId, res) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const isPass = res.status === 'PASS' || res.success === true;
+  el.className = 'mt-3 p-3 rounded-lg border text-xs font-mono ' + (isPass ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300' : 'bg-red-950/40 border-red-500/50 text-red-300');
+  el.innerText = '[' + (isPass ? 'PASS' : 'FAIL') + '] ' + (res.message || JSON.stringify(res));
+  el.classList.remove('empty:hidden');
+}
+
+async function runVerifyGemini() {
+  const key = document.getElementById('test-gemini-key').value.trim();
+  const res = await postJSON('/api/diagnostics/verify', {service: 'gemini', key: key});
+  showResult('res-gemini', res);
+}
+
+async function quickSaveGemini() {
+  const key = document.getElementById('test-gemini-key').value.trim();
+  const res = await postJSON('/api/diagnostics/save', {settings: {GEMINI_API_KEY: key}});
+  showResult('res-gemini', res);
+}
+
+async function runVerifyTypeSafe() {
+  const key = document.getElementById('test-typesafe-key').value.trim();
+  const baseUrl = document.getElementById('test-typesafe-url').value.trim();
+  const model = document.getElementById('test-typesafe-model').value.trim();
+  const res = await postJSON('/api/diagnostics/verify', {service: 'typesafe', key: key, base_url: baseUrl, model: model});
+  showResult('res-typesafe', res);
+}
+
+async function quickSaveTypeSafe() {
+  const key = document.getElementById('test-typesafe-key').value.trim();
+  const baseUrl = document.getElementById('test-typesafe-url').value.trim();
+  const model = document.getElementById('test-typesafe-model').value.trim();
+  const res = await postJSON('/api/diagnostics/save', {settings: {TYPESAFE_API_KEY: key, TYPESAFE_BASE_URL: baseUrl, TYPESAFE_MODEL: model}});
+  showResult('res-typesafe', res);
+}
+
+async function runVerifyWhatsApp() {
+  const phoneId = document.getElementById('test-wa-phone').value.trim();
+  const token = document.getElementById('test-wa-token').value.trim();
+  const res = await postJSON('/api/diagnostics/verify', {service: 'whatsapp', phone_id: phoneId, token: token});
+  showResult('res-whatsapp', res);
+}
+
+async function quickSaveWhatsApp() {
+  const phoneId = document.getElementById('test-wa-phone').value.trim();
+  const token = document.getElementById('test-wa-token').value.trim();
+  const res = await postJSON('/api/diagnostics/save', {settings: {WHATSAPP_PHONE_NUMBER_ID: phoneId, WHATSAPP_ACCESS_TOKEN: token}});
+  showResult('res-whatsapp', res);
+}
+
+async function runVerifyWebhook() {
+  const verifyToken = document.getElementById('test-wa-verify').value.trim();
+  const res = await postJSON('/api/diagnostics/verify', {service: 'webhook', verify_token: verifyToken});
+  showResult('res-webhook', res);
+}
+
+async function runVerifyHMAC() {
+  const secret = document.getElementById('test-wa-secret').value.trim();
+  const res = await postJSON('/api/diagnostics/verify', {service: 'hmac', app_secret: secret});
+  showResult('res-hmac', res);
+}
+
+async function runVerifyRelay() {
+  const relayUrl = document.getElementById('test-relay-url').value.trim();
+  const res = await postJSON('/api/diagnostics/verify', {service: 'cloud_relay', relay_url: relayUrl});
+  showResult('res-cloud_relay', res);
+}
+
+async function quickSaveRelay() {
+  const relayUrl = document.getElementById('test-relay-url').value.trim();
+  const res = await postJSON('/api/diagnostics/save', {settings: {RELAY_WS_URL: relayUrl}});
+  showResult('res-cloud_relay', res);
+}
+
+async function sendTestWhatsApp() {
+  const recipient = document.getElementById('wa-test-recipient').value.trim();
+  const message = document.getElementById('wa-test-message').value.trim();
+  const token = document.getElementById('test-wa-token').value.trim();
+  const phoneId = document.getElementById('test-wa-phone').value.trim();
+  const res = await postJSON('/api/diagnostics/verify', {
+    service: 'whatsapp_send',
+    recipient_phone: recipient,
+    message: message,
+    token: token,
+    phone_id: phoneId
+  });
+  showResult('res-wa_send', res);
+}
+
+async function runVerifyPorts() {
+  const res = await postJSON('/api/diagnostics/verify', {service: 'ports'});
+  showResult('res-ports', res);
+}
+
+async function saveAllConfig() {
+  const statusEl = document.getElementById('save-status');
+  statusEl.innerText = 'Saving...';
+  statusEl.className = 'text-xs text-sky-400 font-semibold';
+  
+  const payload = {
+    settings: {
+      NODE_ID: document.getElementById('cfg-node-id').value.trim(),
+      KIOSK_ID: document.getElementById('cfg-node-id').value.trim(),
+      STATION_NAME: document.getElementById('cfg-station-name').value.trim(),
+      ORGANIZATION_NAME: document.getElementById('cfg-org-name').value.trim(),
+      TENANT_ID: document.getElementById('cfg-tenant').value.trim(),
+      EXECUTION_MODE: document.getElementById('cfg-exec-mode').value,
+      DRY_RUN: document.getElementById('cfg-dry-run').value
+    }
+  };
+  
+  const res = await postJSON('/api/diagnostics/save', payload);
+  if (res.success) {
+    statusEl.innerText = '✓ ' + res.message;
+    statusEl.className = 'text-xs text-emerald-400 font-semibold';
+  } else {
+    statusEl.innerText = '✗ ' + (res.message || 'Error');
+    statusEl.className = 'text-xs text-red-400 font-semibold';
+  }
+}
+
+async function restoreBackup(filename) {
+  if (!confirm('Restore configuration from ' + filename + '?')) return;
+  const res = await postJSON('/api/diagnostics/restore', {filename: filename});
+  alert(res.message || 'Restored successfully');
+  window.location.reload();
+}
+
+async function toggleApp(appName) {
+  const res = await postJSON('/api/diagnostics/apps/' + appName + '/toggle', {});
+  if (res.success) {
+    window.location.reload();
+  }
+}
+
+async function togglePoller(appName) {
+  const res = await postJSON('/api/diagnostics/poller/toggle?app_name=' + encodeURIComponent(appName), {});
+  if (res.success) {
+    window.location.reload();
+  } else {
+    alert(res.message || 'Failed to toggle poller');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateRelayPreview();
+});
+</script>
+{% endblock %}

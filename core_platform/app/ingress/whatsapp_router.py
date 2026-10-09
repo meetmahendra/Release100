@@ -269,15 +269,27 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
         except Exception as hb_err:
             logger.warning("[WhatsApp Ingress] Heartbeat update error for user %s: %s", user.id, hb_err)
 
-    # Extract text and image bytes
+    # Extract text, location, and image bytes
     text_content = ""
     is_image = "image" in msg
+    is_location = "location" in msg or msg.get("type") == "location"
     if "text" in msg:
         text_content = str(msg["text"].get("body", "")).strip()
     elif is_image:
         text_content = str(msg["image"].get("caption", "")).strip()
 
     raw_image_bytes = await extract_image_bytes_from_msg(msg) if is_image else None
+
+    # Handle incoming native WhatsApp location pin
+    user_coords: Optional[tuple[float, float]] = None
+    if is_location and "location" in msg:
+        loc_data = msg["location"]
+        lat = loc_data.get("latitude")
+        lon = loc_data.get("longitude")
+        if lat is not None and lon is not None:
+            user_coords = (float(lat), float(lon))
+            from core_platform.app.ingress.location_session import set_session_coordinates
+            set_session_coordinates(sender_phone, user_coords)
 
     base_url = (
         settings.ORCHESTRATOR_BASE_URL.rstrip("/")
@@ -293,6 +305,7 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
         "correlation_id": correlation_id,
         "base_url": base_url,
         "image_bytes": raw_image_bytes,
+        "user_coords": user_coords,
         "node_id": node_id,
         "tenant_id": user_tenant_id,
         "user_id": user.id if user else None,
@@ -313,7 +326,7 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
         loaded_apps = {}
 
     # Filter apps by user's allowed cartridges if user profile is present
-    if allowed_cartridges is not None:
+    if allowed_cartridges is not None and "*" not in allowed_cartridges:
         candidate_apps = {k: v for k, v in loaded_apps.items() if k in allowed_cartridges}
     else:
         candidate_apps = loaded_apps
@@ -369,7 +382,15 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
             except Exception as ex:
                 logger.warning("[WhatsApp Ingress] SemanticRouter routing attempt failed: %s", ex)
 
-        # Priority 3: If sender is a registered employee in any loaded cartridge
+        # Priority 3: Native Location Payload routing to location-aware cartridge
+        if not target_app and is_location:
+            for app_inst in candidate_apps.values():
+                keywords = getattr(app_inst, "keywords", [])
+                if any(k in ("location", "gps", "geofence", "attendance", "kiosk") for k in keywords):
+                    target_app = app_inst
+                    break
+
+        # Priority 4: If sender is a registered employee in any loaded cartridge
         if not target_app:
             for app_inst in candidate_apps.values():
                 db_svc = getattr(app_inst, "db_service", None)
@@ -381,7 +402,7 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
                     except Exception:
                         pass
 
-        # Priority 4: If image submitted, default to first vision/photo cartridge
+        # Priority 5: If image submitted, default to first vision/photo cartridge
         if not target_app and is_image:
             for app_inst in candidate_apps.values():
                 keywords = getattr(app_inst, "keywords", [])
@@ -389,7 +410,7 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
                     target_app = app_inst
                     break
 
-        # Priority 5: First available application fallback
+        # Priority 6: First available application fallback
         if not target_app and candidate_apps:
             target_app = next(iter(candidate_apps.values()))
 

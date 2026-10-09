@@ -777,6 +777,11 @@ async def view_tenants(
         ],
     )
 
+    has_platform_gemini = bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip())
+    has_platform_whatsapp = bool(settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_ACCESS_TOKEN.strip())
+    has_byok_gemini = bool(config and config.encrypted_gemini_key)
+    has_byok_whatsapp = bool(config and config.encrypted_waba_token)
+
     return templates.TemplateResponse(
         request=request,
         name="tenants.html",
@@ -792,6 +797,10 @@ async def view_tenants(
             "config": config,
             "custom_domains": custom_domains,
             "total_users": total_users,
+            "has_platform_gemini": has_platform_gemini,
+            "has_platform_whatsapp": has_platform_whatsapp,
+            "has_byok_gemini": has_byok_gemini,
+            "has_byok_whatsapp": has_byok_whatsapp,
             "section": "tenants",
             "csrf_token": csrf_token,
             "message": message,
