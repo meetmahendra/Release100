@@ -56,6 +56,11 @@ class DatabaseService:
     _instance: Optional["DatabaseService"] = None
 
     @classmethod
+    def reset_instance(cls) -> None:
+        """Reset singleton instance for test isolation."""
+        cls._instance = None
+
+    @classmethod
     def get_instance(
         cls,
         db_url: Optional[str] = None,
@@ -64,6 +69,8 @@ class DatabaseService:
         """Get or initialize singleton instance of DatabaseService."""
         if cls._instance is None:
             cls._instance = cls(db_url=db_url, engine=engine)
+        elif engine is not None:
+            cls._instance.bind_engine(engine)
         return cls._instance
 
     def __init__(
@@ -92,15 +99,30 @@ class DatabaseService:
             self.engine = get_db_manager().get_engine()
             Base.metadata.create_all(bind=self.engine)
 
-        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+        self._is_custom = db_url is not None or engine is not None
+        self._custom_db_url = db_url
+        self._session_factory = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
         if DatabaseService._instance is None:
             DatabaseService._instance = self
 
+    @property
+    def SessionLocal(self) -> sessionmaker[Session]:
+        """Dynamic session factory wrapper that ensures engine synchronization with Core DatabaseManager."""
+        if not getattr(self, "_is_custom", False):
+            try:
+                from core_platform.app.db.manager import get_db_manager
+                current_engine = get_db_manager().get_engine()
+                if self.engine != current_engine:
+                    self.bind_engine(current_engine)
+            except Exception:
+                pass
+        return self._session_factory
+
     def bind_engine(self, engine: Engine) -> None:
         """Bind or reconfigure database engine."""
         self.engine = engine
-        self.SessionLocal.configure(bind=engine)
+        self._session_factory.configure(bind=engine)
 
     def close(self) -> None:
         """Cleanly release cartridge session handles without disposing shared platform engine."""

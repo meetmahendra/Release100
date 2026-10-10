@@ -102,7 +102,8 @@ class RBACFilter:
                     with db_mgr.get_session() as session:
                         tenant_obj = session.scalar(select(Tenant).where(Tenant.id == context.tenant_id))
                         if tenant_obj and tenant_obj.allowed_cartridges is not None:
-                            enabled_apps = [a for a in enabled_apps if a in tenant_obj.allowed_cartridges]
+                            if "*" not in tenant_obj.allowed_cartridges and "all" not in tenant_obj.allowed_cartridges:
+                                enabled_apps = [a for a in enabled_apps if a in tenant_obj.allowed_cartridges]
                 except Exception:
                     pass
 

@@ -217,6 +217,18 @@ def get_catalog() -> I18nCatalog:
 
             catalog = I18nCatalog(settings.UI_DEFAULT_LOCALE, settings.UI_MISSING_KEY_POLICY)
             catalog.load_core(Path(__file__).resolve().parents[2] / "locales")
+
+            # Discover and load cartridge locales if available
+            apps_dir = Path(__file__).resolve().parents[3] / "apps"
+            if apps_dir.is_dir():
+                for app_folder in sorted(apps_dir.iterdir()):
+                    if app_folder.is_dir():
+                        loc_dir = app_folder / "locales"
+                        if loc_dir.is_dir():
+                            try:
+                                catalog.load_app(app_folder.name, loc_dir)
+                            except Exception:
+                                pass
             _catalog = catalog
         return _catalog
 

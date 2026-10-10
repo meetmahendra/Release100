@@ -56,6 +56,11 @@ class MailDatabaseService:
     _instance: Optional["MailDatabaseService"] = None
 
     @classmethod
+    def reset_instance(cls) -> None:
+        """Reset singleton instance for test isolation."""
+        cls._instance = None
+
+    @classmethod
     def get_instance(
         cls,
         db_url: Optional[str] = None,
@@ -64,6 +69,8 @@ class MailDatabaseService:
         """Get or initialize singleton instance of MailDatabaseService."""
         if cls._instance is None:
             cls._instance = cls(db_url=db_url, engine=engine)
+        elif engine is not None:
+            cls._instance.bind_engine(engine)
         return cls._instance
 
     def __init__(
@@ -78,6 +85,7 @@ class MailDatabaseService:
             engine: Optional pre-configured SQLAlchemy Engine instance (Core-Facilitated).
         """
         self.db_url = db_url
+        self._is_custom = db_url is not None or engine is not None
 
         if engine is not None:
             self.engine = engine
@@ -115,6 +123,14 @@ class MailDatabaseService:
 
     def get_session(self) -> Session:
         """Create and return a new database session."""
+        if not getattr(self, "_is_custom", False):
+            try:
+                from core_platform.app.db.manager import get_db_manager
+                current_engine = get_db_manager().get_engine()
+                if self.engine != current_engine:
+                    self.bind_engine(current_engine)
+            except Exception:
+                pass
         return self.SessionFactory()
 
     def store_email(

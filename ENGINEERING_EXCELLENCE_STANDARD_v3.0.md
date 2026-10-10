@@ -170,7 +170,108 @@ The platform must operate identically whether deployed on **AWS, GCP, Azure, Bar
 
 ---
 
-## 7. Versioning & Governance
+## 7. Anti-Regression & Zero-False-Success Test Engineering Directives (GEES v3.1)
+
+To guarantee that tests verify true operational reliability rather than generating superficial coverage metrics:
+
+### 7.1 Absolute Ban on Shallow "Status 200" Smoke Tests
+* Asserting `status_code == 200` alone is **strictly prohibited** as the sole assertion for any page or route containing interactive user workflows.
+* Every UI route test **MUST assert Actionable DOM Invariants**:
+  1. The expected `<form>` is physically present with exact `action` and `method` attributes.
+  2. Expected interactive controls (`<input>`, `<select>`, `<textarea>`, `<button>`) exist with correct `name` and `type` attributes.
+  3. The submit `<button type="submit">` is present and active for authorized roles.
+  4. All user-facing strings are resolved from the localization catalog (`t(...)`) with zero raw un-localized text.
+
+### 7.2 Mandatory Clean-Slate Round-Trip Mutation Testing (Day-1 Invariant)
+* All stateful features must be tested starting from the **exact default state of a brand-new tenant on Day 1** (pre-configured static fixture shortcuts are prohibited for workflow validation).
+* Tests must execute the complete state transition loop:
+  $$\text{GET /page (default state)} \longrightarrow \text{POST /action (mutate data)} \longrightarrow \text{GET /page (assert updated persisted UI state)}$$
+* Both state transitions must be verified:
+  - Transitioning from State A to State B (e.g. `PLATFORM_MANAGED` $\rightarrow$ `CUSTOMER_BYOK` with custom keys).
+  - Transitioning from State B back to State A (e.g. `CUSTOMER_BYOK` $\rightarrow$ `PLATFORM_MANAGED`).
+
+### 7.3 Anti-Caching & Session Invalidation Invariant
+* All authenticated UI routes must assert the presence of anti-caching response headers:
+  `Cache-Control: no-store, no-cache, must-revalidate, max-age=0, private`, `Pragma: no-cache`, `Expires: 0`.
+* All unauthenticated 401/403 redirect responses to `/admin/login` must assert `Clear-Site-Data: "cache"`.
+* All client-side JavaScript must contain defensive `typeof` checks (`typeof window.addEventListener === "function"`) so that headless testing runtimes never crash.
+
+---
+
+## 8. The 6 Mandatory End-to-End Persona & Cartridge Journey Regimes
+
+Every release, pull request, and quality gate must execute these 6 full-lifecycle End-to-End Journey Suites:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                  THE 6 MANDATORY E2E JOURNEY REGIMES                                     │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 1. E2E-1: Multi-Tenant Onboarding & Key Vault Journey (`test_e2e_tenant_admin_onboarding_and_vault.py`)   │
+│    • SuperAdmin provisions tenant -> Tenant Admin logs in -> Configures Brand & Timezone -> Toggles      │
+│      between Platform-Managed and Customer BYOK Vault -> Verifies AES-256-GCM encryption -> Invites User │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 2. E2E-2: Mail Organizer Full Ingestion & PM Loop (`test_e2e_mail_organizer_workflow.py`)                │
+│    • Inbound email arrives -> Tenant context resolved -> AI intent triage & rule match -> Token cost    │
+│      ledger record created -> Lands in PM Queue -> Human approves & dispatches -> Outbound sent          │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 3. E2E-3: Temperature Kiosk Vision & Anomaly Loop (`test_e2e_temperature_marker_kiosk.py`)              │
+│    • Kiosk edge payload -> Haversine GPS geofence check -> Face & Display OCR skills execute -> Fever    │
+│      anomaly flagged (NEEDS_REVIEW) -> Supervisor approves override in UI -> WhatsApp alert -> SHA-256   │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 4. E2E-4: Cross-App Event Synergy Choreography (`test_e2e_cross_cartridge_synergy.py`)                   │
+│    • Temperature Marker detects safety breach -> Publishes event to Kernel Event Bus -> Mail Organizer   │
+│      consumes event & auto-drafts supervisor briefing -> Asserts 100% zero code imports between apps     │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 5. E2E-5: Multi-Tenant Concurrent Key Routing (`test_e2e_concurrent_multi_tenant_key_routing.py`)       │
+│    • Simultaneous requests from BYOK tenant (custom key) & Platform tenant (shared key) -> Resolves      │
+│      respective keys dynamically -> Financial liability correctly attributed -> Zero key cross-talk     │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 6. E2E-6: Clean-Slate Zero-Entity Boot & Resilience (`test_e2e_clean_slate_boot_and_resilience.py`)      │
+│    • Clean database with 0 tenants, 0 users, 0 kiosks -> Boots cleanly with 0 unhandled 500 errors ->   │
+│      Bootstrap wizard initializes platform successfully                                                 │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 9. Modular Test Hygiene & ODT Elimination Rules
+
+### 9.1 Absolute Ban on "Grab-Bag" Coverage Booster Test Files
+* A single test file must never import unrelated modules across domain boundaries (e.g. mixing `ImageEnhancerSkill`, `CloudRelayClient`, `LLMCostTracker`, and `MailDatabaseService` in one file).
+* All tests must reside strictly within their corresponding architectural domain suite.
+
+### 9.2 Absolute Ban on Module-Level State & Singleton TestClients
+* Test files must never instantiate module-level singletons (`client = TestClient(app)`) or mutate global cookies/headers at module scope.
+* All test clients, database handles, and temporary files must be strictly scoped within deterministic pytest fixtures (`tmp_path`, `client`).
+
+### 9.3 Absolute Ban on Silent Skips
+* Constructing test fixtures with `try ... except: pytest.skip(...)` is strictly forbidden. Any import failure or dependency break must fail the test suite explicitly.
+
+### 9.4 Domain-Driven Test File Naming
+* Test file names must reflect architectural capabilities (e.g. `test_rate_limiter.py`, `test_identity_registry.py`), never temporary historical sprint phases (`test_phase2_fixes.py`).
+
+---
+
+## 10. Inviolable Pre-Flight Quality Gate (`scripts/verify_all.py`)
+
+No developer or agent may declare a task complete, propose changes, or commit code without executing the unified pre-flight quality gate and attaching a **100% Green Pass Report**:
+
+```bash
+python scripts/verify_all.py --quality-gate
+```
+
+**The 7 Inviolable Checks Executed:**
+1. **`[AST-GUARD]`** AST Architectural Boundaries: Zero cross-app concrete imports, zero domain leaks in microkernel.
+2. **`[TYPE-GUARD]`** Static Type Discipline: 100% `mypy --strict` passing across 100% of source files.
+3. **`[UI-GUARD]`** UI & I18n Parity: 100% translation key resolution, zero hardcoded untranslated strings.
+4. **`[NODE-GUARD]`** Headless JavaScript Compatibility: `ui.js` executes without DOM errors under Node.js.
+5. **`[SECRET-GUARD]`** Zero-Secret Leak Guard: 100% clean scan against live credential patterns.
+6. **`[MANIFEST-GUARD]`** Packaging & Manifest Integrity: All packages, wheel assets, and Jinja2 templates declared in `pyproject.toml`.
+7. **`[REGRESSION-GUARD]`** Fast Synthetic Unit & E2E Journey Suite: 100% pass rate on all unit tests and the 6 Mandatory End-to-End Journeys.
+
+---
+
+## 11. Versioning & Governance
 
 ```
 ┌───────────────┬─────────────────┬─────────────────────────────────────────────────────────────┐
@@ -179,7 +280,8 @@ The platform must operate identically whether deployed on **AWS, GCP, Azure, Bar
 │ GEES v1.0     │ Jan 2026        │ 3-Layer Safety, Dual-Engine Verification, SHA-256 Audit     │
 │ GEES v2.0     │ Jun 2026        │ Zero-Hardcoding, `mypy --strict`, Secret Scanner Guard      │
 │ GEES v3.0     │ Oct 2026        │ Slim Microkernel, System Apps, Data Sovereignty, Synergy    │
+│ GEES v3.1     │ Oct 2026        │ Zero-False-Success Directives, 6 E2E Journeys, Verify-All   │
 └───────────────┴─────────────────┴─────────────────────────────────────────────────────────────┘
 ```
 
-All software components, subagents, and future pull requests in this repository are strictly governed by **GEES v3.0**.
+All software components, subagents, and future pull requests in this repository are strictly governed by **GEES v3.1**.
