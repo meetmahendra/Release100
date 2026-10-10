@@ -314,38 +314,30 @@ STATUS 200
   AES-#-GCM Vault
 </span>
 </div>
-<div>
-<label class="block text-xs font-semibold text-slate-# mb-#">
-  Credential & Key Management Mode
-</label>
-<div class="grid grid-cols-# md:grid-cols-# gap-# text-xs">
-<label class="flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-sky-#/# border-sky-#/# text-sky-#" id="label-platform-mode">
-<input checked class="mt-#.# text-sky-# focus:ring-#" name="credential_mode" onchange="toggleVaultMode(this.value)" type="radio" value="PLATFORM_MANAGED">
-<div>
-<p class="font-bold text-white">
-  Platform-Managed Cloud Plan (Shared platform keys, pay-per-use)
-</p>
-<p class="text-[#px] text-slate-# mt-#.#">
-  Your organization utilizes the high-throughput, platform-managed LLM gateway and WhatsApp connectors provided with your enterprise subscription.
-</p>
+<div class="p-# rounded-xl border bg-sky-#/# border-sky-#/# flex flex-col md:flex-row md:items-center justify-between gap-# text-xs">
+<div class="space-y-#">
+<div class="flex items-center gap-#">
+<span class="font-semibold text-slate-#">
+  Credential & Key Management Mode:
+</span>
+<span class="px-#.# py-#.# rounded-full text-xs font-bold bg-sky-#/# text-sky-# border border-sky-#/#">
+  ☁️ Platform-Managed
+</span>
+<span class="px-# py-#.# rounded text-[#px] font-mono bg-slate-# text-slate-# border border-slate-#">
+  Assigned AI Model Provider:
+<strong class="text-white uppercase">
+  gemini
+</strong>
+</span>
 </div>
-</label>
-<label class="flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-slate-# border-slate-# text-slate-# hover:border-slate-#" id="label-byok-mode">
-<input class="mt-#.# text-amber-# focus:ring-#" name="credential_mode" onchange="toggleVaultMode(this.value)" type="radio" value="CUSTOMER_BYOK">
-<div>
-<p class="font-bold text-white">
-  Customer BYOK Vault (Use dedicated API keys, encrypted at rest)
+<p class="text-slate-# text-[#px]">
+  Credential plan mode and assigned AI provider are governed by Platform DevOps. Contact your platform administrator to request plan adjustments.
 </p>
-<p class="text-[#px] text-slate-# mt-#.#">
-  Your company provides its own API credentials. Keys are encrypted at rest via AES-#-GCM and never shared with other tenants.
-</p>
-</div>
-</label>
 </div>
 </div>
 <div class="bg-slate-#/# border border-sky-#/# rounded-xl p-# space-y-#" id="platform-managed-box">
 <div class="flex items-center gap-#">
-<div class="w-# h-# rounded-lg bg-sky-#/# text-sky-# flex items-center justify-center shrink-#">
+<div class="w-# h-# rounded-lg bg-sky-#/# text-sky-# flex items-center justify-center shrink-# text-base">
   ☁️
 </div>
 <div>
@@ -376,64 +368,6 @@ STATUS 200
 </div>
 </div>
 </div>
-<div class="space-y-# pt-# hidden" id="byok-keys-box">
-<div class="p-#.# rounded-lg bg-amber-#/# border border-amber-#/# text-amber-# text-xs">
-<strong>
-  Customer BYOK Active:
-</strong>
-  Your company provides its own API credentials. Keys are encrypted at rest via AES-#-GCM and never shared with other tenants.
-</div>
-<div class="grid grid-cols-# md:grid-cols-# gap-#">
-<div>
-<label class="block text-xs font-semibold text-slate-# mb-#">
-  Company Google Gemini API Key
-</label>
-<input autocomplete="new-password" class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-amber-# outline-none font-mono" name="gemini_api_key" placeholder="Enter custom Gemini key (or leave blank to keep existing)" type="password">
-<p class="text-[#px] text-slate-# mt-#">
-  Status:
-<span class="text-slate-#">
-  Not set
-</span>
-</p>
-</div>
-<div>
-<label class="block text-xs font-semibold text-slate-# mb-#">
-  Company OpenAI API Key
-</label>
-<input autocomplete="new-password" class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-amber-# outline-none font-mono" name="openai_api_key" placeholder="Enter custom OpenAI key (or leave blank to keep existing)" type="password">
-<p class="text-[#px] text-slate-# mt-#">
-  Status:
-<span class="text-slate-#">
-  Not set
-</span>
-</p>
-</div>
-<div>
-<label class="block text-xs font-semibold text-slate-# mb-#">
-  WhatsApp Cloud API Token
-</label>
-<input autocomplete="new-password" class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-amber-# outline-none font-mono" name="waba_token" placeholder="Enter custom WABA token (or leave blank to keep existing)" type="password">
-<p class="text-[#px] text-slate-# mt-#">
-  Status:
-<span class="text-slate-#">
-  Not set
-</span>
-</p>
-</div>
-<div>
-<label class="block text-xs font-semibold text-slate-# mb-#">
-  WhatsApp Phone Number ID
-</label>
-<input class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-amber-# outline-none font-mono" name="waba_phone_number_id" placeholder="e.g. #" type="text" value="">
-<p class="text-[#px] text-slate-# mt-#">
-  Status:
-<span class="text-slate-#">
-  Not set
-</span>
-</p>
-</div>
-</div>
-</div>
 <div class="flex justify-end pt-# border-t border-slate-#/#">
 <button class="px-# py-#.# rounded-lg bg-sky-# hover:bg-sky-# text-white font-semibold text-xs transition-colors shadow-md flex items-center gap-#" type="submit">
 <span>
@@ -445,21 +379,35 @@ STATUS 200
 </div>
 </form>
 <script>
-  function toggleVaultMode(mode) {
-  const platformBox = document.getElementById('platform-managed-box');
-  const byokBox = document.getElementById('byok-keys-box');
-  const labelPlatform = document.getElementById('label-platform-mode');
-  const labelByok = document.getElementById('label-byok-mode');
-  if (mode === 'CUSTOMER_BYOK') {
-  platformBox.classList.add('hidden');
-  byokBox.classList.remove('hidden');
-  labelByok.className = "flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-amber-#/# border-amber-#/# text-amber-#";
-  labelPlatform.className = "flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-slate-# border-slate-# text-slate-# hover:border-slate-#";
+  async function validateKey(provider, inputName, resultElId) {
+  const resultEl = document.getElementById(resultElId);
+  const inputEl = document.querySelector('input[name="' + inputName + '"]');
+  const keyVal = inputEl ? inputEl.value.trim() : '';
+  if (resultEl) {
+  resultEl.innerHTML = '<span class="text-amber-# font-semibold flex items-center gap-#.#"><span class="animate-spin inline-block">⌛</span> Validating with ' + provider.toUpperCase() + ' API...</span>';
+  }
+  try {
+  const resp = await fetch('/admin/tenants/api/validate-key', {
+  method: 'POST',
+  headers: {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json'
+  },
+  body: JSON.stringify({
+  provider: provider,
+  api_key: keyVal
+  })
+  });
+  const data = await resp.json();
+  if (resp.ok && data.valid) {
+  resultEl.innerHTML = '<div class="p-# rounded bg-emerald-#/# border border-emerald-#/# text-emerald-# font-semibold text-xs flex items-center gap-#.#"><span>✓</span> <span>' + (data.message || 'Key verified and responsive!') + '</span></div>';
   } else {
-  platformBox.classList.remove('hidden');
-  byokBox.classList.add('hidden');
-  labelPlatform.className = "flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-sky-#/# border-sky-#/# text-sky-#";
-  labelByok.className = "flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-slate-# border-slate-# text-slate-# hover:border-slate-#";
+  resultEl.innerHTML = '<div class="p-# rounded bg-rose-#/# border border-rose-#/# text-rose-# font-semibold text-xs flex items-center gap-#.#"><span>✗</span> <span>' + (data.message || 'Validation failed. Please verify API key.') + '</span></div>';
+  }
+  } catch (err) {
+  if (resultEl) {
+  resultEl.innerHTML = '<div class="p-# rounded bg-rose-#/# border border-rose-#/# text-rose-# font-semibold text-xs flex items-center gap-#.#"><span>✗</span> <span>Network error during validation probe: ' + err.message + '</span></div>';
+  }
   }
   }
 </script>

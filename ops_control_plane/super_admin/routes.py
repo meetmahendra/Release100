@@ -123,7 +123,9 @@ async def super_admin_tenants_dashboard(
                 "config": t_cfg,
                 "admin": t_admin,
                 "credential_mode": t_cfg.credential_mode if t_cfg else "PLATFORM_MANAGED",
+                "llm_provider": t_cfg.llm_provider if t_cfg else "gemini",
                 "has_custom_gemini": bool(t_cfg and t_cfg.encrypted_gemini_api_key),
+                "has_custom_openai": bool(t_cfg and t_cfg.encrypted_openai_api_key),
                 "has_custom_waba": bool(t_cfg and t_cfg.encrypted_waba_token),
             })
 
@@ -454,6 +456,7 @@ async def configure_vault_action(
     request: Request,
     ctx: SecurityContext = Depends(get_web_security_context),
     credential_mode: str = Form("PLATFORM_MANAGED"),
+    llm_provider: Optional[str] = Form("gemini"),
     gemini_api_key: Optional[str] = Form(None),
     openai_api_key: Optional[str] = Form(None),
     waba_access_token: Optional[str] = Form(None),
@@ -470,6 +473,7 @@ async def configure_vault_action(
         vault.configure_tenant_credentials(
             tenant_id=slug,
             credential_mode=credential_mode,
+            llm_provider=llm_provider,
             gemini_api_key=gemini_api_key.strip() if gemini_api_key and gemini_api_key.strip() else None,
             openai_api_key=openai_api_key.strip() if openai_api_key and openai_api_key.strip() else None,
             waba_access_token=waba_access_token.strip() if waba_access_token and waba_access_token.strip() else None,

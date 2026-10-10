@@ -22,6 +22,14 @@
       </div>
 
       <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_llm_provider') }}</label>
+        <select name="llm_provider" id="vaultLlmProvider" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none">
+          <option value="gemini">{{ t('core.ops_tenants.opt_provider_gemini') }}</option>
+          <option value="openai">{{ t('core.ops_tenants.opt_provider_openai') }}</option>
+        </select>
+      </div>
+
+      <div>
         <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_gemini_key') }}</label>
         <input type="password" name="gemini_api_key" placeholder="AIzaSy..."
                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />

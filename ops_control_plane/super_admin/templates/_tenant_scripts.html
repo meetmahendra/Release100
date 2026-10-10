@@ -1,5 +1,5 @@
 <script>
-  function openInspectModal(slug, name, status, tier, region, dbMode, credMode, domain, cartridges, adminUser, adminName, adminEmail) {
+  function openInspectModal(slug, name, status, tier, region, dbMode, credMode, domain, cartridges, adminUser, adminName, adminEmail, llmProvider) {
     document.getElementById('inspectTitle').textContent = name;
     document.getElementById('inspectSlug').textContent = 'Tenant ID: ' + slug;
     document.getElementById('inspectStatus').textContent = status;
@@ -29,7 +29,7 @@
     };
     document.getElementById('inspectByokBtn').onclick = function() {
       closeInspectModal();
-      openVaultModal(slug, credMode);
+      openVaultModal(slug, credMode, llmProvider);
     };
     document.getElementById('inspectCloneBtn').onclick = function() {
       closeInspectModal();
@@ -91,9 +91,12 @@
     document.getElementById('cartridgesModal').classList.add('hidden');
   }
 
-  function openVaultModal(slug, currentMode) {
+  function openVaultModal(slug, currentMode, currentLlmProvider) {
     document.getElementById('vaultForm').action = '/ops/tenants/' + slug + '/vault';
-    document.getElementById('vaultCredMode').value = currentMode;
+    document.getElementById('vaultCredMode').value = currentMode || 'PLATFORM_MANAGED';
+    if (document.getElementById('vaultLlmProvider')) {
+      document.getElementById('vaultLlmProvider').value = currentLlmProvider || 'gemini';
+    }
     document.getElementById('vaultModal').classList.remove('hidden');
   }
   function closeVaultModal() {

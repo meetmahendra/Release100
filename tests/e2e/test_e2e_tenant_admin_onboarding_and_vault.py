@@ -109,27 +109,30 @@ def test_e2e_tenant_admin_onboarding_and_vault_journey(e2e_env: TestClient) -> N
     assert 'action="/admin/tenants/save-byok"' in html_day1
     assert 'name="brand_name"' in html_day1
     assert 'name="default_timezone"' in html_day1
-    assert 'name="credential_mode"' in html_day1
-    assert 'name="gemini_api_key"' in html_day1
-    assert 'name="openai_api_key"' in html_day1
-    assert 'name="waba_token"' in html_day1
-    assert 'name="waba_phone_number_id"' in html_day1
+    assert "Platform-Managed" in html_day1 or "PLATFORM_MANAGED" in html_day1
     assert 'type="submit"' in html_day1
 
     # Verify anti-caching headers (GEES v3.1 Directive 7.3)
     assert "no-store" in resp_day1.headers.get("cache-control", "")
 
     # -------------------------------------------------------------------------
-    # STEP 3: POST /admin/tenants/save-byok (Switch to CUSTOMER_BYOK & Save Keys)
+    # STEP 3: DevOps switches tenant to CUSTOMER_BYOK with Gemini provider
+    # Then Customer Admin updates profile, BYOK keys, and tests live connection
     # -------------------------------------------------------------------------
+    from ops_control_plane.devops_vault import DevOpsKeyVault
+    vault = DevOpsKeyVault()
+    vault.configure_tenant_credentials(
+        tenant_id="acme_corp",
+        credential_mode="CUSTOMER_BYOK",
+        llm_provider="gemini",
+    )
+
     save_resp = client.post(
         "/admin/tenants/save-byok",
         data={
             "brand_name": "Acme Global Logistics",
             "default_timezone": "America/New_York",
-            "credential_mode": "CUSTOMER_BYOK",
             "gemini_api_key": "mock_gemini_key_12345",
-            "openai_api_key": "mock_openai_key_67890",
             "waba_token": "mock_waba_token_abcdef",
             "waba_phone_number_id": "109876543210987",
             "csrf_token": "csrf_e2e_token_123",
@@ -138,6 +141,17 @@ def test_e2e_tenant_admin_onboarding_and_vault_journey(e2e_env: TestClient) -> N
     )
     # Should redirect with 303/302 to /admin/tenants
     assert save_resp.status_code in (302, 303)
+
+    # Test Live Key Validation Endpoint (Issue 3 verification)
+    val_resp = client.post(
+        "/admin/tenants/api/validate-key",
+        json={"provider": "gemini", "api_key": "mock_gemini_key_12345"},
+        headers={"Host": "acme.intentrouter.io"},
+    )
+    assert val_resp.status_code == 200
+    val_data = val_resp.json()
+    assert val_data["valid"] is True
+    assert val_data["provider"] == "gemini"
 
     # -------------------------------------------------------------------------
     # STEP 4: GET /admin/tenants (Verify Persisted State & AES-256-GCM Status)
@@ -150,10 +164,12 @@ def test_e2e_tenant_admin_onboarding_and_vault_journey(e2e_env: TestClient) -> N
     assert "Acme Global Logistics" in html_day2
     assert "109876543210987" in html_day2
     assert "Configured (AES-256-GCM)" in html_day2 or "Configured" in html_day2
+    assert 'name="gemini_api_key"' in html_day2
+    # OpenAI key input is hidden because provider was set to gemini by DevOps
+    assert 'name="openai_api_key"' not in html_day2
 
     # Assert raw keys are never leaked in HTML
     assert "mock_gemini_key_12345" not in html_day2
-    assert "mock_openai_key_67890" not in html_day2
     assert "mock_waba_token_abcdef" not in html_day2
 
     # -------------------------------------------------------------------------
@@ -190,20 +206,13 @@ def test_e2e_tenant_admin_onboarding_and_vault_journey(e2e_env: TestClient) -> N
     assert op_ops_resp.status_code in (302, 403, 404)
 
     # -------------------------------------------------------------------------
-    # STEP 6: Toggle back to PLATFORM_MANAGED (State Machine Reversibility)
+    # STEP 6: DevOps toggles back to PLATFORM_MANAGED (State Machine Reversibility)
     # -------------------------------------------------------------------------
-    revert_resp = client.post(
-        "/admin/tenants/save-byok",
-        data={
-            "brand_name": "Acme Global Logistics",
-            "default_timezone": "America/New_York",
-            "credential_mode": "PLATFORM_MANAGED",
-            "csrf_token": "csrf_e2e_token_123",
-        },
-        headers={"Host": "acme.intentrouter.io"},
+    vault.configure_tenant_credentials(
+        tenant_id="acme_corp",
+        credential_mode="PLATFORM_MANAGED",
     )
-    assert revert_resp.status_code in (302, 303)
 
     resp_revert = client.get("/admin/tenants", headers={"Host": "acme.intentrouter.io"})
     assert resp_revert.status_code == 200
-    assert 'value="PLATFORM_MANAGED"' in resp_revert.text
+    assert "Platform-Managed" in resp_revert.text or "PLATFORM_MANAGED" in resp_revert.text

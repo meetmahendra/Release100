@@ -109,6 +109,17 @@ class DatabaseMigrationHelper:
                         except Exception as e:
                             logger.debug("[DB Migration] Column add skipped: %s", e)
 
+                # 2b. platform_tenant_configs.llm_provider
+                if "platform_tenant_configs" in tables:
+                    cols = {c["name"] for c in inspector.get_columns("platform_tenant_configs")}
+                    if "llm_provider" not in cols:
+                        try:
+                            conn.execute(text("ALTER TABLE platform_tenant_configs ADD COLUMN llm_provider VARCHAR(32) DEFAULT 'gemini';"))
+                            conn.commit()
+                            logger.info("[DB Migration] Added missing column platform_tenant_configs.llm_provider")
+                        except Exception as e:
+                            logger.debug("[DB Migration] Column add skipped: %s", e)
+
                 # 3. Domain Cartridge multi-tenant isolation columns (mail_emails, mail_drafts, mail_pm_queue, mail_rules, employees, attendance_records, outbox_queue, internal_message_queue, kiosk_monitoring_configs)
                 cartridge_tables = [
                     "mail_emails",

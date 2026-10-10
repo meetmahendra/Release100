@@ -91,7 +91,7 @@
           <td class="px-4 py-3 text-right">
             <div class="flex items-center justify-end gap-1.5">
               <!-- Primary Inspect & Manage Trigger -->
-              <button type="button" onclick="openInspectModal('{{ t_item.id }}', '{{ t_item.name }}', '{{ t_item.status }}', '{{ t_item.license_tier }}', '{{ t_item.storage_region }}', '{{ t_item.db_mode }}', '{{ item.credential_mode }}', '{% if item.domains %}{{ item.domains[0].domain_name }}{% else %}{{ t_item.id }}.release100.com{% endif %}', '{% for c in t_item.allowed_cartridges %}{{ c }}{% if not loop.last %},{% endif %}{% endfor %}', '{% if item.admin %}{{ item.admin.phone_number }}{% endif %}', '{% if item.admin %}{{ item.admin.full_name }}{% endif %}', '{% if item.admin %}{{ item.admin.email or '' }}{% endif %}')" class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm transition-colors flex items-center gap-1">
+              <button type="button" onclick="openInspectModal('{{ t_item.id }}', '{{ t_item.name }}', '{{ t_item.status }}', '{{ t_item.license_tier }}', '{{ t_item.storage_region }}', '{{ t_item.db_mode }}', '{{ item.credential_mode }}', '{% if item.domains %}{{ item.domains[0].domain_name }}{% else %}{{ t_item.id }}.release100.com{% endif %}', '{% for c in t_item.allowed_cartridges %}{{ c }}{% if not loop.last %},{% endif %}{% endfor %}', '{% if item.admin %}{{ item.admin.phone_number }}{% endif %}', '{% if item.admin %}{{ item.admin.full_name }}{% endif %}', '{% if item.admin %}{{ item.admin.email or '' }}{% endif %}', '{{ item.llm_provider }}')" class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm transition-colors flex items-center gap-1">
                 <span>🔍</span> {{ t('core.ops_tenants.btn_inspect') }}
               </button>
 
@@ -101,7 +101,7 @@
               </button>
 
               <!-- BYOK Modal Trigger -->
-              <button type="button" onclick="openVaultModal('{{ t_item.id }}', '{{ item.credential_mode }}')" class="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-700 font-medium transition-colors">
+              <button type="button" onclick="openVaultModal('{{ t_item.id }}', '{{ item.credential_mode }}', '{{ item.llm_provider }}')" class="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-700 font-medium transition-colors">
                 {{ t('core.ops_tenants.btn_byok') }}
               </button>
 

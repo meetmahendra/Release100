@@ -68,7 +68,8 @@ class DevOpsKeyVault:
     def configure_tenant_credentials(
         self,
         tenant_id: str,
-        credential_mode: str = "PLATFORM_MANAGED",
+        credential_mode: Optional[str] = None,
+        llm_provider: Optional[str] = None,
         gemini_api_key: Optional[str] = None,
         openai_api_key: Optional[str] = None,
         waba_token: Optional[str] = None,
@@ -82,7 +83,8 @@ class DevOpsKeyVault:
 
         Args:
             tenant_id: Target tenant identifier.
-            credential_mode: 'PLATFORM_MANAGED' (default) or 'CUSTOMER_BYOK'.
+            credential_mode: 'PLATFORM_MANAGED' or 'CUSTOMER_BYOK' (optional).
+            llm_provider: 'gemini' or 'openai' (optional).
             gemini_api_key: Customer Gemini API key (encrypted at rest if BYOK).
             openai_api_key: Customer OpenAI API key (encrypted at rest if BYOK).
             waba_token: Customer WhatsApp Business token (encrypted at rest if BYOK).
@@ -94,8 +96,8 @@ class DevOpsKeyVault:
         Returns:
             Updated TenantConfig database record.
         """
-        mode_clean = credential_mode.upper().strip()
-        if mode_clean not in ("PLATFORM_MANAGED", "CUSTOMER_BYOK"):
+        mode_clean = credential_mode.upper().strip() if credential_mode else None
+        if mode_clean and mode_clean not in ("PLATFORM_MANAGED", "CUSTOMER_BYOK"):
             raise ValueError(f"Invalid credential mode: '{credential_mode}'. Must be PLATFORM_MANAGED or CUSTOMER_BYOK.")
 
         # Derive tenant encryption salt
@@ -124,7 +126,8 @@ class DevOpsKeyVault:
             if not config:
                 config = TenantConfig(
                     tenant_id=tenant_id,
-                    credential_mode=mode_clean,
+                    credential_mode=mode_clean or "PLATFORM_MANAGED",
+                    llm_provider=llm_provider.strip().lower() if llm_provider else "gemini",
                     encrypted_gemini_api_key=enc_gemini,
                     encrypted_openai_api_key=enc_openai,
                     encrypted_waba_token=enc_waba,
@@ -135,7 +138,10 @@ class DevOpsKeyVault:
                 )
                 session.add(config)
             else:
-                config.credential_mode = mode_clean
+                if mode_clean:
+                    config.credential_mode = mode_clean
+                if llm_provider is not None and llm_provider.strip():
+                    config.llm_provider = llm_provider.strip().lower()
                 if gemini_api_key is not None and gemini_api_key.strip():
                     config.encrypted_gemini_api_key = enc_gemini
                 if openai_api_key is not None and openai_api_key.strip():
@@ -153,7 +159,7 @@ class DevOpsKeyVault:
 
             session.commit()
             session.refresh(config)
-            logger.info("[DevOpsKeyVault] Configured credentials for tenant %s (Mode: %s)", tenant_id, mode_clean)
+            logger.info("[DevOpsKeyVault] Configured credentials for tenant %s (Mode: %s)", tenant_id, config.credential_mode)
             return config
 
     def get_tenant_runtime_credentials(self, tenant_id: str) -> TenantRuntimeCredentials:

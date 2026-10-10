@@ -817,7 +817,7 @@ async def view_tenants(
 async def save_customer_byok_keys(
     request: Request,
     ctx: SecurityContext = Depends(get_web_security_context),
-    credential_mode: str = Form("PLATFORM_MANAGED"),
+    credential_mode: Optional[str] = Form(None),
     brand_name: Optional[str] = Form(None),
     default_timezone: Optional[str] = Form("Asia/Kolkata"),
     gemini_api_key: Optional[str] = Form(None),
@@ -839,9 +839,11 @@ async def save_customer_byok_keys(
     from ops_control_plane.devops_vault import DevOpsKeyVault
     vault = DevOpsKeyVault()
     try:
+        # Credential mode can only be changed if principal has DevOps/Super-Admin privileges
+        mode_to_apply = credential_mode if is_devops_context(ctx) else None
         vault.configure_tenant_credentials(
             tenant_id=active_tenant_slug,
-            credential_mode=credential_mode,
+            credential_mode=mode_to_apply,
             gemini_api_key=gemini_api_key,
             openai_api_key=openai_api_key,
             waba_token=waba_token,
@@ -859,6 +861,64 @@ async def save_customer_byok_keys(
             url=f"/admin/tenants?error={exc}",
             status_code=status.HTTP_303_SEE_OTHER,
         )
+
+
+@router.post("/tenants/api/validate-key")
+async def validate_tenant_api_key(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> JSONResponse:
+    """Live validation probe for customer-entered or stored BYOK keys."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=403, detail="Admin role required.")
+
+    body: Dict[str, Any] = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+
+    provider = str(body.get("provider", "gemini")).lower().strip()
+    api_key = str(body.get("api_key", "")).strip()
+
+    from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+    eff_tenant, _, _ = resolve_effective_tenant_info(request, ctx)
+
+    # If no key passed in body, attempt to test the saved encrypted key in the vault
+    if not api_key:
+        from ops_control_plane.devops_vault import DevOpsKeyVault
+        vault = DevOpsKeyVault()
+        runtime_creds = vault.get_tenant_runtime_credentials(eff_tenant)
+        if provider in ("gemini", "google"):
+            api_key = runtime_creds.gemini_api_key or ""
+        elif provider == "openai":
+            api_key = runtime_creds.openai_api_key or ""
+        elif provider in ("whatsapp", "waba"):
+            api_key = runtime_creds.waba_token or ""
+
+    if not api_key:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "valid": False,
+                "provider": provider,
+                "message": f"No API key provided or found in vault for {provider.title()}.",
+            },
+        )
+
+    from core_platform.app.llm.validator import validate_provider_api_key
+    is_valid, status_msg = validate_provider_api_key(provider, api_key)
+
+    return JSONResponse(
+        status_code=200 if is_valid else 400,
+        content={
+            "success": is_valid,
+            "valid": is_valid,
+            "provider": provider,
+            "message": status_msg,
+        },
+    )
 
 
 @router.post("/tenants/provision")

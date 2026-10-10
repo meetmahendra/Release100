@@ -227,6 +227,7 @@ class TenantConfig(Base, TimestampMixin):
 
     tenant_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     credential_mode: Mapped[str] = mapped_column(String(32), default="PLATFORM_MANAGED", nullable=False)  # PLATFORM_MANAGED, CUSTOMER_BYOK
+    llm_provider: Mapped[str] = mapped_column(String(32), default="gemini", nullable=False)  # gemini, openai
     encrypted_gemini_api_key: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     encrypted_openai_api_key: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     encrypted_waba_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -240,6 +241,7 @@ class TenantConfig(Base, TimestampMixin):
         return {
             "tenant_id": self.tenant_id,
             "credential_mode": self.credential_mode,
+            "llm_provider": self.llm_provider or "gemini",
             "has_gemini_byok": bool(self.encrypted_gemini_api_key),
             "has_openai_byok": bool(self.encrypted_openai_api_key),
             "has_waba_byok": bool(self.encrypted_waba_token),

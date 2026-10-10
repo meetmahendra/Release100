@@ -377,6 +377,19 @@ STATUS 200
 </div>
 <div>
 <label class="block text-xs font-medium text-slate-# mb-#">
+  Assigned AI Model Provider
+</label>
+<select class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# outline-none" id="vaultLlmProvider" name="llm_provider">
+<option value="gemini">
+  Google Gemini (Default)
+</option>
+<option value="openai">
+  OpenAI
+</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
   Gemini API Key (AES-#-GCM Encrypted)
 </label>
 <input class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# font-mono outline-none" name="gemini_api_key" placeholder="AIzaSy..." type="password">
@@ -827,7 +840,7 @@ STATUS 200
 <script src="/ui-static/ui.js">
 </script>
 <script>
-  function openInspectModal(slug, name, status, tier, region, dbMode, credMode, domain, cartridges, adminUser, adminName, adminEmail) {
+  function openInspectModal(slug, name, status, tier, region, dbMode, credMode, domain, cartridges, adminUser, adminName, adminEmail, llmProvider) {
   document.getElementById('inspectTitle').textContent = name;
   document.getElementById('inspectSlug').textContent = 'Tenant ID: ' + slug;
   document.getElementById('inspectStatus').textContent = status;
@@ -855,7 +868,7 @@ STATUS 200
   };
   document.getElementById('inspectByokBtn').onclick = function() {
   closeInspectModal();
-  openVaultModal(slug, credMode);
+  openVaultModal(slug, credMode, llmProvider);
   };
   document.getElementById('inspectCloneBtn').onclick = function() {
   closeInspectModal();
@@ -912,9 +925,12 @@ STATUS 200
   function closeCartridgesModal() {
   document.getElementById('cartridgesModal').classList.add('hidden');
   }
-  function openVaultModal(slug, currentMode) {
+  function openVaultModal(slug, currentMode, currentLlmProvider) {
   document.getElementById('vaultForm').action = '/ops/tenants/' + slug + '/vault';
-  document.getElementById('vaultCredMode').value = currentMode;
+  document.getElementById('vaultCredMode').value = currentMode || 'PLATFORM_MANAGED';
+  if (document.getElementById('vaultLlmProvider')) {
+  document.getElementById('vaultLlmProvider').value = currentLlmProvider || 'gemini';
+  }
   document.getElementById('vaultModal').classList.remove('hidden');
   }
   function closeVaultModal() {
