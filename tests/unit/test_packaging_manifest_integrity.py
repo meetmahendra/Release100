@@ -240,3 +240,25 @@ def test_wheel_archive_contains_all_modules_and_templates() -> None:
         assert any("tokens.css" in f for f in file_names), "tokens.css missing from wheel"
         assert any("ui.js" in f for f in file_names), "ui.js missing from wheel"
 
+
+def test_package_version_synchronization() -> None:
+    """GEES v3.1 Invariant: Verify that pyproject.toml versions match __version__ across Core and all cartridges."""
+    # 1. Core Platform
+    core_toml = tomllib.loads((ROOT_DIR / "pyproject.toml").read_text(encoding="utf-8"))
+    core_ver = core_toml["project"]["version"]
+    from core_platform.app import __version__ as core_py_ver
+    assert core_ver == core_py_ver, f"Core pyproject.toml version ({core_ver}) != __version__ ({core_py_ver})"
+
+    # 2. Temperature Marker Cartridge
+    tm_toml = tomllib.loads((ROOT_DIR / "apps" / "temperature_marker" / "pyproject.toml").read_text(encoding="utf-8"))
+    tm_ver = tm_toml["project"]["version"]
+    from apps.temperature_marker import __version__ as tm_py_ver
+    assert tm_ver == tm_py_ver, f"Temperature Marker pyproject.toml version ({tm_ver}) != __version__ ({tm_py_ver})"
+
+    # 3. Mail Organizer Cartridge
+    mo_toml = tomllib.loads((ROOT_DIR / "apps" / "mail_organizer" / "pyproject.toml").read_text(encoding="utf-8"))
+    mo_ver = mo_toml["project"]["version"]
+    from apps.mail_organizer import __version__ as mo_py_ver
+    assert mo_ver == mo_py_ver, f"Mail Organizer pyproject.toml version ({mo_ver}) != __version__ ({mo_py_ver})"
+
+

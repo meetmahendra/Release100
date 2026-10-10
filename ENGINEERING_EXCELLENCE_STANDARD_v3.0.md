@@ -266,12 +266,22 @@ python scripts/verify_all.py --quality-gate
 3. **`[UI-GUARD]`** UI & I18n Parity: 100% translation key resolution, zero hardcoded untranslated strings.
 4. **`[NODE-GUARD]`** Headless JavaScript Compatibility: `ui.js` executes without DOM errors under Node.js.
 5. **`[SECRET-GUARD]`** Zero-Secret Leak Guard: 100% clean scan against live credential patterns.
-6. **`[MANIFEST-GUARD]`** Packaging & Manifest Integrity: All packages, wheel assets, and Jinja2 templates declared in `pyproject.toml`.
+6. **`[MANIFEST-GUARD]`** Packaging & Manifest Integrity: All packages, wheel assets, Jinja2 templates, and version parity (`pyproject.toml` vs `__version__`) verified.
 7. **`[REGRESSION-GUARD]`** Fast Synthetic Unit & E2E Journey Suite: 100% pass rate on all unit tests and the 6 Mandatory End-to-End Journeys.
 
 ---
 
-## 11. Versioning & Governance
+## 11. Automated Multi-Channel Package Distribution & Version Invariants
+
+Whenever proposing commits, preparing releases, or pushing to remote branches, the following packaging invariants MUST be automatically maintained:
+1. **Strict Version Parity:** Root `pyproject.toml` (`release100-core`), `apps/temperature_marker/pyproject.toml` (`release100-cartridge-temperature-marker`), `apps/mail_organizer/pyproject.toml` (`release100-cartridge-mail-organizer`), and all corresponding `__version__` constants must remain in strict synchronization.
+2. **Wheel & Asset Packaging Guarantee:** Every newly introduced template, static asset, or dependency must be declared under `[tool.setuptools.package-data]` and `dependencies` in `pyproject.toml`, verified via `MANIFEST-GUARD`.
+3. **Automated CI/CD Package Publishing:** GitHub Actions workflow (`.github/workflows/publish-packages.yml`) automatically builds all 3 packages on push to `intent-router` and `main`, generates a PEP 503 static repository index, and deploys it to GitHub Pages (`https://meetmahendra.github.io/Release100/<channel>/`) for instant 1-click sandbox installation via `pip` or `uv`.
+4. **Automated Release Tag Asset Binding:** Pushing any version tag (`v*`) automatically builds and publishes standalone distribution wheels to GitHub Release Assets.
+
+---
+
+## 12. Versioning & Governance
 
 ```
 ┌───────────────┬─────────────────┬─────────────────────────────────────────────────────────────┐

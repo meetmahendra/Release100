@@ -20,4 +20,4 @@ Provides intelligent inbox triage, zero-deletion email processing,
 Google Calendar free/busy scheduling injection, and human-in-the-loop PM task extraction.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"

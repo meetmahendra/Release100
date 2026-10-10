@@ -57,3 +57,9 @@
 ## 10. Explicit User Approval for Remote Git Pushes
 * **Explicit Go Required for Remote Pushes:** Under NO circumstances may an agent or subagent execute `git push` without first presenting the proposed commit list/diff to the USER and receiving explicit user confirmation ("go" / approval).
 
+## 11. Automated Multi-Channel Package Distribution & Version Invariants
+* **Strict Version Parity:** Root `pyproject.toml` (`release100-core`), `apps/temperature_marker/pyproject.toml` (`release100-cartridge-temperature-marker`), `apps/mail_organizer/pyproject.toml` (`release100-cartridge-mail-organizer`), and all corresponding `__version__` constants must remain in strict synchronization on every change.
+* **Automated Packaging Verification:** Every new template, asset, or dependency must be declared in `pyproject.toml` and verified via `MANIFEST-GUARD` before push.
+* **Automated Sandbox Index Generation:** All pushes to `intent-router` and `main` automatically publish PEP 503 package wheels to GitHub Pages for instant sandbox installation.
+
+
