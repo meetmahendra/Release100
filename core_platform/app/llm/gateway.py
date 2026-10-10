@@ -15,14 +15,15 @@
 """
 Platform LLM Gateway — Singleton Task-Routed Inference Engine.
 
-Adheres strictly to Plan 02 v1.3 Section 4.
+Adheres strictly to Plan 02 v1.3 Section 4 and GEES v3.0:
 Routes inference requests to the correct vendor provider based on task type,
 with an automatic fallback chain:
 
   primary provider → Ollama (local) → deterministic stub (None)
 
 Task types defined by the platform:
-  - "intent_routing"     : route inbound messages to the correct app
+  - "intent_routing"     : route inbound messages to the correct app (TypeSafe / Jev System 1)
+  - "fast_classification": low-latency discrete classification (TypeSafe / Jev System 1)
   - "vision_processing"  : display/meter OCR and multimodal analysis
   - "text_generation"    : classify, summarise, extract structured data
   - "private_local_logs" : local Ollama for privacy-sensitive log analysis
@@ -53,6 +54,28 @@ _DEFAULT_TASK_PROVIDER: Dict[str, str] = {
     "text_generation": "gemini",
     "private_local_logs": "ollama",
 }
+
+
+def _resolve_context_tenant(explicit_id: Optional[str] = None) -> str:
+    """Safely resolve the active tenant ID from explicit argument or execution context."""
+    if explicit_id and explicit_id.strip():
+        return explicit_id.strip()
+    try:
+        from core_platform.app.middleware.tenant_context import get_current_tenant_id
+        return get_current_tenant_id()
+    except Exception:
+        return "default_tenant"
+
+
+def _resolve_context_cartridge(explicit_id: Optional[str] = None) -> str:
+    """Safely resolve the active cartridge ID from explicit argument or execution context."""
+    if explicit_id and explicit_id.strip():
+        return explicit_id.strip()
+    try:
+        from core_platform.app.middleware.tenant_context import get_current_cartridge_id
+        return get_current_cartridge_id()
+    except Exception:
+        return "core_platform"
 
 
 class LLMGateway:
@@ -112,6 +135,9 @@ class LLMGateway:
         model: Optional[str] = None,
         system_instruction: Optional[str] = None,
         operation_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        cartridge_id: Optional[str] = None,
+        credential_mode: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Route a text generation request to the appropriate provider.
 
@@ -123,6 +149,9 @@ class LLMGateway:
             model: Provider-specific model override.
             system_instruction: System-level instruction for the model.
             operation_id: Optional correlation ID / trigger name for telemetry.
+            tenant_id: Optional tenant ID for cost attribution.
+            cartridge_id: Optional cartridge ID for product optimization analytics.
+            credential_mode: Optional credential mode (PLATFORM_MANAGED vs CUSTOMER_BYOK vs CORE_INTERNAL_JEV).
 
         Returns:
             Parsed JSON dict, or None when all providers fail (caller should
@@ -136,13 +165,18 @@ class LLMGateway:
         actual_model = str(model or getattr(provider, "_default_model", "default"))
         op_id = operation_id or f"op_{uuid.uuid4().hex[:10]}"
         interaction_id = f"ix_{uuid.uuid4().hex[:10]}"
+        eff_tenant = _resolve_context_tenant(tenant_id)
+        eff_cartridge = _resolve_context_cartridge(cartridge_id)
+        eff_cred_mode = credential_mode or "PLATFORM_MANAGED"
 
         logger.debug(
-            "[LLMGateway] task=%s → provider=%s model=%s (op=%s)",
+            "[LLMGateway] task=%s → provider=%s model=%s (op=%s, tenant=%s, cartridge=%s)",
             task,
             provider.provider_name,
             actual_model,
             op_id,
+            eff_tenant,
+            eff_cartridge,
         )
 
         start_time = time.perf_counter()
@@ -188,6 +222,9 @@ class LLMGateway:
                 latency_ms=latency_ms,
                 success=success,
                 error_message=err_msg,
+                tenant_id=eff_tenant,
+                cartridge_id=eff_cartridge,
+                credential_mode=eff_cred_mode,
             )
 
         return result
@@ -201,6 +238,9 @@ class LLMGateway:
         temperature: float = 0.0,
         model: Optional[str] = None,
         operation_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        cartridge_id: Optional[str] = None,
+        credential_mode: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Route a vision/multimodal request to the appropriate provider.
 
@@ -211,6 +251,9 @@ class LLMGateway:
             temperature: Clamped to [0.0, 0.2].
             model: Provider-specific model override.
             operation_id: Optional correlation ID / trigger name for telemetry.
+            tenant_id: Optional tenant ID for cost attribution.
+            cartridge_id: Optional cartridge ID for product optimization analytics.
+            credential_mode: Optional credential mode override.
 
         Returns:
             Parsed JSON dict, or None when all providers fail.
@@ -223,12 +266,17 @@ class LLMGateway:
         actual_model = str(model or getattr(provider, "_default_model", "default"))
         op_id = operation_id or f"op_{uuid.uuid4().hex[:10]}"
         interaction_id = f"ix_{uuid.uuid4().hex[:10]}"
+        eff_tenant = _resolve_context_tenant(tenant_id)
+        eff_cartridge = _resolve_context_cartridge(cartridge_id)
+        eff_cred_mode = credential_mode or "PLATFORM_MANAGED"
 
         logger.debug(
-            "[LLMGateway] multimodal task=%s → provider=%s (op=%s)",
+            "[LLMGateway] multimodal task=%s → provider=%s (op=%s, tenant=%s, cartridge=%s)",
             task,
             provider.provider_name,
             op_id,
+            eff_tenant,
+            eff_cartridge,
         )
 
         start_time = time.perf_counter()
@@ -273,6 +321,9 @@ class LLMGateway:
                 latency_ms=latency_ms,
                 success=success,
                 error_message=err_msg,
+                tenant_id=eff_tenant,
+                cartridge_id=eff_cartridge,
+                credential_mode=eff_cred_mode,
             )
 
         return result
@@ -286,6 +337,9 @@ class LLMGateway:
         context: Optional[str] = None,
         model: Optional[str] = None,
         operation_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        cartridge_id: Optional[str] = None,
+        credential_mode: Optional[str] = None,
     ) -> Optional[DecisionResult]:
         """Classify input text against candidate choices using System 1 decision engine.
 
@@ -299,6 +353,9 @@ class LLMGateway:
             context: Optional domain context or metadata.
             model: Optional model override.
             operation_id: Optional correlation ID for telemetry.
+            tenant_id: Optional tenant ID for cost attribution.
+            cartridge_id: Optional cartridge ID for product optimization analytics.
+            credential_mode: Optional credential mode override.
 
         Returns:
             DecisionResult with selected_choice, confidence, latency_ms, or None.
@@ -309,20 +366,25 @@ class LLMGateway:
         provider = self._get_provider(task)
         op_id = operation_id or f"op_{uuid.uuid4().hex[:10]}"
         interaction_id = f"ix_{uuid.uuid4().hex[:10]}"
+        eff_tenant = _resolve_context_tenant(tenant_id)
+        eff_cartridge = _resolve_context_cartridge(cartridge_id)
+        eff_cred_mode = credential_mode or ("CORE_INTERNAL_JEV" if (task == "intent_routing" or (provider and provider.provider_name == "typesafe")) else "PLATFORM_MANAGED")
         start_time = time.perf_counter()
 
         # ── Primary: Direct System 1 Decision Model (TypeSafe / Jev) ────────────
         if isinstance(provider, BaseDecisionProvider) and provider.is_available():
             logger.debug(
-                "[LLMGateway] System 1 classify task=%s → provider=%s choices=%s (op=%s)",
+                "[LLMGateway] System 1 classify task=%s → provider=%s choices=%s (op=%s, tenant=%s, cartridge=%s)",
                 task,
                 provider.provider_name,
                 choices,
                 op_id,
+                eff_tenant,
+                eff_cartridge,
             )
             result = await provider.classify(text, choices, context=context, model=model)
             if result is not None:
-                # Record System 1 metric (~5 tokens per query)
+                # Record System 1 metric (~5 tokens per query, internal microkernel)
                 get_llm_cost_tracker().record_interaction(
                     interaction_id=interaction_id,
                     operation_id=op_id,
@@ -334,14 +396,18 @@ class LLMGateway:
                     latency_ms=result.latency_ms,
                     success=True,
                     error_message=None,
+                    tenant_id=eff_tenant,
+                    cartridge_id=eff_cartridge,
+                    credential_mode=eff_cred_mode,
                 )
                 return result
 
         # ── Secondary: System 2 Generative Fallback (Gemini / Claude) ──────────
         logger.debug(
-            "[LLMGateway] Falling back to System 2 generative classification for task=%s (op=%s)",
+            "[LLMGateway] Falling back to System 2 generative classification for task=%s (op=%s, tenant=%s)",
             task,
             op_id,
+            eff_tenant,
         )
         choices_json = json.dumps(choices)
         prompt = (
@@ -358,6 +424,9 @@ class LLMGateway:
             prompt=prompt,
             temperature=0.0,
             operation_id=op_id,
+            tenant_id=eff_tenant,
+            cartridge_id=eff_cartridge,
+            credential_mode=eff_cred_mode,
         )
         if gen_result and "selected_choice" in gen_result and str(gen_result["selected_choice"]) in choices:
             latency_ms = (time.perf_counter() - start_time) * 1000.0

@@ -1026,6 +1026,9 @@ async def llm_costs_page(
     from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
     tracker = get_llm_cost_tracker()
     summary = tracker.get_summary()
+    tenant_breakdown = tracker.get_tenant_breakdown()
+    cartridge_breakdown = tracker.get_cartridge_breakdown()
+    product_insights = tracker.get_product_optimization_insights()
     operations = tracker.get_operations_report(limit=100)
 
     # Determine nav_apps for the sidebar
@@ -1053,6 +1056,9 @@ async def llm_costs_page(
             "kiosk_id": settings.KIOSK_ID,
             "section": "llm_costs",
             "summary": summary,
+            "tenant_breakdown": tenant_breakdown,
+            "cartridge_breakdown": cartridge_breakdown,
+            "product_insights": product_insights,
             "operations": operations,
             "ui": ui_ctx,
         },
@@ -1069,6 +1075,9 @@ async def get_llm_costs_api(
     return JSONResponse(
         content={
             "summary": tracker.get_summary(),
+            "tenant_breakdown": tracker.get_tenant_breakdown(),
+            "cartridge_breakdown": tracker.get_cartridge_breakdown(),
+            "product_insights": tracker.get_product_optimization_insights(),
             "operations": tracker.get_operations_report(limit=100),
         }
     )

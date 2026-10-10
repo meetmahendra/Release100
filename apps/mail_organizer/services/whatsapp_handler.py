@@ -322,9 +322,10 @@ class MailOrganizerWhatsAppHandler:
             )
 
             res = await gateway.generate(
-                task="conversational_chat",
+                task="text_generation",
                 prompt=prompt,
                 system_instruction="You are a professional executive email and scheduling coordinator.",
+                operation_id="whatsapp_inbox_chat",
             )
             if res and isinstance(res, dict):
                 # Check for answer text or raw text

@@ -420,7 +420,10 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
         handler = target_app.get_whatsapp_handler()
         if handler is not None and hasattr(handler, "dispatch"):
             try:
-                res_dispatch = await handler.dispatch(msg, context)
+                from core_platform.app.middleware.tenant_context import async_cartridge_scope
+
+                async with async_cartridge_scope(target_app.app_id):
+                    res_dispatch = await handler.dispatch(msg, context)
                 if isinstance(res_dispatch, dict):
                     reply_text = str(res_dispatch.get("reply_message", ""))
                     response_kiosk_id = res_dispatch.get("kiosk_id")

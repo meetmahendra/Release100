@@ -67,6 +67,12 @@ _current_user_ctx: ContextVar[Optional[UserContext]] = ContextVar(
     default=None,
 )
 
+# Asynchronous context variable tracking the active execution cartridge (Plane 4)
+_current_cartridge_ctx: ContextVar[str] = ContextVar(
+    "current_cartridge_ctx",
+    default="core_platform",
+)
+
 
 def get_current_user_context() -> Optional[UserContext]:
     """Return the active UserContext or None if not set."""
@@ -101,6 +107,43 @@ async def async_user_scope(user_context: UserContext) -> AsyncGenerator[UserCont
         yield user_context
     finally:
         reset_user_context(token)
+
+
+def get_current_cartridge_id() -> str:
+    """Return the currently executing domain cartridge ID or 'core_platform'."""
+    val = _current_cartridge_ctx.get()
+    return val if val and val.strip() else "core_platform"
+
+
+def set_current_cartridge_id(cartridge_id: str) -> Token[str]:
+    """Set active domain cartridge identifier for the current execution task."""
+    clean_id = cartridge_id.strip() if cartridge_id else "core_platform"
+    return _current_cartridge_ctx.set(clean_id)
+
+
+def reset_cartridge_context(token: Token[str]) -> None:
+    """Reset the cartridge context variable to its previous state."""
+    _current_cartridge_ctx.reset(token)
+
+
+@contextmanager
+def cartridge_scope(cartridge_id: str) -> Generator[str, None, None]:
+    """Synchronous context manager for scoping execution to a specific domain cartridge."""
+    token = set_current_cartridge_id(cartridge_id)
+    try:
+        yield get_current_cartridge_id()
+    finally:
+        reset_cartridge_context(token)
+
+
+@asynccontextmanager
+async def async_cartridge_scope(cartridge_id: str) -> AsyncGenerator[str, None]:
+    """Asynchronous context manager for scoping async execution to a specific domain cartridge."""
+    token = set_current_cartridge_id(cartridge_id)
+    try:
+        yield get_current_cartridge_id()
+    finally:
+        reset_cartridge_context(token)
 
 
 

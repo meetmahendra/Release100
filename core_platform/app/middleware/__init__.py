@@ -24,6 +24,11 @@ from core_platform.app.middleware.tenant_context import (
     reset_tenant_context,
     tenant_scope,
     sync_tenant_scope,
+    get_current_cartridge_id,
+    set_current_cartridge_id,
+    reset_cartridge_context,
+    cartridge_scope,
+    async_cartridge_scope,
 )
 
 __all__ = [
@@ -34,4 +39,9 @@ __all__ = [
     "reset_tenant_context",
     "tenant_scope",
     "sync_tenant_scope",
+    "get_current_cartridge_id",
+    "set_current_cartridge_id",
+    "reset_cartridge_context",
+    "cartridge_scope",
+    "async_cartridge_scope",
 ]

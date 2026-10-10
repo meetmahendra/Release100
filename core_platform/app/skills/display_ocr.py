@@ -751,13 +751,9 @@ class DisplayOCRSkill(BaseSkill):
         # If live valid image bytes passed and Gemini API key is configured
         if is_valid_image_bytes(image_data) and settings.GEMINI_API_KEY and not settings.GEMINI_API_KEY.startswith("your_"):
             try:
-                import base64
-                import json
-                import urllib.request
+                from core_platform.app.llm.gateway import get_platform_llm_gateway
 
-                b64_img = base64.b64encode(image_data).decode("utf-8")
-                model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
+                gateway = get_platform_llm_gateway()
                 prompt = (
                     "You are an industrial IoT instrument and display reader. "
                     "Inspect this photo taken at an industrial facility or workstation. The photo may be a direct close-up of a gauge/meter "
@@ -771,69 +767,26 @@ class DisplayOCRSkill(BaseSkill):
                     "If the gauge is not found or unreadable, return: "
                     '{"value": 0.0, "unit": "C", "confidence": 0.0, "display_type": "unknown", "watermark_timestamp": null}'
                 )
-                payload = {
-                    "contents": [
-                        {
-                            "parts": [
-                                {"text": prompt},
-                                {
-                                    "inlineData": {
-                                        "mimeType": "image/jpeg",
-                                        "data": b64_img,
-                                    }
-                                },
-                            ]
-                        }
-                    ],
-                    "generationConfig": {
-                        "temperature": 0.0,
-                        "responseMimeType": "application/json",
-                    },
-                }
-
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
+                parsed = await gateway.generate_multimodal(
+                    task="vision_processing",
+                    prompt=prompt,
+                    image_bytes=image_data,
+                    operation_id="chiller_ocr_vision",
                 )
-                t0 = time.perf_counter()
-                with urllib.request.urlopen(req, timeout=10.0) as resp:
-                    latency_ms = (time.perf_counter() - t0) * 1000.0
-                    if resp.status == 200:
-                        res = json.loads(resp.read().decode("utf-8"))
-                        usage = res.get("usageMetadata", {})
-                        p_tokens = int(usage.get("promptTokenCount", 418))
-                        c_tokens = int(usage.get("candidatesTokenCount", 60))
-
-                        from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
-                        get_llm_cost_tracker().record_interaction(
-                            interaction_id=f"ix_{uuid.uuid4().hex[:10]}",
-                            operation_id="chiller_ocr_vision",
-                            task="vision_ocr",
-                            provider="gemini",
-                            model=model_name,
-                            prompt_tokens=p_tokens,
-                            completion_tokens=c_tokens,
-                            latency_ms=latency_ms,
-                            success=True,
-                        )
-
-                        text_part = res["candidates"][0]["content"]["parts"][0]["text"]
-                        parsed = json.loads(text_part)
-                        read_val = float(parsed.get("value", 0.0))
-                        read_conf = float(parsed.get("confidence", 0.0))
-                        read_disp = str(parsed.get("display_type", "lcd_screen"))
-                        read_wm = str(parsed.get("watermark_timestamp")).strip() if parsed.get("watermark_timestamp") else None
-                        return DisplayReadingResult(
-                            value=read_val,
-                            unit="C",
-                            confidence=read_conf,
-                            display_type=read_disp,
-                            engine_used="cloud_gemini_vision",
-                            is_fallback=True,
-                            watermark_timestamp=read_wm,
-                        )
+                if parsed and isinstance(parsed, dict):
+                    read_val = float(parsed.get("value", 0.0))
+                    read_conf = float(parsed.get("confidence", 0.0))
+                    read_disp = str(parsed.get("display_type", "lcd_screen"))
+                    read_wm = str(parsed.get("watermark_timestamp")).strip() if parsed.get("watermark_timestamp") else None
+                    return DisplayReadingResult(
+                        value=read_val,
+                        unit="C",
+                        confidence=read_conf,
+                        display_type=read_disp,
+                        engine_used="cloud_gemini_vision",
+                        is_fallback=True,
+                        watermark_timestamp=read_wm,
+                    )
             except Exception:
                 pass
 

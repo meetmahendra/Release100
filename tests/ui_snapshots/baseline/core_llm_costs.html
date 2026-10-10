@@ -223,11 +223,11 @@ STATUS 200
   LLM Token & Cost Consumption Monitor
 </h2>
 <p class="text-sm text-slate-# mt-#.#">
-  Granular per-trigger and per-interaction token audit with real-time model pricing aggregation.
+  Granular multi-tenant expenditure audit, platform financial liability isolation, and cognitive workload optimization.
 </p>
 </div>
 <div class="flex items-center gap-#">
-<button class="px-# py-#.# rounded-lg bg-slate-# hover:bg-slate-# text-slate-# text-xs font-semibold border border-slate-# flex items-center gap-#.# transition" onclick="fetchCostData()">
+<button class="px-# py-#.# rounded-lg bg-slate-# hover:bg-slate-# text-slate-# text-xs font-semibold border border-slate-# flex items-center gap-#.# transition shadow-sm" onclick="fetchCostData()">
 <span>
   🔄
 </span>
@@ -235,63 +235,242 @@ STATUS 200
 </button>
 </div>
 </div>
-<div class="grid grid-cols-# md:grid-cols-# gap-#">
-<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
-<p class="text-xs font-medium text-slate-# uppercase tracking-wider">
-  Total Operations / Triggers
-</p>
-<p class="text-#xl font-bold text-white mt-#" id="totalOps">
-  #
-</p>
-<p class="text-xs text-slate-# mt-#">
-  End-to-end user workflows
-</p>
-</div>
-<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<div class="grid grid-cols-# sm:grid-cols-# lg:grid-cols-# gap-#">
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# flex flex-col justify-between">
+<div>
 <p class="text-xs font-medium text-slate-# uppercase tracking-wider">
   Total LLM Calls
 </p>
 <p class="text-#xl font-bold text-sky-# mt-#" id="totalCalls">
   #
 </p>
+</div>
 <p class="text-xs text-slate-# mt-#">
-  Individual provider requests
+  # end-to-end user workflows
 </p>
 </div>
-<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# flex flex-col justify-between">
+<div>
 <p class="text-xs font-medium text-slate-# uppercase tracking-wider">
   Total Tokens Consumed
 </p>
 <p class="text-#xl font-bold text-purple-# mt-#" id="totalTokens">
   #,#
 </p>
+</div>
 <p class="text-xs text-slate-# mt-#">
   Prompt + Completion
 </p>
 </div>
-<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-#">
-<p class="text-xs font-medium text-slate-# uppercase tracking-wider">
-  Total Est. Cost (USD)
+<div class="bg-slate-#/# border border-emerald-#/# rounded-xl p-# flex flex-col justify-between relative overflow-hidden">
+<div class="absolute top-# right-# w-# h-# bg-emerald-#/# rounded-bl-full pointer-events-none">
+</div>
+<div>
+<div class="flex items-center justify-between">
+<p class="text-xs font-medium text-emerald-# uppercase tracking-wider">
+  Platform Liability (USD)
 </p>
-<p class="text-#xl font-bold text-emerald-# mt-#" id="totalCost">
+<span class="inline-flex items-center px-#.# py-#.# rounded text-[#px] font-semibold bg-emerald-# text-emerald-# border border-emerald-#">
+  Billed
+</span>
+</div>
+<p class="text-#xl font-bold text-emerald-# mt-#" id="platformLiability">
   $#.#
 </p>
+</div>
 <p class="text-xs text-slate-# mt-#">
-  Live token rates
+  Out-of-pocket platform spend (Platform Keys & Jev)
+</p>
+</div>
+<div class="bg-slate-#/# border border-sky-#/# rounded-xl p-# flex flex-col justify-between relative overflow-hidden">
+<div class="absolute top-# right-# w-# h-# bg-sky-#/# rounded-bl-full pointer-events-none">
+</div>
+<div>
+<div class="flex items-center justify-between">
+<p class="text-xs font-medium text-sky-# uppercase tracking-wider">
+  Customer BYOK Volume (USD)
+</p>
+<span class="inline-flex items-center px-#.# py-#.# rounded text-[#px] font-semibold bg-sky-# text-sky-# border border-sky-#">
+  $#.# Platform
+</span>
+</div>
+<p class="text-#xl font-bold text-sky-# mt-#" id="byokValue">
+  $#.#
+</p>
+</div>
+<p class="text-xs text-slate-# mt-#">
+  $#.# platform liability (Customer Private Keys)
+</p>
+</div>
+<div class="bg-slate-#/# border border-purple-#/# rounded-xl p-# flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between">
+<p class="text-xs font-medium text-purple-# uppercase tracking-wider">
+  Core Internal Jev Cost
+</p>
+<span class="inline-flex items-center px-#.# py-#.# rounded text-[#px] font-semibold bg-purple-# text-purple-# border border-purple-#">
+  System #
+</span>
+</div>
+<p class="text-#xl font-bold text-purple-# mt-#" id="jevCost">
+  $#.#
+</p>
+</div>
+<p class="text-xs text-slate-# mt-#">
+  Microkernel System # intent routing
 </p>
 </div>
 </div>
+<div class="border-b border-slate-#/# flex items-center gap-# text-sm font-medium">
+<button class="pb-# border-b-# border-emerald-# text-emerald-# flex items-center gap-# transition" id="tabBtnTenants" onclick="switchTab('tenants')">
+<span>
+  🏢
+</span>
+  Customer Expenditure & Invoicing
+<span class="text-xs px-# py-#.# rounded-full bg-slate-# text-slate-# border border-slate-#">
+  #
+</span>
+</button>
+<button class="pb-# border-b-# border-transparent text-slate-# hover:text-slate-# flex items-center gap-# transition" id="tabBtnOptimization" onclick="switchTab('optimization')">
+<span>
+  ⚡
+</span>
+  Product Optimization & Hotspots
+<span class="text-xs px-# py-#.# rounded-full bg-slate-# text-slate-# border border-slate-#">
+  #
+</span>
+</button>
+<button class="pb-# border-b-# border-transparent text-slate-# hover:text-slate-# flex items-center gap-# transition" id="tabBtnOperations" onclick="switchTab('operations')">
+<span>
+  📋
+</span>
+  Workflow Triggers & Audit Log
+<span class="text-xs px-# py-#.# rounded-full bg-slate-# text-slate-# border border-slate-#">
+  #
+</span>
+</button>
+</div>
+<div class="space-y-#" id="tabContentTenants">
 <div class="bg-slate-#/# border border-slate-#/# rounded-xl overflow-hidden shadow-xl">
 <div class="px-# py-# border-b border-slate-#/# flex items-center justify-between">
+<div>
+<h3 class="text-sm font-semibold text-white flex items-center gap-#">
+<span>
+  🏢
+</span>
+  Customer & Tenant Expenditure Breakdown
+</h3>
+<p class="text-xs text-slate-# mt-#.#">
+  Real-time token burn and invoicing telemetry per customer
+</p>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-sm">
+<thead>
+<tr class="border-b border-slate-#/# text-xs uppercase tracking-wider text-slate-# bg-slate-#/#">
+<th class="py-# px-#">
+  Tenant / Customer ID
+</th>
+<th class="py-# px-#">
+  Credential Mode
+</th>
+<th class="py-# px-#">
+  Cartridges Used
+</th>
+<th class="py-# px-# text-center">
+  LLM Calls
+</th>
+<th class="py-# px-# text-right">
+  Tokens
+</th>
+<th class="py-# px-# text-right">
+  Platform Liability
+</th>
+<th class="py-# px-# text-right">
+  Total Market Value
+</th>
+<th class="py-# px-# text-right">
+  Last Active
+</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-#/#">
+...
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="hidden space-y-#" id="tabContentOptimization">
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl overflow-hidden shadow-xl">
+<div class="px-# py-# border-b border-slate-#/# flex items-center justify-between">
+<div>
+<h3 class="text-sm font-semibold text-white flex items-center gap-#">
+<span>
+  ⚡
+</span>
+  Product Optimization & Workload Hotspots
+</h3>
+<p class="text-xs text-slate-# mt-#.#">
+  AI architectural telemetry to reduce token burn, lower latencies, and optimize prompts
+</p>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-sm">
+<thead>
+<tr class="border-b border-slate-#/# text-xs uppercase tracking-wider text-slate-# bg-slate-#/#">
+<th class="py-# px-#">
+  Cartridge
+</th>
+<th class="py-# px-#">
+  Task Type
+</th>
+<th class="py-# px-#">
+  Provider & Model
+</th>
+<th class="py-# px-# text-center">
+  LLM Calls
+</th>
+<th class="py-# px-# text-right">
+  Avg Tokens / Call
+</th>
+<th class="py-# px-# text-right">
+  Avg Latency
+</th>
+<th class="py-# px-# text-right">
+  Est. Cost
+</th>
+<th class="py-# px-# text-center">
+  Error Rate
+</th>
+<th class="py-# px-#">
+  Architectural Recommendation
+</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-#/#">
+...
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="hidden space-y-#" id="tabContentOperations">
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl overflow-hidden shadow-xl">
+<div class="px-# py-# border-b border-slate-#/# flex items-center justify-between">
+<div>
 <h3 class="text-sm font-semibold text-white flex items-center gap-#">
 <span>
   📋
 </span>
   Workflow Triggers & Cost Breakdown
 </h3>
-<span class="text-xs text-slate-#">
+<p class="text-xs text-slate-# mt-#.#">
   Click any row to view individual LLM interactions
-</span>
+</p>
+</div>
 </div>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
@@ -299,6 +478,9 @@ STATUS 200
 <tr class="border-b border-slate-#/# text-xs uppercase tracking-wider text-slate-# bg-slate-#/#">
 <th class="py-# px-#">
   Trigger / Operation ID
+</th>
+<th class="py-# px-#">
+  Tenant / Customer ID
 </th>
 <th class="py-# px-#">
   First Seen
@@ -313,7 +495,7 @@ STATUS 200
   Total Latency
 </th>
 <th class="py-# px-# text-right">
-  Cost (USD)
+  Est. Cost
 </th>
 <th class="py-# px-# text-center">
   Action
@@ -327,7 +509,22 @@ STATUS 200
 </div>
 </div>
 </div>
+</div>
 <script>
+  function switchTab(tabKey) {
+  const tabs = ['tenants', 'optimization', 'operations'];
+  tabs.forEach(t => {
+  const content = document.getElementById(`tabContent${t.charAt(#).toUpperCase() + t.slice(#)}`);
+  const btn = document.getElementById(`tabBtn${t.charAt(#).toUpperCase() + t.slice(#)}`);
+  if (t === tabKey) {
+  content.classList.remove('hidden');
+  btn.className = 'pb-# border-b-# border-emerald-# text-emerald-# flex items-center gap-# transition';
+  } else {
+  content.classList.add('hidden');
+  btn.className = 'pb-# border-b-# border-transparent text-slate-# hover:text-slate-# flex items-center gap-# transition';
+  }
+  });
+  }
   function toggleDetails(index) {
   const row = document.getElementById(`detailsRow-${index}`);
   const icon = document.getElementById(`expandIcon-${index}`);

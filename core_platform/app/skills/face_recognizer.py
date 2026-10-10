@@ -315,26 +315,8 @@ class FaceRecognizerSkill(BaseSkill):
                         method="POST",
                     )
                     with urllib.request.urlopen(req, timeout=25) as resp:
-                        latency_ms = (time.perf_counter() - t0) * 1000.0
                         if resp.status == 200:
                             data = json.loads(resp.read().decode("utf-8"))
-                            usage = data.get("usageMetadata", {})
-                            p_tokens = int(usage.get("promptTokenCount", 520))
-                            c_tokens = int(usage.get("candidatesTokenCount", 40))
-
-                            from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
-                            get_llm_cost_tracker().record_interaction(
-                                interaction_id=f"ix_{uuid.uuid4().hex[:10]}",
-                                operation_id="face_biometric_verification",
-                                task="biometric_match",
-                                provider="gemini",
-                                model=model_name,
-                                prompt_tokens=p_tokens,
-                                completion_tokens=c_tokens,
-                                latency_ms=latency_ms,
-                                success=True,
-                            )
-
                             text = data["candidates"][0]["content"]["parts"][0]["text"]
                             return json.loads(text)  # type: ignore
                     return None
