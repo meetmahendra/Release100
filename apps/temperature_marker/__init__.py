@@ -19,4 +19,4 @@ Operational baseline: Apex Cold-Chain Logistics Ltd Industrial Cold-Storage Chil
 Adheres to Plan 03 v1.3 and GEES v1.0 standard.
 """
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"

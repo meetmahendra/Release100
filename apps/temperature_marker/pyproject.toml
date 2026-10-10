@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "release100-cartridge-temperature-marker"
-version = "1.0.1"
+version = "1.0.2"
 description = "Industrial HACCP Temperature Verification & Biometric Face Attendance Cartridge for Release100"
 authors = [{ name = "Mahendra GURAV" }]
 requires-python = ">=3.10"
