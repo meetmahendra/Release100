@@ -265,22 +265,38 @@ async def google_oauth_callback(
             google_email,
         )
 
-        # Dispatch confirmation message over WhatsApp if configured
+        # Dispatch generic confirmation message over WhatsApp if configured
         from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
 
         try:
             await send_whatsapp_message(
                 to_phone=user.phone_number,
-                text=f"✅ Google Workspace Connected!\n\nAccount: {google_email or 'Authorized'}\n\nYou can now manage your emails and calendar directly here in WhatsApp.",
+                text=f"✅ Google Account Connected!\n\nAccount: {google_email or 'Authorized'}\n\nYour Google account has been securely linked to your profile.",
                 tenant_id=user.tenant_id,
             )
         except Exception as wa_err:
             logger.warning("[OAuth Ingress] Could not send WhatsApp confirmation: %s", wa_err)
 
+        # Notify active application cartridges via on_account_linked hook (GEES v3.1 microkernel synergy)
+        try:
+            from core_platform.main import plugin_loader
+            for app_instance in plugin_loader.get_all_applications().values():
+                await app_instance.on_account_linked(
+                    user_id=user.id,
+                    provider="google",
+                    details={
+                        "email": google_email,
+                        "phone_number": user.phone_number,
+                        "tenant_id": user.tenant_id,
+                    },
+                )
+        except Exception as hook_err:
+            logger.debug("[OAuth Ingress] Plugin on_account_linked hook notice: %s", hook_err)
+
         return _render_html_page(
             title="Google Connected",
             heading="Account Connected Successfully!",
-            body_text=f"Your Google account ({google_email or 'Authorized'}) has been securely linked to your WhatsApp number. You can now return to WhatsApp to interact with your mail and calendar.",
+            body_text=f"Your Google account ({google_email or 'Authorized'}) has been securely linked to your profile. You can now return to WhatsApp.",
             is_success=True,
         )
 

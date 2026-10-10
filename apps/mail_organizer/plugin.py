@@ -18,10 +18,13 @@ Mail Organizer Application Cartridge Plugin.
 Adheres strictly to Plan 04 v1.0 Section 2 and Core Platform Plugin Architecture.
 """
 
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger("apps.mail_organizer.plugin")
 
 from apps.mail_organizer.connectors.calendar_connector import GoogleCalendarConnector
 from apps.mail_organizer.connectors.gmail_connector import GmailConnector
@@ -226,6 +229,41 @@ class MailOrganizerApplication(BaseApplication):
                 return True, f"PM action on {dest} acknowledged"
             return False, f"Unknown mail target: {target}"
         return _transmitter
+
+    async def on_account_linked(
+        self,
+        user_id: int,
+        provider: str,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Handle account linked event for Mail Organizer cartridge."""
+        if provider == "google" and details:
+            phone = details.get("phone_number")
+            email = details.get("email")
+            tenant_id = details.get("tenant_id")
+            logger.info(
+                "[MailOrganizer] Google account '%s' linked for user %d (tenant: %s)",
+                email,
+                user_id,
+                tenant_id,
+            )
+            if phone:
+                try:
+                    from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
+                    onboarding_text = (
+                        f"📧 *Mail & Calendar Organizer Active*\n\n"
+                        f"Account: {email or 'Authorized'}\n\n"
+                        f"You can now manage emails and tasks directly:\n"
+                        f"• Send *mail digest* for summary\n"
+                        f"• Send *pm list* for pending tasks"
+                    )
+                    await send_whatsapp_message(
+                        to_phone=phone,
+                        text=onboarding_text,
+                        tenant_id=tenant_id,
+                    )
+                except Exception as wa_err:
+                    logger.debug("[MailOrganizer] Could not send cartridge onboarding message: %s", wa_err)
 
     def get_pending_outbox_count(self) -> int:
         """Return pending unsynced outbox record count for platform /health."""

@@ -116,6 +116,24 @@ class BaseApplication(ABC):
         """
         pass
 
+    async def on_account_linked(
+        self,
+        user_id: int,
+        provider: str,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Hook called when a user links an external OAuth or service account (e.g. 'google').
+
+        Override in domain cartridges to handle cartridge-specific post-authorization
+        events or trigger workflow initializations.
+
+        Args:
+            user_id: Internal platform user ID.
+            provider: Service provider identifier (e.g. 'google', 'microsoft').
+            details: Optional dictionary containing provider details (email, phone, tenant_id).
+        """
+        pass
+
     def has_active_session(self, sender_id: str) -> bool:
         """Return True if this application cartridge has an active interactive triage/conversation session for sender.
 

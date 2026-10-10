@@ -22,19 +22,22 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from core_platform.app.config import settings
 from core_platform.app.security.user_cipher import UserPayloadCipher
 
 
 def find_client_credentials() -> Optional[Dict[str, Any]]:
     """Locate client credentials from standard candidate paths."""
-    candidates = [
+    candidates = []
+    if settings.GOOGLE_CREDENTIALS_PATH:
+        candidates.append(Path(settings.GOOGLE_CREDENTIALS_PATH))
+    candidates.extend([
         Path("credentials.json"),
         Path("config/credentials.json"),
-        Path("D:/mailOrganizer/credentials.json"),
-        Path("D:/Release100/credentials.json"),
-    ]
+        Path("secrets/credentials.json"),
+    ])
     for p in candidates:
-        if p.exists():
+        if p.exists() and p.is_file():
             try:
                 data: Any = json.loads(p.read_text(encoding="utf-8"))
                 if isinstance(data, dict):

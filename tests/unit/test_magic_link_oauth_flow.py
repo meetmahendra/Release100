@@ -144,6 +144,57 @@ class TestMagicLinkOAuthCallback:
             assert decrypted["access_token"] == "ya29.mock_access_token_12345"
             assert decrypted["refresh_token"] == "1//mock_refresh_token_67890"
 
+    def test_callback_notifies_cartridges_via_hook(self, registered_user: Any) -> None:
+        """OAuth success must invoke on_account_linked on all active cartridges."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from core_platform.app.identity.magic_link import generate_magic_link_token
+
+        token = generate_magic_link_token(registered_user.id, registered_user.phone_number, tenant_id=registered_user.tenant_id, expiry_minutes=15)
+        client = TestClient(app)
+
+        mock_app = MagicMock()
+        mock_app.on_account_linked = AsyncMock()
+
+        with patch("core_platform.app.ingress.oauth_router.find_client_credentials") as mock_creds, \
+             patch("urllib.request.urlopen") as mock_urlopen, \
+             patch("core_platform.main.plugin_loader.get_all_applications", return_value={"test_cartridge": mock_app}):
+
+            mock_creds.return_value = {
+                "client_id": "mock_client_id_123",
+                "client_secret": "mock_client_secret_xyz",
+            }
+
+            mock_token_resp = MagicMock()
+            mock_token_resp.status = 200
+            mock_token_resp.read.return_value = json.dumps({
+                "access_token": "ya29.mock_access_token_999",
+                "refresh_token": "1//mock_refresh_token_999",
+                "expires_in": 3600,
+                "token_type": "Bearer",
+            }).encode("utf-8")
+            mock_token_resp.__enter__.return_value = mock_token_resp
+
+            mock_userinfo_resp = MagicMock()
+            mock_userinfo_resp.status = 200
+            mock_userinfo_resp.read.return_value = json.dumps({
+                "email": "hook_test_user@example.com",
+            }).encode("utf-8")
+            mock_userinfo_resp.__enter__.return_value = mock_userinfo_resp
+
+            mock_urlopen.side_effect = [mock_token_resp, mock_userinfo_resp]
+
+            resp = client.get(f"/auth/google/callback?code=mock_code&state={token}")
+            assert resp.status_code == 200
+            mock_app.on_account_linked.assert_called_once_with(
+                user_id=registered_user.id,
+                provider="google",
+                details={
+                    "email": "hook_test_user@example.com",
+                    "phone_number": registered_user.phone_number,
+                    "tenant_id": registered_user.tenant_id,
+                },
+            )
+
     def test_callback_with_oauth_error(self) -> None:
         client = TestClient(app)
         resp = client.get("/auth/google/callback?error=access_denied")

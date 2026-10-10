@@ -184,6 +184,10 @@ class PlatformSettings(BaseSettings):
         default=15,
         description="Expiry time in minutes for WhatsApp Google OAuth Magic Links",
     )
+    GOOGLE_CREDENTIALS_PATH: str = Field(
+        default="credentials.json",
+        description="Path to Google OAuth client credentials JSON file",
+    )
 
     # Decentralized Entitlement Architecture (Plan 10)
     ENTITLEMENT_ENFORCEMENT_MODE: Literal["off", "shadow", "enforce"] = Field(
