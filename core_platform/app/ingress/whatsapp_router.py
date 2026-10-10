@@ -70,7 +70,7 @@ def verify_meta_signature(body_bytes: bytes, signature_header: Optional[str]) ->
     return hmac.compare_digest(expected, actual)
 
 
-async def fetch_whatsapp_media_bytes(media_id: str) -> Optional[bytes]:
+async def fetch_whatsapp_media_bytes(media_id: str, tenant_id: Optional[str] = None) -> Optional[bytes]:
     """Retrieve binary image bytes from Meta Graph API for inbound WhatsApp photos.
 
     1. Resolves temporary download URL: GET https://graph.facebook.com/v21.0/{media_id}
@@ -78,15 +78,19 @@ async def fetch_whatsapp_media_bytes(media_id: str) -> Optional[bytes]:
 
     Args:
         media_id: Meta media ID from inbound webhook message.
+        tenant_id: Optional tenant identifier for BYOK key resolution.
 
     Returns:
         Raw binary bytes of the photo, or None if download fails.
     """
-    if not settings.WHATSAPP_ACCESS_TOKEN or not _HAS_HTTPX or httpx is None:
+    from core_platform.app.ingress.whatsapp_outbound import resolve_whatsapp_credentials
+
+    waba_token, _ = resolve_whatsapp_credentials(tenant_id=tenant_id)
+    if not waba_token or not _HAS_HTTPX or httpx is None:
         return None
 
     try:
-        headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}"}
+        headers = {"Authorization": f"Bearer {waba_token}"}
         async with httpx.AsyncClient(timeout=10.0) as client:
             meta_resp = await client.get(f"https://graph.facebook.com/v21.0/{media_id}", headers=headers)
             if meta_resp.status_code == 200:
@@ -205,25 +209,8 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
             "🔒 Access Denied: Your phone number is not registered on this platform.\n"
             "Please contact your system administrator to register your phone number."
         )
-        clean_to = sender_phone.lstrip("+")
-        if settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_PHONE_NUMBER_ID and _HAS_HTTPX and httpx is not None:
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    url = f"https://graph.facebook.com/v21.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
-                    headers = {
-                        "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
-                        "Content-Type": "application/json",
-                    }
-                    outbound_body = {
-                        "messaging_product": "whatsapp",
-                        "recipient_type": "individual",
-                        "to": clean_to,
-                        "type": "text",
-                        "text": {"body": rejection_body},
-                    }
-                    await client.post(url, headers=headers, json=outbound_body)
-            except Exception as e:
-                logger.error("[WhatsApp Ingress] Outbound dispatch error: %s", e)
+        from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
+        await send_whatsapp_message(to_phone=sender_phone, text=rejection_body, tenant_id=None)
         return {
             "status": "UNREGISTERED_USER",
             "correlation_id": correlation_id,
@@ -235,25 +222,8 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
     if user and user.status != "active":
         logger.warning("[WhatsApp Ingress] Inactive user %s rejected", sender_phone)
         suspended_body = "🔒 Access Suspended: Your account is currently inactive. Please contact your system administrator."
-        clean_to = sender_phone.lstrip("+")
-        if settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_PHONE_NUMBER_ID and _HAS_HTTPX and httpx is not None:
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    url = f"https://graph.facebook.com/v21.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
-                    headers = {
-                        "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
-                        "Content-Type": "application/json",
-                    }
-                    outbound_body = {
-                        "messaging_product": "whatsapp",
-                        "recipient_type": "individual",
-                        "to": clean_to,
-                        "type": "text",
-                        "text": {"body": suspended_body},
-                    }
-                    await client.post(url, headers=headers, json=outbound_body)
-            except Exception as e:
-                logger.error("[WhatsApp Ingress] Outbound dispatch error: %s", e)
+        from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
+        await send_whatsapp_message(to_phone=sender_phone, text=suspended_body, tenant_id=user.tenant_id)
         return {
             "status": "INACTIVE_USER",
             "correlation_id": correlation_id,
@@ -441,28 +411,14 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
             "Please contact your administrator or configure applications in the Admin Shell."
         )
 
-    # Dispatch outbound message via Meta Graph API if configured
-    clean_to = sender_phone.lstrip("+")
-    if settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_PHONE_NUMBER_ID and _HAS_HTTPX and httpx is not None:
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                url = f"https://graph.facebook.com/v21.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
-                headers = {
-                    "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
-                    "Content-Type": "application/json",
-                }
-                outbound_body = {
-                    "messaging_product": "whatsapp",
-                    "recipient_type": "individual",
-                    "to": clean_to,
-                    "type": "text",
-                    "text": {"body": reply_text},
-                }
-                resp = await client.post(url, headers=headers, json=outbound_body)
-                if not resp.is_success:
-                    logger.warning("[WhatsApp Ingress] Meta Graph API returned error %d: %s", resp.status_code, resp.text)
-        except Exception as e:
-            logger.error("[WhatsApp Ingress] Outbound dispatch error: %s", e)
+    # Dispatch outbound message via Meta Graph API (with dynamic tenant BYOK credentials)
+    from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
+
+    await send_whatsapp_message(
+        to_phone=sender_phone,
+        text=reply_text,
+        tenant_id=user_tenant_id,
+    )
 
     return {
         "status": "EVENT_RECEIVED",

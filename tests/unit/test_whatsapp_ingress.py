@@ -411,6 +411,50 @@ async def test_send_whatsapp_message_success_and_failure() -> None:
             assert exc_id is None
 
 
+@pytest.mark.anyio
+async def test_send_whatsapp_message_tenant_byok() -> None:
+    """Outbound WhatsApp message should resolve credentials dynamically from tenant vault."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
+    from ops_control_plane.devops_vault import TenantRuntimeCredentials
+
+    mock_resp_ok = MagicMock()
+    mock_resp_ok.is_success = True
+    mock_resp_ok.json.return_value = {"messages": [{"id": "wamid.BYOK_SUCCESS"}]}
+
+    mock_client = AsyncMock()
+    mock_client.post.return_value = mock_resp_ok
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.__aexit__.return_value = None
+
+    mock_creds = TenantRuntimeCredentials(
+        tenant_id="tenant-byok-test",
+        credential_mode="CUSTOMER_BYOK",
+        is_byok=True,
+        gemini_api_key="mock_gemini_test_key_12345",
+        openai_api_key=None,
+        waba_token="mock_byok_waba_token_abc",
+        waba_phone_number_id="9988776655",
+        brand_name="Test Brand",
+        default_timezone="Asia/Kolkata",
+    )
+
+    with patch.object(settings, "WHATSAPP_ACCESS_TOKEN", ""), \
+         patch.object(settings, "WHATSAPP_PHONE_NUMBER_ID", ""), \
+         patch("ops_control_plane.devops_vault.DevOpsKeyVault.get_tenant_runtime_credentials", return_value=mock_creds), \
+         patch("httpx.AsyncClient", return_value=mock_client):
+
+        msg_id = await send_whatsapp_message(
+            to_phone="+91 8087-545430",
+            text="Tenant BYOK Message",
+            tenant_id="tenant-byok-test",
+        )
+        assert msg_id == "wamid.BYOK_SUCCESS"
+        call_kwargs = mock_client.post.call_args.kwargs
+        assert "9988776655/messages" in mock_client.post.call_args[0][0]
+        assert call_kwargs["headers"]["Authorization"] == "Bearer mock_byok_waba_token_abc"
+
+
 def test_operator_greeting_ist_time_and_clean_chiller_status() -> None:
     """Operator greeting should display IST time and clean 'Pending photo' if chiller temp is 0.0 or pending."""
     from apps.temperature_marker.database.db_service import DatabaseService

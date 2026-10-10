@@ -266,28 +266,16 @@ async def google_oauth_callback(
         )
 
         # Dispatch confirmation message over WhatsApp if configured
-        if settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_PHONE_NUMBER_ID:
-            clean_to = user.phone_number.lstrip("+")
-            try:
-                import httpx
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    wa_url = f"https://graph.facebook.com/v21.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
-                    headers = {
-                        "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
-                        "Content-Type": "application/json",
-                    }
-                    wa_body = {
-                        "messaging_product": "whatsapp",
-                        "recipient_type": "individual",
-                        "to": clean_to,
-                        "type": "text",
-                        "text": {
-                            "body": f"✅ Google Workspace Connected!\n\nAccount: {google_email or 'Authorized'}\n\nYou can now manage your emails and calendar directly here in WhatsApp.",
-                        },
-                    }
-                    await client.post(wa_url, headers=headers, json=wa_body)
-            except Exception as wa_err:
-                logger.warning("[OAuth Ingress] Could not send WhatsApp confirmation: %s", wa_err)
+        from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
+
+        try:
+            await send_whatsapp_message(
+                to_phone=user.phone_number,
+                text=f"✅ Google Workspace Connected!\n\nAccount: {google_email or 'Authorized'}\n\nYou can now manage your emails and calendar directly here in WhatsApp.",
+                tenant_id=user.tenant_id,
+            )
+        except Exception as wa_err:
+            logger.warning("[OAuth Ingress] Could not send WhatsApp confirmation: %s", wa_err)
 
         return _render_html_page(
             title="Google Connected",
