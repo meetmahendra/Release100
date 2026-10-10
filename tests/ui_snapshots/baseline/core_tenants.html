@@ -3,6 +3,9 @@ STATUS 200
 <head>
 <meta charset="UTF-#">
 <meta content="width=device-width, initial-scale=#" name="viewport">
+<meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control">
+<meta content="no-cache" http-equiv="Pragma">
+<meta content="#" http-equiv="Expires">
 <title>
   Company Profile & Workspace Settings — Release#
 </title>
@@ -232,6 +235,68 @@ STATUS 200
 </div>
 </div>
 </div>
+<form action="/admin/tenants/save-byok" class="space-y-#" method="POST">
+<input name="csrf_token" type="hidden" value="<TOKEN>">
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-md space-y-#">
+<div class="flex items-center justify-between border-b border-slate-#/# pb-#">
+<div>
+<h2 class="text-sm font-bold text-white flex items-center gap-#">
+<span>
+  🏢
+</span>
+  Company Profile & Operational Defaults
+</h2>
+<p class="text-xs text-slate-# mt-#.#">
+  Configure your organization branding and regional timezone settings.
+</p>
+</div>
+</div>
+<div class="grid grid-cols-# md:grid-cols-# gap-# text-xs">
+<div>
+<label class="block text-xs font-semibold text-slate-# mb-#">
+  Company Brand / Display Name
+</label>
+<input class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-sky-# outline-none" name="brand_name" placeholder="e.g. Acme Global Logistics" type="text" value="">
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-# mb-#">
+  Primary Operational Timezone
+</label>
+<select class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# focus:border-sky-# outline-none" name="default_timezone">
+<option selected value="Asia/Kolkata">
+  Asia/Kolkata (IST +<TIME>)
+</option>
+<option value="UTC">
+  UTC (Universal Time)
+</option>
+<option value="America/New_York">
+  America/New_York (EST/EDT)
+</option>
+<option value="America/Los_Angeles">
+  America/Los_Angeles (PST/PDT)
+</option>
+<option value="Europe/London">
+  Europe/London (GMT/BST)
+</option>
+<option value="Europe/Berlin">
+  Europe/Berlin (CET/CEST)
+</option>
+<option value="Asia/Dubai">
+  Asia/Dubai (GST +<TIME>)
+</option>
+<option value="Asia/Singapore">
+  Asia/Singapore (SGT +<TIME>)
+</option>
+<option value="Asia/Tokyo">
+  Asia/Tokyo (JST +<TIME>)
+</option>
+<option value="Australia/Sydney">
+  Australia/Sydney (AEST/AEDT)
+</option>
+</select>
+</div>
+</div>
+</div>
 <div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-md space-y-#">
 <div class="flex items-center justify-between border-b border-slate-#/# pb-#">
 <div>
@@ -245,8 +310,40 @@ STATUS 200
   Control how your company connects to Google Gemini AI and WhatsApp Business APIs.
 </p>
 </div>
+<span class="text-xs px-# py-#.# rounded bg-amber-#/# text-amber-# font-mono border border-amber-#/#">
+  AES-#-GCM Vault
+</span>
 </div>
-<div class="bg-slate-#/# border border-sky-#/# rounded-xl p-# space-y-#">
+<div>
+<label class="block text-xs font-semibold text-slate-# mb-#">
+  Credential & Key Management Mode
+</label>
+<div class="grid grid-cols-# md:grid-cols-# gap-# text-xs">
+<label class="flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-sky-#/# border-sky-#/# text-sky-#" id="label-platform-mode">
+<input checked class="mt-#.# text-sky-# focus:ring-#" name="credential_mode" onchange="toggleVaultMode(this.value)" type="radio" value="PLATFORM_MANAGED">
+<div>
+<p class="font-bold text-white">
+  Platform-Managed Cloud Plan (Shared platform keys, pay-per-use)
+</p>
+<p class="text-[#px] text-slate-# mt-#.#">
+  Your organization utilizes the high-throughput, platform-managed LLM gateway and WhatsApp connectors provided with your enterprise subscription.
+</p>
+</div>
+</label>
+<label class="flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-slate-# border-slate-# text-slate-# hover:border-slate-#" id="label-byok-mode">
+<input class="mt-#.# text-amber-# focus:ring-#" name="credential_mode" onchange="toggleVaultMode(this.value)" type="radio" value="CUSTOMER_BYOK">
+<div>
+<p class="font-bold text-white">
+  Customer BYOK Vault (Use dedicated API keys, encrypted at rest)
+</p>
+<p class="text-[#px] text-slate-# mt-#.#">
+  Your company provides its own API credentials. Keys are encrypted at rest via AES-#-GCM and never shared with other tenants.
+</p>
+</div>
+</label>
+</div>
+</div>
+<div class="bg-slate-#/# border border-sky-#/# rounded-xl p-# space-y-#" id="platform-managed-box">
 <div class="flex items-center gap-#">
 <div class="w-# h-# rounded-lg bg-sky-#/# text-sky-# flex items-center justify-center shrink-#">
   ☁️
@@ -278,11 +375,94 @@ STATUS 200
 </span>
 </div>
 </div>
-<p class="text-[#px] text-slate-# italic">
-  To switch to your own dedicated BYOK keys, please contact your Platform DevOps account manager.
+</div>
+<div class="space-y-# pt-# hidden" id="byok-keys-box">
+<div class="p-#.# rounded-lg bg-amber-#/# border border-amber-#/# text-amber-# text-xs">
+<strong>
+  Customer BYOK Active:
+</strong>
+  Your company provides its own API credentials. Keys are encrypted at rest via AES-#-GCM and never shared with other tenants.
+</div>
+<div class="grid grid-cols-# md:grid-cols-# gap-#">
+<div>
+<label class="block text-xs font-semibold text-slate-# mb-#">
+  Company Google Gemini API Key
+</label>
+<input autocomplete="new-password" class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-amber-# outline-none font-mono" name="gemini_api_key" placeholder="Enter custom Gemini key (or leave blank to keep existing)" type="password">
+<p class="text-[#px] text-slate-# mt-#">
+  Status:
+<span class="text-slate-#">
+  Not set
+</span>
+</p>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-# mb-#">
+  Company OpenAI API Key
+</label>
+<input autocomplete="new-password" class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-amber-# outline-none font-mono" name="openai_api_key" placeholder="Enter custom OpenAI key (or leave blank to keep existing)" type="password">
+<p class="text-[#px] text-slate-# mt-#">
+  Status:
+<span class="text-slate-#">
+  Not set
+</span>
+</p>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-# mb-#">
+  WhatsApp Cloud API Token
+</label>
+<input autocomplete="new-password" class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-amber-# outline-none font-mono" name="waba_token" placeholder="Enter custom WABA token (or leave blank to keep existing)" type="password">
+<p class="text-[#px] text-slate-# mt-#">
+  Status:
+<span class="text-slate-#">
+  Not set
+</span>
+</p>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-# mb-#">
+  WhatsApp Phone Number ID
+</label>
+<input class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-amber-# outline-none font-mono" name="waba_phone_number_id" placeholder="e.g. #" type="text" value="">
+<p class="text-[#px] text-slate-# mt-#">
+  Status:
+<span class="text-slate-#">
+  Not set
+</span>
 </p>
 </div>
 </div>
+</div>
+<div class="flex justify-end pt-# border-t border-slate-#/#">
+<button class="px-# py-#.# rounded-lg bg-sky-# hover:bg-sky-# text-white font-semibold text-xs transition-colors shadow-md flex items-center gap-#" type="submit">
+<span>
+  💾
+</span>
+  Save Company Profile & Vault
+</button>
+</div>
+</div>
+</form>
+<script>
+  function toggleVaultMode(mode) {
+  const platformBox = document.getElementById('platform-managed-box');
+  const byokBox = document.getElementById('byok-keys-box');
+  const labelPlatform = document.getElementById('label-platform-mode');
+  const labelByok = document.getElementById('label-byok-mode');
+  if (mode === 'CUSTOMER_BYOK') {
+  platformBox.classList.add('hidden');
+  byokBox.classList.remove('hidden');
+  labelByok.className = "flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-amber-#/# border-amber-#/# text-amber-#";
+  labelPlatform.className = "flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-slate-# border-slate-# text-slate-# hover:border-slate-#";
+  } else {
+  platformBox.classList.remove('hidden');
+  byokBox.classList.add('hidden');
+  labelPlatform.className = "flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-sky-#/# border-sky-#/# text-sky-#";
+  labelByok.className = "flex items-start gap-# p-#.# rounded-lg border cursor-pointer transition-colors bg-slate-# border-slate-# text-slate-# hover:border-slate-#";
+  }
+  }
+</script>
 <div class="grid grid-cols-# md:grid-cols-# gap-#">
 <a class="bg-slate-#/# hover:bg-slate-# border border-slate-#/# rounded-xl p-# transition-colors flex items-center justify-between group" href="/admin/users">
 <div class="flex items-center gap-#">

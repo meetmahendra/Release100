@@ -88,6 +88,17 @@
     );
   }
 
+  // Invalidate back-forward cache (bfcache) when session expires or navigation history is traversed
+  if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    window.addEventListener("pageshow", function (event) {
+      if (event && (event.persisted || (window.performance && window.performance.navigation && window.performance.navigation.type === 2))) {
+        if (window.location && typeof window.location.reload === "function") {
+          window.location.reload();
+        }
+      }
+    });
+  }
+
   document.addEventListener("click", function (event) {
     var target = event.target instanceof Element ? event.target : null;
     var closer = target && target.closest("[data-ui-close]");

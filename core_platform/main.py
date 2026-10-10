@@ -125,13 +125,21 @@ app.mount("/ui-static", StaticFiles(directory=str(Path(__file__).parent / "app" 
 
 @app.middleware("http")
 async def security_headers_middleware(request: Request, call_next: Callable[[Request], Any]) -> Response:
-    """Inject standard HTTP security defense headers (SEC-6)."""
+    """Inject standard HTTP security defense headers (SEC-6) and anti-caching for authenticated UI pages."""
     response: Response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(self), geolocation=(self), microphone=()"
+
+    # Invalidate browser cache on authenticated pages so bfcache/history does not serve stale pages on logout/expiry
+    path = request.url.path
+    if (path.startswith(("/admin", "/ops", "/settings")) and not path.startswith("/ui-static")) or path == "/":
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+
     return response
 
 
@@ -380,6 +388,11 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException) ->
             redirect = RedirectResponse(url="/admin/login", status_code=302)
             if exc.status_code == 401:
                 redirect.delete_cookie("admin_token")
+            # Enforce cache invalidation on login redirect
+            redirect.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
+            redirect.headers["Pragma"] = "no-cache"
+            redirect.headers["Expires"] = "0"
+            redirect.headers["Clear-Site-Data"] = '"cache"'
             return redirect
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers)
 

@@ -165,8 +165,8 @@ def _encode_image_bytes(image_bgr: Any) -> Optional[bytes]:
         from PIL import Image
         rgb_array = image_bgr[:, :, ::-1]  # BGR → RGB
         pil_img = Image.fromarray(rgb_array.astype(np.uint8))
-        buf = io.BytesIO()
-        pil_img.save(buf, format="JPEG", quality=92)
-        return buf.getvalue()
+        bio = io.BytesIO()
+        pil_img.save(bio, format="JPEG", quality=92)
+        return bytes(bio.getvalue())
     except Exception:
         return None

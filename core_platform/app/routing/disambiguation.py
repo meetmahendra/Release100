@@ -32,7 +32,7 @@ class DisambiguationEngine:
             from core_platform.app.plugin_engine.registry import ApplicationRegistry
             desc = ApplicationRegistry.get_instance().get(app_id)
             if desc and desc.name:
-                return desc.name
+                return str(desc.name)
         except Exception:
             pass
         return app_id.replace("_", " ").title()

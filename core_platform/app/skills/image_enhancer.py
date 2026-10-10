@@ -31,7 +31,7 @@ try:
     import cv2
     _HAS_OPENCV = True
 except ImportError:
-    cv2 = None
+    cv2 = None  # type: ignore[assignment]
     _HAS_OPENCV = False
 
 

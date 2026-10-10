@@ -115,81 +115,182 @@
     </div>
   </div>
 
-  <!-- AI & Integration Credentials -->
-  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-md space-y-4">
-    <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
-      <div>
-        <h2 class="text-sm font-bold text-white flex items-center gap-2">
-          <span>🔑</span> {{ t('core.tenants.cred_title') }}
-        </h2>
-        <p class="text-xs text-slate-400 mt-0.5">{{ t('core.tenants.cred_desc') }}</p>
+  <!-- AI & Integration Credentials Vault -->
+  <form action="/admin/tenants/save-byok" method="POST" class="space-y-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+
+    <!-- Company Profile & Operational Defaults -->
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-md space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+        <div>
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>🏢</span> {{ t('core.tenants.profile_section_title') }}
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">{{ t('core.tenants.profile_section_desc') }}</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_brand_name') }}</label>
+          <input type="text" name="brand_name" value="{{ config.brand_name if config and config.brand_name else '' }}"
+                 placeholder="{{ t('core.tenants.ph_brand_name') }}"
+                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_timezone') }}</label>
+          <select name="default_timezone" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-sky-500 outline-none">
+            {% set cur_tz = config.default_timezone if config and config.default_timezone else 'Asia/Kolkata' %}
+            <option value="Asia/Kolkata" {% if cur_tz == 'Asia/Kolkata' %}selected{% endif %}>{{ t('core.tenants.tz_asia_kolkata') }}</option>
+            <option value="UTC" {% if cur_tz == 'UTC' %}selected{% endif %}>{{ t('core.tenants.tz_utc') }}</option>
+            <option value="America/New_York" {% if cur_tz == 'America/New_York' %}selected{% endif %}>{{ t('core.tenants.tz_america_new_york') }}</option>
+            <option value="America/Los_Angeles" {% if cur_tz == 'America/Los_Angeles' %}selected{% endif %}>{{ t('core.tenants.tz_america_los_angeles') }}</option>
+            <option value="Europe/London" {% if cur_tz == 'Europe/London' %}selected{% endif %}>{{ t('core.tenants.tz_europe_london') }}</option>
+            <option value="Europe/Berlin" {% if cur_tz == 'Europe/Berlin' %}selected{% endif %}>{{ t('core.tenants.tz_europe_berlin') }}</option>
+            <option value="Asia/Dubai" {% if cur_tz == 'Asia/Dubai' %}selected{% endif %}>{{ t('core.tenants.tz_asia_dubai') }}</option>
+            <option value="Asia/Singapore" {% if cur_tz == 'Asia/Singapore' %}selected{% endif %}>{{ t('core.tenants.tz_asia_singapore') }}</option>
+            <option value="Asia/Tokyo" {% if cur_tz == 'Asia/Tokyo' %}selected{% endif %}>{{ t('core.tenants.tz_asia_tokyo') }}</option>
+            <option value="Australia/Sydney" {% if cur_tz == 'Australia/Sydney' %}selected{% endif %}>{{ t('core.tenants.tz_australia_sydney') }}</option>
+          </select>
+        </div>
       </div>
     </div>
 
-    {% if config and config.credential_mode == 'CUSTOMER_BYOK' %}
-    <!-- BYOK Mode: Customer Admin Can Provide Their Own Keys -->
-    <form action="/admin/tenants/save-byok" method="POST" class="space-y-4">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-      <div class="p-3.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs">
-        <strong>{{ t('core.tenants.byok_active_title') }}</strong>{{ t('core.tenants.byok_active_desc') }}
+    <!-- Credential & BYOK Key Vault -->
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-md space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+        <div>
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>🔑</span> {{ t('core.tenants.cred_title') }}
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">{{ t('core.tenants.cred_desc') }}</p>
+        </div>
+        <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono border border-amber-500/40">
+          {{ t('core.tenants.vault_badge') }}
+        </span>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_gemini_key') }}</label>
-          <input type="password" name="gemini_api_key" placeholder="{{ t('core.tenants.ph_gemini_key') }}" autocomplete="new-password"
-                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
-          <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if has_byok_gemini or (config and config.encrypted_gemini_api_key) %}<span class="text-emerald-400">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
-        </div>
+      <!-- Mode Selector -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-2">{{ t('core.tenants.field_cred_mode') }}</label>
+        {% set is_byok = (config and config.credential_mode == 'CUSTOMER_BYOK') %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <label class="flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-colors {% if not is_byok %}bg-sky-950/40 border-sky-500/60 text-sky-200{% else %}bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600{% endif %}" id="label-platform-mode">
+            <input type="radio" name="credential_mode" value="PLATFORM_MANAGED" {% if not is_byok %}checked{% endif %} class="mt-0.5 text-sky-500 focus:ring-0" onchange="toggleVaultMode(this.value)" />
+            <div>
+              <p class="font-bold text-white">{{ t('core.tenants.opt_platform_managed') }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">{{ t('core.tenants.platform_plan_desc') }}</p>
+            </div>
+          </label>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_waba_token') }}</label>
-          <input type="password" name="waba_token" placeholder="{{ t('core.tenants.ph_waba_token') }}" autocomplete="new-password"
-                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
-          <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if has_byok_whatsapp or (config and config.encrypted_waba_access_token) %}<span class="text-emerald-400">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
+          <label class="flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-colors {% if is_byok %}bg-amber-950/40 border-amber-500/60 text-amber-200{% else %}bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600{% endif %}" id="label-byok-mode">
+            <input type="radio" name="credential_mode" value="CUSTOMER_BYOK" {% if is_byok %}checked{% endif %} class="mt-0.5 text-amber-500 focus:ring-0" onchange="toggleVaultMode(this.value)" />
+            <div>
+              <p class="font-bold text-white">{{ t('core.tenants.opt_customer_byok') }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">{{ t('core.tenants.byok_active_desc') }}</p>
+            </div>
+          </label>
         </div>
       </div>
 
-      <div class="flex justify-end">
-        <button type="submit" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition-colors shadow-md">
-          {{ t('core.tenants.btn_save_cred') }}
+      <!-- Platform Mode Overview Box -->
+      <div id="platform-managed-box" class="bg-slate-900/80 border border-sky-500/30 rounded-xl p-4 space-y-3 {% if is_byok %}hidden{% endif %}">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+            ☁️
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-white">{{ t('core.tenants.platform_plan_title') }}</p>
+            <p class="text-xs text-slate-400">{{ t('core.tenants.platform_plan_desc') }}</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400">{{ t('core.tenants.platform_gemini_label') }}</span>
+            {% if has_platform_gemini %}
+            <span class="text-emerald-400 font-semibold">✓ {{ t('core.tenants.active_configured') }}</span>
+            {% else %}
+            <span class="text-amber-400 font-semibold">⚠ {{ t('core.tenants.not_configured') }}</span>
+            {% endif %}
+          </div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400">{{ t('core.tenants.platform_wa_label') }}</span>
+            {% if has_platform_whatsapp %}
+            <span class="text-emerald-400 font-semibold">✓ {{ t('core.tenants.active_configured') }}</span>
+            {% else %}
+            <span class="text-amber-400 font-semibold">⚠ {{ t('core.tenants.not_configured') }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer BYOK Key Inputs -->
+      <div id="byok-keys-box" class="space-y-4 pt-2 {% if not is_byok %}hidden{% endif %}">
+        <div class="p-3.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs">
+          <strong>{{ t('core.tenants.byok_active_title') }}</strong>{{ t('core.tenants.byok_active_desc') }}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_gemini_key') }}</label>
+            <input type="password" name="gemini_api_key" placeholder="{{ t('core.tenants.ph_gemini_key') }}" autocomplete="new-password"
+                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
+            <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if has_byok_gemini %}<span class="text-emerald-400 font-semibold">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_openai_key') }}</label>
+            <input type="password" name="openai_api_key" placeholder="{{ t('core.tenants.ph_openai_key') }}" autocomplete="new-password"
+                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
+            <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if has_byok_openai %}<span class="text-emerald-400 font-semibold">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_waba_token') }}</label>
+            <input type="password" name="waba_token" placeholder="{{ t('core.tenants.ph_waba_token') }}" autocomplete="new-password"
+                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
+            <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if has_byok_whatsapp %}<span class="text-emerald-400 font-semibold">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">{{ t('core.tenants.field_waba_phone_id') }}</label>
+            <input type="text" name="waba_phone_number_id" value="{{ config.waba_phone_number_id if config and config.waba_phone_number_id else '' }}"
+                   placeholder="{{ t('core.tenants.ph_waba_phone_id') }}"
+                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
+            <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if config and config.waba_phone_number_id %}<span class="text-emerald-400 font-semibold">✓ {{ config.waba_phone_number_id }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-4 border-t border-slate-700/60">
+        <button type="submit" class="px-5 py-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition-colors shadow-md flex items-center gap-2">
+          <span>💾</span> {{ t('core.tenants.btn_save_all') }}
         </button>
       </div>
-    </form>
-    {% else %}
-    <!-- Platform-Managed Mode: Keys are managed centrally by DevOps -->
-    <div class="bg-slate-900/80 border border-sky-500/30 rounded-xl p-5 space-y-3">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
-          ☁️
-        </div>
-        <div>
-          <p class="text-sm font-semibold text-white">{{ t('core.tenants.platform_plan_title') }}</p>
-          <p class="text-xs text-slate-400">{{ t('core.tenants.platform_plan_desc') }}</p>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
-        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
-          <span class="text-slate-400">{{ t('core.tenants.platform_gemini_label') }}</span>
-          {% if has_platform_gemini %}
-          <span class="text-emerald-400 font-semibold">✓ {{ t('core.tenants.active_configured') }}</span>
-          {% else %}
-          <span class="text-amber-400 font-semibold">⚠ {{ t('core.tenants.not_configured') }}</span>
-          {% endif %}
-        </div>
-        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
-          <span class="text-slate-400">{{ t('core.tenants.platform_wa_label') }}</span>
-          {% if has_platform_whatsapp %}
-          <span class="text-emerald-400 font-semibold">✓ {{ t('core.tenants.active_configured') }}</span>
-          {% else %}
-          <span class="text-amber-400 font-semibold">⚠ {{ t('core.tenants.not_configured') }}</span>
-          {% endif %}
-        </div>
-      </div>
-      <p class="text-[11px] text-slate-500 italic">{{ t('core.tenants.platform_byok_hint') }}</p>
     </div>
-    {% endif %}
-  </div>
+  </form>
+
+  <script>
+    function toggleVaultMode(mode) {
+      const platformBox = document.getElementById('platform-managed-box');
+      const byokBox = document.getElementById('byok-keys-box');
+      const labelPlatform = document.getElementById('label-platform-mode');
+      const labelByok = document.getElementById('label-byok-mode');
+
+      if (mode === 'CUSTOMER_BYOK') {
+        platformBox.classList.add('hidden');
+        byokBox.classList.remove('hidden');
+        labelByok.className = "flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-colors bg-amber-950/40 border-amber-500/60 text-amber-200";
+        labelPlatform.className = "flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-colors bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600";
+      } else {
+        platformBox.classList.remove('hidden');
+        byokBox.classList.add('hidden');
+        labelPlatform.className = "flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-colors bg-sky-950/40 border-sky-500/60 text-sky-200";
+        labelByok.className = "flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-colors bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600";
+      }
+    }
+  </script>
 
   <!-- Quick Navigation -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -136,17 +136,17 @@ class DevOpsKeyVault:
                 session.add(config)
             else:
                 config.credential_mode = mode_clean
-                if gemini_api_key is not None:
+                if gemini_api_key is not None and gemini_api_key.strip():
                     config.encrypted_gemini_api_key = enc_gemini
-                if openai_api_key is not None:
+                if openai_api_key is not None and openai_api_key.strip():
                     config.encrypted_openai_api_key = enc_openai
-                if waba_token is not None:
+                if raw_waba:
                     config.encrypted_waba_token = enc_waba
-                if waba_phone_number_id is not None:
-                    config.waba_phone_number_id = waba_phone_number_id.strip() if waba_phone_number_id else None
-                if brand_name is not None:
-                    config.brand_name = brand_name.strip() if brand_name else None
-                if default_timezone is not None:
+                if waba_phone_number_id is not None and waba_phone_number_id.strip():
+                    config.waba_phone_number_id = waba_phone_number_id.strip()
+                if brand_name is not None and brand_name.strip():
+                    config.brand_name = brand_name.strip()
+                if default_timezone is not None and default_timezone.strip():
                     config.default_timezone = default_timezone.strip()
                 if metadata is not None:
                     config.metadata_json = json.dumps(metadata)

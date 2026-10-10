@@ -779,7 +779,8 @@ async def view_tenants(
 
     has_platform_gemini = bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip())
     has_platform_whatsapp = bool(settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_ACCESS_TOKEN.strip())
-    has_byok_gemini = bool(config and config.encrypted_gemini_key)
+    has_byok_gemini = bool(config and config.encrypted_gemini_api_key)
+    has_byok_openai = bool(config and config.encrypted_openai_api_key)
     has_byok_whatsapp = bool(config and config.encrypted_waba_token)
 
     return templates.TemplateResponse(
@@ -800,6 +801,7 @@ async def view_tenants(
             "has_platform_gemini": has_platform_gemini,
             "has_platform_whatsapp": has_platform_whatsapp,
             "has_byok_gemini": has_byok_gemini,
+            "has_byok_openai": has_byok_openai,
             "has_byok_whatsapp": has_byok_whatsapp,
             "section": "tenants",
             "csrf_token": csrf_token,
@@ -815,31 +817,40 @@ async def view_tenants(
 async def save_customer_byok_keys(
     request: Request,
     ctx: SecurityContext = Depends(get_web_security_context),
+    credential_mode: str = Form("PLATFORM_MANAGED"),
+    brand_name: Optional[str] = Form(None),
+    default_timezone: Optional[str] = Form("Asia/Kolkata"),
     gemini_api_key: Optional[str] = Form(None),
+    openai_api_key: Optional[str] = Form(None),
     waba_token: Optional[str] = Form(None),
+    waba_phone_number_id: Optional[str] = Form(None),
     csrf_token: Optional[str] = Form(None),
 ) -> Any:
-    """Save customer-provided BYOK keys securely into AES-256-GCM vault."""
+    """Save customer-provided BYOK keys and company profile securely into AES-256-GCM vault."""
     if not ctx.is_admin:
         raise HTTPException(status_code=403, detail="Admin role required.")
     if not verify_csrf_token(request, submitted_token=csrf_token):
         raise HTTPException(status_code=403, detail="CSRF validation failed.")
 
-    from ops_control_plane.devops_vault import DevOpsKeyVault
-    req_tenant = getattr(request.state, "tenant_id", None)
-    user_tenant = ctx.tenant_id if ctx.tenant_id and ctx.tenant_id not in ("default_tenant", "system", "public") else None
-    active_tenant_slug = req_tenant or user_tenant or "public"
+    from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+    eff_tenant, _, _ = resolve_effective_tenant_info(request, ctx)
+    active_tenant_slug = eff_tenant
 
+    from ops_control_plane.devops_vault import DevOpsKeyVault
     vault = DevOpsKeyVault()
     try:
         vault.configure_tenant_credentials(
             tenant_id=active_tenant_slug,
-            credential_mode="CUSTOMER_BYOK",
-            gemini_api_key=gemini_api_key.strip() if gemini_api_key else None,
-            waba_access_token=waba_token.strip() if waba_token else None,
+            credential_mode=credential_mode,
+            gemini_api_key=gemini_api_key,
+            openai_api_key=openai_api_key,
+            waba_token=waba_token,
+            waba_phone_number_id=waba_phone_number_id,
+            brand_name=brand_name,
+            default_timezone=default_timezone or "Asia/Kolkata",
         )
         return RedirectResponse(
-            url="/admin/tenants?message=Company+BYOK+credentials+updated+securely",
+            url="/admin/tenants?message=Company+Profile+and+Vault+saved+successfully",
             status_code=status.HTTP_303_SEE_OTHER,
         )
     except Exception as exc:
