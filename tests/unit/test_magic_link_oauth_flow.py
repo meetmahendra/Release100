@@ -46,7 +46,11 @@ def registered_user() -> Any:
         tenant_id="tenant_oauth_test",
         allowed_cartridges=["mail_organizer"],
     )
-    return user
+    yield user
+    try:
+        service.delete_user(user.id)
+    except Exception:
+        pass
 
 
 class TestMagicLinkOAuthConnect:
@@ -293,4 +297,29 @@ class TestPerUserTokenLifecycle:
             assert len(threads) == 1
             assert threads[0]["gmail_id"] == "MSG-999"
             assert threads[0]["subject"] == "Test Subject"
+
+    @pytest.mark.asyncio
+    async def test_connector_raises_on_live_api_failure(self) -> None:
+        """Verify that live API failure raises GmailAPIError without silent mock fallback."""
+        from apps.mail_organizer.connectors.gmail_connector import GmailConnector, GmailAPIError
+        from unittest.mock import patch
+        import urllib.error
+
+        connector = GmailConnector(access_token_override="synthetic_test_token_12345")
+        assert connector.mock_mode is False
+
+        with patch.object(
+            connector,
+            "_fetch_unread_threads_live",
+            side_effect=urllib.error.HTTPError(
+                url="https://gmail.googleapis.com",
+                code=401,
+                msg="Unauthorized",
+                hdrs=MagicMock(),
+                fp=None,
+            ),
+        ):
+            with pytest.raises(GmailAPIError) as exc_info:
+                await connector.fetch_unread_threads(max_results=5)
+            assert "401" in str(exc_info.value) or "Unauthorized" in str(exc_info.value)
 

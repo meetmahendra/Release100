@@ -102,6 +102,11 @@ def _parse_email_addrs(val: str) -> List[str]:
     return [a.lower() for a in found] if found else [val.strip().lower()]
 
 
+class GmailAPIError(RuntimeError):
+    """Raised when an authenticated live Gmail API call fails."""
+    pass
+
+
 class GmailConnector:
     """Manages communication with Google Workspace Gmail API or high-fidelity mock."""
 
@@ -227,8 +232,8 @@ class GmailConnector:
         try:
             return await asyncio.to_thread(self._fetch_unread_threads_live, max_results)
         except Exception as err:
-            logger.warning("[GmailConnector] Live fetch failed (%s). Using mock fallback.", err)
-            return list(self._mock_threads[:max_results])
+            logger.error("[GmailConnector] Live fetch failed: %s", err)
+            raise GmailAPIError(f"Live Gmail fetch failed: {err}") from err
 
     def _fetch_unread_threads_live(self, max_results: int) -> List[Dict[str, Any]]:
         """Live synchronous Google API call wrapped in thread."""
@@ -290,11 +295,8 @@ class GmailConnector:
                 self._apply_labels_live, gmail_id, sanitized_adds, remove_labels
             )
         except Exception as err:
-            logger.warning("[GmailConnector] Live label application failed: %s", err)
-            current = self._mock_labels_applied.get(gmail_id, [])
-            current.extend(sanitized_adds)
-            self._mock_labels_applied[gmail_id] = list(set(current))
-            return True
+            logger.error("[GmailConnector] Live label application failed: %s", err)
+            raise GmailAPIError(f"Live Gmail label application failed: {err}") from err
 
     def _ensure_label_exists(self, label_name: str) -> str:
         """Ensure named label exists on the Gmail account and return its ID."""
@@ -372,9 +374,8 @@ class GmailConnector:
                 draft_payload,
             )
         except Exception as err:
-            logger.warning("[GmailConnector] Live draft creation failed: %s", err)
-            self._mock_drafts.append(draft_payload)
-            return draft_payload
+            logger.error("[GmailConnector] Live draft creation failed: %s", err)
+            raise GmailAPIError(f"Live Gmail draft creation failed: {err}") from err
 
     def _create_draft_live(
         self,
@@ -443,8 +444,8 @@ class GmailConnector:
                 payload,
             )
         except Exception as err:
-            logger.warning("[GmailConnector] Live send failed: %s", err)
-            return payload
+            logger.error("[GmailConnector] Live send failed: %s", err)
+            raise GmailAPIError(f"Live Gmail send failed: {err}") from err
 
     def _send_message_live(
         self,
