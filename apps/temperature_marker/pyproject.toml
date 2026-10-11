@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "release100-cartridge-temperature-marker"
-version = "1.0.3"
+version = "1.0.4"
 description = "Industrial HACCP Temperature Verification & Biometric Face Attendance Cartridge for Release100"
 authors = [{ name = "Mahendra GURAV" }]
 requires-python = ">=3.10"
@@ -37,6 +37,7 @@ temperature_marker = "apps.temperature_marker.plugin:TemperatureMarkerPlugin"
 "apps.temperature_marker.graph" = "graph"
 "apps.temperature_marker.graph.nodes" = "graph/nodes"
 "apps.temperature_marker.knowledge_graph" = "knowledge_graph"
+"apps.temperature_marker.locales" = "locales"
 "apps.temperature_marker.services" = "services"
 "apps.temperature_marker.ui" = "ui"
 
@@ -49,11 +50,13 @@ packages = [
     "apps.temperature_marker.graph",
     "apps.temperature_marker.graph.nodes",
     "apps.temperature_marker.knowledge_graph",
+    "apps.temperature_marker.locales",
     "apps.temperature_marker.services",
     "apps.temperature_marker.ui",
 ]
 
 [tool.setuptools.package-data]
 "*" = ["*.html", "*.css", "*.js", "*.json", "*.svg", "*.ico", "*.png", "*.sql", "*.onnx"]
+"apps.temperature_marker.locales" = ["*.json"]
 "apps.temperature_marker.ui" = ["templates/*.html", "templates/**/*.html"]
 "apps.temperature_marker.knowledge_graph" = ["*.json"]

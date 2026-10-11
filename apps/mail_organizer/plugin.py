@@ -63,7 +63,7 @@ class MailOrganizerApplication(BaseApplication):
 
     app_id: str = "mail_organizer"
     name: str = "AI Email & Calendar Organizer"
-    version: str = "1.0.6"
+    version: str = "1.0.7"
     description: str = "Email triage, meeting scheduling, and PM task extraction for executives."
     config_schema = MailOrganizerConfig
     required_roles: List[str] = ["manager", "executive", "admin"]

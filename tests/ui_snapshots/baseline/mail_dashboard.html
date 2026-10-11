@@ -28,10 +28,10 @@ STATUS 200
 </style>
 <style>
   :root {
-  --bg-main: ##b#f#;
-  --bg-card: ##d#f;
+  --bg-main: ##;
+  --bg-card: ##f#a;
   --bg-card-hover: ##e#b;
-  --border-color: ##f;
+  --border-color: ##e#b;
   --text-primary: #f#fafc;
   --text-secondary: ##a#b#;
   --accent-primary: ##f#;
@@ -118,8 +118,59 @@ STATUS 200
 </div>
 <nav class="p-#">
 <ul class="space-y-#">
-<li class="px-# py-#.# text-xs italic text-muted">
-  No cartridges installed
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/">
+  Overview Dashboard
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Applications
+</li>
+<li>
+<a aria-current="page" class="block rounded-md px-# py-# text-sm bg-line text-ink font-semibold" href="/admin/apps/mail-organizer">
+  AI Email & Calendar Organizer
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Apex Industrial Temperature & Attendance Marker
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/monitoring">
+  📊 Live Monitoring
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/fleet">
+  Fleet Map
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/wizard">
+  Stepper Wizard
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/approvals">
+  Operator Approvals
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Workspace & Access
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/users">
+  Users & Team
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/tenants">
+  Company Profile & Vault
+</a>
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/api-keys">
+  API Keys
+</a>
 </li>
 </ul>
 </nav>
@@ -128,6 +179,14 @@ STATUS 200
 <header class="flex items-center justify-between gap-# border-b border-line bg-card px-# py-#">
 <nav aria-label="Breadcrumb">
 <ol class="flex items-center gap-# text-sm text-muted">
+<li>
+<a class="hover:text-ink" href="/admin/">
+  Platform Dashboard
+</a>
+</li>
+<li aria-hidden="true">
+  /
+</li>
 <li>
 <a class="hover:text-ink" href="/admin/apps/mail-organizer/dashboard">
   AI Email & Calendar Organizer
@@ -144,6 +203,19 @@ STATUS 200
 </ol>
 </nav>
 <div class="flex items-center gap-# text-xs md:text-sm flex-wrap">
+<span class="rounded-md border border-line px-#.# py-# text-xs text-muted flex items-center gap-#.#" title="Physical/logical host node identifier">
+<span class="w-#.# h-#.# rounded-full bg-emerald-#">
+</span>
+<span class="font-medium text-ink">
+  Node:
+</span>
+<span class="font-mono text-primary font-bold">
+  NODE-#
+</span>
+<span class="text-muted hidden sm:inline">
+  (Release# Node ##)
+</span>
+</span>
 <span class="rounded-md border border-line px-#.# py-# text-xs text-muted flex items-center gap-#.#" title="Current active tenant scope">
 <span class="font-medium text-ink">
   🏢 Tenant:
@@ -151,12 +223,18 @@ STATUS 200
 <strong class="text-ink">
   Release# Organization
 </strong>
+<span class="font-mono text-primary">
+  (default_tenant)
+</span>
 </span>
 <span class="rounded-md border px-# py-# border-preview text-preview" data-runtime-mode="preview" title="Protection mode: Access rules are checked and logged but not enforced.">
 <span aria-hidden="true">
   ◐
 </span>
   Preview
+</span>
+<span class="text-muted" title="Signed in as admin">
+  admin · Administrator
 </span>
 <span aria-label="Language" class="flex items-center gap-#">
 <a aria-current="true" class="rounded px-# text-ink font-semibold" href="?lang=en_US" hreflang="en-US">

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "release100-cartridge-mail-organizer"
-version = "1.0.6"
+version = "1.0.7"
 description = "Autonomous AI Email Triage & Calendar Task Management Cartridge for Release100"
 authors = [{ name = "Mahendra GURAV" }]
 requires-python = ">=3.10"
@@ -34,6 +34,7 @@ mail_organizer = "apps.mail_organizer.plugin:MailOrganizerPlugin"
 "apps.mail_organizer.database" = "database"
 "apps.mail_organizer.graph" = "graph"
 "apps.mail_organizer.graph.nodes" = "graph/nodes"
+"apps.mail_organizer.locales" = "locales"
 "apps.mail_organizer.mcp" = "mcp"
 "apps.mail_organizer.pm" = "pm"
 "apps.mail_organizer.services" = "services"
@@ -46,6 +47,7 @@ packages = [
     "apps.mail_organizer.database",
     "apps.mail_organizer.graph",
     "apps.mail_organizer.graph.nodes",
+    "apps.mail_organizer.locales",
     "apps.mail_organizer.mcp",
     "apps.mail_organizer.pm",
     "apps.mail_organizer.services",
@@ -54,4 +56,5 @@ packages = [
 
 [tool.setuptools.package-data]
 "*" = ["*.html", "*.css", "*.js", "*.json", "*.svg", "*.ico", "*.png", "*.sql"]
+"apps.mail_organizer.locales" = ["*.json"]
 "apps.mail_organizer.ui" = ["templates/*.html", "templates/**/*.html"]

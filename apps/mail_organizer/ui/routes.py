@@ -41,6 +41,7 @@ from apps.mail_organizer.database.db_service import MailDatabaseService
 from apps.mail_organizer.graph.state import MailOrganizerState
 from apps.mail_organizer.graph.state_graph import MailOrganizerWorkflow
 from apps.mail_organizer.pm.task_manager import PMTaskManager
+from core_platform.app.auth.models import SecurityContext
 from core_platform.app.common.timezone import to_local_ist, to_local_ist_full
 from core_platform.app.config import settings
 from core_platform.app.entitlements.dependencies import require_action
@@ -92,9 +93,12 @@ async def mail_admin_root() -> RedirectResponse:
 
 
 @router.get("/dashboard", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:inbox:view"))])
-async def view_dashboard(request: Request) -> HTMLResponse:
+async def view_dashboard(
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Render interactive Mail Organizer Dashboard."""
-    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
     metrics = _db_service.get_triage_metrics(tenant_id=tenant_id)
     pending_tasks = _db_service.get_pending_pm_tasks(tenant_id=tenant_id)
     drafts = _db_service.get_all_drafts(tenant_id=tenant_id)
@@ -102,12 +106,13 @@ async def view_dashboard(request: Request) -> HTMLResponse:
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
-        ctx=None,
+        ctx=ctx,
         allowed_apps=["temperature_marker", "mail_organizer"],
-        tenant_name=org_name or "",
+        tenant_name=str(org_name or ""),
         breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
             Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
-            Breadcrumb(label_key="apps.mail_organizer.nav.dashboard", path="/admin/apps/mail-organizer/dashboard"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.dashboard"),
         ],
     )
 
@@ -133,19 +138,23 @@ async def view_dashboard(request: Request) -> HTMLResponse:
 
 
 @router.get("/triage", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:inbox:view"))])
-async def view_triage(request: Request) -> HTMLResponse:
+async def view_triage(
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Render Triage Simulator."""
-    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
     emails = _db_service.get_recent_emails(limit=25, tenant_id=tenant_id)
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
-        ctx=None,
+        ctx=ctx,
         allowed_apps=["temperature_marker", "mail_organizer"],
-        tenant_name=org_name or "",
+        tenant_name=str(org_name or ""),
         breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
             Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
-            Breadcrumb(label_key="apps.mail_organizer.nav.triage", path="/admin/apps/mail-organizer/triage"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.triage"),
         ],
     )
 
@@ -226,19 +235,23 @@ async def run_email_simulation(req: EmailSimulationRequest) -> Dict[str, Any]:
 
 
 @router.get("/pm-queue", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:pm_task:view"))])
-async def view_pm_queue(request: Request) -> HTMLResponse:
+async def view_pm_queue(
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Render Human-in-the-Loop PM Action Queue."""
-    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
     pending_tasks = _db_service.get_pending_pm_tasks(tenant_id=tenant_id)
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
-        ctx=None,
+        ctx=ctx,
         allowed_apps=["temperature_marker", "mail_organizer"],
-        tenant_name=org_name or "",
+        tenant_name=str(org_name or ""),
         breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
             Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
-            Breadcrumb(label_key="apps.mail_organizer.nav.pm_queue", path="/admin/apps/mail-organizer/pm-queue"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.pm_queue"),
         ],
     )
 
@@ -276,21 +289,25 @@ async def reject_task_api(task_id: int) -> Dict[str, Any]:
 
 
 @router.get("/rules", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:rules:view"))])
-async def view_rules(request: Request) -> HTMLResponse:
+async def view_rules(
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Render VIP and Whitelist Rules Management."""
-    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
     rules = _db_service.get_all_rules(rule_type=None)
     if tenant_id and tenant_id not in ("platform", "*"):
         rules = [r for r in rules if getattr(r, "tenant_id", "public") == tenant_id]
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
-        ctx=None,
+        ctx=ctx,
         allowed_apps=["temperature_marker", "mail_organizer"],
-        tenant_name=org_name or "",
+        tenant_name=str(org_name or ""),
         breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
             Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
-            Breadcrumb(label_key="apps.mail_organizer.nav.rules", path="/admin/apps/mail-organizer/rules"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.rules"),
         ],
     )
 
@@ -310,19 +327,23 @@ async def view_rules(request: Request) -> HTMLResponse:
 
 
 @router.get("/drafts", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:inbox:view"))])
-async def view_drafts(request: Request) -> HTMLResponse:
+async def view_drafts(
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Render Contextual Draft Replies."""
-    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
     drafts = _db_service.get_all_drafts(tenant_id=tenant_id)
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
-        ctx=None,
+        ctx=ctx,
         allowed_apps=["temperature_marker", "mail_organizer"],
-        tenant_name=org_name or "",
+        tenant_name=str(org_name or ""),
         breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
             Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
-            Breadcrumb(label_key="apps.mail_organizer.nav.drafts", path="/admin/apps/mail-organizer/drafts"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.drafts"),
         ],
     )
 
@@ -346,9 +367,12 @@ async def view_drafts(request: Request) -> HTMLResponse:
 # ── GAP-019: OAuth Accounts & Customer Admin Poller Management ─────────────
 
 @router.get("/accounts", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:inbox:view"))])
-async def view_accounts(request: Request) -> HTMLResponse:
+async def view_accounts(
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> HTMLResponse:
     """Display Google Account OAuth2 status, workspace poller, and per-user poller configurations."""
-    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
     effective_tenant = tenant_id or "default"
 
     oauth_status: str = "not_configured"
@@ -418,12 +442,13 @@ async def view_accounts(request: Request) -> HTMLResponse:
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
-        ctx=None,
+        ctx=ctx,
         allowed_apps=["temperature_marker", "mail_organizer"],
-        tenant_name=org_name or "",
+        tenant_name=str(org_name or ""),
         breadcrumbs=[
+            Breadcrumb(label_key="core.nav.platform_dashboard", path="/admin/"),
             Breadcrumb(label_key="apps.mail_organizer.name", path="/admin/apps/mail-organizer/dashboard"),
-            Breadcrumb(label_key="apps.mail_organizer.nav.accounts", path="/admin/apps/mail-organizer/accounts"),
+            Breadcrumb(label_key="apps.mail_organizer.nav.accounts"),
         ],
     )
 
