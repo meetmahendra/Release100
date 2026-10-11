@@ -63,7 +63,7 @@ class MailOrganizerApplication(BaseApplication):
 
     app_id: str = "mail_organizer"
     name: str = "AI Email & Calendar Organizer"
-    version: str = "1.0.0"
+    version: str = "1.0.6"
     description: str = "Email triage, meeting scheduling, and PM task extraction for executives."
     config_schema = MailOrganizerConfig
     required_roles: List[str] = ["manager", "executive", "admin"]
@@ -122,14 +122,13 @@ class MailOrganizerApplication(BaseApplication):
         return d if d.is_dir() else None
 
     def get_ui_nav(self) -> List[NavItem]:
-        """Return sidebar navigation items for Mail Organizer."""
+        """Return sidebar navigation items for Mail Organizer (Unified UI Strategy)."""
         return [
-            NavItem(label_key="apps.mail_organizer.nav.dashboard", path="/admin/apps/mail-organizer/dashboard", group_key="apps.mail_organizer.name"),
-            NavItem(label_key="apps.mail_organizer.nav.triage", path="/admin/apps/mail-organizer/triage", group_key="apps.mail_organizer.name"),
-            NavItem(label_key="apps.mail_organizer.nav.drafts", path="/admin/apps/mail-organizer/drafts", group_key="apps.mail_organizer.name"),
-            NavItem(label_key="apps.mail_organizer.nav.pm_queue", path="/admin/apps/mail-organizer/pm-queue", group_key="apps.mail_organizer.name"),
-            NavItem(label_key="apps.mail_organizer.nav.rules", path="/admin/apps/mail-organizer/rules", group_key="apps.mail_organizer.name"),
-            NavItem(label_key="apps.mail_organizer.nav.accounts", path="/admin/apps/mail-organizer/accounts", group_key="apps.mail_organizer.name"),
+            NavItem(
+                label_key="apps.mail_organizer.name",
+                path="/admin/apps/mail-organizer",
+                group_key="core.nav.group_apps",
+            ),
         ]
 
     def get_ui_statuses(self) -> Dict[str, StatusInfo]:

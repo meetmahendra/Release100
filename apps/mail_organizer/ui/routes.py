@@ -84,6 +84,7 @@ class TaskApprovalRequest(BaseModel):
     sync_to: str = Field(default="jira", description="Target PM tool: jira or linear")
 
 
+@router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 async def mail_admin_root() -> RedirectResponse:
     """Redirect root to dashboard."""
@@ -110,6 +111,8 @@ async def view_dashboard(request: Request) -> HTMLResponse:
         ],
     )
 
+    ws_config = _db_service.get_workspace_poller_config(tenant_id=tenant_id or "default")
+
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
@@ -123,6 +126,7 @@ async def view_dashboard(request: Request) -> HTMLResponse:
             "pending_tasks": pending_tasks,
             "drafts": drafts,
             "recent_emails": recent_emails,
+            "ws_config": ws_config,
             "ui": ui_ctx,
         },
     )

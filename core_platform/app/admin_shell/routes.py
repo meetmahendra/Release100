@@ -1159,7 +1159,8 @@ def _build_nav_apps(ctx: SecurityContext, tenant: Optional[Any] = None) -> List[
 
     enabled = set(settings.ENABLED_APPLICATIONS) if settings.ENABLED_APPLICATIONS is not None else set(all_apps.keys())
     if tenant and hasattr(tenant, "allowed_cartridges") and tenant.allowed_cartridges is not None:
-        enabled = enabled.intersection(set(tenant.allowed_cartridges))
+        if "*" not in tenant.allowed_cartridges and "all" not in tenant.allowed_cartridges:
+            enabled = enabled.intersection(set(tenant.allowed_cartridges))
 
     # If principal is scoped to a customer tenant and tenant entity wasn't passed directly, resolve from DB
     if not tenant and ctx.tenant_id and ctx.tenant_id not in ("default_tenant", "system", "public", "platform"):
@@ -1171,7 +1172,8 @@ def _build_nav_apps(ctx: SecurityContext, tenant: Optional[Any] = None) -> List[
             with db_mgr.get_session() as session:
                 t_obj = session.scalar(select(Tenant).where(Tenant.id == ctx.tenant_id))
                 if t_obj and t_obj.allowed_cartridges is not None:
-                    enabled = enabled.intersection(set(t_obj.allowed_cartridges))
+                    if "*" not in t_obj.allowed_cartridges and "all" not in t_obj.allowed_cartridges:
+                        enabled = enabled.intersection(set(t_obj.allowed_cartridges))
         except Exception:
             pass
 

@@ -352,6 +352,26 @@ STATUS 200
   }
 </style>
 <div class="trace-container">
+<nav aria-label="AI Email & Calendar Organizer" class="flex items-center space-x-# border-b border-line pb-# mb-# overflow-x-auto text-xs">
+<a class="px-#.# py-#.# rounded-lg transition-colors bg-line text-ink font-bold border border-primary/# shadow-sm" href="/admin/apps/mail-organizer/dashboard">
+  📊 Executive Dashboard
+</a>
+<a class="px-#.# py-#.# rounded-lg transition-colors text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/triage">
+  ⚡ Triage Simulator
+</a>
+<a class="px-#.# py-#.# rounded-lg transition-colors text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/drafts">
+  ✍️ Staged Drafts
+</a>
+<a class="px-#.# py-#.# rounded-lg transition-colors text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/pm-queue">
+  📋 PM Action Queue
+</a>
+<a class="px-#.# py-#.# rounded-lg transition-colors text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/rules">
+  ⚙️ Classification Rules
+</a>
+<a class="px-#.# py-#.# rounded-lg transition-colors text-muted hover:text-ink hover:bg-line" href="/admin/apps/mail-organizer/accounts">
+  📬 Connected Accounts
+</a>
+</nav>
 <div class="trace-header">
 <div>
 <h1 style="margin: #; font-size: #.#rem; font-weight: #;">
@@ -365,7 +385,13 @@ STATUS 200
   Zero-Deletion Architecture • SHA-# Non-Repudiation • TypeSafe System # + Gemini System #
 </p>
 </div>
-<div style="display: flex; gap: #.#rem; align-items: center;">
+<div style="display: flex; gap: #.#rem; align-items: center; flex-wrap: wrap;">
+<span class="badge badge-success">
+  ACTIVE
+</span>
+<a class="btn btn-secondary" href="/admin/apps/mail-organizer/accounts" style="text-decoration: none; font-size: #.#rem;">
+  📬 Connected Accounts
+</a>
 <a class="btn" href="/admin/apps/mail-organizer/triage" style="text-decoration: none; font-size: #.#rem;">
   ⚡ Run Triage Simulator
 </a>

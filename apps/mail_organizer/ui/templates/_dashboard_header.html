@@ -7,7 +7,13 @@
             {{ t('apps.mail_organizer.dashboard.header_subtitle') }}
         </p>
     </div>
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        {% if ws_config and ws_config.is_master_enabled %}
+        <span class="badge badge-success">{{ t('apps.mail_organizer.accounts.state_active') }}</span>
+        {% elif ws_config %}
+        <span class="badge badge-action">{{ t('apps.mail_organizer.accounts.state_paused') }}</span>
+        {% endif %}
+        <a href="/admin/apps/mail-organizer/accounts" class="btn btn-secondary" style="text-decoration: none; font-size: 0.85rem;">{{ t('apps.mail_organizer.nav.accounts') }}</a>
         <a href="/admin/apps/mail-organizer/triage" class="btn" style="text-decoration: none; font-size: 0.85rem;">{{ t('apps.mail_organizer.dashboard.btn_run_triage') }}</a>
         <a href="/admin/apps/mail-organizer/pm-queue" class="btn btn-secondary" style="text-decoration: none; font-size: 0.85rem;">{{ t('apps.mail_organizer.dashboard.btn_pm_queue', count=metrics.pending_pm_tasks) }}</a>
     </div>

@@ -114,7 +114,7 @@ class I18nCatalog:
         with self._lock:
             bucket = self._entries.setdefault(locale, {})
             for key, value in entries.items():
-                if key in bucket:
+                if key in bucket and bucket[key] != value:
                     raise CatalogError(f"duplicate key '{key}' for locale '{locale}'")
             bucket.update(entries)
 

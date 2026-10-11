@@ -1,0 +1,21 @@
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+<nav class="flex items-center space-x-1 border-b border-line pb-3 mb-6 overflow-x-auto text-xs" aria-label="{{ t('apps.mail_organizer.name') }}">
+  <a href="/admin/apps/mail-organizer/dashboard" class="px-3.5 py-1.5 rounded-lg transition-colors {% if active_tab == 'dashboard' %}bg-line text-ink font-bold border border-primary/50 shadow-sm{% else %}text-muted hover:text-ink hover:bg-line{% endif %}">
+    {{ t('apps.mail_organizer.nav.dashboard') }}
+  </a>
+  <a href="/admin/apps/mail-organizer/triage" class="px-3.5 py-1.5 rounded-lg transition-colors {% if active_tab == 'triage' %}bg-line text-ink font-bold border border-primary/50 shadow-sm{% else %}text-muted hover:text-ink hover:bg-line{% endif %}">
+    {{ t('apps.mail_organizer.nav.triage') }}
+  </a>
+  <a href="/admin/apps/mail-organizer/drafts" class="px-3.5 py-1.5 rounded-lg transition-colors {% if active_tab == 'drafts' %}bg-line text-ink font-bold border border-primary/50 shadow-sm{% else %}text-muted hover:text-ink hover:bg-line{% endif %}">
+    {{ t('apps.mail_organizer.nav.drafts') }}
+  </a>
+  <a href="/admin/apps/mail-organizer/pm-queue" class="px-3.5 py-1.5 rounded-lg transition-colors {% if active_tab == 'pm_queue' or active_tab == 'pm-queue' %}bg-line text-ink font-bold border border-primary/50 shadow-sm{% else %}text-muted hover:text-ink hover:bg-line{% endif %}">
+    {{ t('apps.mail_organizer.nav.pm_queue') }}
+  </a>
+  <a href="/admin/apps/mail-organizer/rules" class="px-3.5 py-1.5 rounded-lg transition-colors {% if active_tab == 'rules' %}bg-line text-ink font-bold border border-primary/50 shadow-sm{% else %}text-muted hover:text-ink hover:bg-line{% endif %}">
+    {{ t('apps.mail_organizer.nav.rules') }}
+  </a>
+  <a href="/admin/apps/mail-organizer/accounts" class="px-3.5 py-1.5 rounded-lg transition-colors {% if active_tab == 'accounts' %}bg-line text-ink font-bold border border-primary/50 shadow-sm{% else %}text-muted hover:text-ink hover:bg-line{% endif %}">
+    {{ t('apps.mail_organizer.nav.accounts') }}
+  </a>
+</nav>

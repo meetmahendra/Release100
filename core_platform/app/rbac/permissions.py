@@ -119,7 +119,12 @@ class RBACFilter:
                 or any(r in context.user_roles for r in required_roles)
             )
             # Check principal's permitted_apps (from API key / JWT claims).
-            in_permitted = not context.permitted_apps or app_id in context.permitted_apps
+            in_permitted = (
+                not context.permitted_apps
+                or "*" in context.permitted_apps
+                or "all" in context.permitted_apps
+                or app_id in context.permitted_apps
+            )
 
             if has_role and in_permitted:
                 candidate_apps.append(app_id)
