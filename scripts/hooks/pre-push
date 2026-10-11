@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Copyright 2026 Mahendra GURAV
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# GEES v3.1 Automated Pre-Push Gate Hook
+set -e
+
+echo "================================================================================"
+echo "  [GIT-HOOK] Running Inviolable Pre-Flight Quality Gate before remote push..."
+echo "================================================================================"
+
+# Find Python interpreter (.venv or sys)
+if [ -f ".venv/Scripts/python.exe" ]; then
+    PYTHON_EXE=".venv/Scripts/python.exe"
+elif [ -f ".venv/bin/python" ]; then
+    PYTHON_EXE=".venv/bin/python"
+else
+    PYTHON_EXE="python"
+fi
+
+"$PYTHON_EXE" scripts/verify_all.py --quality-gate --fast
+STATUS=$?
+
+if [ $STATUS -ne 0 ]; then
+    echo ""
+    echo "  [GIT-HOOK ERROR] Remote push ABORTED: Quality Gate breached."
+    echo "  Fix all failing gates and ensure versions are bumped before pushing."
+    echo "================================================================================"
+    exit 1
+fi
+
+echo "================================================================================"
+echo "  [GIT-HOOK SUCCESS] Quality Gate 100% verified. Proceeding with push."
+echo "================================================================================"
+exit 0

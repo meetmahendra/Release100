@@ -342,6 +342,7 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
                     route_decision
                     and route_decision.selected_app in candidate_apps
                     and not route_decision.requires_disambiguation
+                    and route_decision.confidence >= 0.75
                 ):
                     target_app = candidate_apps[route_decision.selected_app]
                     logger.info(

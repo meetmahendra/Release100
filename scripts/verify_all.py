@@ -99,8 +99,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         ),
         GateSpec(
             name="[6/7] MANIFEST-GUARD",
-            description="Packaging & Wheel Manifest Integrity",
-            command=[py_exe, "-m", "pytest", "tests/unit/test_packaging_manifest_integrity.py", "-q"],
+            description="Packaging, Wheel Manifest & Strict Version Bump Guard",
+            command=[
+                py_exe,
+                "-m",
+                "pytest",
+                "tests/unit/test_packaging_manifest_integrity.py",
+                "tests/unit/test_version_bump_guard.py",
+                "-q",
+            ],
         ),
     ]
 
