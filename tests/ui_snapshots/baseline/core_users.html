@@ -172,13 +172,22 @@ STATUS 200
 </p>
 </div>
 </div>
-<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-lg">
-<h2 class="text-base font-semibold text-white mb-# flex items-center gap-#">
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-lg space-y-#">
+<div class="flex items-center gap-# border-b border-slate-#/# pb-#">
+<button class="px-#.# py-#.# rounded-lg text-xs font-semibold bg-emerald-# text-white transition-all shadow-md" id="tabRegisterBtn" onclick="switchUserTab('register')" type="button">
 <span>
   ➕
 </span>
-  Register New WhatsApp User
-</h2>
+  Register New User
+</button>
+<button class="px-#.# py-#.# rounded-lg text-xs font-semibold bg-slate-# text-slate-# hover:text-white transition-all" id="tabAssignBtn" onclick="switchUserTab('assign')" type="button">
+<span>
+  🔗
+</span>
+  Assign Existing User
+</button>
+</div>
+<div id="registerSection">
 <form action="/admin/users" autocomplete="off" class="grid grid-cols-# md:grid-cols-# gap-#" method="POST">
 <input name="csrf_token" type="hidden" value="<TOKEN>">
 <div>
@@ -260,6 +269,109 @@ STATUS 200
 </div>
 </form>
 </div>
+<div class="hidden" id="assignSection">
+<form action="/admin/users/assign-tenant" autocomplete="off" class="space-y-#" id="assignUserForm" method="POST">
+<input name="csrf_token" type="hidden" value="<TOKEN>">
+<input name="tenant_id" type="hidden" value="default_tenant">
+<div class="grid grid-cols-# md:grid-cols-# gap-# items-end">
+<div class="md:col-span-#">
+<label class="block text-xs font-medium text-slate-# mb-#">
+  User Phone Number or Email *
+</label>
+<div class="flex gap-#">
+<input autocomplete="off" class="flex-# bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# placeholder-slate-# focus:border-sky-# outline-none" id="assignIdentifier" name="identifier" placeholder="+#, +#, or user@company.com" required type="text">
+<button class="px-# py-# rounded-lg bg-sky-# hover:bg-sky-# text-white font-medium text-xs transition-colors shrink-#" onclick="lookupExistingUser()" type="button">
+<span>
+  🔍
+</span>
+  Find User
+</button>
+</div>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Target Workspace
+</label>
+<div class="flex items-center gap-# px-# py-# bg-slate-#/# border border-slate-#/# rounded-lg text-slate-# text-sm font-mono">
+<span class="w-# h-# rounded-full bg-emerald-#">
+</span>
+<span>
+  default_tenant
+</span>
+</div>
+</div>
+</div>
+<div class="hidden bg-slate-#/# border border-sky-#/# rounded-xl p-# space-y-#" id="lookupResultCard">
+<h4 class="text-xs font-bold uppercase tracking-wider text-sky-# flex items-center gap-#.#">
+<span>
+  ✓
+</span>
+  Found User Details
+</h4>
+<div class="grid grid-cols-# sm:grid-cols-# gap-# text-xs">
+<div>
+<p class="text-slate-#">
+  Full Name
+</p>
+<p class="text-white font-semibold mt-#.#" id="foundUserName">
+</p>
+</div>
+<div>
+<p class="text-slate-#">
+  Phone
+</p>
+<p class="font-mono text-slate-# mt-#.#" id="foundUserPhone">
+</p>
+</div>
+<div>
+<p class="text-slate-#">
+  Current Workspace
+</p>
+<p class="font-mono text-amber-# mt-#.#" id="foundUserTenant">
+</p>
+</div>
+<div>
+<p class="text-slate-#">
+  Status
+</p>
+<p class="font-semibold capitalize text-emerald-# mt-#.#" id="foundUserStatus">
+</p>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-# md:grid-cols-# gap-#">
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Role
+</label>
+<select class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# focus:border-sky-# outline-none" id="assignRole" name="role">
+<option selected value="user">
+  User
+</option>
+<option value="supervisor">
+  Supervisor
+</option>
+<option value="admin">
+  Administrator
+</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Allowed Application Cartridges
+</label>
+<div class="flex flex-wrap items-center gap-# mt-#">
+</div>
+</div>
+</div>
+<div class="flex justify-end">
+<button class="px-# py-# rounded-lg bg-sky-# hover:bg-sky-# font-semibold text-sm text-white transition-colors shadow-lg shadow-sky-#/#" type="submit">
+  Assign to Workspace
+</button>
+</div>
+</form>
+</div>
+</div>
 <div class="bg-slate-#/# border border-slate-#/# rounded-xl overflow-hidden shadow-lg">
 <div class="p-# border-b border-slate-#/# flex flex-wrap items-center justify-between gap-#">
 <h3 class="text-base font-semibold text-white">
@@ -340,7 +452,165 @@ STATUS 200
 </div>
 </div>
 </div>
+<div class="hidden fixed inset-# bg-black/# backdrop-blur-sm flex items-center justify-center p-# z-#" id="editModal">
+<div class="bg-slate-# border border-slate-# rounded-xl p-# max-w-lg w-full space-y-# shadow-#xl">
+<div class="flex items-center justify-between">
+<h3 class="text-base font-bold text-white flex items-center gap-#">
+<span>
+  ✏️
+</span>
+  Edit User Profile & Entitlements
+</h3>
+<button class="text-slate-# hover:text-white" onclick="closeEditModal()">
+  ✕
+</button>
+</div>
+<form action="" class="space-y-#" id="editUserForm" method="POST">
+<input name="csrf_token" type="hidden" value="<TOKEN>">
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Phone Number (Read-only)
+</label>
+<input class="w-full bg-slate-#/# border border-slate-#/# rounded-lg px-# py-# text-sm text-slate-# font-mono" disabled id="editPhone" type="text">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Full Name *
+</label>
+<input autocomplete="off" class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# focus:border-emerald-# outline-none" id="editFullName" name="full_name" required type="text">
+</div>
+<div class="grid grid-cols-# gap-#">
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Role
+</label>
+<select class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# focus:border-emerald-# outline-none" id="editRole" name="role">
+<option value="user">
+  User
+</option>
+<option value="supervisor">
+  Supervisor
+</option>
+<option value="admin">
+  Administrator
+</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Assigned Workspace
+</label>
+<div class="flex items-center gap-# px-# py-# bg-slate-#/# border border-slate-#/# rounded-lg text-slate-# text-sm font-mono">
+<span class="w-# h-# rounded-full bg-emerald-#">
+</span>
+<span id="editTenantBadge">
+</span>
+</div>
+<input id="editTenantInput" name="tenant_id" type="hidden" value="">
+</div>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Timezone
+</label>
+<input autocomplete="off" class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# focus:border-emerald-# outline-none" id="editTimezone" name="timezone" type="text">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Entitled Applications
+</label>
+<div class="flex flex-wrap items-center gap-# mt-#">
+</div>
+</div>
+<div class="flex justify-end gap-# pt-#">
+<button class="px-# py-# rounded-lg bg-slate-# hover:bg-slate-# text-slate-# text-sm transition-colors" onclick="closeEditModal()" type="button">
+  Cancel
+</button>
+<button class="px-# py-# rounded-lg bg-emerald-# hover:bg-emerald-# font-semibold text-sm text-white transition-colors shadow-lg shadow-emerald-#/#" type="submit">
+  Save Changes
+</button>
+</div>
+</form>
+</div>
+</div>
 <script>
+  function switchUserTab(tab) {
+  const regSection = document.getElementById('registerSection');
+  const assignSection = document.getElementById('assignSection');
+  const regBtn = document.getElementById('tabRegisterBtn');
+  const assignBtn = document.getElementById('tabAssignBtn');
+  if (tab === 'assign') {
+  regSection.classList.add('hidden');
+  assignSection.classList.remove('hidden');
+  assignBtn.className = 'px-#.# py-#.# rounded-lg text-xs font-semibold bg-sky-# text-white transition-all shadow-md';
+  regBtn.className = 'px-#.# py-#.# rounded-lg text-xs font-semibold bg-slate-# text-slate-# hover:text-white transition-all';
+  } else {
+  assignSection.classList.add('hidden');
+  regSection.classList.remove('hidden');
+  regBtn.className = 'px-#.# py-#.# rounded-lg text-xs font-semibold bg-emerald-# text-white transition-all shadow-md';
+  assignBtn.className = 'px-#.# py-#.# rounded-lg text-xs font-semibold bg-slate-# text-slate-# hover:text-white transition-all';
+  }
+  }
+  async function lookupExistingUser() {
+  const ident = document.getElementById('assignIdentifier').value.trim();
+  if (!ident) {
+  alert('Please enter a phone number or email to search.');
+  return;
+  }
+  const card = document.getElementById('lookupResultCard');
+  try {
+  const resp = await fetch(`/admin/users/api/lookup?q=${encodeURIComponent(ident)}`);
+  if (resp.ok) {
+  const data = await resp.json();
+  if (data.found && data.user) {
+  document.getElementById('foundUserName').innerText = data.user.full_name || '';
+  document.getElementById('foundUserPhone').innerText = data.user.phone_number || '';
+  document.getElementById('foundUserTenant').innerText = data.user.tenant_id || '';
+  document.getElementById('foundUserStatus').innerText = data.user.status || '';
+  if (data.user.role) {
+  document.getElementById('assignRole').value = data.user.role;
+  }
+  card.classList.remove('hidden');
+  } else {
+  card.classList.add('hidden');
+  alert('No user found with identifier &##;&##;. Please check the number or register a new user.'.replace('{identifier}', ident));
+  }
+  } else {
+  alert('Error: Failed to generate magic link.');
+  }
+  } catch (err) {
+  alert('Error: ' + err);
+  }
+  }
+  function openEditModal(userId, fullName, phone, role, tenantId, timezone, allowedCartridges) {
+  const form = document.getElementById('editUserForm');
+  form.action = `/admin/users/${userId}/update`;
+  document.getElementById('editPhone').value = phone || '';
+  document.getElementById('editFullName').value = fullName || '';
+  document.getElementById('editRole').value = role || 'user';
+  document.getElementById('editTimezone').value = timezone || 'UTC';
+  const tenantSelect = document.getElementById('editTenantSelect');
+  if (tenantSelect) {
+  tenantSelect.value = tenantId;
+  }
+  const tenantBadge = document.getElementById('editTenantBadge');
+  if (tenantBadge) {
+  tenantBadge.innerText = tenantId || '';
+  }
+  const tenantInput = document.getElementById('editTenantInput');
+  if (tenantInput) {
+  tenantInput.value = tenantId || '';
+  }
+  const cbs = document.querySelectorAll('.edit-cartridge-cb');
+  const isAll = Array.isArray(allowedCartridges) && allowedCartridges.includes('*');
+  cbs.forEach(cb => {
+  cb.checked = isAll || (Array.isArray(allowedCartridges) && allowedCartridges.includes(cb.value));
+  });
+  document.getElementById('editModal').classList.remove('hidden');
+  }
+  function closeEditModal() {
+  document.getElementById('editModal').classList.add('hidden');
+  }
   function filterTable() {
   const q = document.getElementById('tableSearch').value.toLowerCase();
   const rows = document.querySelectorAll('.user-row');

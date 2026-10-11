@@ -211,3 +211,112 @@ def test_customer_admin_login_flow_with_password(test_app: FastAPI, identity_ser
         },
     )
     assert resp_bad_pwd.status_code == 401
+
+
+def test_customer_admin_assign_existing_user(test_app: FastAPI, identity_service: UserIdentityService) -> None:
+    """Verify customer admin can look up an unassigned/existing user and assign them to their tenant."""
+    # 1. Seed an unassigned / default tenant user
+    existing = identity_service.register_user(
+        phone_number="+919911223344",
+        full_name="Unassigned Operator",
+        role="user",
+        tenant_id="default_tenant",
+    )
+    assert existing.tenant_id == "default_tenant"
+
+    # Customer Admin token for acme_corp
+    token = create_jwt_token(
+        principal_id="acme_admin",
+        roles=["admin"],
+        permitted_apps=["mail_organizer"],
+        tenant_id="acme_corp",
+    )
+    client = TestClient(test_app, follow_redirects=False)
+    client.cookies.set("admin_token", token)
+    client.cookies.set("csrf_token", "test_csrf_token")
+
+    # 2. Look up existing user via API
+    resp_lookup = client.get("/admin/users/api/lookup?q=+919911223344")
+    assert resp_lookup.status_code == 200
+    data = resp_lookup.json()
+    assert data["found"] is True
+    assert data["user"]["full_name"] == "Unassigned Operator"
+    assert data["user"]["tenant_id"] == "default_tenant"
+
+    # 3. Customer Admin assigns user to their tenant (acme_corp)
+    resp_assign = client.post(
+        "/admin/users/assign-tenant",
+        data={
+            "identifier": "+919911223344",
+            "role": "supervisor",
+            "tenant_id": "malicious_attempt",  # Customer admin cannot override their own tenant
+            "cartridges": ["mail_organizer"],
+            "csrf_token": "test_csrf_token",
+        },
+    )
+    assert resp_assign.status_code == 303
+
+    # 4. Verify user was assigned to acme_corp (not malicious_attempt)
+    user_updated = identity_service.get_user_by_phone("+919911223344")
+    assert user_updated is not None
+    assert user_updated.tenant_id == "acme_corp"
+    assert user_updated.role == "supervisor"
+    assert "mail_organizer" in user_updated.allowed_cartridges
+
+
+def test_customer_admin_update_user_profile_and_boundary(test_app: FastAPI, identity_service: UserIdentityService) -> None:
+    """Verify customer admin can edit their own users, but cannot edit cross-tenant users."""
+    # Seed user for acme_corp and user for beta_corp
+    acme_user = identity_service.register_user(
+        phone_number="+918800112233",
+        full_name="Acme Worker",
+        role="user",
+        tenant_id="acme_corp",
+    )
+    beta_user = identity_service.register_user(
+        phone_number="+918800445566",
+        full_name="Beta Worker",
+        role="user",
+        tenant_id="beta_corp",
+    )
+
+    token = create_jwt_token(
+        principal_id="acme_admin",
+        roles=["admin"],
+        permitted_apps=["*"],
+        tenant_id="acme_corp",
+    )
+    client = TestClient(test_app, follow_redirects=False)
+    client.cookies.set("admin_token", token)
+    client.cookies.set("csrf_token", "test_csrf_token")
+
+    # 1. Update own user -> Success (303)
+    resp_update = client.post(
+        f"/admin/users/{acme_user.id}/update",
+        data={
+            "full_name": "Acme Lead Worker",
+            "role": "supervisor",
+            "timezone": "America/New_York",
+            "tenant_id": "other_corp",  # Customer admin cannot reassign tenant
+            "csrf_token": "test_csrf_token",
+        },
+    )
+    assert resp_update.status_code == 303
+
+    reloaded = identity_service.get_user_by_id(acme_user.id)
+    assert reloaded is not None
+    assert reloaded.full_name == "Acme Lead Worker"
+    assert reloaded.role == "supervisor"
+    assert reloaded.tenant_id == "acme_corp"  # Protected from unauthorized reassignment
+
+    # 2. Update cross-tenant user -> 403 Forbidden
+    resp_cross = client.post(
+        f"/admin/users/{beta_user.id}/update",
+        data={
+            "full_name": "Hostile Rename",
+            "role": "admin",
+            "csrf_token": "test_csrf_token",
+        },
+    )
+    assert resp_cross.status_code == 403
+

@@ -32,6 +32,7 @@ may access (SecurityContext.permitted_apps ∩ enabled_applications).
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote_plus
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
@@ -501,6 +502,19 @@ async def view_users(
     else:
         tenant_cartridges = installed_app_ids
 
+    all_tenants: List[Dict[str, str]] = []
+    if is_super:
+        try:
+            from sqlalchemy import select
+            from core_platform.app.db.manager import get_db_manager
+            from core_platform.app.identity.models import Tenant
+            db_mgr = get_db_manager()
+            with db_mgr.get_session() as session:
+                t_list = list(session.scalars(select(Tenant).order_by(Tenant.name)).all())
+                all_tenants = [{"id": t.id, "name": t.name} for t in t_list]
+        except Exception:
+            pass
+
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
         ctx=ctx,
@@ -519,6 +533,8 @@ async def view_users(
             "title": f"User Registry — {tenant_name}",
             "principal": ctx.principal_id,
             "is_admin": ctx.is_admin,
+            "is_super": is_super,
+            "all_tenants": all_tenants,
             "nav_apps": nav_apps,
             "users": users,
             "active_tenant": effective_tenant,
@@ -582,7 +598,9 @@ async def create_user(
     from core_platform.app.identity.service import get_user_identity_service
     user_service = get_user_identity_service()
     try:
-        user_service.register_user(
+        existing_check = user_service.get_user_by_phone(phone_number)
+        was_existing = existing_check is not None
+        reg_user = user_service.register_user(
             phone_number=phone_number,
             full_name=full_name,
             tenant_id=effective_tenant,
@@ -592,10 +610,174 @@ async def create_user(
             password=password,
             email=email,
         )
-        return RedirectResponse(url="/admin/users?message=User+registered+successfully", status_code=status.HTTP_303_SEE_OTHER)
+        if was_existing:
+            msg = f"User '{reg_user.full_name}' was already registered and has now been assigned to workspace '{effective_tenant}'."
+        else:
+            msg = "User registered successfully"
+        return RedirectResponse(url=f"/admin/users?message={quote_plus(msg)}", status_code=status.HTTP_303_SEE_OTHER)
     except Exception as exc:
         logger.error("[AdminShell] Failed to register user: %s", exc)
-        return RedirectResponse(url=f"/admin/users?error={exc}", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url=f"/admin/users?error={quote_plus(str(exc))}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/users/api/lookup", response_class=JSONResponse)
+async def lookup_user(
+    request: Request,
+    q: str,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> JSONResponse:
+    """Look up an existing user across the platform by phone, email, or ID."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required.")
+
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_identifier(q.strip())
+    if not user:
+        return JSONResponse(content={"found": False, "message": "User not found."})
+
+    return JSONResponse(
+        content={
+            "found": True,
+            "user": {
+                "id": user.id,
+                "phone_number": user.phone_number,
+                "full_name": user.full_name,
+                "tenant_id": user.tenant_id,
+                "role": user.role,
+                "status": user.status,
+                "timezone": user.timezone,
+                "allowed_cartridges": user.allowed_cartridges,
+            },
+        }
+    )
+
+
+@router.post("/users/assign-tenant")
+async def assign_user_tenant_action(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    identifier: str = Form(...),
+    tenant_id: Optional[str] = Form(None),
+    role: Optional[str] = Form(None),
+    cartridges: Optional[List[str]] = Form(None),
+    cartridge_mail: Optional[str] = Form(None),
+    cartridge_temp: Optional[str] = Form(None),
+    csrf_token: Optional[str] = Form(None),
+) -> Any:
+    """Assign an existing user to the active tenant workspace."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required.")
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF validation failed.")
+
+    from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+    eff_tenant, tenant_name, tenant_obj = resolve_effective_tenant_info(request, ctx)
+
+    is_super = ctx.principal_id in ("devops_admin", "master_admin", "system") or "super_admin" in ctx.user_roles or "devops_admin" in ctx.user_roles
+    target_tenant = tenant_id if (tenant_id and is_super) else eff_tenant
+
+    allowed: List[str] = []
+    if cartridges:
+        allowed.extend(cartridges)
+    if cartridge_mail and cartridge_mail not in allowed:
+        allowed.append(cartridge_mail)
+    if cartridge_temp and cartridge_temp not in allowed:
+        allowed.append(cartridge_temp)
+
+    # Scoping guard: restrict user cartridges strictly to tenant's allowed cartridges unless super-admin
+    if tenant_obj and hasattr(tenant_obj, "allowed_cartridges") and not is_super:
+        allowed = [c for c in allowed if c in tenant_obj.allowed_cartridges]
+    if not allowed and tenant_obj and hasattr(tenant_obj, "allowed_cartridges"):
+        allowed = list(tenant_obj.allowed_cartridges)
+
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_identifier(identifier.strip())
+    if not user:
+        return RedirectResponse(
+            url=f"/admin/users?error=User+with+identifier+'{quote_plus(identifier.strip())}'+not+found.+Please+verify+or+register+them.",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    updated_user = user_service.assign_user_to_tenant(
+        identifier=user.id,
+        tenant_id=target_tenant,
+        role=role or user.role,
+        allowed_cartridges=allowed if allowed else None,
+    )
+    if not updated_user:
+        return RedirectResponse(
+            url="/admin/users?error=Failed+to+assign+user+to+tenant.",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    msg = f"User '{updated_user.full_name}' ({updated_user.phone_number}) assigned to workspace '{target_tenant}' successfully."
+    return RedirectResponse(
+        url=f"/admin/users?message={quote_plus(msg)}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@router.post("/users/{user_id}/update")
+async def update_user_action(
+    user_id: str,
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    full_name: str = Form(...),
+    role: str = Form("user"),
+    tenant_id: Optional[str] = Form(None),
+    timezone: Optional[str] = Form(None),
+    cartridges: Optional[List[str]] = Form(None),
+    cartridge_mail: Optional[str] = Form(None),
+    cartridge_temp: Optional[str] = Form(None),
+    csrf_token: Optional[str] = Form(None),
+) -> Any:
+    """Update profile, role, cartridges, and tenant for an existing user."""
+    if not ctx.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required.")
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF validation failed.")
+
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
+    eff_tenant, tenant_name, tenant_obj = resolve_effective_tenant_info(request, ctx)
+
+    is_super = ctx.principal_id in ("devops_admin", "master_admin", "system") or "super_admin" in ctx.user_roles or "devops_admin" in ctx.user_roles
+
+    # Tenant boundary enforcement: Customer admin cannot edit users outside their tenant
+    if not is_super and user.tenant_id != eff_tenant:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized: User does not belong to your tenant context.")
+
+    # Only super admin can reassign tenant via edit modal
+    target_tenant = tenant_id if (tenant_id and is_super) else user.tenant_id
+
+    allowed: List[str] = []
+    if cartridges:
+        allowed.extend(cartridges)
+    if cartridge_mail and cartridge_mail not in allowed:
+        allowed.append(cartridge_mail)
+    if cartridge_temp and cartridge_temp not in allowed:
+        allowed.append(cartridge_temp)
+
+    # Scoping guard: restrict user cartridges strictly to tenant's allowed cartridges unless super-admin
+    if tenant_obj and hasattr(tenant_obj, "allowed_cartridges") and not is_super:
+        allowed = [c for c in allowed if c in tenant_obj.allowed_cartridges]
+
+    user_service.update_user(
+        user_id=user_id,
+        full_name=full_name,
+        role=role,
+        tenant_id=target_tenant,
+        allowed_cartridges=allowed,
+        timezone_str=timezone,
+    )
+    return RedirectResponse(url="/admin/users?message=User+updated+successfully", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/users/{user_id}/status")

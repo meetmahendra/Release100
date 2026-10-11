@@ -43,85 +43,179 @@
     </div>
   </div>
 
-  <!-- Registration Section -->
-  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
-    <h2 class="text-base font-semibold text-white mb-4 flex items-center gap-2">
-      <span>➕</span> {{ t('core.users.register_title') }}
-    </h2>
-    <form action="/admin/users" method="POST" autocomplete="off" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-      
-      <div>
-        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_phone') }}</label>
-        <input type="text" name="phone_number" placeholder="{{ t('core.users.ph_phone') }}" required autocomplete="off"
-               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
-      </div>
+  <!-- User Provisioning & Workspace Assignment Section -->
+  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg space-y-4">
+    <div class="flex items-center gap-2 border-b border-slate-700/60 pb-3">
+      <button type="button" id="tabRegisterBtn" onclick="switchUserTab('register')"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white transition-all shadow-md">
+        <span>➕</span> {{ t('core.users.tab_register') }}
+      </button>
+      <button type="button" id="tabAssignBtn" onclick="switchUserTab('assign')"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:text-white transition-all">
+        <span>🔗</span> {{ t('core.users.tab_assign') }}
+      </button>
+    </div>
 
-      <div>
-        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_name') }}</label>
-        <input type="text" name="full_name" placeholder="{{ t('core.users.ph_name') }}" required autocomplete="off"
-               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
-      </div>
-
-      <div>
-        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_tenant') }}</label>
-        <div class="flex items-center gap-2 px-3 py-2 bg-slate-950/60 border border-slate-700/80 rounded-lg text-slate-300 text-sm font-mono">
-          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span>{{ active_tenant or 'public' }}</span>
-          <span class="text-xs text-slate-500 ml-auto font-sans">{{ t('core.users.auto_scoped') }}</span>
+    <!-- Tab 1: Register New User -->
+    <div id="registerSection">
+      <form action="/admin/users" method="POST" autocomplete="off" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_phone') }}</label>
+          <input type="text" name="phone_number" placeholder="{{ t('core.users.ph_phone') }}" required autocomplete="off"
+                 class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
         </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_name') }}</label>
+          <input type="text" name="full_name" placeholder="{{ t('core.users.ph_name') }}" required autocomplete="off"
+                 class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_tenant') }}</label>
+          <div class="flex items-center gap-2 px-3 py-2 bg-slate-950/60 border border-slate-700/80 rounded-lg text-slate-300 text-sm font-mono">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>{{ active_tenant or 'public' }}</span>
+            <span class="text-xs text-slate-500 ml-auto font-sans">{{ t('core.users.auto_scoped') }}</span>
+          </div>
+          <input type="hidden" name="tenant_id" value="{{ active_tenant or 'public' }}" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_role') }}</label>
+          <select name="role" class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 outline-none">
+            <option value="user" selected>{{ t('core.users.role_user') }}</option>
+            <option value="supervisor">{{ t('core.users.role_supervisor') }}</option>
+            <option value="admin">{{ t('core.users.role_admin') }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_timezone') }}</label>
+          <input type="text" name="timezone" value="UTC" autocomplete="off"
+                 class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_password') }}</label>
+          <input type="password" name="password" placeholder="{{ t('core.users.ph_password') }}" autocomplete="new-password"
+                 class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_email') }}</label>
+          <input type="email" name="email" placeholder="{{ t('core.users.ph_email') }}" autocomplete="off"
+                 class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_cartridges') }}</label>
+          <div class="flex flex-wrap items-center gap-4 mt-2">
+            {% for app in available_cartridges %}
+            {% if app.id in tenant_cartridges or '*' in tenant_cartridges %}
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" name="cartridges" value="{{ app.id }}" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+              <span>📦 {{ app.label }}</span>
+            </label>
+            {% endif %}
+            {% else %}
+            <span class="text-xs text-slate-500 italic">{{ t('core.users.no_cartridges') }}</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="md:col-span-3 flex justify-end">
+          <button type="submit" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-sm text-white transition-colors shadow-lg shadow-emerald-600/20">
+            {{ t('core.users.submit_register') }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tab 2: Assign Existing User to Workspace -->
+    <div id="assignSection" class="hidden">
+      <form id="assignUserForm" action="/admin/users/assign-tenant" method="POST" autocomplete="off" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
         <input type="hidden" name="tenant_id" value="{{ active_tenant or 'public' }}" />
-      </div>
 
-      <div>
-        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_role') }}</label>
-        <select name="role" class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 outline-none">
-          <option value="user" selected>{{ t('core.users.role_user') }}</option>
-          <option value="supervisor">{{ t('core.users.role_supervisor') }}</option>
-          <option value="admin">{{ t('core.users.role_admin') }}</option>
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_timezone') }}</label>
-        <input type="text" name="timezone" value="UTC" autocomplete="off"
-               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
-      </div>
-
-      <div>
-        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_password') }}</label>
-        <input type="password" name="password" placeholder="{{ t('core.users.ph_password') }}" autocomplete="new-password"
-               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
-      </div>
-
-      <div>
-        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_email') }}</label>
-        <input type="email" name="email" placeholder="{{ t('core.users.ph_email') }}" autocomplete="off"
-               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-emerald-500 outline-none" />
-      </div>
-
-      <div>
-        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_cartridges') }}</label>
-        <div class="flex flex-wrap items-center gap-4 mt-2">
-          {% for app in available_cartridges %}
-          {% if app.id in tenant_cartridges or '*' in tenant_cartridges %}
-          <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
-            <input type="checkbox" name="cartridges" value="{{ app.id }}" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-            <span>📦 {{ app.label }}</span>
-          </label>
-          {% endif %}
-          {% else %}
-          <span class="text-xs text-slate-500 italic">{{ t('core.users.no_cartridges', 'No active domain cartridges installed.') }}</span>
-          {% endfor %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_assign_identifier') }}</label>
+            <div class="flex gap-2">
+              <input type="text" id="assignIdentifier" name="identifier" placeholder="{{ t('core.users.ph_assign_identifier') }}" required autocomplete="off"
+                     class="flex-1 bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-sky-500 outline-none" />
+              <button type="button" onclick="lookupExistingUser()" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-medium text-xs transition-colors shrink-0">
+                <span>🔍</span> {{ t('core.users.btn_lookup') }}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.assign_target_tenant') }}</label>
+            <div class="flex items-center gap-2 px-3 py-2 bg-slate-950/60 border border-slate-700/80 rounded-lg text-slate-300 text-sm font-mono">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>{{ active_tenant or 'public' }}</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="md:col-span-3 flex justify-end">
-        <button type="submit" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-sm text-white transition-colors shadow-lg shadow-emerald-600/20">
-          {{ t('core.users.submit_register') }}
-        </button>
-      </div>
-    </form>
+        <!-- Found User Preview Card -->
+        <div id="lookupResultCard" class="hidden bg-slate-900/80 border border-sky-500/40 rounded-xl p-4 space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+            <span>✓</span> {{ t('core.users.preview_title') }}
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <div>
+              <p class="text-slate-400">{{ t('core.users.assign_found_name') }}</p>
+              <p id="foundUserName" class="text-white font-semibold mt-0.5"></p>
+            </div>
+            <div>
+              <p class="text-slate-400">{{ t('core.users.assign_found_phone') }}</p>
+              <p id="foundUserPhone" class="font-mono text-slate-200 mt-0.5"></p>
+            </div>
+            <div>
+              <p class="text-slate-400">{{ t('core.users.assign_found_tenant') }}</p>
+              <p id="foundUserTenant" class="font-mono text-amber-300 mt-0.5"></p>
+            </div>
+            <div>
+              <p class="text-slate-400">{{ t('core.users.assign_found_status') }}</p>
+              <p id="foundUserStatus" class="font-semibold capitalize text-emerald-400 mt-0.5"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_role') }}</label>
+            <select id="assignRole" name="role" class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-sky-500 outline-none">
+              <option value="user" selected>{{ t('core.users.role_user') }}</option>
+              <option value="supervisor">{{ t('core.users.role_supervisor') }}</option>
+              <option value="admin">{{ t('core.users.role_admin') }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.field_cartridges') }}</label>
+            <div class="flex flex-wrap items-center gap-4 mt-2">
+              {% for app in available_cartridges %}
+              {% if app.id in tenant_cartridges or '*' in tenant_cartridges %}
+              <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                <input type="checkbox" name="cartridges" value="{{ app.id }}" checked class="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0">
+                <span>📦 {{ app.label }}</span>
+              </label>
+              {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button type="submit" class="px-5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 font-semibold text-sm text-white transition-colors shadow-lg shadow-sky-600/20">
+            {{ t('core.users.submit_assign') }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Users Table -->
@@ -197,6 +291,12 @@
                         class="px-2 py-1 rounded bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 border border-sky-500/40 font-semibold transition-colors">
                   {{ t('core.users.btn_link') }}
                 </button>
+                <!-- Edit User Button -->
+                <button type="button" onclick="openEditModal('{{ u.id }}', '{{ u.full_name|replace('\'', '\\\'') }}', '{{ u.phone_number }}', '{{ u.role }}', '{{ u.tenant_id }}', '{{ u.timezone }}', {{ u.allowed_cartridges|tojson }})"
+                        title="{{ t('core.users.btn_edit') }}"
+                        class="px-2 py-1 rounded bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-semibold transition-colors">
+                  <span>✏️</span> {{ t('core.users.btn_edit') }}
+                </button>
                 <!-- Toggle Status -->
                 <form action="/admin/users/{{ u.id }}/status" method="POST" class="inline">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
@@ -250,7 +350,176 @@
   </div>
 </div>
 
+<!-- Edit User Modal -->
+<div id="editModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+  <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-bold text-white flex items-center gap-2">
+        <span>✏️</span> {{ t('core.users.edit_title') }}
+      </h3>
+      <button onclick="closeEditModal()" class="text-slate-400 hover:text-white">✕</button>
+    </div>
+    <form id="editUserForm" action="" method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.edit_phone') }}</label>
+        <input type="text" id="editPhone" disabled
+               class="w-full bg-slate-950/60 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-slate-400 font-mono" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.edit_full_name') }}</label>
+        <input type="text" id="editFullName" name="full_name" required autocomplete="off"
+               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 outline-none" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.edit_role') }}</label>
+          <select id="editRole" name="role" class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 outline-none">
+            <option value="user">{{ t('core.users.role_user') }}</option>
+            <option value="supervisor">{{ t('core.users.role_supervisor') }}</option>
+            <option value="admin">{{ t('core.users.role_admin') }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.edit_tenant') }}</label>
+          {% if is_super and all_tenants %}
+          <select id="editTenantSelect" name="tenant_id" class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 outline-none font-mono">
+            {% for at in all_tenants %}
+            <option value="{{ at.id }}">{{ at.name }} ({{ at.id }})</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <div class="flex items-center gap-2 px-3 py-2 bg-slate-950/60 border border-slate-700/80 rounded-lg text-slate-300 text-sm font-mono">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="editTenantBadge"></span>
+          </div>
+          <input type="hidden" id="editTenantInput" name="tenant_id" value="" />
+          {% endif %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.edit_timezone') }}</label>
+        <input type="text" id="editTimezone" name="timezone" autocomplete="off"
+               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.edit_cartridges') }}</label>
+        <div class="flex flex-wrap items-center gap-4 mt-2">
+          {% for app in available_cartridges %}
+          {% if app.id in tenant_cartridges or '*' in tenant_cartridges %}
+          <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" name="cartridges" value="{{ app.id }}" id="edit_cartridge_{{ app.id }}" class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0 edit-cartridge-cb">
+            <span>📦 {{ app.label }}</span>
+          </label>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" onclick="closeEditModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm transition-colors">
+          {{ t('core.users.btn_cancel') }}
+        </button>
+        <button type="submit" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-semibold text-sm text-white transition-colors shadow-lg shadow-emerald-600/20">
+          {{ t('core.users.submit_update') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
+  function switchUserTab(tab) {
+    const regSection = document.getElementById('registerSection');
+    const assignSection = document.getElementById('assignSection');
+    const regBtn = document.getElementById('tabRegisterBtn');
+    const assignBtn = document.getElementById('tabAssignBtn');
+
+    if (tab === 'assign') {
+      regSection.classList.add('hidden');
+      assignSection.classList.remove('hidden');
+      assignBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 text-white transition-all shadow-md';
+      regBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:text-white transition-all';
+    } else {
+      assignSection.classList.add('hidden');
+      regSection.classList.remove('hidden');
+      regBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white transition-all shadow-md';
+      assignBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 text-slate-300 hover:text-white transition-all';
+    }
+  }
+
+  async function lookupExistingUser() {
+    const ident = document.getElementById('assignIdentifier').value.trim();
+    if (!ident) {
+      alert('{{ t("core.users.lookup_enter_prompt") }}');
+      return;
+    }
+    const card = document.getElementById('lookupResultCard');
+    try {
+      const resp = await fetch(`/admin/users/api/lookup?q=${encodeURIComponent(ident)}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.found && data.user) {
+          document.getElementById('foundUserName').innerText = data.user.full_name || '';
+          document.getElementById('foundUserPhone').innerText = data.user.phone_number || '';
+          document.getElementById('foundUserTenant').innerText = data.user.tenant_id || '';
+          document.getElementById('foundUserStatus').innerText = data.user.status || '';
+          if (data.user.role) {
+            document.getElementById('assignRole').value = data.user.role;
+          }
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+          alert('{{ t("core.users.lookup_not_found", identifier="") }}'.replace('{identifier}', ident));
+        }
+      } else {
+        alert('{{ t("core.users.msg_error_prefix") }}{{ t("core.users.msg_link_failed") }}');
+      }
+    } catch (err) {
+      alert('{{ t("core.users.msg_error_prefix") }}' + err);
+    }
+  }
+
+  function openEditModal(userId, fullName, phone, role, tenantId, timezone, allowedCartridges) {
+    const form = document.getElementById('editUserForm');
+    form.action = `/admin/users/${userId}/update`;
+    document.getElementById('editPhone').value = phone || '';
+    document.getElementById('editFullName').value = fullName || '';
+    document.getElementById('editRole').value = role || 'user';
+    document.getElementById('editTimezone').value = timezone || 'UTC';
+
+    const tenantSelect = document.getElementById('editTenantSelect');
+    if (tenantSelect) {
+      tenantSelect.value = tenantId;
+    }
+    const tenantBadge = document.getElementById('editTenantBadge');
+    if (tenantBadge) {
+      tenantBadge.innerText = tenantId || '';
+    }
+    const tenantInput = document.getElementById('editTenantInput');
+    if (tenantInput) {
+      tenantInput.value = tenantId || '';
+    }
+
+    const cbs = document.querySelectorAll('.edit-cartridge-cb');
+    const isAll = Array.isArray(allowedCartridges) && allowedCartridges.includes('*');
+    cbs.forEach(cb => {
+      cb.checked = isAll || (Array.isArray(allowedCartridges) && allowedCartridges.includes(cb.value));
+    });
+
+    document.getElementById('editModal').classList.remove('hidden');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+  }
+
   function filterTable() {
     const q = document.getElementById('tableSearch').value.toLowerCase();
     const rows = document.querySelectorAll('.user-row');
@@ -288,3 +557,4 @@
   }
 </script>
 {% endblock %}
+

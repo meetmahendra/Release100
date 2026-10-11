@@ -496,6 +496,140 @@ class UserIdentityService:
                 return user
         return None
 
+    def get_user_by_identifier(self, identifier: Union[int, str]) -> Optional[PlatformUser]:
+        """Look up user by ID, phone number, email, or username."""
+        clean_ident = str(identifier).strip()
+        if not clean_ident:
+            return None
+        if isinstance(identifier, int) or (clean_ident.isdigit() and len(clean_ident) < 7):
+            user = self.get_user_by_id(identifier)
+            if user:
+                return user
+        return self.get_user_by_phone(clean_ident)
+
+    def assign_user_to_tenant(
+        self,
+        identifier: Union[int, str],
+        tenant_id: str,
+        role: Optional[str] = None,
+        allowed_cartridges: Optional[List[str]] = None,
+    ) -> Optional[PlatformUser]:
+        """Assign an existing user to a target tenant workspace.
+
+        Args:
+            identifier: User ID, E.164 phone number, or email.
+            tenant_id: Target tenant partition slug.
+            role: Optional updated role (e.g. 'user', 'supervisor', 'admin').
+            allowed_cartridges: Optional updated list of cartridge IDs.
+
+        Returns:
+            Updated PlatformUser entity, or None if user not found.
+        """
+        clean_tenant = tenant_id.strip()
+        if not clean_tenant:
+            raise ValueError("Target tenant_id cannot be empty.")
+
+        with self._session_factory() as session:
+            user: Optional[PlatformUser] = None
+            clean_ident = str(identifier).strip()
+            if isinstance(identifier, int) or (clean_ident.isdigit() and len(clean_ident) < 7):
+                user = session.execute(
+                    select(PlatformUser).where(PlatformUser.id == int(identifier))
+                ).scalar_one_or_none()
+
+            if not user:
+                from core_platform.app.common.phone_validator import is_valid_phone_number
+                from sqlalchemy import or_
+
+                norm_phone = normalize_phone_number(clean_ident) if is_valid_phone_number(clean_ident) else None
+                conditions = [
+                    PlatformUser.phone_number == clean_ident,
+                    PlatformUser.email == clean_ident,
+                    PlatformUser.full_name == clean_ident,
+                ]
+                if norm_phone:
+                    conditions.append(PlatformUser.phone_number == norm_phone)
+                user = session.execute(select(PlatformUser).where(or_(*conditions))).scalars().first()
+
+            if not user:
+                return None
+
+            user.tenant_id = clean_tenant
+            if role and role.strip():
+                user.role = role.strip().lower()
+            if allowed_cartridges is not None:
+                clean_cartridges = [str(c).strip() for c in allowed_cartridges if str(c).strip()]
+                user.allowed_cartridges_json = json.dumps(clean_cartridges)
+            user.updated_at = datetime.now(dt_timezone.utc)
+            session.commit()
+            session.refresh(user)
+            logger.info(
+                "[IdentityService] Assigned user_id=%d phone=%s to tenant=%s",
+                user.id,
+                user.phone_number,
+                clean_tenant,
+            )
+            return user
+
+    def update_user(
+        self,
+        user_id: Union[int, str],
+        full_name: Optional[str] = None,
+        role: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        allowed_cartridges: Optional[List[str]] = None,
+        timezone_str: Optional[str] = None,
+        email: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> Optional[PlatformUser]:
+        """Update profile, role, tenant, and entitlements for an existing user.
+
+        Args:
+            user_id: User primary key ID.
+            full_name: Updated display name.
+            role: Updated role ('user', 'supervisor', 'admin').
+            tenant_id: Updated tenant partition (if reassigned).
+            allowed_cartridges: Updated cartridge permissions.
+            timezone_str: Local timezone identifier.
+            email: Updated email address.
+            status: Account status ('active', 'suspended', etc.).
+
+        Returns:
+            Updated PlatformUser entity, or None if user not found.
+        """
+        try:
+            clean_id = int(user_id)
+        except (ValueError, TypeError):
+            return None
+
+        with self._session_factory() as session:
+            stmt = select(PlatformUser).where(PlatformUser.id == clean_id)
+            user = session.execute(stmt).scalar_one_or_none()
+            if not user:
+                return None
+
+            if full_name is not None and full_name.strip():
+                user.full_name = full_name.strip()
+            if role is not None and role.strip():
+                user.role = role.strip().lower()
+            if tenant_id is not None and tenant_id.strip():
+                user.tenant_id = tenant_id.strip()
+            if allowed_cartridges is not None:
+                clean_cartridges = [str(c).strip() for c in allowed_cartridges if str(c).strip()]
+                user.allowed_cartridges_json = json.dumps(clean_cartridges)
+            if timezone_str is not None and timezone_str.strip():
+                user.timezone = timezone_str.strip()
+            if email is not None:
+                user.email = email.strip() if email.strip() else None
+            if status is not None and status.strip():
+                user.status = status.strip().lower()
+
+            user.updated_at = datetime.now(dt_timezone.utc)
+            session.commit()
+            session.refresh(user)
+            logger.info("[IdentityService] Updated user profile for user_id=%d", clean_id)
+            return user
+
     def delete_user(self, user_id: Union[int, str]) -> bool:
         """Remove a registered user by ID."""
         try:

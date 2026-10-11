@@ -14,4 +14,4 @@
 
 """Release100 Core Platform Package."""
 
-__version__ = "3.0.12"
+__version__ = "3.0.13"
