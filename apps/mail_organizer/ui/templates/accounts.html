@@ -24,6 +24,7 @@
       {% elif msg == 'config_updated' %}{{ t('apps.mail_organizer.accounts.msg_config_updated') }}
       {% elif msg == 'poll_now_success' %}{{ t('apps.mail_organizer.accounts.msg_poll_now_success') }}
       {% elif msg == 'poll_now_error' %}{{ t('apps.mail_organizer.accounts.msg_poll_now_error') }}
+      {% elif msg == 'user_not_connected' %}{{ t('apps.mail_organizer.accounts.msg_user_not_connected') }}
       {% elif msg == 'workspace_settings_saved' %}{{ t('apps.mail_organizer.accounts.msg_workspace_settings_saved') }}
       {% else %}{{ msg }}
       {% endif %}
@@ -35,21 +36,29 @@
   <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl flex items-center justify-center {% if ws_config.is_master_enabled %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30{% else %}bg-amber-500/20 text-amber-400 border border-amber-500/30{% endif %} text-2xl">
-          {% if ws_config.is_master_enabled %}⚡{% else %}⏸️{% endif %}
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center {% if not ws_config.is_master_enabled %}bg-amber-500/20 text-amber-400 border border-amber-500/30{% elif connected_accounts == 0 %}bg-amber-500/20 text-amber-400 border border-amber-500/30{% else %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30{% endif %} text-2xl">
+          {% if not ws_config.is_master_enabled %}⏸️{% elif connected_accounts == 0 %}⚠️{% else %}⚡{% endif %}
         </div>
         <div>
           <div class="flex items-center gap-2">
             <h2 class="text-base font-bold text-white">{{ t('apps.mail_organizer.accounts.master_state_title') }}</h2>
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {% if ws_config.is_master_enabled %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-amber-500/20 text-amber-300 border border-amber-500/30{% endif %}">
-              {% if ws_config.is_master_enabled %}{{ t('apps.mail_organizer.accounts.state_active') }}{% else %}{{ t('apps.mail_organizer.accounts.state_paused') }}{% endif %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {% if not ws_config.is_master_enabled %}bg-amber-500/20 text-amber-300 border border-amber-500/30{% elif connected_accounts == 0 %}bg-amber-500/20 text-amber-300 border border-amber-500/30{% else %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% endif %}">
+              {% if not ws_config.is_master_enabled %}
+                {{ t('apps.mail_organizer.accounts.state_paused') }}
+              {% elif connected_accounts == 0 %}
+                {{ t('apps.mail_organizer.accounts.state_active') }} ({{ t('apps.mail_organizer.accounts.state_setup_required') }})
+              {% else %}
+                {{ t('apps.mail_organizer.accounts.state_active') }} ({{ active_pollers }}/{{ total_accounts }})
+              {% endif %}
             </span>
           </div>
           <p class="text-xs text-slate-400 mt-1">
-            {% if ws_config.is_master_enabled %}
-            {{ t('apps.mail_organizer.accounts.desc_active') }}
-            {% else %}
+            {% if not ws_config.is_master_enabled %}
             {{ t('apps.mail_organizer.accounts.desc_paused', tenant=tenant_name or tenant_id) }}
+            {% elif connected_accounts == 0 %}
+            {{ t('apps.mail_organizer.accounts.desc_setup_required') }}
+            {% else %}
+            {{ t('apps.mail_organizer.accounts.desc_active') }}
             {% endif %}
           </p>
         </div>
@@ -72,12 +81,12 @@
         <span class="text-base font-bold text-white">{{ total_accounts }}</span>
       </div>
       <div class="bg-slate-900/60 rounded-lg p-2.5">
-        <span class="text-slate-400 block">{{ t('apps.mail_organizer.accounts.chip_actively_polling') }}</span>
-        <span class="text-base font-bold text-emerald-400">{{ active_pollers }}</span>
+        <span class="text-slate-400 block">{{ t('apps.mail_organizer.accounts.chip_connected_accounts') }}</span>
+        <span class="text-base font-bold {% if connected_accounts > 0 %}text-emerald-400{% else %}text-amber-400{% endif %}">{{ connected_accounts }}</span>
       </div>
       <div class="bg-slate-900/60 rounded-lg p-2.5">
-        <span class="text-slate-400 block">{{ t('apps.mail_organizer.accounts.chip_paused_accounts') }}</span>
-        <span class="text-base font-bold text-slate-400">{{ paused_pollers }}</span>
+        <span class="text-slate-400 block">{{ t('apps.mail_organizer.accounts.chip_actively_polling') }}</span>
+        <span class="text-base font-bold {% if active_pollers > 0 %}text-emerald-400{% else %}text-slate-400{% endif %}">{{ active_pollers }}</span>
       </div>
       <div class="bg-slate-900/60 rounded-lg p-2.5">
         <span class="text-slate-400 block">{{ t('apps.mail_organizer.accounts.chip_default_cadence') }}</span>
@@ -96,20 +105,31 @@
           <h2 class="text-sm font-bold text-white flex items-center gap-2">
             <span>🔑</span> {{ t('apps.mail_organizer.accounts.connection_status') }}
           </h2>
-          {% if oauth_status in ("ok", "token_present", "connected") %}
+          {% if current_user and current_user.has_oauth %}
           <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium border border-emerald-500/30">
             {{ t('apps.mail_organizer.accounts.badge_connected') }}
           </span>
-          {% elif oauth_status == "not_configured" %}
+          {% elif current_user and not current_user.has_oauth %}
+          <span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-medium border border-amber-500/30">
+            ⚠️ {{ t('apps.mail_organizer.accounts.badge_not_configured') }}
+          </span>
+          {% elif oauth_status in ("ok", "token_present", "connected") %}
+          <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium border border-emerald-500/30">
+            {{ t('apps.mail_organizer.accounts.badge_connected') }}
+          </span>
+          {% else %}
           <span class="px-2.5 py-1 rounded-full bg-slate-600/40 text-slate-400 text-xs font-medium">
             {{ t('apps.mail_organizer.accounts.badge_not_configured') }}
           </span>
-          {% else %}
-          <span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-medium border border-amber-500/30">
-            ⚠️ {{ oauth_status | replace('_', ' ') | title }}
-          </span>
           {% endif %}
         </div>
+
+        {% if current_user %}
+        <p class="text-xs text-slate-300 mb-1">
+          <span class="text-slate-400">{{ t('apps.mail_organizer.accounts.lbl_account') }}</span> <span class="font-semibold text-white">{{ current_user.full_name }}</span>
+          <span class="text-slate-400 font-mono">({{ current_user.email }})</span>
+        </p>
+        {% endif %}
 
         {% if oauth_email %}
         <p class="text-xs text-slate-300 mb-2">
@@ -118,19 +138,37 @@
         {% endif %}
 
         <p class="text-xs text-slate-400 leading-relaxed mb-4">
-          {{ t('apps.mail_organizer.accounts.reauth_description') }}
+          {% if current_user and current_user.is_member %}
+            {% if current_user.has_oauth %}
+            {{ t('apps.mail_organizer.accounts.reauth_description') }}
+            {% else %}
+            {{ t('apps.mail_organizer.accounts.desc_admin_member') }}
+            {% endif %}
+          {% else %}
+          {{ t('apps.mail_organizer.accounts.desc_admin_operator') }}
+          {% endif %}
         </p>
       </div>
 
       <div>
-        <a href="/admin/apps/mail-organizer/accounts/reauth"
-           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          {{ t('apps.mail_organizer.accounts.btn_reauth') }}
-        </a>
+        {% if current_user and current_user.is_member %}
+          {% if current_user.has_oauth %}
+          <a href="/admin/apps/mail-organizer/accounts/reauth?user_id={{ current_user.id }}"
+             class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors">
+            <span>🔄</span> {{ t('apps.mail_organizer.accounts.btn_reauth') }}
+          </a>
+          {% else %}
+          <a href="/admin/apps/mail-organizer/accounts/reauth?user_id={{ current_user.id }}"
+             class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors">
+            <span>🔗</span> {{ t('apps.mail_organizer.accounts.btn_connect_my_account') }}
+          </a>
+          {% endif %}
+        {% else %}
+          <a href="/admin/apps/mail-organizer/accounts/reauth"
+             class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors">
+            <span>🔄</span> {{ t('apps.mail_organizer.accounts.btn_reauth') }}
+          </a>
+        {% endif %}
       </div>
     </div>
 
@@ -203,9 +241,12 @@
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-medium border border-emerald-500/30">
                 {{ t('apps.mail_organizer.accounts.status_connected') }}
               </span>
+              {% if m.google_email %}
+              <span class="block text-[10px] text-slate-400 font-mono truncate max-w-[150px]" title="{{ m.google_email }}">{{ m.google_email }}</span>
+              {% endif %}
               {% else %}
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 text-[10px] font-medium">
-                {{ t('apps.mail_organizer.accounts.status_not_connected') }}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-medium border border-amber-500/30">
+                ⚠️ {{ t('apps.mail_organizer.accounts.status_not_connected') }}
               </span>
               {% endif %}
             </td>
@@ -213,15 +254,23 @@
             <!-- Poller State -->
             <td class="py-3 px-3">
               <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if m.is_poller_enabled and ws_config.is_master_enabled %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-slate-700/60 text-slate-400{% endif %}">
-                  {% if not ws_config.is_master_enabled %}
-                  {{ t('apps.mail_organizer.accounts.state_paused_workspace') }}
-                  {% elif m.is_poller_enabled %}
-                  {{ t('apps.mail_organizer.accounts.state_active') }}
-                  {% else %}
-                  {{ t('apps.mail_organizer.accounts.state_paused') }}
-                  {% endif %}
+                {% if not m.has_oauth %}
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  ⚠️ {{ t('apps.mail_organizer.accounts.state_needs_auth') }}
                 </span>
+                {% elif not ws_config.is_master_enabled %}
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700/60 text-slate-400">
+                  {{ t('apps.mail_organizer.accounts.state_paused_workspace') }}
+                </span>
+                {% elif m.is_poller_enabled %}
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  🟢 {{ t('apps.mail_organizer.accounts.state_active') }}
+                </span>
+                {% else %}
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700/60 text-slate-400">
+                  ⏸️ {{ t('apps.mail_organizer.accounts.state_paused') }}
+                </span>
+                {% endif %}
 
                 <form method="post" action="/admin/apps/mail-organizer/accounts/users/{{ m.id }}/toggle">
                   <button type="submit"
@@ -270,14 +319,39 @@
               {% endif %}
             </td>
 
-            <!-- Actions: Poll Now -->
+            <!-- Actions -->
             <td class="py-3 px-3 text-right">
-              <form method="post" action="/admin/apps/mail-organizer/accounts/users/{{ m.id }}/poll-now" class="inline-block">
-                <button type="submit"
-                        class="px-2.5 py-1 rounded bg-blue-600/80 hover:bg-blue-600 text-white text-[11px] font-semibold transition-colors flex items-center gap-1">
+              <div class="flex items-center justify-end gap-1.5 flex-wrap">
+                {% if m.has_oauth %}
+                <form method="post" action="/admin/apps/mail-organizer/accounts/users/{{ m.id }}/poll-now" class="inline-block">
+                  <button type="submit"
+                          class="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-semibold transition-colors flex items-center gap-1">
+                    <span>⚡</span> {{ t('apps.mail_organizer.accounts.btn_poll_now') }}
+                  </button>
+                </form>
+                <a href="/admin/apps/mail-organizer/accounts/reauth?user_id={{ m.id }}"
+                   class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-medium transition-colors"
+                   title="{{ t('apps.mail_organizer.accounts.btn_reconnect') }}">
+                  {{ t('apps.mail_organizer.accounts.btn_reconnect') }}
+                </a>
+                {% else %}
+                <a href="/admin/apps/mail-organizer/accounts/reauth?user_id={{ m.id }}"
+                   class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold transition-colors flex items-center gap-1">
+                  {{ t('apps.mail_organizer.accounts.btn_connect_google') }}
+                </a>
+                <button type="button"
+                        onclick="openMagicModal('{{ m.id }}', '{{ m.full_name }}')"
+                        class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-medium transition-colors"
+                        title="{{ t('apps.mail_organizer.accounts.btn_get_link') }}">
+                  {{ t('apps.mail_organizer.accounts.btn_get_link') }}
+                </button>
+                <button type="button" disabled
+                        class="px-2.5 py-1 rounded bg-slate-800 text-slate-500 text-[11px] font-semibold cursor-not-allowed flex items-center gap-1 border border-slate-700/40"
+                        title="{{ t('apps.mail_organizer.accounts.tooltip_connect_first') }}">
                   <span>⚡</span> {{ t('apps.mail_organizer.accounts.btn_poll_now') }}
                 </button>
-              </form>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% endfor %}
@@ -294,5 +368,60 @@
     {% endif %}
   </div>
 
+  <!-- Magic Link Modal -->
+  <div id="magicModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>🔗</span> {{ t('apps.mail_organizer.accounts.modal_magic_title') }}
+        </h3>
+        <button type="button" onclick="closeMagicModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+      <p class="text-xs text-slate-300 font-semibold" id="modalMemberName"></p>
+      <p class="text-xs text-slate-400">{{ t('apps.mail_organizer.accounts.modal_magic_desc') }}</p>
+      <div class="bg-slate-900 border border-slate-700 rounded-lg p-3 font-mono text-xs text-emerald-400 break-all select-all" id="magicLinkText"></div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="copyMagicLink()" id="copyBtn" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors">
+          {{ t('apps.mail_organizer.accounts.modal_magic_copy') }}
+        </button>
+        <a id="openLinkBtn" href="#" target="_blank" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors">
+          {{ t('apps.mail_organizer.accounts.modal_magic_open') }}
+        </a>
+        <button type="button" onclick="closeMagicModal()" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium transition-colors">
+          {{ t('apps.mail_organizer.accounts.modal_magic_close') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<script>
+  async function openMagicModal(userId, fullName) {
+    try {
+      const resp = await fetch(`/admin/apps/mail-organizer/accounts/users/${userId}/magic-link`);
+      if (resp.ok) {
+        const data = await resp.json();
+        document.getElementById('modalMemberName').innerText = `Member: ${fullName}`;
+        document.getElementById('magicLinkText').innerText = data.magic_link;
+        document.getElementById('openLinkBtn').href = data.magic_link;
+        document.getElementById('magicModal').classList.remove('hidden');
+      } else {
+        alert('Could not generate magic link.');
+      }
+    } catch (err) {
+      alert('Error: ' + err);
+    }
+  }
+  function closeMagicModal() {
+    document.getElementById('magicModal').classList.add('hidden');
+  }
+  function copyMagicLink() {
+    const txt = document.getElementById('magicLinkText').innerText;
+    navigator.clipboard.writeText(txt);
+    const btn = document.getElementById('copyBtn');
+    btn.innerText = '{{ t("apps.mail_organizer.accounts.modal_magic_copied") }}';
+    setTimeout(() => { btn.innerText = '{{ t("apps.mail_organizer.accounts.modal_magic_copy") }}'; }, 2000);
+  }
+</script>
 {% endblock %}

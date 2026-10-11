@@ -191,3 +191,75 @@ def test_workspace_settings_sync_interval_mutation(client: TestClient) -> None:
     res_get = client.get("/admin/apps/mail-organizer/accounts")
     assert res_get.status_code == 200
     assert 'value="600"' in res_get.text
+
+
+def test_user_poll_now_blocked_when_unauthenticated(client: TestClient) -> None:
+    """POST /accounts/users/{id}/poll-now returns 400 JSON or redirects if account is not linked."""
+    mock_unlinked_user = MagicMock()
+    mock_unlinked_user.id = 100
+    mock_unlinked_user.encrypted_oauth_tokens = None
+    mock_unlinked_user.full_name = "Unlinked User"
+
+    with patch("core_platform.app.identity.service.get_user_identity_service") as mock_uis:
+        mock_inst = MagicMock()
+        mock_inst.get_user_by_id.return_value = mock_unlinked_user
+        mock_uis.return_value = mock_inst
+
+        # JSON request
+        res_json = client.post(
+            "/admin/apps/mail-organizer/accounts/users/100/poll-now",
+            headers={"Accept": "application/json"},
+        )
+        assert res_json.status_code == 400
+        assert res_json.json()["success"] is False
+        assert "not connected" in res_json.json()["message"]
+
+        # HTML Form post redirects with error flash
+        res_redirect = client.post(
+            "/admin/apps/mail-organizer/accounts/users/100/poll-now",
+            follow_redirects=False,
+        )
+        assert res_redirect.status_code in (302, 303)
+        assert "user_not_connected" in res_redirect.headers["location"]
+
+
+def test_user_magic_link_endpoint(client: TestClient) -> None:
+    """GET /accounts/users/{id}/magic-link generates a valid ephemeral link."""
+    mock_user = MagicMock()
+    mock_user.id = 99
+    mock_user.full_name = "Mahendra Gurav"
+    mock_user.phone_number = "+919876543210"
+    mock_user.tenant_id = "default_tenant"
+
+    with patch("core_platform.app.identity.service.get_user_identity_service") as mock_uis:
+        mock_inst = MagicMock()
+        mock_inst.get_user_by_id.return_value = mock_user
+        mock_uis.return_value = mock_inst
+
+        res = client.get("/admin/apps/mail-organizer/accounts/users/99/magic-link")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert "/auth/google/connect?token=" in data["magic_link"]
+        assert data["user_id"] == 99
+
+
+def test_user_reauth_redirects_to_google_connect(client: TestClient) -> None:
+    """GET /accounts/reauth?user_id=99 redirects to the canonical Google connect flow."""
+    mock_user = MagicMock()
+    mock_user.id = 99
+    mock_user.phone_number = "+919876543210"
+    mock_user.tenant_id = "default_tenant"
+
+    with patch("core_platform.app.identity.service.get_user_identity_service") as mock_uis:
+        mock_inst = MagicMock()
+        mock_inst.get_user_by_id.return_value = mock_user
+        mock_uis.return_value = mock_inst
+
+        res = client.get(
+            "/admin/apps/mail-organizer/accounts/reauth?user_id=99",
+            follow_redirects=False,
+        )
+        assert res.status_code == 302
+        assert "/auth/google/connect?token=" in res.headers["location"]
+

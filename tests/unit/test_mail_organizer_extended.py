@@ -15,6 +15,7 @@
 """Extended unit tests to reach >= 80% branch & line code coverage."""
 
 import pytest
+from apps.mail_organizer import __version__
 from apps.mail_organizer.connectors.auth_manager import GoogleAuthManager
 from apps.mail_organizer.database.db_service import MailDatabaseService
 from apps.mail_organizer.graph.nodes.calendar_node import calendar_node
@@ -178,7 +179,7 @@ def test_plugin_manifest():
     plugin = MailOrganizerApplication()
     assert plugin.app_id == "mail_organizer"
     assert plugin.name == "AI Email & Calendar Organizer"
-    assert plugin.version == "1.0.0"
+    assert plugin.version == __version__
     wf = plugin.get_workflow()
     assert wf is not None
     tools = plugin.get_mcp_tools()

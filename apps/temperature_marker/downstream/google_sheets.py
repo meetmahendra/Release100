@@ -210,12 +210,13 @@ class GoogleSheetsConnector(BaseDownstreamConnector):
             try:
                 import google.oauth2.service_account as _sa
                 import google.auth.transport.requests as _tr
-                sa_creds = _sa.Credentials.from_service_account_file(  # type: ignore[no-untyped-call]
+                creds_cls: Any = getattr(_sa, "Credentials")
+                sa_creds = creds_cls.from_service_account_file(
                     str(cred_path),
                     scopes=["https://www.googleapis.com/auth/spreadsheets"],
                 )
                 sa_creds.refresh(_tr.Request())
-                self._access_token = sa_creds.token
+                self._access_token = str(sa_creds.token or "")
                 self._token_expiry = time.time() + 3600
                 return self._access_token
             except ImportError:

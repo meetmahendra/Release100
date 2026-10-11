@@ -124,14 +124,6 @@ STATUS 200
 </a>
 </li>
 <li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
-  Applications
-</li>
-<li>
-<a aria-current="page" class="block rounded-md px-# py-# text-sm bg-line text-ink font-semibold" href="/admin/apps/mail-organizer">
-  AI Email & Calendar Organizer
-</a>
-</li>
-<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
   Apex Industrial Temperature & Attendance Marker
 </li>
 <li>
@@ -152,6 +144,14 @@ STATUS 200
 <li>
 <a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/apps/temperature-marker/approvals">
   Operator Approvals
+</a>
+</li>
+<li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
+  Applications
+</li>
+<li>
+<a aria-current="page" class="block rounded-md px-# py-# text-sm bg-line text-ink font-semibold" href="/admin/apps/mail-organizer">
+  AI Email & Calendar Organizer
 </a>
 </li>
 <li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
@@ -286,20 +286,20 @@ STATUS 200
 <div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-lg">
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-#">
 <div class="flex items-center gap-#">
-<div class="w-# h-# rounded-xl flex items-center justify-center bg-emerald-#/# text-emerald-# border border-emerald-#/# text-#xl">
-  ⚡
+<div class="w-# h-# rounded-xl flex items-center justify-center bg-amber-#/# text-amber-# border border-amber-#/# text-#xl">
+  ⚠️
 </div>
 <div>
 <div class="flex items-center gap-#">
 <h2 class="text-base font-bold text-white">
   Workspace Poller Master State
 </h2>
-<span class="px-#.# py-#.# rounded-full text-xs font-semibold bg-emerald-#/# text-emerald-# border border-emerald-#/#">
-  ACTIVE
+<span class="px-#.# py-#.# rounded-full text-xs font-semibold bg-amber-#/# text-amber-# border border-amber-#/#">
+  ACTIVE (SETUP REQUIRED)
 </span>
 </div>
 <p class="text-xs text-slate-# mt-#">
-  Background ingestion worker is polling inboxes according to member schedules.
+  Master switch is ready, but no member accounts have connected their Google OAuth yet. Poller is waiting for member connections.
 </p>
 </div>
 </div>
@@ -322,15 +322,15 @@ STATUS 200
 </div>
 <div class="bg-slate-#/# rounded-lg p-#.#">
 <span class="text-slate-# block">
-  Actively Polling
+  Connected Accounts
 </span>
-<span class="text-base font-bold text-emerald-#">
+<span class="text-base font-bold text-amber-#">
   #
 </span>
 </div>
 <div class="bg-slate-#/# rounded-lg p-#.#">
 <span class="text-slate-# block">
-  Paused Accounts
+  Actively Polling
 </span>
 <span class="text-base font-bold text-slate-#">
   #
@@ -357,18 +357,29 @@ STATUS 200
   Connection Status
 </h2>
 <span class="px-#.# py-# rounded-full bg-amber-#/# text-amber-# text-xs font-medium border border-amber-#/#">
-  ⚠️ Expired
+  ⚠️ ⬛ Not Configured
 </span>
 </div>
+<p class="text-xs text-slate-# mb-#">
+<span class="text-slate-#">
+  Account:
+</span>
+<span class="font-semibold text-white">
+  Platform Administrator
+</span>
+<span class="text-slate-# font-mono">
+  (admin@release#.local)
+</span>
+</p>
 <p class="text-xs text-slate-# leading-relaxed mb-#">
-  Re-authorize your Google account to refresh the OAuth# token. This enables Gmail label application, draft creation, and Calendar free/busy lookups.
+  Mail Organizer operates on per-user Google OAuth. Each team member connects their own Gmail & Calendar via WhatsApp (send 'connect') or the direct connect buttons below.
 </p>
 </div>
 <div>
 <a class="inline-flex items-center gap-# px-# py-# rounded-lg bg-blue-# hover:bg-blue-# text-white text-xs font-semibold transition-colors" href="/admin/apps/mail-organizer/accounts/reauth">
-<svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
-<path d="M# #v#h.#m#.# #A#.# #.# # #.# #m# #H#m# #v-#h-.#m# #a#.# #.# # #-#.#-#m#.# #H#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
-</svg>
+<span>
+  🔄
+</span>
   Re-Authorize Google Account
 </a>
 </div>
@@ -424,7 +435,68 @@ STATUS 200
 </a>
 </div>
 </div>
+<div class="hidden fixed inset-# z-# flex items-center justify-center bg-black/# backdrop-blur-sm p-#" id="magicModal">
+<div class="bg-slate-# border border-slate-# rounded-xl p-# max-w-lg w-full space-y-# shadow-#xl">
+<div class="flex items-center justify-between">
+<h3 class="text-base font-bold text-white flex items-center gap-#">
+<span>
+  🔗
+</span>
+  Google OAuth Connection Link
+</h3>
+<button class="text-slate-# hover:text-white text-lg" onclick="closeMagicModal()" type="button">
+  ×
+</button>
 </div>
+<p class="text-xs text-slate-# font-semibold" id="modalMemberName">
+</p>
+<p class="text-xs text-slate-#">
+  Send this secure #-minute magic link to the member via WhatsApp or open it in a browser to authorize Gmail & Calendar access.
+</p>
+<div class="bg-slate-# border border-slate-# rounded-lg p-# font-mono text-xs text-emerald-# break-all select-all" id="magicLinkText">
+</div>
+<div class="flex justify-end gap-# pt-#">
+<button class="px-# py-#.# rounded-lg bg-emerald-# hover:bg-emerald-# text-white text-xs font-semibold transition-colors" id="copyBtn" onclick="copyMagicLink()" type="button">
+  Copy Link
+</button>
+<a class="px-# py-#.# rounded-lg bg-blue-# hover:bg-blue-# text-white text-xs font-semibold transition-colors" href="#" id="openLinkBtn" target="_blank">
+  Open in Browser
+</a>
+<button class="px-# py-#.# rounded-lg bg-slate-# hover:bg-slate-# text-slate-# text-xs font-medium transition-colors" onclick="closeMagicModal()" type="button">
+  Close
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  async function openMagicModal(userId, fullName) {
+  try {
+  const resp = await fetch(`/admin/apps/mail-organizer/accounts/users/${userId}/magic-link`);
+  if (resp.ok) {
+  const data = await resp.json();
+  document.getElementById('modalMemberName').innerText = `Member: ${fullName}`;
+  document.getElementById('magicLinkText').innerText = data.magic_link;
+  document.getElementById('openLinkBtn').href = data.magic_link;
+  document.getElementById('magicModal').classList.remove('hidden');
+  } else {
+  alert('Could not generate magic link.');
+  }
+  } catch (err) {
+  alert('Error: ' + err);
+  }
+  }
+  function closeMagicModal() {
+  document.getElementById('magicModal').classList.add('hidden');
+  }
+  function copyMagicLink() {
+  const txt = document.getElementById('magicLinkText').innerText;
+  navigator.clipboard.writeText(txt);
+  const btn = document.getElementById('copyBtn');
+  btn.innerText = 'Copied to Clipboard!';
+  setTimeout(() => { btn.innerText = 'Copy Link'; }, #);
+  }
+</script>
 </main>
 </div>
 </div>

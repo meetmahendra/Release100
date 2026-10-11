@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger("apps.mail_organizer.plugin")
 
+from apps.mail_organizer import __version__
 from apps.mail_organizer.connectors.calendar_connector import GoogleCalendarConnector
 from apps.mail_organizer.connectors.gmail_connector import GmailConnector
 from apps.mail_organizer.database.db_service import MailDatabaseService
@@ -63,7 +64,7 @@ class MailOrganizerApplication(BaseApplication):
 
     app_id: str = "mail_organizer"
     name: str = "AI Email & Calendar Organizer"
-    version: str = "1.0.7"
+    version: str = __version__
     description: str = "Email triage, meeting scheduling, and PM task extraction for executives."
     config_schema = MailOrganizerConfig
     required_roles: List[str] = ["manager", "executive", "admin"]

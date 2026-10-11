@@ -71,6 +71,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     py_exe = sys.executable
+    candidate_venvs = [
+        ROOT / ".venv" / "Scripts" / "python.exe",
+        ROOT / ".venv" / "bin" / "python",
+        Path("D:/Release100/.venv/Scripts/python.exe"),
+        ROOT.parent / ".venv" / "Scripts" / "python.exe",
+    ]
+    for cand in candidate_venvs:
+        if cand.is_file():
+            py_exe = str(cand)
+            break
     gates: List[GateSpec] = [
         GateSpec(
             name="[1/7] AST-GUARD",

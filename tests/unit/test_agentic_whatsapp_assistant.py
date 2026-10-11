@@ -387,3 +387,78 @@ async def test_explicit_help_command_renders_menu(
     assert "• *urgent*" in help_res
     assert "• *drafts*" in help_res
     assert "• *tasks*" in help_res
+
+
+@pytest.mark.asyncio
+async def test_poll_now_zero_false_success_when_unauthenticated(
+    whatsapp_handler: MailOrganizerWhatsAppHandler,
+    mock_admin_user: PlatformUser,
+) -> None:
+    """Verify 'poll now' NEVER returns false success when Google account is not connected (GEES v3.1)."""
+    # Unlinked user
+    unlinked_user = PlatformUser(
+        id=404,
+        phone_number="+15552001703",
+        full_name="New Team Member",
+        role="employee",
+        status="active",
+        tenant_id="tenant_gurav",
+        allowed_cartridges_json='["mail_organizer"]',
+        encrypted_oauth_tokens=None,  # No OAuth tokens
+    )
+
+    context: Dict[str, Any] = {
+        "sender_phone": unlinked_user.phone_number,
+        "user": unlinked_user,
+        "user_id": unlinked_user.id,
+        "tenant_id": unlinked_user.tenant_id,
+        "base_url": "http://localhost:8000",
+    }
+
+    # When poller manager returns error indicating no linked account
+    with patch("apps.mail_organizer.services.poller_manager.MailPollerManager.poll_user_now", new_callable=AsyncMock) as mock_poll:
+        mock_poll.return_value = {
+            "success": False,
+            "message": "User New Team Member has not linked a Google account.",
+        }
+        res = await whatsapp_handler.dispatch({"text": {"body": "poll now"}}, context)
+
+        assert mock_poll.called
+        # MUST NOT report success or "Inbox up to date"
+        assert "Inbox up to date" not in res
+        assert "On-Demand Inbox Sync Complete" not in res
+        # MUST guide user to connect Google account
+        assert "Google Account Not Connected" in res
+        assert "http://localhost:8000/auth/google/connect?token=" in res
+        assert "⏱️" in res
+
+
+@pytest.mark.asyncio
+async def test_poller_status_shows_setup_required_when_unauthenticated(
+    whatsapp_handler: MailOrganizerWhatsAppHandler,
+) -> None:
+    """Verify 'poller status' clearly indicates setup required when account is unlinked."""
+    unlinked_user = PlatformUser(
+        id=405,
+        phone_number="+15552001704",
+        full_name="Unauthenticated Member",
+        role="employee",
+        status="active",
+        tenant_id="fresh_tenant",
+        allowed_cartridges_json='["mail_organizer"]',
+        encrypted_oauth_tokens=None,
+    )
+
+    context: Dict[str, Any] = {
+        "sender_phone": unlinked_user.phone_number,
+        "user": unlinked_user,
+        "user_id": unlinked_user.id,
+        "tenant_id": unlinked_user.tenant_id,
+        "base_url": "http://localhost:8000",
+    }
+
+    res = await whatsapp_handler.dispatch({"text": {"body": "poller status"}}, context)
+    assert "Email Poller & Sync Status" in res
+    assert "*Your Personal Poller:* ⚠️ Not Connected (Setup Required)" in res
+    assert "Reply `connect` to receive your setup link" in res
+

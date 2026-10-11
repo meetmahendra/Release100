@@ -27,12 +27,14 @@ import numpy as np
 
 from core_platform.app.skills.base import BaseSkill
 
+import importlib
+cv2: Any = None
+_HAS_OPENCV: bool = False
 try:
-    import cv2
+    cv2 = importlib.import_module("cv2")
     _HAS_OPENCV = True
 except ImportError:
-    cv2 = None  # type: ignore[assignment]
-    _HAS_OPENCV = False
+    pass
 
 
 class ImageEnhancerSkill(BaseSkill):

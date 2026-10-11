@@ -50,6 +50,7 @@ from core_platform.app.auth.jwt_utils import create_jwt_token
 from core_platform.app.db.base import Base as IdentityBase
 from core_platform.app.db.manager import DatabaseManager
 from core_platform.app.identity.models import PlatformUser, Tenant, TenantDomain
+from core_platform.app.identity.service import UserIdentityService
 from core_platform.main import app
 
 
@@ -60,6 +61,7 @@ def gurav_family_env(tmp_path: Path) -> Generator[Tuple[TestClient, MailDatabase
     db_url = f"sqlite:///{db_file}"
 
     DatabaseManager.reset_instance()
+    UserIdentityService.reset_instance()
     db_mgr = DatabaseManager.get_instance(database_url=db_url)
     engine = db_mgr.get_engine()
     IdentityBase.metadata.create_all(bind=engine)
@@ -284,7 +286,11 @@ async def test_e2e_gurav_family_poller_and_agentic_lifecycle(
     # =========================================================================
     # STEP 5: On-Demand 1-Click Sync for Dipali
     # =========================================================================
-    with patch("apps.mail_organizer.services.poller_manager.MailPollerManager.poll_user_now", new_callable=AsyncMock) as mock_poll_now:
+    with patch("core_platform.app.identity.service.get_user_identity_service") as mock_uis, \
+         patch("apps.mail_organizer.services.poller_manager.MailPollerManager.poll_user_now", new_callable=AsyncMock) as mock_poll_now:
+        mock_uis_inst = MagicMock()
+        mock_uis_inst.get_user_by_id.side_effect = lambda uid: next((u for u in users if u.id == uid), None)
+        mock_uis.return_value = mock_uis_inst
         mock_poll_now.return_value = {"success": True, "emails_processed": 0}
         post_sync = client.post(
             "/admin/apps/mail-organizer/accounts/users/102/poll-now",

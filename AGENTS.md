@@ -27,7 +27,10 @@
   4. `test_e2e_cross_cartridge_synergy.py`: Kiosk anomaly $\rightarrow$ Kernel Event Bus $\rightarrow$ Mail Organizer briefing (zero cross-app concrete imports).
   5. `test_e2e_concurrent_multi_tenant_key_routing.py`: Simultaneous BYOK vs Platform requests $\rightarrow$ dynamic key resolution $\rightarrow$ expense liability isolation $\rightarrow$ zero key cross-talk.
   6. `test_e2e_clean_slate_boot_and_resilience.py`: Clean boot with 0 tenants/users/kiosks $\rightarrow$ zero unhandled 500s.
-* **Inviolable Pre-Flight Quality Gate:** No code proposal or commit may proceed without running `python scripts/verify_all.py --quality-gate` and achieving a 100% green pass report across all 7 automated gates.
+* **Inviolable Pre-Flight Quality Gate & 3-Tier Verification Policy:**
+  1. **Tier 1 (Targeted Iteration):** During active development, run only the new and impacted test files (`pytest <impacted_test_path>`) for instant 3-second feedback.
+  2. **Tier 2 (Fast Pre-Commit Staging Gate):** Run `python scripts/verify_all.py --fast` (validating AST boundaries, `mypy --strict`, UI localization strings, Node JS bundle compatibility, Zero-Secret scanner, and Version Bump Guard in ~15-20s). Full regression is explicitly bypassed here to prevent latency and context flooding.
+  3. **Tier 3 (Single Pre-Push Quality Gate):** The full regression suite (`python scripts/verify_all.py --quality-gate` covering all 7 gates including the 900+ test regression suite) is executed **EXACTLY ONCE** prior to remote push. Never execute the full 900+ test suite multiple times in intermediate loops.
 
 ## 4. Dual-Engine Verification Regime
 * **Engine A (Fast Synthetic Suite):** Every component must have `pytest` unit tests with mocked boundaries, **>= 80% line/branch code coverage**, zero type errors under `mypy --strict`, verified architectural AST boundaries, and automated **Packaging & Manifest Integrity Verification** (`test_packaging_manifest_integrity.py`).

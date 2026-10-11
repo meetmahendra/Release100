@@ -109,11 +109,17 @@ class MailOrganizerWhatsAppHandler:
 
         # 1. Immediate On-Demand Poller Sync
         if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["poll now", "sync now", "poll_now", "sync_now", "check inbox", "check mail", "refresh mail", "fetch mail"]):
-            return await self._handle_poll_now(tenant_id=tenant_id, user_id=user_id_int)
+            return await self._handle_poll_now(
+                tenant_id=tenant_id,
+                user_id=user_id_int,
+                user=user,
+                sender_phone=sender_phone,
+                base_url=base_url,
+            )
 
         # 2. Poller Status & Cadence Inquiries
         if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["poller status", "sync status", "poller cadence", "sync cadence"]):
-            return self._handle_poller_status(tenant_id=tenant_id, user_id=user_id_int)
+            return self._handle_poller_status(tenant_id=tenant_id, user_id=user_id_int, user=user)
 
         # 3. Poller Pause / Resume Controls
         if any(cmd_lower == c or cmd_lower.startswith(c + " ") for c in ["pause poller", "stop poller", "pause sync", "stop sync"]):
@@ -327,32 +333,65 @@ class MailOrganizerWhatsAppHandler:
             f"🔗 Full Dashboard: {base_url}/admin/apps/mail-organizer/dashboard"
         )
 
-    def _handle_poller_status(self, tenant_id: str, user_id: Optional[int]) -> str:
-        """Build detailed poller and cadence status card."""
+    def _handle_poller_status(
+        self,
+        tenant_id: str,
+        user_id: Optional[int],
+        user: Optional[Any] = None,
+    ) -> str:
+        """Build detailed poller and cadence status card with accurate connection state."""
         ws_config = self.db_service.get_workspace_poller_config(tenant_id)
         user_config = self.db_service.get_user_poller_config(user_id, tenant_id) if user_id is not None else None
 
-        ws_status = "🟢 Active" if ws_config.is_master_enabled else "⏸️ Paused"
-        if user_config:
+        from core_platform.app.identity.service import get_user_identity_service
+        user_service = get_user_identity_service()
+
+        resolved_user = user
+        if resolved_user is None and user_id is not None:
+            resolved_user = user_service.get_user_by_id(user_id)
+
+        has_oauth = bool(getattr(resolved_user, "encrypted_oauth_tokens", None)) if resolved_user else False
+
+        # Member accounts in tenant
+        lookup_tenant = None if tenant_id in ("platform", "*") else tenant_id
+        all_users = user_service.list_users(tenant_id=lookup_tenant)
+        tenant_users = [u for u in all_users if "mail_organizer" in getattr(u, "allowed_cartridges", [])]
+        total_members = len(tenant_users)
+        connected_members = sum(1 for u in tenant_users if bool(getattr(u, "encrypted_oauth_tokens", None)))
+
+        if total_members == 0 and resolved_user:
+            total_members = 1
+        if connected_members == 0 and has_oauth:
+            connected_members = 1
+
+        if not ws_config.is_master_enabled:
+            ws_status = "⏸️ Paused"
+        elif connected_members == 0:
+            ws_status = "⚠️ Ready (0 Connected Accounts — Setup Required)"
+        else:
+            ws_status = f"🟢 Active ({connected_members} of {total_members} Connected)"
+
+        if not has_oauth:
+            user_status = "⚠️ Not Connected (Setup Required)"
+        elif user_config:
             user_status = "🟢 Active" if user_config.is_poller_enabled else "⏸️ Paused"
-            interval_m = user_config.poll_interval_seconds // 60
-            window = user_config.active_window or "24x7"
-            last_poll = (
-                user_config.last_polled_at.strftime("%Y-%m-%d %H:%M UTC")
-                if user_config.last_polled_at
-                else "Never"
-            )
-            cycles = user_config.total_cycles
-            emails = user_config.total_emails_fetched
-            err_note = f"\n⚠️ *Last Error:* {user_config.last_error}" if user_config.last_error else ""
         else:
             user_status = "🟢 Active (Default)"
-            interval_m = ws_config.default_poll_interval_seconds // 60
-            window = "24x7"
-            last_poll = "Never"
-            cycles = 0
-            emails = 0
-            err_note = ""
+
+        interval_m = (user_config.poll_interval_seconds if user_config else ws_config.default_poll_interval_seconds) // 60
+        window = (user_config.active_window if user_config else "24x7") or "24x7"
+        last_poll = (
+            user_config.last_polled_at.strftime("%Y-%m-%d %H:%M UTC")
+            if (user_config and user_config.last_polled_at)
+            else "Never"
+        )
+        cycles = user_config.total_cycles if user_config else 0
+        emails = user_config.total_emails_fetched if user_config else 0
+        err_note = f"\n⚠️ *Last Error:* {user_config.last_error}" if (user_config and user_config.last_error) else ""
+
+        action_hint = ""
+        if not has_oauth:
+            action_hint = "\n\n👉 *Action Required:* Your Google account is not connected yet. Reply `connect` to receive your setup link."
 
         return (
             "🔄 *Email Poller & Sync Status*\n\n"
@@ -363,27 +402,74 @@ class MailOrganizerWhatsAppHandler:
             f"• *Last Checked:* {last_poll}\n"
             f"• *Total Sync Cycles:* {cycles}\n"
             f"• *Total Emails Processed:* {emails}"
-            f"{err_note}\n\n"
+            f"{err_note}{action_hint}\n\n"
             "💡 _Commands:_\n"
             "• `poll now` — Trigger immediate inbox sync\n"
             "• `pause poller` — Pause automatic background checks\n"
             "• `resume poller` — Resume background checks"
         )
 
-    async def _handle_poll_now(self, tenant_id: str, user_id: Optional[int]) -> str:
-        """Trigger on-demand manual sync for the user's Gmail inbox."""
+    async def _handle_poll_now(
+        self,
+        tenant_id: str,
+        user_id: Optional[int],
+        user: Optional[Any] = None,
+        sender_phone: Optional[str] = None,
+        base_url: Optional[str] = None,
+    ) -> str:
+        """Trigger on-demand manual sync for the user's Gmail inbox with Zero False Success enforcement."""
         if user_id is None:
             return "🔒 User identity not identified. Please re-authenticate via `connect`."
 
         from apps.mail_organizer.services.poller_manager import MailPollerManager
         mgr = MailPollerManager.get_instance()
         poll_res = await mgr.poll_user_now(user_id=user_id, tenant_id=tenant_id)
+
+        # Check for failure / unauthenticated state (Zero False Success - GEES v3.1)
+        if isinstance(poll_res, dict) and not poll_res.get("success", True):
+            msg = str(poll_res.get("message", ""))
+            # Detect unlinked Google account
+            if "not linked a Google account" in msg or "no valid oauth" in msg.lower():
+                magic_url = ""
+                phone_num = sender_phone or getattr(user, "phone_number", None)
+                if phone_num and base_url:
+                    try:
+                        from core_platform.app.identity.magic_link import build_magic_link_url
+                        magic_url = build_magic_link_url(
+                            user_id=str(user_id),
+                            phone_number=phone_num,
+                            tenant_id=tenant_id,
+                            base_url=base_url,
+                        )
+                    except Exception as err:
+                        logger.warning("[WhatsApp] Could not generate magic link: %s", err)
+
+                link_text = (
+                    f"\n\n👉 Click the link below to authorize Gmail & Calendar access:\n{magic_url}\n\n⏱️ _This secure link is valid for 15 minutes._\n\nOnce connected, reply `poll now` to start syncing!"
+                    if magic_url
+                    else "\n\n👉 Reply `connect` to receive a secure link to authorize your Google account."
+                )
+                return (
+                    "⚠️ *Google Account Not Connected*\n\n"
+                    f"Your account is not connected to Gmail yet, so your inbox cannot be synced.{link_text}"
+                )
+
+            # Other error failure
+            return (
+                "⚠️ *Inbox Sync Incomplete*\n\n"
+                f"• *Target User:* `{user_id}`\n"
+                "• *Status:* 🔴 Could not complete sync\n"
+                f"• *Detail:* {msg}\n\n"
+                "Please verify your Google connection or reply `connect` to re-authorize."
+            )
+
         if isinstance(poll_res, dict):
             count = int(poll_res.get("emails_processed", 0))
         elif isinstance(poll_res, int):
             count = poll_res
         else:
             count = 0
+
         return (
             "⚡ *On-Demand Inbox Sync Complete!*\n\n"
             f"• *Target User:* `{user_id}`\n"
@@ -421,6 +507,15 @@ class MailOrganizerWhatsAppHandler:
             active_window=window,
             tenant_id=tenant_id,
         )
+        has_oauth = bool(getattr(user, "encrypted_oauth_tokens", None)) if user else False
+
+        if enable and not has_oauth:
+            return (
+                "🔄 *Poller Status Updated*\n\n"
+                "Your personal email poller has been resumed, but your Google account is *not connected yet* ⚠️.\n\n"
+                "👉 Reply `connect` to link your Gmail account so background checks can run."
+            )
+
         state_str = "resumed and active 🟢" if enable else "paused ⏸️"
         return (
             "🔄 *Poller Status Updated*\n\n"

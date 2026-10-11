@@ -375,30 +375,12 @@ async def view_accounts(
     tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
     effective_tenant = tenant_id or "default"
 
-    oauth_status: str = "not_configured"
-    oauth_email: str = ""
-
-    try:
-        from apps.mail_organizer.connectors.gmail_connector import GmailConnector
-        connector = GmailConnector()
-        if hasattr(connector, "get_oauth_status"):
-            status_info = connector.get_oauth_status()
-            oauth_status = status_info.get("status", "unknown")
-            oauth_email = status_info.get("email", "")
-        else:
-            from pathlib import Path as _Path
-            import os as _os
-            token_path = _os.environ.get("GMAIL_TOKEN_PATH", "config/gmail_token.json")
-            if _Path(token_path).exists():
-                oauth_status = "token_present"
-    except Exception:
-        oauth_status = "connector_error"
-
     # Workspace poller configuration
     ws_config = _db_service.get_workspace_poller_config(tenant_id=effective_tenant)
 
     # Members roster for tenant
     members: List[Dict[str, Any]] = []
+    current_user_info: Optional[Dict[str, Any]] = None
     try:
         from core_platform.app.identity.service import get_user_identity_service
         user_service = get_user_identity_service()
@@ -421,6 +403,7 @@ async def view_accounts(
                 "full_name": u.full_name,
                 "email": u.email or u.google_email or f"user_{u.id}@tenant.local",
                 "phone_number": u.phone_number,
+                "google_email": getattr(u, "google_email", "") or "",
                 "role": u.role,
                 "status": u.status,
                 "has_oauth": has_oauth,
@@ -433,12 +416,58 @@ async def view_accounts(
                 "total_emails_fetched": cfg.total_emails_fetched if cfg else 0,
                 "last_error": cfg.last_error if cfg else None,
             })
+
+        if ctx and ctx.principal_id:
+            curr_obj = user_service.get_user_by_identifier(ctx.principal_id)
+            if curr_obj:
+                has_curr_oauth = bool(getattr(curr_obj, "encrypted_oauth_tokens", None))
+                current_user_info = {
+                    "id": curr_obj.id,
+                    "full_name": curr_obj.full_name,
+                    "email": curr_obj.email or curr_obj.google_email,
+                    "google_email": getattr(curr_obj, "google_email", "") or "",
+                    "has_oauth": has_curr_oauth,
+                    "is_member": any(m["id"] == curr_obj.id for m in members),
+                }
     except Exception as exc:
         logger.warning("[Routes] Failed to load tenant user list: %s", exc)
 
     total_accounts = len(members)
-    active_pollers = sum(1 for m in members if m["is_poller_enabled"] and ws_config.is_master_enabled)
-    paused_pollers = total_accounts - active_pollers
+    connected_accounts = sum(1 for m in members if m["has_oauth"])
+    active_pollers = sum(1 for m in members if m["is_poller_enabled"] and ws_config.is_master_enabled and m["has_oauth"])
+    paused_pollers = sum(1 for m in members if not m["is_poller_enabled"] or not ws_config.is_master_enabled)
+    setup_required_accounts = total_accounts - connected_accounts
+
+    if not ws_config.is_master_enabled:
+        master_state = "paused"
+    elif connected_accounts == 0:
+        master_state = "setup_required"
+    else:
+        master_state = "active"
+
+    # Default top card OAuth status from current user or connector fallback
+    oauth_status: str = "not_configured"
+    oauth_email: str = ""
+    if current_user_info:
+        if current_user_info["has_oauth"]:
+            oauth_status = "connected"
+            oauth_email = current_user_info["google_email"] or current_user_info["email"] or ""
+    else:
+        try:
+            from apps.mail_organizer.connectors.gmail_connector import GmailConnector
+            connector = GmailConnector()
+            if hasattr(connector, "get_oauth_status"):
+                status_info = connector.get_oauth_status()
+                oauth_status = status_info.get("status", "unknown")
+                oauth_email = status_info.get("email", "")
+            else:
+                from pathlib import Path as _Path
+                import os as _os
+                token_path = _os.environ.get("GMAIL_TOKEN_PATH", "config/gmail_token.json")
+                if _Path(token_path).exists():
+                    oauth_status = "token_present"
+        except Exception:
+            oauth_status = "connector_error"
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
@@ -465,12 +494,16 @@ async def view_accounts(
             "active_tenant": active_tenant,
             "oauth_status": oauth_status,
             "oauth_email": oauth_email,
+            "current_user": current_user_info,
             "sync_interval": ws_config.default_poll_interval_seconds,
             "ws_config": ws_config,
+            "master_state": master_state,
             "members": members,
             "total_accounts": total_accounts,
+            "connected_accounts": connected_accounts,
             "active_pollers": active_pollers,
             "paused_pollers": paused_pollers,
+            "setup_required_accounts": setup_required_accounts,
             "msg": msg,
             "ui": ui_ctx,
         },
@@ -554,9 +587,17 @@ async def update_user_poller_config(user_id: int, request: Request) -> Response:
 
 @router.post("/accounts/users/{user_id}/poll-now", dependencies=[Depends(require_action("mail:account:connect"))])
 async def trigger_user_poll_now(user_id: int, request: Request) -> Response:
-    """Trigger an on-demand manual poll for a specific user."""
+    """Trigger an on-demand manual poll for a specific user with unauthenticated gate."""
     tenant_id, _, _ = resolve_effective_tenant_info(request)
     effective_tenant = tenant_id or "default"
+
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_id(user_id)
+    if not user or not user.encrypted_oauth_tokens:
+        if request.headers.get("accept", "").startswith("application/json"):
+            return JSONResponse({"success": False, "message": "User has not connected a Google account."}, status_code=400)
+        return RedirectResponse(url="/admin/apps/mail-organizer/accounts?msg=user_not_connected", status_code=303)
 
     from apps.mail_organizer.services.poller_manager import MailPollerManager
     mgr = MailPollerManager.get_instance()
@@ -566,6 +607,40 @@ async def trigger_user_poll_now(user_id: int, request: Request) -> Response:
         return JSONResponse(result)
     msg_param = "poll_now_success" if result.get("success") else "poll_now_error"
     return RedirectResponse(url=f"/admin/apps/mail-organizer/accounts?msg={msg_param}", status_code=303)
+
+
+@router.get("/accounts/users/{user_id}/magic-link", dependencies=[Depends(require_action("mail:account:connect"))])
+async def get_user_accounts_magic_link(
+    user_id: int,
+    request: Request,
+) -> JSONResponse:
+    """Generate ephemeral magic link URL for a member in mail_organizer accounts view."""
+    from core_platform.app.identity.service import get_user_identity_service
+    from core_platform.app.identity.magic_link import build_magic_link_url
+
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    base_url = (
+        settings.ORCHESTRATOR_BASE_URL
+        if settings.ORCHESTRATOR_BASE_URL
+        else str(request.base_url).rstrip("/")
+    )
+    link = build_magic_link_url(
+        user_id=str(user.id),
+        phone_number=user.phone_number,
+        tenant_id=user.tenant_id,
+        base_url=base_url,
+    )
+    return JSONResponse(content={
+        "success": True,
+        "magic_link": link,
+        "user_id": user.id,
+        "full_name": user.full_name,
+        "phone_number": user.phone_number,
+    })
 
 
 @router.post("/accounts/settings", dependencies=[Depends(require_action("mail:account:connect"))])
@@ -590,8 +665,32 @@ async def save_accounts_settings(request: Request) -> RedirectResponse:
 
 
 @router.get("/accounts/reauth", dependencies=[Depends(require_action("mail:account:connect"))])
-async def initiate_reauth(request: Request) -> RedirectResponse:
-    """Initiate Google OAuth2 re-authorisation flow by redirecting to Google's consent screen."""
+async def initiate_reauth(
+    request: Request,
+    user_id: Optional[int] = None,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> RedirectResponse:
+    """Initiate Google OAuth2 flow for an individual member or current admin user."""
+    from core_platform.app.identity.service import get_user_identity_service
+    from core_platform.app.identity.magic_link import generate_magic_link_token
+
+    user_service = get_user_identity_service()
+    target_user = None
+    if user_id is not None:
+        target_user = user_service.get_user_by_id(user_id)
+    elif ctx and ctx.principal_id:
+        target_user = user_service.get_user_by_identifier(ctx.principal_id)
+
+    if target_user:
+        token = generate_magic_link_token(
+            user_id=str(target_user.id),
+            phone_number=target_user.phone_number,
+            tenant_id=target_user.tenant_id,
+            expiry_minutes=15,
+        )
+        return RedirectResponse(url=f"/auth/google/connect?token={token}", status_code=302)
+
+    # Fallback to connector if no target user found
     try:
         from apps.mail_organizer.connectors.gmail_connector import GmailConnector
         connector = GmailConnector()

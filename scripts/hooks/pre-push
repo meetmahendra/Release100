@@ -23,6 +23,10 @@ echo "==========================================================================
 # Find Python interpreter (.venv or sys)
 if [ -f ".venv/Scripts/python.exe" ]; then
     PYTHON_EXE=".venv/Scripts/python.exe"
+elif [ -f "D:/Release100/.venv/Scripts/python.exe" ]; then
+    PYTHON_EXE="D:/Release100/.venv/Scripts/python.exe"
+elif [ -f "../.venv/Scripts/python.exe" ]; then
+    PYTHON_EXE="../.venv/Scripts/python.exe"
 elif [ -f ".venv/bin/python" ]; then
     PYTHON_EXE=".venv/bin/python"
 else
