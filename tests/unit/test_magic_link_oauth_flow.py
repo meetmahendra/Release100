@@ -261,3 +261,36 @@ class TestPerUserTokenLifecycle:
         assert user is not None
         token = get_user_access_token(user)
         assert token == "ya29.valid_token_active"
+
+    @pytest.mark.asyncio
+    async def test_connector_honors_access_token_override(self) -> None:
+        from apps.mail_organizer.connectors.gmail_connector import GmailConnector
+        from unittest.mock import patch
+
+        connector = GmailConnector(access_token_override="synthetic_test_token_12345")
+        assert connector.is_authenticated is True
+        assert connector.mock_mode is False
+
+        # Verify live fetch is attempted rather than returning empty mock threads
+        with patch.object(connector, "_api_request") as mock_api:
+            mock_api.side_effect = [
+                {"messages": [{"id": "MSG-999", "threadId": "TH-999"}]},
+                {
+                    "id": "MSG-999",
+                    "threadId": "TH-999",
+                    "payload": {
+                        "headers": [
+                            {"name": "Subject", "value": "Test Subject"},
+                            {"name": "From", "value": "sender@domain.com"},
+                            {"name": "To", "value": "recipient@domain.com"},
+                        ],
+                        "body": {"data": ""},
+                    },
+                    "snippet": "Test snippet",
+                },
+            ]
+            threads = await connector.fetch_unread_threads(max_results=5)
+            assert len(threads) == 1
+            assert threads[0]["gmail_id"] == "MSG-999"
+            assert threads[0]["subject"] == "Test Subject"
+

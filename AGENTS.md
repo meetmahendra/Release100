@@ -66,4 +66,8 @@
 * **Automated Packaging Verification:** Every new template, asset, or dependency must be declared in `pyproject.toml` and verified via `MANIFEST-GUARD` before push.
 * **Automated Sandbox Index Generation:** All pushes to `intent-router` and `main` automatically publish PEP 503 package wheels to GitHub Pages for instant sandbox installation.
 
+## 12. Model Reasoning & Thinking Configuration
+* **Mandatory Flash (High) Thinking Level:** All development, bug fixing, deep analysis, and code generation tasks must strictly use the Gemini Flash (High Thinking) model configuration. Never downgrade thinking levels during development.
+
+
 

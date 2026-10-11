@@ -214,9 +214,14 @@ class GmailConnector:
                         return json.loads(content2) if content2 else {}
             raise
 
+    @property
+    def is_authenticated(self) -> bool:
+        """Return True if connector has an access token override or authenticated auth manager."""
+        return bool(self.access_token_override) or self.auth_manager.is_authenticated()
+
     async def fetch_unread_threads(self, max_results: int = 25) -> List[Dict[str, Any]]:
         """Retrieve unread email messages. Runs non-blocking via asyncio.to_thread."""
-        if self.mock_mode or not self.auth_manager.is_authenticated():
+        if self.mock_mode or not self.is_authenticated:
             return list(self._mock_threads[:max_results])
 
         try:
@@ -274,7 +279,7 @@ class GmailConnector:
         # Zero-Deletion check: Never allow TRASH or SPAM deletions
         sanitized_adds = [l for l in add_labels if l.upper() not in ("TRASH", "SPAM_DELETE")]
 
-        if self.mock_mode or not self.auth_manager.is_authenticated():
+        if self.mock_mode or not self.is_authenticated:
             current = self._mock_labels_applied.get(gmail_id, [])
             current.extend(sanitized_adds)
             self._mock_labels_applied[gmail_id] = list(set(current))
@@ -352,7 +357,7 @@ class GmailConnector:
             "status": "STAGED",
         }
 
-        if self.mock_mode or not self.auth_manager.is_authenticated():
+        if self.mock_mode or not self.is_authenticated:
             self._mock_drafts.append(draft_payload)
             return draft_payload
 
@@ -424,7 +429,7 @@ class GmailConnector:
             "thread_id": thread_id,
             "status": "SENT",
         }
-        if self.mock_mode or not (self.access_token_override or self.auth_manager.is_authenticated()):
+        if self.mock_mode or not self.is_authenticated:
             return payload
 
         try:

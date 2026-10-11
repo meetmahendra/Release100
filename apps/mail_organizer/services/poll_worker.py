@@ -381,20 +381,25 @@ class MailPollWorker:
             }
 
             try:
-                if user is not None:
-                    u_ctx = UserContext(
-                        user_id=user.id,
-                        phone_number=user.phone_number,
-                        tenant_id=user.tenant_id,
-                        full_name=user.full_name,
-                        role=user.role,
-                        user_secret_salt=user_salt or "",
-                        allowed_cartridges=tuple(user.allowed_cartridges),
-                    )
-                    async with async_user_scope(u_ctx):
+                orig_connector = self.workflow.gmail_connector
+                self.workflow.gmail_connector = connector
+                try:
+                    if user is not None:
+                        u_ctx = UserContext(
+                            user_id=user.id,
+                            phone_number=user.phone_number,
+                            tenant_id=user.tenant_id,
+                            full_name=user.full_name,
+                            role=user.role,
+                            user_secret_salt=user_salt or "",
+                            allowed_cartridges=tuple(user.allowed_cartridges),
+                        )
+                        async with async_user_scope(u_ctx):
+                            final_state = await self.workflow.execute(initial_state)
+                    else:
                         final_state = await self.workflow.execute(initial_state)
-                else:
-                    final_state = await self.workflow.execute(initial_state)
+                finally:
+                    self.workflow.gmail_connector = orig_connector
 
                 cat = final_state.get("category", "General")
                 urgency = final_state.get("urgency_score", 5)
@@ -484,7 +489,7 @@ class MailPollWorker:
                 try:
                     processed = await self.poll_once()
                     self.cycles_completed += 1
-                    logger.debug("[PollWorker] Cycle %d finished (%d processed).", self.cycles_completed, processed)
+                    logger.info("[PollWorker] Cycle %d finished (%d emails processed).", self.cycles_completed, processed)
                 except Exception as cycle_err:
                     logger.error("[PollWorker] Exception in poll cycle: %s", cycle_err, exc_info=True)
 
