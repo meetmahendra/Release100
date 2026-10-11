@@ -412,7 +412,32 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any], base_url_override: Opt
                     target_app = app_inst
                     break
 
-        # Priority 2: Use SemanticRouter for natural language queries across cartridges (confident routes only)
+        # Priority 2: If sender is a registered employee in any loaded cartridge
+        if not target_app:
+            for app_inst in candidate_apps.values():
+                db_svc = getattr(app_inst, "db_service", None)
+                if db_svc and hasattr(db_svc, "get_employee_by_phone"):
+                    try:
+                        if db_svc.get_employee_by_phone(sender_phone) is not None:
+                            target_app = app_inst
+                            logger.info(
+                                "[WhatsApp Ingress] Registered employee %s routed to %s",
+                                sender_phone,
+                                app_inst.name,
+                            )
+                            break
+                    except Exception:
+                        pass
+
+        # Priority 3: Native Location Payload routing to location-aware cartridge
+        if not target_app and is_location:
+            for app_inst in candidate_apps.values():
+                keywords = getattr(app_inst, "keywords", [])
+                if any(k in ("location", "gps", "geofence", "attendance", "kiosk") for k in keywords):
+                    target_app = app_inst
+                    break
+
+        # Priority 4: Use SemanticRouter for natural language queries across cartridges (confident routes only)
         if not target_app and text_content and len(candidate_apps) > 1:
             try:
                 from core_platform.app.routing.semantic_router import SemanticRouter
@@ -435,26 +460,6 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any], base_url_override: Opt
                     )
             except Exception as ex:
                 logger.warning("[WhatsApp Ingress] SemanticRouter routing attempt failed: %s", ex)
-
-        # Priority 3: Native Location Payload routing to location-aware cartridge
-        if not target_app and is_location:
-            for app_inst in candidate_apps.values():
-                keywords = getattr(app_inst, "keywords", [])
-                if any(k in ("location", "gps", "geofence", "attendance", "kiosk") for k in keywords):
-                    target_app = app_inst
-                    break
-
-        # Priority 4: If sender is a registered employee in any loaded cartridge
-        if not target_app:
-            for app_inst in candidate_apps.values():
-                db_svc = getattr(app_inst, "db_service", None)
-                if db_svc and hasattr(db_svc, "get_employee_by_phone"):
-                    try:
-                        if db_svc.get_employee_by_phone(sender_phone) is not None:
-                            target_app = app_inst
-                            break
-                    except Exception:
-                        pass
 
         # Priority 5: If image submitted, default to first vision/photo cartridge
         if not target_app and is_image:
