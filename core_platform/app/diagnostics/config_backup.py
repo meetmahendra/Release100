@@ -137,6 +137,19 @@ def read_env_dict(env_path: Optional[Path] = None) -> Dict[str, str]:
     return res
 
 
+def get_effective_env_value(key: str, default: Any = "", env_path: Optional[Path] = None) -> str:
+    """Resolve configuration value prioritizing non-empty .env, then in-memory settings, then default."""
+    env_data = read_env_dict(env_path)
+    val = env_data.get(key)
+    if val:
+        return str(val)
+    from core_platform.app.config import settings
+    in_memory = getattr(settings, key, None)
+    if in_memory is not None and str(in_memory).strip():
+        return str(in_memory)
+    return str(default) if default is not None else ""
+
+
 def reload_settings_from_env(env_path: Optional[Path] = None) -> None:
     """Reload in-memory platform settings singleton from the .env on disk."""
     import json

@@ -273,10 +273,24 @@ async def admin_dashboard(
     from core_platform.app.telemetry.audit_engine import AuditEngine
 
     env_data = read_env_dict()
-    gemini_key = env_data.get("GEMINI_API_KEY", settings.GEMINI_API_KEY or "")
-    wa_token = env_data.get("WHATSAPP_ACCESS_TOKEN", settings.WHATSAPP_ACCESS_TOKEN or "")
-    wa_phone = env_data.get("WHATSAPP_PHONE_NUMBER_ID", settings.WHATSAPP_PHONE_NUMBER_ID or "")
-    relay_url = env_data.get("RELAY_WS_URL", settings.RELAY_WS_URL or "")
+    gemini_key = env_data.get("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", "") or ""
+    wa_token = env_data.get("WHATSAPP_ACCESS_TOKEN") or getattr(settings, "WHATSAPP_ACCESS_TOKEN", "") or ""
+    wa_phone = env_data.get("WHATSAPP_PHONE_NUMBER_ID") or getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", "") or ""
+    relay_url = env_data.get("RELAY_WS_URL") or getattr(settings, "RELAY_WS_URL", "") or ""
+
+    # Resolve active tenant runtime credentials dynamically from DevOpsKeyVault (BYOK or Platform)
+    try:
+        from ops_control_plane.devops_vault import DevOpsKeyVault
+        vault = DevOpsKeyVault()
+        tenant_creds = vault.get_tenant_runtime_credentials(active_tenant_slug)
+        if tenant_creds.gemini_api_key:
+            gemini_key = tenant_creds.gemini_api_key
+        if tenant_creds.waba_token:
+            wa_token = tenant_creds.waba_token
+        if tenant_creds.waba_phone_number_id:
+            wa_phone = tenant_creds.waba_phone_number_id
+    except Exception as vault_err:
+        logger.debug("[AdminShell] Tenant credentials resolution fallback: %s", vault_err)
 
     audit_engine = AuditEngine.get_instance()
     recent_audits = []

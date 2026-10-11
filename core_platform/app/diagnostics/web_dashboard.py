@@ -251,25 +251,25 @@ async def view_settings_dashboard(
     apps = registry.get_installed_applications()
     backups = list_backups()
 
-    # Read live on-disk values so nothing is lost
+    # Read live on-disk values so nothing is lost, falling back to in-memory settings if empty
     env_data = read_env_dict()
-    typesafe_key = env_data.get("TYPESAFE_API_KEY", getattr(settings, "TYPESAFE_API_KEY", "") or "")
-    typesafe_url = env_data.get("TYPESAFE_BASE_URL", getattr(settings, "TYPESAFE_BASE_URL", "https://api.typesafe.ai/v1") or "https://api.typesafe.ai/v1")
-    typesafe_model = env_data.get("TYPESAFE_MODEL", getattr(settings, "TYPESAFE_MODEL", "jev-1") or "jev-1")
-    default_decision = env_data.get("DEFAULT_DECISION_PROVIDER", getattr(settings, "DEFAULT_DECISION_PROVIDER", "typesafe") or "typesafe")
-    gemini_key = env_data.get("GEMINI_API_KEY", settings.GEMINI_API_KEY or "")
-    gemini_model = env_data.get("GEMINI_MODEL", settings.GEMINI_MODEL or "gemini-2.5-flash")
-    wa_phone = env_data.get("WHATSAPP_PHONE_NUMBER_ID", settings.WHATSAPP_PHONE_NUMBER_ID or "")
-    wa_token = env_data.get("WHATSAPP_ACCESS_TOKEN", settings.WHATSAPP_ACCESS_TOKEN or "")
-    wa_secret = env_data.get("WHATSAPP_APP_SECRET", settings.WHATSAPP_APP_SECRET or "")
-    wa_verify = env_data.get("WHATSAPP_VERIFY_TOKEN", settings.WHATSAPP_VERIFY_TOKEN or "release100_verify_token")
-    relay_url = env_data.get("RELAY_WS_URL", settings.RELAY_WS_URL or "")
-    station_name = env_data.get("STATION_NAME", settings.STATION_NAME or "Release100 Node #01")
-    node_id = env_data.get("NODE_ID", env_data.get("KIOSK_ID", settings.NODE_ID or "NODE-01"))
-    org_name = env_data.get("ORGANIZATION_NAME", settings.ORGANIZATION_NAME or "Release100 Organization")
-    tenant_id = env_data.get("TENANT_ID", settings.TENANT_ID or "default_tenant")
-    exec_mode = env_data.get("EXECUTION_MODE", settings.EXECUTION_MODE or "shadow")
-    dry_run_val = env_data.get("DRY_RUN", str(settings.DRY_RUN)).lower() == "true"
+    typesafe_key = env_data.get("TYPESAFE_API_KEY") or getattr(settings, "TYPESAFE_API_KEY", "") or ""
+    typesafe_url = env_data.get("TYPESAFE_BASE_URL") or getattr(settings, "TYPESAFE_BASE_URL", "https://api.typesafe.ai/v1") or "https://api.typesafe.ai/v1"
+    typesafe_model = env_data.get("TYPESAFE_MODEL") or getattr(settings, "TYPESAFE_MODEL", "jev-1") or "jev-1"
+    default_decision = env_data.get("DEFAULT_DECISION_PROVIDER") or getattr(settings, "DEFAULT_DECISION_PROVIDER", "typesafe") or "typesafe"
+    gemini_key = env_data.get("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", "") or ""
+    gemini_model = env_data.get("GEMINI_MODEL") or getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash"
+    wa_phone = env_data.get("WHATSAPP_PHONE_NUMBER_ID") or getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", "") or ""
+    wa_token = env_data.get("WHATSAPP_ACCESS_TOKEN") or getattr(settings, "WHATSAPP_ACCESS_TOKEN", "") or ""
+    wa_secret = env_data.get("WHATSAPP_APP_SECRET") or getattr(settings, "WHATSAPP_APP_SECRET", "") or ""
+    wa_verify = env_data.get("WHATSAPP_VERIFY_TOKEN") or getattr(settings, "WHATSAPP_VERIFY_TOKEN", "release100_verify_token") or "release100_verify_token"
+    relay_url = env_data.get("RELAY_WS_URL") or getattr(settings, "RELAY_WS_URL", "") or ""
+    station_name = env_data.get("STATION_NAME") or getattr(settings, "STATION_NAME", "Release100 Node #01") or "Release100 Node #01"
+    node_id = env_data.get("NODE_ID") or env_data.get("KIOSK_ID") or getattr(settings, "NODE_ID", getattr(settings, "KIOSK_ID", "NODE-01")) or "NODE-01"
+    org_name = env_data.get("ORGANIZATION_NAME") or getattr(settings, "ORGANIZATION_NAME", "Release100 Organization") or "Release100 Organization"
+    tenant_id = env_data.get("TENANT_ID") or getattr(settings, "TENANT_ID", "default_tenant") or "default_tenant"
+    exec_mode = env_data.get("EXECUTION_MODE") or getattr(settings, "EXECUTION_MODE", "shadow") or "shadow"
+    dry_run_val = (env_data.get("DRY_RUN") or str(getattr(settings, "DRY_RUN", True))).lower() == "true"
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),

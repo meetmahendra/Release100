@@ -101,6 +101,22 @@ class BaseApplication(ABC):
         """
         return False, "Background poller not implemented for this cartridge."
 
+    def start_poller(self) -> bool:
+        """Start the background poller worker if supported by this cartridge.
+
+        Returns:
+            True if started successfully, False otherwise.
+        """
+        return False
+
+    def stop_poller(self) -> bool:
+        """Stop the background poller worker if supported by this cartridge.
+
+        Returns:
+            True if stopped successfully, False otherwise.
+        """
+        return False
+
     def on_startup(self) -> None:
         """Called once when the application cartridge is mounted by the plugin engine.
 

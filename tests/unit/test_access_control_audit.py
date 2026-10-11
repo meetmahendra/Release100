@@ -278,12 +278,12 @@ def test_devops_super_admin_has_full_access() -> None:
     resp = client.get("/admin/llm-costs")
     assert resp.status_code == 200
 
-    # Both cartridges accessible
+    # Tenant domain cartridges are strictly forbidden for DevOps under Data Sovereignty
     resp = client.get("/admin/apps/temperature-marker/fleet")
-    assert resp.status_code == 200
+    assert resp.status_code == 403
 
     resp = client.get("/admin/apps/mail-organizer/dashboard")
-    assert resp.status_code == 200
+    assert resp.status_code == 403
 
 
 # ── 7. Subdomain & Host Isolation for Ops Control Plane ──────────────────────

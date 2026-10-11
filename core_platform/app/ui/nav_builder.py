@@ -100,23 +100,40 @@ def compose_nav(
     allowed_apps: Iterable[str],
     applications: Optional[Dict[str, BaseApplication]] = None,
 ) -> List[NavItem]:
-    """Return the full sidebar: overview, cartridge entries, then role-based core sections."""
+    """Return the full sidebar: overview, cartridge entries, then role-based core sections.
+
+    Adheres strictly to GEES v3.1 Data Sovereignty (Pillar 1) and Credential Isolation (Pillar 6):
+    - Platform Operators (DevOps) see host operations, daemon controls, diagnostics, and master settings.
+      DevOps is strictly barred from inspecting single-tenant workspace settings or domain cartridges.
+    - Customer Admins/Users see their entitled domain cartridges and tenant workspace.
+    """
     items: List[NavItem] = [_core("core.nav.overview", "/admin/")]
+
+    if ctx.is_devops:
+        # Platform Operations (DevOps only)
+        ops_grp = "core.nav.group_platform"
+        items.append(_core("core.nav.devops_plane", "/ops/tenants", ops_grp))
+        items.append(_core("core.nav.daemons", "/ops/daemons", ops_grp))
+
+        # Diagnostics & Host Configuration (DevOps only)
+        dg = "core.nav.group_diagnostics"
+        items.append(_core("core.nav.settings", "/settings", dg))
+        items.append(_core("core.nav.llm_costs", "/admin/llm-costs", dg))
+        items.append(_core("core.nav.logs", "/admin/logs", dg))
+        items.append(_core("core.nav.api_keys", "/admin/api-keys", dg))
+        items.append(_core("core.nav.health", "/health", dg))
+        return items
+
+    # Customer Tenant User / Admin navigation
     apps = build_nav(ctx, allowed_apps, applications)
     items.extend(
         item if item.group_key else item.model_copy(update={"group_key": "core.nav.group_apps"}) for item in apps
     )
-    if ctx.is_admin or ctx.is_devops:
+
+    if ctx.is_admin:
         ws = "core.nav.group_workspace"
         items.append(_core("core.nav.users", "/admin/users", ws))
         items.append(_core("core.nav.tenants", "/admin/tenants", ws))
         items.append(_core("core.nav.api_keys", "/admin/api-keys", ws))
-        if ctx.is_devops:
-            items.append(_core("core.nav.devops_plane", "/ops/tenants", ws))
-    if ctx.is_devops:
-        dg = "core.nav.group_diagnostics"
-        items.append(_core("core.nav.llm_costs", "/admin/llm-costs", dg))
-        items.append(_core("core.nav.logs", "/admin/logs", dg))
-        items.append(_core("core.nav.settings", "/settings", dg))
-        items.append(_core("core.nav.health", "/health", dg))
+
     return items

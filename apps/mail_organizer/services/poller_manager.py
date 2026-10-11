@@ -41,7 +41,7 @@ class MailPollerManager:
     """Singleton lifecycle manager for the Mail Organizer poller."""
 
     _instance: Optional["MailPollerManager"] = None
-    _lock = threading.Lock()
+    _lock = threading.RLock()
 
     def __init__(self, root_dir: Optional[Path] = None) -> None:
         """Initialize poller manager."""
@@ -58,6 +58,17 @@ class MailPollerManager:
             if cls._instance is None:
                 cls._instance = cls(root_dir=root_dir)
             return cls._instance
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        """Cleanly stop and reset the singleton instance for test isolation."""
+        with cls._lock:
+            if cls._instance is not None:
+                try:
+                    cls._instance.stop()
+                except Exception:
+                    pass
+                cls._instance = None
 
     def is_running(self) -> bool:
         """Verify whether the poller is actively running."""

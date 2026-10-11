@@ -131,4 +131,6 @@ def build_magic_link_url(
     effective_base = (
         (base_url or settings.ORCHESTRATOR_BASE_URL or f"http://localhost:{settings.ORCHESTRATOR_PORT}").rstrip("/")
     )
+    if effective_base.startswith("http://") and any(dom in effective_base for dom in ("ngrok", "trycloudflare", ".app", ".io")):
+        effective_base = "https://" + effective_base[len("http://"):]
     return f"{effective_base}/auth/google/connect?token={token}"

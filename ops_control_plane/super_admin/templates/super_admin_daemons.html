@@ -1,0 +1,141 @@
+{% extends "base_shell.html" %}
+{#- Copyright 2026 Mahendra GURAV - Licensed under the Apache License, Version 2.0 -#}
+{% block title %}{{ t('core.ops_daemons.title_tag') }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Flash Messages -->
+  {% if message %}
+  <div class="p-4 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-sm flex items-center justify-between shadow-lg">
+    <div class="flex items-center gap-2 font-mono">
+      <span>✓</span> {{ message }}
+    </div>
+    <button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-white">✕</button>
+  </div>
+  {% endif %}
+
+  {% if error %}
+  <div class="p-4 rounded-xl bg-rose-950/80 border border-rose-500/60 text-rose-300 text-sm flex items-center justify-between shadow-lg">
+    <div class="flex items-center gap-2 font-mono">
+      <span>⚠️</span> {{ error }}
+    </div>
+    <button onclick="this.parentElement.remove()" class="text-rose-400 hover:text-white">✕</button>
+  </div>
+  {% endif %}
+
+  <!-- Header Section -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+    <div>
+      <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <span>⚙️</span> {{ t('core.ops_daemons.heading') }}
+      </h1>
+      <p class="text-xs text-slate-400 mt-1">
+        {{ t('core.ops_daemons.subheading') }}
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-indigo-950 text-indigo-300 border border-indigo-700">
+        {{ t('core.ops_daemons.badge_daemon') }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Daemons Grid -->
+  <div class="grid grid-cols-1 gap-6">
+
+    <!-- 1. Mail Poller Daemon Worker Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-950/80 border border-indigo-700/60 flex items-center justify-center text-xl">
+            📧
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-white">
+              {{ t('core.ops_daemons.mail_poller_title') }}
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              {{ t('core.ops_daemons.mail_poller_desc') }}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          {% if poller.is_running %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-600">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            {{ t('core.ops_daemons.status_running') }}
+          </span>
+          {% else %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-300 border border-rose-700">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            {{ t('core.ops_daemons.status_stopped') }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Telemetry Metrics Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{{ t('core.ops_daemons.stat_interval') }}</p>
+          <p class="text-lg font-bold text-slate-100 font-mono mt-1">{{ poller.poll_interval_seconds }}s</p>
+          <p class="text-[10px] text-slate-500 mt-0.5">{{ t('core.ops_daemons.interval_secs', sec=poller.poll_interval_seconds) }}</p>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{{ t('core.ops_daemons.stat_cycles') }}</p>
+          <p class="text-lg font-bold text-indigo-300 font-mono mt-1">{{ poller.cycles_completed }}</p>
+          <p class="text-[10px] text-slate-500 mt-0.5">Execution loops</p>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{{ t('core.ops_daemons.stat_emails') }}</p>
+          <p class="text-lg font-bold text-emerald-300 font-mono mt-1">{{ poller.emails_processed }}</p>
+          <p class="text-[10px] text-slate-500 mt-0.5">Ingested & triaged</p>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{{ t('core.ops_daemons.stat_sentinel') }}</p>
+          <p class="text-sm font-bold font-mono mt-2 flex items-center gap-1.5">
+            {% if poller.sentinel_active %}
+            <span class="text-amber-400">⚠️ Stop Signal Active</span>
+            {% else %}
+            <span class="text-emerald-400">✓ Normal / Clean</span>
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Process Lifecycle Controls -->
+      <div class="pt-4 border-t border-slate-800 flex flex-wrap items-center gap-3">
+        {% if poller.is_running %}
+        <form method="POST" action="/ops/daemons/email-poller/stop">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+          <button type="submit" class="px-4 py-2 rounded-lg bg-rose-900/60 hover:bg-rose-800 border border-rose-600 text-rose-100 text-xs font-semibold transition-colors flex items-center gap-2">
+            <span>🛑</span> {{ t('core.ops_daemons.btn_stop') }}
+          </button>
+        </form>
+        {% else %}
+        <form method="POST" action="/ops/daemons/email-poller/start">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+          <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-900/60 hover:bg-emerald-800 border border-emerald-600 text-emerald-100 text-xs font-semibold transition-colors flex items-center gap-2">
+            <span>▶️</span> {{ t('core.ops_daemons.btn_start') }}
+          </button>
+        </form>
+        {% endif %}
+
+        <form method="POST" action="/ops/daemons/email-poller/toggle">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+          <button type="submit" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition-colors flex items-center gap-2">
+            <span>🔄</span> {{ t('core.ops_daemons.btn_restart') }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

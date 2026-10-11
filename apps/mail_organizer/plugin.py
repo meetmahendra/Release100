@@ -195,6 +195,28 @@ class MailOrganizerApplication(BaseApplication):
             mgr.start()
             return True, "Mail Poller is now active."
 
+    def start_poller(self) -> bool:
+        """Start the background email poller daemon."""
+        try:
+            from apps.mail_organizer.services.poller_manager import MailPollerManager
+            return MailPollerManager.get_instance().start()
+        except Exception as poller_err:
+            logger.warning("[MailOrganizer] Could not start MailPollerManager: %s", poller_err)
+            return False
+
+    def stop_poller(self) -> bool:
+        """Stop the background email poller daemon."""
+        try:
+            from apps.mail_organizer.services.poller_manager import MailPollerManager
+            return MailPollerManager.get_instance().stop()
+        except Exception as poller_err:
+            logger.warning("[MailOrganizer] Could not stop MailPollerManager: %s", poller_err)
+            return False
+
+    def on_shutdown(self) -> None:
+        """Cleanly stop background email poller daemon on platform shutdown."""
+        self.stop_poller()
+
     def get_outbox_transmitter(self) -> Any:
         """Return transmitter callable to retry pending or failed Gmail/PM tasks."""
         async def _transmitter(target: str, payload: Any) -> Tuple[bool, str]:

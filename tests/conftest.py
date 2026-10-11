@@ -57,14 +57,17 @@ def portable_db_manager() -> PortableDatabaseManager:
 
 @pytest.fixture(autouse=True)
 def isolate_database_manager() -> Generator[None, None, None]:
-    """Cleanly reset DatabaseManager and cartridge database services before and after each test."""
+    """Cleanly reset DatabaseManager, poller managers, and cartridge database services before and after each test."""
     from apps.mail_organizer.database.db_service import MailDatabaseService
+    from apps.mail_organizer.services.poller_manager import MailPollerManager
     from apps.temperature_marker.database.db_service import DatabaseService as TMDatabaseService
 
     DatabaseManager.reset_instance()
     MailDatabaseService.reset_instance()
     TMDatabaseService.reset_instance()
+    MailPollerManager.reset_instance()
     yield
     DatabaseManager.reset_instance()
     MailDatabaseService.reset_instance()
     TMDatabaseService.reset_instance()
+    MailPollerManager.reset_instance()

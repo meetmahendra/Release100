@@ -46,30 +46,25 @@ STATUS 200
 </a>
 </li>
 <li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
-  Workspace & Access
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/users">
-  Users & Team
-</a>
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/tenants">
-  Company Profile & Vault
-</a>
-</li>
-<li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/api-keys">
-  API Keys
-</a>
+  Platform Operations
 </li>
 <li>
 <a aria-current="page" class="block rounded-md px-# py-# text-sm bg-line text-ink font-semibold" href="/ops/tenants">
   DevOps Control Plane
 </a>
 </li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/ops/daemons">
+  Daemon Workers & Pollers
+</a>
+</li>
 <li class="px-# pt-# pb-# text-xs font-semibold uppercase tracking-wider text-muted" role="presentation">
   DevOps Diagnostics
+</li>
+<li>
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/settings">
+  Master Settings & Keys
+</a>
 </li>
 <li>
 <a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/llm-costs">
@@ -82,8 +77,8 @@ STATUS 200
 </a>
 </li>
 <li>
-<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/settings">
-  Master Settings & Keys
+<a class="block rounded-md px-# py-# text-sm text-muted hover:text-ink hover:bg-line" href="/admin/api-keys">
+  API Keys
 </a>
 </li>
 <li>
@@ -278,15 +273,15 @@ STATUS 200
 </label>
 <div class="flex flex-wrap items-center gap-#">
 <label class="flex items-center gap-# text-xs text-slate-# cursor-pointer">
-<input checked class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" name="cartridges" type="checkbox" value="temperature_marker">
-<span class="font-medium text-white">
-  Apex Industrial Temperature & Attendance Marker
-</span>
-</label>
-<label class="flex items-center gap-# text-xs text-slate-# cursor-pointer">
 <input checked class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" name="cartridges" type="checkbox" value="mail_organizer">
 <span class="font-medium text-white">
   AI Email & Calendar Organizer
+</span>
+</label>
+<label class="flex items-center gap-# text-xs text-slate-# cursor-pointer">
+<input checked class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" name="cartridges" type="checkbox" value="temperature_marker">
+<span class="font-medium text-white">
+  Apex Industrial Temperature & Attendance Marker
 </span>
 </label>
 </div>
@@ -519,21 +514,21 @@ STATUS 200
 </p>
 <div class="space-y-# bg-slate-# p-# rounded-lg border border-slate-# text-xs">
 <label class="flex items-center gap-#.# text-slate-# cursor-pointer">
-<input class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" id="cart_temperature_marker" name="cartridges" type="checkbox" value="temperature_marker">
-<span class="font-semibold text-white">
-  Apex Industrial Temperature & Attendance Marker
-</span>
-<span class="text-slate-# text-[#px]">
-  Factory floor attendance and chiller temperature recording via selfie photo and OCR.
-</span>
-</label>
-<label class="flex items-center gap-#.# text-slate-# cursor-pointer">
 <input class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" id="cart_mail_organizer" name="cartridges" type="checkbox" value="mail_organizer">
 <span class="font-semibold text-white">
   AI Email & Calendar Organizer
 </span>
 <span class="text-slate-# text-[#px]">
   Email triage, meeting scheduling, and PM task extraction for executives.
+</span>
+</label>
+<label class="flex items-center gap-#.# text-slate-# cursor-pointer">
+<input class="rounded border-slate-# text-indigo-# focus:ring-# bg-slate-# w-# h-#" id="cart_temperature_marker" name="cartridges" type="checkbox" value="temperature_marker">
+<span class="font-semibold text-white">
+  Apex Industrial Temperature & Attendance Marker
+</span>
+<span class="text-slate-# text-[#px]">
+  Factory floor attendance and chiller temperature recording via selfie photo and OCR.
 </span>
 </label>
 </div>

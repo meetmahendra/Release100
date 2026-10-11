@@ -155,14 +155,40 @@ class _Plain:
 
 
 def test_compose_nav_devops_has_all_core_sections_and_app_fallback() -> None:
+    """DevOps platform operator sees ops plane, daemons, diagnostics, and zero customer cartridges."""
     from core_platform.app.ui.nav_builder import compose_nav
 
     items = compose_nav(_ctx(["devops_admin"], tenant="platform", pid="devops_admin"), ["sample_app"], _apps(sample_app=_Plain()))  # type: ignore[arg-type]
     paths = [i.path for i in items]
     assert paths[0] == "/admin/"
-    assert "/admin/apps/sample-app/" in paths and "/ops/tenants" in paths and "/admin/llm-costs" in paths and "/health" in paths
+    assert "/ops/tenants" in paths
+    assert "/ops/daemons" in paths
+    assert "/admin/llm-costs" in paths
+    assert "/settings" in paths
+    assert "/admin/logs" in paths
+    assert "/health" in paths
+    # Data Sovereignty: DevOps must NOT see customer cartridges or tenant workspace
+    assert "/admin/apps/sample-app/" not in paths
+    assert "/admin/users" not in paths
+    assert "/admin/tenants" not in paths
+
+
+def test_compose_nav_customer_admin_has_cartridges_and_workspace() -> None:
+    """Customer Workspace Admin sees customer cartridges and workspace configuration."""
+    from core_platform.app.ui.nav_builder import compose_nav
+
+    items = compose_nav(_ctx(["admin"], tenant="acme_corp", pid="acme_admin"), ["sample_app"], _apps(sample_app=_Plain()))  # type: ignore[arg-type]
+    paths = [i.path for i in items]
+    assert paths[0] == "/admin/"
+    assert "/admin/apps/sample-app/" in paths
+    assert "/admin/users" in paths
+    assert "/admin/tenants" in paths
+    assert "/admin/api-keys" in paths
     app_item = next(i for i in items if i.path == "/admin/apps/sample-app/")
     assert app_item.label_text == "Sample App" and app_item.group_key == "core.nav.group_apps"
+    # Customer Admin must NOT see platform ops
+    assert "/ops/tenants" not in paths
+    assert "/ops/daemons" not in paths
 
 
 def test_compose_nav_operator_sees_only_overview() -> None:

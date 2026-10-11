@@ -69,6 +69,7 @@ PAGES: Tuple[PageSpec, ...] = (
     PageSpec("core_llm_costs", "/admin/llm-costs", "devops"),
     PageSpec("core_entitlements", "/admin/entitlements/", "admin"),
     PageSpec("ops_tenants", "/ops/tenants", "devops"),
+    PageSpec("ops_daemons", "/ops/daemons", "devops"),
     PageSpec("tm_fleet", TM_BASE + "/fleet", "admin"),
     PageSpec("tm_wizard", TM_BASE + "/wizard", "admin"),
     PageSpec("tm_approvals", TM_BASE + "/approvals", "admin"),
@@ -230,6 +231,7 @@ def capture_all() -> Dict[str, str]:
         out = Path(tmp) / "snapshots.json"
         env = dict(os.environ)
         env["DATABASE_URL"] = "sqlite:///" + (Path(tmp) / "snapshot.db").as_posix()
+        env["PYTHONPATH"] = str(REPO_ROOT)
         subprocess.run(
             [sys.executable, "-m", "tests.ui_snapshots.snapshot_lib", str(out)],
             cwd=str(REPO_ROOT),

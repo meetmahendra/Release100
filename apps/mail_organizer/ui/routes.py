@@ -46,14 +46,17 @@ from core_platform.app.common.timezone import to_local_ist, to_local_ist_full
 from core_platform.app.config import settings
 from core_platform.app.entitlements.dependencies import require_action
 from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
-from core_platform.app.rbac.permissions import get_web_security_context, require_app
+from core_platform.app.rbac.permissions import get_web_security_context, require_app, require_tenant_data_sovereignty
 from core_platform.app.ui.templating import build_templates
 from core_platform.app.ui.ui_context import Breadcrumb, build_ui_context
 
 router = APIRouter(
     prefix="/admin/apps/mail-organizer",
     tags=["Mail Organizer Admin"],
-    dependencies=[Depends(require_app("mail_organizer"))],
+    dependencies=[
+        Depends(require_app("mail_organizer")),
+        Depends(require_tenant_data_sovereignty),
+    ],
 )
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -384,8 +387,10 @@ async def view_accounts(
     try:
         from core_platform.app.identity.service import get_user_identity_service
         user_service = get_user_identity_service()
-        lookup_tenant = None if effective_tenant in ("platform", "*") else effective_tenant
-        all_users = user_service.list_users(tenant_id=lookup_tenant)
+        if not effective_tenant or effective_tenant in ("platform", "*"):
+            all_users = []
+        else:
+            all_users = user_service.list_users(tenant_id=effective_tenant)
 
         tenant_users = [
             u for u in all_users

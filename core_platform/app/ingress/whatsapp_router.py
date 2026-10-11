@@ -20,10 +20,13 @@ Operates as a pure transport multiplexer with zero domain business logic.
 Dispatches incoming messages to loaded application cartridges via BaseApplication.
 """
 
+from collections import OrderedDict
 import hashlib
 import hmac
 import json
 import logging
+import threading
+import time
 from typing import Any, Dict, List, Optional
 import uuid
 
@@ -45,6 +48,71 @@ except ImportError:
     _HAS_HTTPX = False
 
 router = APIRouter(tags=["WhatsApp Webhook Ingress"])
+
+
+class InboundMessageDeduplicator:
+    """Thread-safe LRU & TTL cache for incoming WhatsApp message IDs (wamid)."""
+
+    def __init__(self, ttl_seconds: float = 600.0, max_entries: int = 5000) -> None:
+        self.ttl_seconds = ttl_seconds
+        self.max_entries = max_entries
+        self._cache: OrderedDict[str, float] = OrderedDict()
+        self._lock = threading.Lock()
+
+    def is_duplicate_or_record(self, message_id: Optional[str]) -> bool:
+        """Return True if message_id was seen within ttl_seconds; otherwise record it and return False."""
+        if not message_id or not message_id.strip():
+            return False
+        clean_id = message_id.strip()
+        now = time.time()
+        with self._lock:
+            # Purge expired entries
+            while self._cache:
+                oldest_key, oldest_time = next(iter(self._cache.items()))
+                if now - oldest_time > self.ttl_seconds:
+                    self._cache.pop(oldest_key)
+                else:
+                    break
+
+            if clean_id in self._cache:
+                return True
+
+            if len(self._cache) >= self.max_entries:
+                self._cache.popitem(last=False)
+
+            self._cache[clean_id] = now
+            return False
+
+    def clear(self) -> None:
+        """Clear cache (for test isolation)."""
+        with self._lock:
+            self._cache.clear()
+
+
+_inbound_deduplicator = InboundMessageDeduplicator()
+
+
+def get_inbound_deduplicator() -> InboundMessageDeduplicator:
+    """Convenience getter for inbound message deduplicator singleton."""
+    return _inbound_deduplicator
+
+
+def extract_public_base_url(request: Request) -> str:
+    """Extract public base URL respecting reverse-proxy headers (ngrok, cloudflare, load balancers)."""
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme or "http"
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+
+    # If host is a known public proxy (ngrok, trycloudflare) enforce https
+    if host and any(k in host.lower() for k in ("ngrok", "trycloudflare", ".app", ".io")):
+        proto = "https"
+
+    if host:
+        return f"{proto}://{host}".rstrip("/")
+
+    if settings.ORCHESTRATOR_BASE_URL:
+        return settings.ORCHESTRATOR_BASE_URL.rstrip("/")
+
+    return str(request.base_url).rstrip("/")
 
 
 def verify_meta_signature(body_bytes: bytes, signature_header: Optional[str]) -> bool:
@@ -139,7 +207,7 @@ async def verify_webhook(
     raise HTTPException(status_code=403, detail="Verification token mismatch")
 
 
-async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
+async def dispatch_whatsapp_payload(data: Dict[str, Any], base_url_override: Optional[str] = None) -> Dict[str, Any]:
     """Pure transport multiplexer for inbound WhatsApp payloads.
 
     1. Parses message envelope and validates sender.
@@ -186,6 +254,17 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
     correlation_id = f"wa-{uuid.uuid4().hex[:8]}"
     node_id = getattr(settings, "NODE_ID", getattr(settings, "KIOSK_ID", "NODE-01"))
     bind_log_context(correlation_id=correlation_id, kiosk_id=node_id)
+
+    # --- Layer 0: Inbound Message ID (wamid) Deduplication ---
+    message_id = str(msg.get("id", "")).strip()
+    if message_id and _inbound_deduplicator.is_duplicate_or_record(message_id):
+        logger.info("[WhatsApp Ingress] Dropping duplicate inbound message ID '%s' (Meta retry / dual ingress)", message_id)
+        return {
+            "status": "DUPLICATE_DROPPED",
+            "message_id": message_id,
+            "correlation_id": correlation_id,
+            "node_id": node_id,
+        }
 
     # --- Layer 0: Per-sender rate limiting ---
     rate_limiter = get_platform_rate_limiter()
@@ -262,9 +341,13 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any]) -> Dict[str, Any]:
             set_session_coordinates(sender_phone, user_coords)
 
     base_url = (
-        settings.ORCHESTRATOR_BASE_URL.rstrip("/")
-        if settings.ORCHESTRATOR_BASE_URL
-        else f"http://localhost:{settings.ORCHESTRATOR_PORT}"
+        base_url_override.rstrip("/")
+        if base_url_override
+        else (
+            settings.ORCHESTRATOR_BASE_URL.rstrip("/")
+            if settings.ORCHESTRATOR_BASE_URL
+            else f"http://localhost:{settings.ORCHESTRATOR_PORT}"
+        )
     )
 
     user_tenant_id = user.tenant_id if user else settings.TENANT_ID
@@ -445,4 +528,5 @@ async def handle_incoming_message(
     except Exception:
         raise HTTPException(status_code=400, detail="Malformed JSON payload")
 
-    return await dispatch_whatsapp_payload(data)
+    public_base_url = extract_public_base_url(request)
+    return await dispatch_whatsapp_payload(data, base_url_override=public_base_url)

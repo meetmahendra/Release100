@@ -296,6 +296,22 @@ def require_app(app_id: str) -> Callable[..., SecurityContext]:
     return _app_checker
 
 
+def require_tenant_data_sovereignty(
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> SecurityContext:
+    """FastAPI dependency: Enforce GEES Data Sovereignty (Pillar 1 & Pillar 6).
+
+    Platform operators (DevOps) are strictly barred from inspecting private customer tenant
+    business payloads (emails, drafts, employee photos, biometric approvals).
+    """
+    if ctx.is_devops:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform operators are forbidden from inspecting customer tenant payloads under Data Sovereignty invariants.",
+        )
+    return ctx
+
+
 def get_api_security_context(request: Request) -> SecurityContext:
     """FastAPI dependency: extract SecurityContext from Bearer API key header.
 

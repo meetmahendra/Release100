@@ -197,48 +197,53 @@ def test_cartridge_manifest_dependencies() -> None:
 
 def test_wheel_archive_contains_all_modules_and_templates() -> None:
     """Build a wheel in a clean temp directory and verify all modules and templates exist inside the .whl."""
+    import shutil
     import subprocess
     import tempfile
     
-    with tempfile.TemporaryDirectory() as temp_out:
-        venv_py = ROOT_DIR / ".venv" / "Scripts" / "python.exe"
-        py_bin = str(venv_py) if venv_py.exists() else sys.executable
-        
-        cmd = [
-            py_bin,
-            "-m",
-            "build",
-            "--wheel",
-            "--no-isolation",
-            "--outdir",
-            temp_out,
-            str(ROOT_DIR),
-        ]
-        res = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT_DIR))
-        assert res.returncode == 0, f"Wheel build failed: {res.stderr}\n{res.stdout}"
-        
-        wheels = list(Path(temp_out).glob("*.whl"))
-        assert len(wheels) == 1, f"Expected 1 wheel file, found {wheels}"
-        
-        with zipfile.ZipFile(wheels[0], "r") as zf:
-            file_names = zf.namelist()
+    try:
+        with tempfile.TemporaryDirectory() as temp_out:
+            venv_py = ROOT_DIR / ".venv" / "Scripts" / "python.exe"
+            py_bin = str(venv_py) if venv_py.exists() else sys.executable
             
-        # 1. Verify Core Platform modules
-        assert any("core_platform/main.py" in f for f in file_names), "core_platform/main.py missing from wheel"
-        assert any("core_platform/app/admin_shell/routes.py" in f for f in file_names), "admin_shell missing from wheel"
-        
-        # 2. Verify DevOps Control Plane modules
-        assert any("ops_control_plane/super_admin/routes.py" in f for f in file_names), "ops_control_plane missing from wheel"
-        assert any("ops_control_plane/tenant_lifecycle.py" in f for f in file_names), "tenant_lifecycle missing from wheel"
-        
-        # 3. Verify Jinja2 HTML Templates
-        assert any("super_admin_tenants.html" in f for f in file_names), "super_admin_tenants.html template missing from wheel"
-        assert any("super_admin_audit.html" in f for f in file_names), "super_admin_audit.html template missing from wheel"
-        assert any("base_shell.html" in f for f in file_names), "base_shell.html template missing from wheel"
-        
-        # 4. Verify Static Assets
-        assert any("tokens.css" in f for f in file_names), "tokens.css missing from wheel"
-        assert any("ui.js" in f for f in file_names), "ui.js missing from wheel"
+            cmd = [
+                py_bin,
+                "-m",
+                "build",
+                "--wheel",
+                "--no-isolation",
+                "--outdir",
+                temp_out,
+                str(ROOT_DIR),
+            ]
+            res = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT_DIR))
+            assert res.returncode == 0, f"Wheel build failed: {res.stderr}\n{res.stdout}"
+            
+            wheels = list(Path(temp_out).glob("*.whl"))
+            assert len(wheels) == 1, f"Expected 1 wheel file, found {wheels}"
+            
+            with zipfile.ZipFile(wheels[0], "r") as zf:
+                file_names = zf.namelist()
+                
+            # 1. Verify Core Platform modules
+            assert any("core_platform/main.py" in f for f in file_names), "core_platform/main.py missing from wheel"
+            assert any("core_platform/app/admin_shell/routes.py" in f for f in file_names), "admin_shell missing from wheel"
+            
+            # 2. Verify DevOps Control Plane modules
+            assert any("ops_control_plane/super_admin/routes.py" in f for f in file_names), "ops_control_plane missing from wheel"
+            assert any("ops_control_plane/tenant_lifecycle.py" in f for f in file_names), "tenant_lifecycle missing from wheel"
+            
+            # 3. Verify Jinja2 HTML Templates
+            assert any("super_admin_tenants.html" in f for f in file_names), "super_admin_tenants.html template missing from wheel"
+            assert any("super_admin_audit.html" in f for f in file_names), "super_admin_audit.html template missing from wheel"
+            assert any("base_shell.html" in f for f in file_names), "base_shell.html template missing from wheel"
+            
+            # 4. Verify Static Assets
+            assert any("tokens.css" in f for f in file_names), "tokens.css missing from wheel"
+            assert any("ui.js" in f for f in file_names), "ui.js missing from wheel"
+    finally:
+        shutil.rmtree(ROOT_DIR / "build", ignore_errors=True)
+        shutil.rmtree(ROOT_DIR / "release100_core.egg-info", ignore_errors=True)
 
 
 def test_package_version_synchronization() -> None:

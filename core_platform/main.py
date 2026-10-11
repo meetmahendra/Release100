@@ -76,8 +76,25 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     relay_client.start()
     sync_task = asyncio.create_task(_platform_synchronizer.run())
+
+    # Auto-start background daemons for cartridges that provide poller workers
+    for app_id, app_inst in plugin_loader.get_all_applications().items():
+        if getattr(app_inst, "has_poller", False):
+            try:
+                app_inst.start_poller()
+                logger.info("[Main] Background poller daemon auto-started for cartridge '%s'", app_id)
+            except Exception as poller_err:
+                logger.warning("[Main] Could not auto-start poller for cartridge '%s': %s", app_id, poller_err)
+
     yield
     print("[Release100] Shutting down Platform Host cleanly.")
+    # Stop background cartridge pollers
+    for app_id, app_inst in plugin_loader.get_all_applications().items():
+        if getattr(app_inst, "has_poller", False):
+            try:
+                app_inst.stop_poller()
+            except Exception:
+                pass
     _platform_synchronizer.stop()
     try:
         await asyncio.wait_for(sync_task, timeout=2.0)

@@ -43,18 +43,31 @@ def run_gate(gate: GateSpec) -> tuple[bool, float, str]:
     """Execute a single verification gate and return (success, elapsed_sec, output)."""
     start = time.perf_counter()
     try:
-        proc = subprocess.run(
+        proc = subprocess.Popen(
             gate.command,
             cwd=str(ROOT),
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
-            timeout=gate.timeout_sec,
             encoding="utf-8",
             errors="replace",
         )
+        output_chunks: List[str] = []
+        is_long_gate = gate.name.startswith("[7/7]")
+        while True:
+            line = proc.stdout.readline() if proc.stdout else ""
+            if not line and proc.poll() is not None:
+                break
+            if line:
+                output_chunks.append(line)
+                if is_long_gate:
+                    sys.stdout.write(f"   | {line}")
+                    sys.stdout.flush()
+
+        proc.wait(timeout=gate.timeout_sec)
         elapsed = time.perf_counter() - start
         success = proc.returncode == 0
-        output = (proc.stdout + "\n" + proc.stderr).strip()
+        output = "".join(output_chunks).strip()
         return success, elapsed, output
     except subprocess.TimeoutExpired:
         elapsed = time.perf_counter() - start
@@ -130,7 +143,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             GateSpec(
                 name="[7/7] REGRESSION-GUARD",
                 description="Fast Synthetic Unit & E2E Journey Test Suite",
-                command=[py_exe, "-m", "pytest"] + test_paths + ["-q"],
+                command=[py_exe, "-u", "-m", "pytest"] + test_paths + ["-v"],
                 timeout_sec=360,
             )
         )

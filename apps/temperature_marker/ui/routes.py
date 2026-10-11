@@ -37,7 +37,7 @@ from core_platform.app.auth.models import SecurityContext
 from core_platform.app.common.timezone import to_local_ist, to_local_ist_full
 from core_platform.app.entitlements.dependencies import require_action
 from core_platform.app.middleware.tenant_context import resolve_effective_tenant_info
-from core_platform.app.rbac.permissions import get_web_security_context, require_app
+from core_platform.app.rbac.permissions import get_web_security_context, require_app, require_tenant_data_sovereignty
 from core_platform.app.config import settings
 from core_platform.app.skills.geofencing import GeofencingSkill
 from core_platform.app.telemetry.audit_engine import AuditEngine
@@ -47,7 +47,10 @@ from core_platform.app.ui.ui_context import Breadcrumb, build_ui_context
 router = APIRouter(
     prefix="/admin/apps/temperature-marker",
     tags=["Temperature Marker Admin"],
-    dependencies=[Depends(require_app("temperature_marker"))],
+    dependencies=[
+        Depends(require_app("temperature_marker")),
+        Depends(require_tenant_data_sovereignty),
+    ],
 )
 
 # Set up Jinja2 templates directory

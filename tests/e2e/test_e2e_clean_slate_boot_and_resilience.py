@@ -86,6 +86,10 @@ def test_e2e_clean_slate_boot_all_screens(clean_slate_env: TestClient) -> None:
     assert resp_ops_tenants.status_code == 200
     assert "Tenant" in resp_ops_tenants.text
 
+    resp_ops_daemons = client.get("/ops/daemons")
+    assert resp_ops_daemons.status_code == 200
+    assert "Daemons" in resp_ops_daemons.text or "Poller" in resp_ops_daemons.text
+
     # 3. Central Admin Shell Screens (Empty DB)
     resp_dash = client.get("/admin/")
     assert resp_dash.status_code in (200, 302, 303)
@@ -93,6 +97,24 @@ def test_e2e_clean_slate_boot_all_screens(clean_slate_env: TestClient) -> None:
     resp_api_keys = client.get("/admin/api-keys")
     assert resp_api_keys.status_code == 200
     assert "API Key" in resp_api_keys.text
+
+    resp_llm_costs = client.get("/admin/llm-costs")
+    assert resp_llm_costs.status_code == 200
+    assert "LLM" in resp_llm_costs.text or "Consumption" in resp_llm_costs.text
+
+    resp_logs = client.get("/admin/logs")
+    assert resp_logs.status_code == 200
+    assert "Logs" in resp_logs.text or "Telemetry" in resp_logs.text
+
+    # 4. Switch to Customer Tenant Admin Persona for Plane 4 Cartridge Screens
+    # (Data Sovereignty invariant: Platform operators are barred from inspecting customer tenant payloads)
+    tenant_admin_token = create_jwt_token(
+        principal_id="tenant_admin",
+        roles=["admin"],
+        permitted_apps=["all", "mail_organizer", "temperature_marker"],
+        tenant_id="default_tenant",
+    )
+    client.cookies.set("admin_token", tenant_admin_token)
 
     resp_users = client.get("/admin/users")
     assert resp_users.status_code == 200
@@ -106,15 +128,7 @@ def test_e2e_clean_slate_boot_all_screens(clean_slate_env: TestClient) -> None:
     assert resp_entitlements.status_code == 200
     assert "Groups and Access" in resp_entitlements.text or "Access" in resp_entitlements.text
 
-    resp_llm_costs = client.get("/admin/llm-costs")
-    assert resp_llm_costs.status_code == 200
-    assert "LLM" in resp_llm_costs.text or "Consumption" in resp_llm_costs.text
-
-    resp_logs = client.get("/admin/logs")
-    assert resp_logs.status_code == 200
-    assert "Logs" in resp_logs.text or "Telemetry" in resp_logs.text
-
-    # 4. Mail Organizer Domain Cartridge Screens (Empty DB)
+    # 5. Mail Organizer Domain Cartridge Screens (Empty DB)
     resp_mail_dash = client.get("/admin/apps/mail-organizer/dashboard")
     assert resp_mail_dash.status_code == 200
     assert "Mail" in resp_mail_dash.text or "Dashboard" in resp_mail_dash.text

@@ -100,9 +100,10 @@ class MailOrganizerWhatsAppHandler:
                 )
                 return (
                     "🔗 *Connect Your Google Account*\n\n"
-                    "Click the link below on your mobile browser to securely authorize Gmail & Calendar access:\n\n"
+                    "Tap the link below on your mobile browser to securely authorize Gmail & Calendar access:\n\n"
                     f"{magic_url}\n\n"
-                    "⏱️ _This secure link is valid for 15 minutes._"
+                    "⏱️ _This secure link is valid for 15 minutes._\n"
+                    "💡 _If the link is not clickable, please save this contact number._"
                 )
             else:
                 return "🔒 Your phone number is not registered on this platform. Please contact your system administrator to register."
@@ -353,8 +354,11 @@ class MailOrganizerWhatsAppHandler:
         has_oauth = bool(getattr(resolved_user, "encrypted_oauth_tokens", None)) if resolved_user else False
 
         # Member accounts in tenant
-        lookup_tenant = None if tenant_id in ("platform", "*") else tenant_id
-        all_users = user_service.list_users(tenant_id=lookup_tenant)
+        effective_t = tenant_id if (tenant_id and tenant_id not in ("platform", "*")) else (getattr(resolved_user, "tenant_id", None) if resolved_user else None)
+        if effective_t and effective_t not in ("platform", "*"):
+            all_users = user_service.list_users(tenant_id=effective_t)
+        else:
+            all_users = [resolved_user] if resolved_user else []
         tenant_users = [u for u in all_users if "mail_organizer" in getattr(u, "allowed_cartridges", [])]
         total_members = len(tenant_users)
         connected_members = sum(1 for u in tenant_users if bool(getattr(u, "encrypted_oauth_tokens", None)))

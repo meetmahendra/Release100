@@ -565,3 +565,151 @@ async def view_tenant_audit_trail(
             "ui": ui_ctx,
         },
     )
+
+
+# ── Host-Level Background Daemon Supervisor ───────────────────────────────────
+
+@router.get("/daemons", response_class=HTMLResponse)
+async def devops_daemons_dashboard(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    message: Optional[str] = None,
+    error: Optional[str] = None,
+) -> HTMLResponse:
+    """DevOps control console for host-level background daemons, workers, and pollers."""
+    _verify_devops_privilege(ctx, request)
+
+    poller_status: Dict[str, Any] = {
+        "is_running": False,
+        "status": "STOPPED",
+        "cycles_completed": 0,
+        "emails_processed": 0,
+        "sentinel_active": False,
+        "poll_interval_seconds": 30,
+    }
+
+    try:
+        from apps.mail_organizer.services.poller_manager import MailPollerManager
+        mgr = MailPollerManager.get_instance()
+        status_info = mgr.get_status()
+        poller_status.update(status_info)
+        if mgr._worker:
+            poller_status["poll_interval_seconds"] = mgr._worker.poll_interval
+    except Exception as exc:
+        logger.warning("[DevOpsDaemons] Could not query MailPollerManager: %s", exc)
+
+    csrf_token = request.cookies.get("csrf_token") or generate_csrf_token()
+
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=[],
+        tenant_name=settings.ORGANIZATION_NAME or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.devops_plane", path="/ops/tenants"),
+            Breadcrumb(label_key="core.nav.daemons"),
+        ],
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="super_admin_daemons.html",
+        context={
+            "title": "DevOps Daemons & Workers — Release100",
+            "principal": ctx.principal_id,
+            "poller": poller_status,
+            "csrf_token": csrf_token,
+            "message": message,
+            "error": error,
+            "organization": settings.ORGANIZATION_NAME,
+            "ui": ui_ctx,
+        },
+    )
+
+
+@router.post("/daemons/email-poller/start")
+async def start_email_poller(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    csrf_token: Optional[str] = Form(None),
+) -> RedirectResponse:
+    """Start host-level background email poller daemon thread."""
+    _verify_devops_privilege(ctx, request)
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        return RedirectResponse(
+            url=f"/ops/daemons?error={quote_plus('Security CSRF validation failed.')}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    try:
+        from apps.mail_organizer.services.poller_manager import MailPollerManager
+        mgr = MailPollerManager.get_instance()
+        mgr.start()
+        return RedirectResponse(
+            url=f"/ops/daemons?message={quote_plus('Mail Poller daemon started successfully in background thread.')}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    except Exception as exc:
+        return RedirectResponse(
+            url=f"/ops/daemons?error={quote_plus(f'Failed to start poller: {exc}')}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+
+@router.post("/daemons/email-poller/stop")
+async def stop_email_poller(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    csrf_token: Optional[str] = Form(None),
+) -> RedirectResponse:
+    """Stop host-level background email poller cleanly."""
+    _verify_devops_privilege(ctx, request)
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        return RedirectResponse(
+            url=f"/ops/daemons?error={quote_plus('Security CSRF validation failed.')}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    try:
+        from apps.mail_organizer.services.poller_manager import MailPollerManager
+        mgr = MailPollerManager.get_instance()
+        mgr.stop()
+        return RedirectResponse(
+            url=f"/ops/daemons?message={quote_plus('Mail Poller daemon stopped cleanly (0 zombies).')}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    except Exception as exc:
+        return RedirectResponse(
+            url=f"/ops/daemons?error={quote_plus(f'Failed to stop poller: {exc}')}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+
+@router.post("/daemons/email-poller/toggle")
+async def toggle_email_poller(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+    csrf_token: Optional[str] = Form(None),
+) -> RedirectResponse:
+    """Toggle host-level background email poller."""
+    _verify_devops_privilege(ctx, request)
+    if not verify_csrf_token(request, submitted_token=csrf_token):
+        return RedirectResponse(
+            url=f"/ops/daemons?error={quote_plus('Security CSRF validation failed.')}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    try:
+        from apps.mail_organizer.services.poller_manager import MailPollerManager
+        mgr = MailPollerManager.get_instance()
+        now_running = mgr.toggle()
+        state_str = "started" if now_running else "stopped"
+        return RedirectResponse(
+            url=f"/ops/daemons?message={quote_plus(f'Mail Poller daemon {state_str} successfully.')}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    except Exception as exc:
+        return RedirectResponse(
+            url=f"/ops/daemons?error={quote_plus(f'Failed to toggle poller: {exc}')}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
