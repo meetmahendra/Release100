@@ -1,73 +1,296 @@
 {% extends "base.html" %}
 {% block title %}{{ t('apps.mail_organizer.accounts.title_tag') }}{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto">
+<div class="max-w-6xl mx-auto space-y-6">
 
-  <div class="mb-6">
-    <h1 class="text-xl font-bold text-white">{{ t('apps.mail_organizer.accounts.header_title') }}</h1>
-    <p class="text-slate-400 text-sm mt-1">{{ t('apps.mail_organizer.accounts.header_subtitle') }}</p>
-  </div>
-
-  <!-- OAuth Status Card -->
-  <div class="bg-white/5 border border-white/10 rounded-xl p-6 mb-5">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-sm font-semibold text-white">{{ t('apps.mail_organizer.accounts.connection_status') }}</h2>
-
-      {% if oauth_status in ("ok", "token_present") %}
-      <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium border border-emerald-500/30">
-        {{ t('apps.mail_organizer.accounts.badge_connected') }}
-      </span>
-      {% elif oauth_status == "not_configured" %}
-      <span class="px-2.5 py-1 rounded-full bg-slate-600/40 text-slate-400 text-xs font-medium">
-        {{ t('apps.mail_organizer.accounts.badge_not_configured') }}
-      </span>
-      {% else %}
-      <span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-medium border border-amber-500/30">
-        ⚠️ {{ oauth_status | replace('_', ' ') | title }}
-      </span>
-      {% endif %}
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-bold text-white flex items-center gap-2">
+        <span>📬</span> {{ t('apps.mail_organizer.accounts.header_title') }}
+      </h1>
+      <p class="text-slate-400 text-sm mt-1">{{ t('apps.mail_organizer.accounts.header_subtitle') }}</p>
     </div>
 
-    {% if oauth_email %}
-    <p class="text-sm text-slate-300 mb-4">
-      {{ t('apps.mail_organizer.accounts.lbl_authorised_account') }} <span class="font-mono text-emerald-300">{{ oauth_email }}</span>
-    </p>
+    <!-- Alert / Flash Feedback -->
+    {% if msg %}
+    <div class="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-medium flex items-center gap-2">
+      <span>ℹ️</span>
+      {% if msg == 'workspace_paused' %}{{ t('apps.mail_organizer.accounts.msg_workspace_paused') }}
+      {% elif msg == 'workspace_resumed' %}{{ t('apps.mail_organizer.accounts.msg_workspace_resumed') }}
+      {% elif msg == 'user_paused' %}{{ t('apps.mail_organizer.accounts.msg_user_paused') }}
+      {% elif msg == 'user_resumed' %}{{ t('apps.mail_organizer.accounts.msg_user_resumed') }}
+      {% elif msg == 'config_updated' %}{{ t('apps.mail_organizer.accounts.msg_config_updated') }}
+      {% elif msg == 'poll_now_success' %}{{ t('apps.mail_organizer.accounts.msg_poll_now_success') }}
+      {% elif msg == 'poll_now_error' %}{{ t('apps.mail_organizer.accounts.msg_poll_now_error') }}
+      {% elif msg == 'workspace_settings_saved' %}{{ t('apps.mail_organizer.accounts.msg_workspace_settings_saved') }}
+      {% else %}{{ msg }}
+      {% endif %}
+    </div>
     {% endif %}
-
-    <p class="text-xs text-slate-500 mb-5">
-      {{ t('apps.mail_organizer.accounts.reauth_description') }}
-    </p>
-
-    <a href="/admin/apps/mail-organizer/accounts/reauth"
-       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500
-              text-white text-sm font-medium transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581
-             m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-      </svg>
-      {{ t('apps.mail_organizer.accounts.btn_reauth') }}
-    </a>
   </div>
 
-  <!-- Sync Settings -->
-  <div class="bg-white/5 border border-white/10 rounded-xl p-6">
-    <h2 class="text-sm font-semibold text-white mb-4">{{ t('apps.mail_organizer.accounts.sync_settings_title') }}</h2>
-    <form method="post" action="/admin/apps/mail-organizer/accounts/settings" class="space-y-4">
-      <div>
-        <label class="block text-sm text-slate-300 mb-1">{{ t('apps.mail_organizer.accounts.lbl_sync_interval') }}</label>
-        <input
-          type="number" name="sync_interval" value="{{ sync_interval }}" min="30" max="3600"
-          class="w-40 px-3 py-2 rounded-lg bg-white/5 border border-white/15 text-white text-sm
-                 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
-        <p class="text-xs text-slate-500 mt-1">{{ t('apps.mail_organizer.accounts.hint_sync_interval') }}</p>
+  <!-- Workspace Master Poller Status Card -->
+  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center {% if ws_config.is_master_enabled %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30{% else %}bg-amber-500/20 text-amber-400 border border-amber-500/30{% endif %} text-2xl">
+          {% if ws_config.is_master_enabled %}⚡{% else %}⏸️{% endif %}
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-base font-bold text-white">{{ t('apps.mail_organizer.accounts.master_state_title') }}</h2>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {% if ws_config.is_master_enabled %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-amber-500/20 text-amber-300 border border-amber-500/30{% endif %}">
+              {% if ws_config.is_master_enabled %}{{ t('apps.mail_organizer.accounts.state_active') }}{% else %}{{ t('apps.mail_organizer.accounts.state_paused') }}{% endif %}
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">
+            {% if ws_config.is_master_enabled %}
+            {{ t('apps.mail_organizer.accounts.desc_active') }}
+            {% else %}
+            {{ t('apps.mail_organizer.accounts.desc_paused', tenant=tenant_name or tenant_id) }}
+            {% endif %}
+          </p>
+        </div>
       </div>
-      <button type="submit"
-              class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">
-        {{ t('apps.mail_organizer.accounts.btn_save_settings') }}
-      </button>
-    </form>
+
+      <div class="flex items-center gap-3">
+        <form method="post" action="/admin/apps/mail-organizer/accounts/workspace/toggle">
+          <button type="submit" id="btn-toggle-workspace"
+                  class="px-4 py-2 rounded-lg text-xs font-semibold transition-colors {% if ws_config.is_master_enabled %}bg-amber-600 hover:bg-amber-500 text-white{% else %}bg-emerald-600 hover:bg-emerald-500 text-white{% endif %}">
+            {% if ws_config.is_master_enabled %}{{ t('apps.mail_organizer.accounts.btn_pause_all') }}{% else %}{{ t('apps.mail_organizer.accounts.btn_resume_all') }}{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Summary Stats Chips -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-700/60 text-xs">
+      <div class="bg-slate-900/60 rounded-lg p-2.5">
+        <span class="text-slate-400 block">{{ t('apps.mail_organizer.accounts.chip_total_accounts') }}</span>
+        <span class="text-base font-bold text-white">{{ total_accounts }}</span>
+      </div>
+      <div class="bg-slate-900/60 rounded-lg p-2.5">
+        <span class="text-slate-400 block">{{ t('apps.mail_organizer.accounts.chip_actively_polling') }}</span>
+        <span class="text-base font-bold text-emerald-400">{{ active_pollers }}</span>
+      </div>
+      <div class="bg-slate-900/60 rounded-lg p-2.5">
+        <span class="text-slate-400 block">{{ t('apps.mail_organizer.accounts.chip_paused_accounts') }}</span>
+        <span class="text-base font-bold text-slate-400">{{ paused_pollers }}</span>
+      </div>
+      <div class="bg-slate-900/60 rounded-lg p-2.5">
+        <span class="text-slate-400 block">{{ t('apps.mail_organizer.accounts.chip_default_cadence') }}</span>
+        <span class="text-base font-bold text-sky-400">{{ ws_config.default_poll_interval_seconds }}s ({{ (ws_config.default_poll_interval_seconds / 60) | round | int }}m)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid: Personal Connection & Sync Settings -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Personal OAuth Connection Card (col-span-2) -->
+    <div class="md:col-span-2 bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>🔑</span> {{ t('apps.mail_organizer.accounts.connection_status') }}
+          </h2>
+          {% if oauth_status in ("ok", "token_present", "connected") %}
+          <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium border border-emerald-500/30">
+            {{ t('apps.mail_organizer.accounts.badge_connected') }}
+          </span>
+          {% elif oauth_status == "not_configured" %}
+          <span class="px-2.5 py-1 rounded-full bg-slate-600/40 text-slate-400 text-xs font-medium">
+            {{ t('apps.mail_organizer.accounts.badge_not_configured') }}
+          </span>
+          {% else %}
+          <span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-medium border border-amber-500/30">
+            ⚠️ {{ oauth_status | replace('_', ' ') | title }}
+          </span>
+          {% endif %}
+        </div>
+
+        {% if oauth_email %}
+        <p class="text-xs text-slate-300 mb-2">
+          {{ t('apps.mail_organizer.accounts.lbl_authorised_account') }} <span class="font-mono text-emerald-300 font-semibold">{{ oauth_email }}</span>
+        </p>
+        {% endif %}
+
+        <p class="text-xs text-slate-400 leading-relaxed mb-4">
+          {{ t('apps.mail_organizer.accounts.reauth_description') }}
+        </p>
+      </div>
+
+      <div>
+        <a href="/admin/apps/mail-organizer/accounts/reauth"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          {{ t('apps.mail_organizer.accounts.btn_reauth') }}
+        </a>
+      </div>
+    </div>
+
+    <!-- Workspace Default Settings Form (col-span-1) -->
+    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg flex flex-col justify-between">
+      <div>
+        <h2 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+          <span>⚙️</span> {{ t('apps.mail_organizer.accounts.sync_settings_title') }}
+        </h2>
+        <p class="text-xs text-slate-400 mb-4">{{ t('apps.mail_organizer.accounts.hint_sync_interval') }}</p>
+      </div>
+
+      <form method="post" action="/admin/apps/mail-organizer/accounts/settings" class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-300 mb-1 font-medium">{{ t('apps.mail_organizer.accounts.lbl_sync_interval') }}</label>
+          <input
+            type="number" name="sync_interval" value="{{ sync_interval }}" min="30" max="3600"
+            class="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          />
+        </div>
+        <button type="submit"
+                class="w-full px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors">
+          {{ t('apps.mail_organizer.accounts.btn_save_settings') }}
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Workspace Members Poller Roster Table -->
+  <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-5 shadow-lg space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div>
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <span>👥</span> {{ t('apps.mail_organizer.accounts.schedules_title') }}
+        </h2>
+        <p class="text-xs text-slate-400 mt-0.5">{{ t('apps.mail_organizer.accounts.schedules_desc') }}</p>
+      </div>
+      <a href="/admin/users" class="text-xs text-sky-400 hover:text-sky-300 font-medium transition-colors">
+        {{ t('apps.mail_organizer.accounts.link_manage_members') }}
+      </a>
+    </div>
+
+    {% if members %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs text-slate-300">
+        <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700/60">
+          <tr>
+            <th class="py-3 px-3">{{ t('apps.mail_organizer.accounts.th_member') }}</th>
+            <th class="py-3 px-3">{{ t('apps.mail_organizer.accounts.th_google_auth') }}</th>
+            <th class="py-3 px-3">{{ t('apps.mail_organizer.accounts.th_poller_state') }}</th>
+            <th class="py-3 px-3">{{ t('apps.mail_organizer.accounts.th_timing_window') }}</th>
+            <th class="py-3 px-3">{{ t('apps.mail_organizer.accounts.th_telemetry') }}</th>
+            <th class="py-3 px-3 text-right">{{ t('apps.mail_organizer.accounts.th_actions') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-700/40">
+          {% for m in members %}
+          <tr class="hover:bg-slate-700/20 transition-colors">
+            <!-- Member -->
+            <td class="py-3 px-3">
+              <div class="font-semibold text-white">{{ m.full_name }}</div>
+              <div class="text-[11px] text-slate-400 font-mono">{{ m.email }}</div>
+              <div class="text-[10px] text-slate-500">{{ m.phone_number }} &bull; <span class="uppercase">{{ m.role }}</span></div>
+            </td>
+
+            <!-- Google Auth Status -->
+            <td class="py-3 px-3">
+              {% if m.has_oauth %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-medium border border-emerald-500/30">
+                {{ t('apps.mail_organizer.accounts.status_connected') }}
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 text-[10px] font-medium">
+                {{ t('apps.mail_organizer.accounts.status_not_connected') }}
+              </span>
+              {% endif %}
+            </td>
+
+            <!-- Poller State -->
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if m.is_poller_enabled and ws_config.is_master_enabled %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-slate-700/60 text-slate-400{% endif %}">
+                  {% if not ws_config.is_master_enabled %}
+                  {{ t('apps.mail_organizer.accounts.state_paused_workspace') }}
+                  {% elif m.is_poller_enabled %}
+                  {{ t('apps.mail_organizer.accounts.state_active') }}
+                  {% else %}
+                  {{ t('apps.mail_organizer.accounts.state_paused') }}
+                  {% endif %}
+                </span>
+
+                <form method="post" action="/admin/apps/mail-organizer/accounts/users/{{ m.id }}/toggle">
+                  <button type="submit"
+                          class="px-2 py-0.5 rounded text-[10px] font-medium transition-colors {% if m.is_poller_enabled %}bg-amber-900/40 hover:bg-amber-800/50 text-amber-300 border border-amber-700/40{% else %}bg-emerald-600 hover:bg-emerald-500 text-white{% endif %}">
+                    {% if m.is_poller_enabled %}{{ t('apps.mail_organizer.accounts.btn_pause') }}{% else %}{{ t('apps.mail_organizer.accounts.btn_resume') }}{% endif %}
+                  </button>
+                </form>
+              </div>
+            </td>
+
+            <!-- Timing & Window Form -->
+            <td class="py-3 px-3">
+              <form method="post" action="/admin/apps/mail-organizer/accounts/users/{{ m.id }}/config" class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <select name="poll_interval_seconds"
+                        class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-emerald-500">
+                  <option value="60" {% if m.poll_interval_seconds == 60 %}selected{% endif %}>{{ t('apps.mail_organizer.accounts.opt_1m') }}</option>
+                  <option value="300" {% if m.poll_interval_seconds == 300 %}selected{% endif %}>{{ t('apps.mail_organizer.accounts.opt_5m') }}</option>
+                  <option value="900" {% if m.poll_interval_seconds == 900 %}selected{% endif %}>{{ t('apps.mail_organizer.accounts.opt_15m') }}</option>
+                  <option value="1800" {% if m.poll_interval_seconds == 1800 %}selected{% endif %}>{{ t('apps.mail_organizer.accounts.opt_30m') }}</option>
+                  <option value="3600" {% if m.poll_interval_seconds == 3600 %}selected{% endif %}>{{ t('apps.mail_organizer.accounts.opt_60m') }}</option>
+                </select>
+
+                <select name="active_window"
+                        class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-emerald-500">
+                  <option value="24x7" {% if m.active_window == '24x7' %}selected{% endif %}>{{ t('apps.mail_organizer.accounts.opt_24x7') }}</option>
+                  <option value="09:00-18:00" {% if m.active_window == '09:00-18:00' %}selected{% endif %}>{{ t('apps.mail_organizer.accounts.opt_work') }}</option>
+                  <option value="08:00-20:00" {% if m.active_window == '08:00-20:00' %}selected{% endif %}>{{ t('apps.mail_organizer.accounts.opt_extended') }}</option>
+                </select>
+
+                <button type="submit" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-medium transition-colors">
+                  {{ t('apps.mail_organizer.accounts.btn_save') }}
+                </button>
+              </form>
+            </td>
+
+            <!-- Telemetry -->
+            <td class="py-3 px-3">
+              <div class="text-[11px] text-slate-300">
+                {{ t('apps.mail_organizer.accounts.lbl_last') }} {% if m.last_polled_at %}{{ m.last_polled_at.strftime('%H:%M:%S UTC') }}{% else %}<span class="text-slate-500">{{ t('apps.mail_organizer.accounts.lbl_never') }}</span>{% endif %}
+              </div>
+              <div class="text-[10px] text-slate-400">
+                {{ t('apps.mail_organizer.accounts.lbl_cycles', cycles=m.total_cycles, emails=m.total_emails_fetched) }}
+              </div>
+              {% if m.last_error %}
+              <div class="text-[10px] text-red-400 truncate max-w-xs" title="{{ m.last_error }}">⚠️ {{ m.last_error }}</div>
+              {% endif %}
+            </td>
+
+            <!-- Actions: Poll Now -->
+            <td class="py-3 px-3 text-right">
+              <form method="post" action="/admin/apps/mail-organizer/accounts/users/{{ m.id }}/poll-now" class="inline-block">
+                <button type="submit"
+                        class="px-2.5 py-1 rounded bg-blue-600/80 hover:bg-blue-600 text-white text-[11px] font-semibold transition-colors flex items-center gap-1">
+                  <span>⚡</span> {{ t('apps.mail_organizer.accounts.btn_poll_now') }}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-6 text-center text-slate-400 bg-slate-900/40 rounded-lg">
+      <p class="text-xs">{{ t('apps.mail_organizer.accounts.no_members', tenant=tenant_name or tenant_id) }}</p>
+      <a href="/admin/users" class="mt-2 inline-block px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors">
+        {{ t('apps.mail_organizer.accounts.btn_assign_users') }}
+      </a>
+    </div>
+    {% endif %}
   </div>
 
 </div>

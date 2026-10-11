@@ -24,14 +24,18 @@ Provides endpoints for:
 """
 
 from datetime import datetime, timezone
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
+from sqlalchemy import select
+
+logger = logging.getLogger("mail_organizer.ui.routes")
 
 from apps.mail_organizer.database.db_service import MailDatabaseService
 from apps.mail_organizer.graph.state import MailOrganizerState
@@ -335,25 +339,16 @@ async def view_drafts(request: Request) -> HTMLResponse:
 
 # ── GAP-019: OAuth Accounts Management ───────────────────────────────────────
 
+# ── GAP-019: OAuth Accounts & Customer Admin Poller Management ─────────────
+
 @router.get("/accounts", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:inbox:view"))])
 async def view_accounts(request: Request) -> HTMLResponse:
-    """Display Google Account OAuth2 status and re-authorisation controls.
-
-    Shows:
-    - Current OAuth token status (valid / expired / not configured)
-    - One-click re-auth button
-    - Configurable sync interval
-
-    Args:
-        request: FastAPI request.
-
-    Returns:
-        Rendered accounts.html template.
-    """
+    """Display Google Account OAuth2 status, workspace poller, and per-user poller configurations."""
     tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request)
+    effective_tenant = tenant_id or "default"
+
     oauth_status: str = "not_configured"
     oauth_email: str = ""
-    sync_interval: int = 60
 
     try:
         from apps.mail_organizer.connectors.gmail_connector import GmailConnector
@@ -363,7 +358,6 @@ async def view_accounts(request: Request) -> HTMLResponse:
             oauth_status = status_info.get("status", "unknown")
             oauth_email = status_info.get("email", "")
         else:
-            # Try to probe with a lightweight credentials check.
             from pathlib import Path as _Path
             import os as _os
             token_path = _os.environ.get("GMAIL_TOKEN_PATH", "config/gmail_token.json")
@@ -371,6 +365,52 @@ async def view_accounts(request: Request) -> HTMLResponse:
                 oauth_status = "token_present"
     except Exception:
         oauth_status = "connector_error"
+
+    # Workspace poller configuration
+    ws_config = _db_service.get_workspace_poller_config(tenant_id=effective_tenant)
+
+    # Members roster for tenant
+    members: List[Dict[str, Any]] = []
+    try:
+        from core_platform.app.identity.service import get_user_identity_service
+        user_service = get_user_identity_service()
+        lookup_tenant = None if effective_tenant in ("platform", "*") else effective_tenant
+        all_users = user_service.list_users(tenant_id=lookup_tenant)
+
+        tenant_users = [
+            u for u in all_users
+            if "mail_organizer" in getattr(u, "allowed_cartridges", [])
+        ]
+
+        user_configs_list = _db_service.list_user_poller_configs(tenant_id=effective_tenant)
+        user_configs_map = {c.user_id: c for c in user_configs_list}
+
+        for u in tenant_users:
+            cfg = user_configs_map.get(u.id)
+            has_oauth = bool(getattr(u, "encrypted_oauth_tokens", None))
+            members.append({
+                "id": u.id,
+                "full_name": u.full_name,
+                "email": u.email or u.google_email or f"user_{u.id}@tenant.local",
+                "phone_number": u.phone_number,
+                "role": u.role,
+                "status": u.status,
+                "has_oauth": has_oauth,
+                "oauth_status": "connected" if has_oauth else "not_configured",
+                "is_poller_enabled": cfg.is_poller_enabled if cfg else True,
+                "poll_interval_seconds": cfg.poll_interval_seconds if cfg else ws_config.default_poll_interval_seconds,
+                "active_window": cfg.active_window if cfg else "24x7",
+                "last_polled_at": cfg.last_polled_at if cfg else None,
+                "total_cycles": cfg.total_cycles if cfg else 0,
+                "total_emails_fetched": cfg.total_emails_fetched if cfg else 0,
+                "last_error": cfg.last_error if cfg else None,
+            })
+    except Exception as exc:
+        logger.warning("[Routes] Failed to load tenant user list: %s", exc)
+
+    total_accounts = len(members)
+    active_pollers = sum(1 for m in members if m["is_poller_enabled"] and ws_config.is_master_enabled)
+    paused_pollers = total_accounts - active_pollers
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
@@ -383,6 +423,8 @@ async def view_accounts(request: Request) -> HTMLResponse:
         ],
     )
 
+    msg = request.query_params.get("msg", "")
+
     return templates.TemplateResponse(
         request=request,
         name="accounts.html",
@@ -394,10 +436,128 @@ async def view_accounts(request: Request) -> HTMLResponse:
             "active_tenant": active_tenant,
             "oauth_status": oauth_status,
             "oauth_email": oauth_email,
-            "sync_interval": sync_interval,
+            "sync_interval": ws_config.default_poll_interval_seconds,
+            "ws_config": ws_config,
+            "members": members,
+            "total_accounts": total_accounts,
+            "active_pollers": active_pollers,
+            "paused_pollers": paused_pollers,
+            "msg": msg,
             "ui": ui_ctx,
         },
     )
+
+
+@router.post("/accounts/workspace/toggle", dependencies=[Depends(require_action("mail:account:connect"))])
+async def toggle_workspace_poller(request: Request) -> Response:
+    """Toggle workspace master poller on/off."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request)
+    effective_tenant = tenant_id or "default"
+    current_cfg = _db_service.get_workspace_poller_config(tenant_id=effective_tenant)
+    new_status = not current_cfg.is_master_enabled
+    _db_service.set_workspace_poller_status(is_enabled=new_status, tenant_id=effective_tenant)
+
+    if request.headers.get("accept", "").startswith("application/json"):
+        return JSONResponse({"success": True, "is_master_enabled": new_status})
+    return RedirectResponse(
+        url=f"/admin/apps/mail-organizer/accounts?msg={'workspace_resumed' if new_status else 'workspace_paused'}",
+        status_code=303,
+    )
+
+
+@router.post("/accounts/users/{user_id}/toggle", dependencies=[Depends(require_action("mail:account:connect"))])
+async def toggle_user_poller(user_id: int, request: Request) -> Response:
+    """Toggle polling for an individual user."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request)
+    effective_tenant = tenant_id or "default"
+    cfg = _db_service.get_user_poller_config(user_id=user_id, tenant_id=effective_tenant)
+    current_status = cfg.is_poller_enabled if cfg else True
+    new_status = not current_status
+    email = cfg.email if cfg else f"user_{user_id}@tenant.local"
+    interval = cfg.poll_interval_seconds if cfg else 300
+    window = cfg.active_window if cfg else "24x7"
+
+    _db_service.upsert_user_poller_config(
+        user_id=user_id,
+        email=email,
+        is_enabled=new_status,
+        poll_interval_seconds=interval,
+        active_window=window,
+        tenant_id=effective_tenant,
+    )
+
+    if request.headers.get("accept", "").startswith("application/json"):
+        return JSONResponse({"success": True, "user_id": user_id, "is_poller_enabled": new_status})
+    return RedirectResponse(
+        url=f"/admin/apps/mail-organizer/accounts?msg={'user_resumed' if new_status else 'user_paused'}",
+        status_code=303,
+    )
+
+
+@router.post("/accounts/users/{user_id}/config", dependencies=[Depends(require_action("mail:account:connect"))])
+async def update_user_poller_config(user_id: int, request: Request) -> Response:
+    """Update cadence interval and active window for an individual user."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request)
+    effective_tenant = tenant_id or "default"
+    form_data = await request.form()
+    interval_raw = form_data.get("poll_interval_seconds")
+    interval = int(interval_raw) if isinstance(interval_raw, str) and interval_raw.isdigit() else 300
+    window_raw = form_data.get("active_window")
+    window = str(window_raw) if isinstance(window_raw, str) and window_raw else "24x7"
+
+    cfg = _db_service.get_user_poller_config(user_id=user_id, tenant_id=effective_tenant)
+    email = cfg.email if cfg else f"user_{user_id}@tenant.local"
+    is_enabled = cfg.is_poller_enabled if cfg else True
+
+    _db_service.upsert_user_poller_config(
+        user_id=user_id,
+        email=email,
+        is_enabled=is_enabled,
+        poll_interval_seconds=interval,
+        active_window=window,
+        tenant_id=effective_tenant,
+    )
+
+    if request.headers.get("accept", "").startswith("application/json"):
+        return JSONResponse({"success": True, "user_id": user_id, "poll_interval_seconds": interval, "active_window": window})
+    return RedirectResponse(url="/admin/apps/mail-organizer/accounts?msg=config_updated", status_code=303)
+
+
+@router.post("/accounts/users/{user_id}/poll-now", dependencies=[Depends(require_action("mail:account:connect"))])
+async def trigger_user_poll_now(user_id: int, request: Request) -> Response:
+    """Trigger an on-demand manual poll for a specific user."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request)
+    effective_tenant = tenant_id or "default"
+
+    from apps.mail_organizer.services.poller_manager import MailPollerManager
+    mgr = MailPollerManager.get_instance()
+    result = await mgr.poll_user_now(user_id=user_id, tenant_id=effective_tenant)
+
+    if request.headers.get("accept", "").startswith("application/json"):
+        return JSONResponse(result)
+    msg_param = "poll_now_success" if result.get("success") else "poll_now_error"
+    return RedirectResponse(url=f"/admin/apps/mail-organizer/accounts?msg={msg_param}", status_code=303)
+
+
+@router.post("/accounts/settings", dependencies=[Depends(require_action("mail:account:connect"))])
+async def save_accounts_settings(request: Request) -> RedirectResponse:
+    """Save workspace-level default sync interval."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request)
+    effective_tenant = tenant_id or "default"
+    form_data = await request.form()
+    interval_raw = form_data.get("sync_interval")
+    interval = int(interval_raw) if isinstance(interval_raw, str) and interval_raw.isdigit() else 300
+
+    _db_service.get_workspace_poller_config(tenant_id=effective_tenant)
+    with _db_service.get_session() as session:
+        from apps.mail_organizer.database.models import WorkspacePollerConfig
+        stmt = select(WorkspacePollerConfig).where(WorkspacePollerConfig.tenant_id == effective_tenant)
+        rec = session.scalar(stmt)
+        if rec:
+            rec.default_poll_interval_seconds = interval
+            session.commit()
+
+    return RedirectResponse(url="/admin/apps/mail-organizer/accounts?msg=workspace_settings_saved", status_code=303)
 
 
 @router.get("/accounts/reauth", dependencies=[Depends(require_action("mail:account:connect"))])

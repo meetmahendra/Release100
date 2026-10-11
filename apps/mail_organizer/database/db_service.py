@@ -22,7 +22,7 @@ PM task queue, and deterministic routing rules.
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 import uuid
 
 from sqlalchemy import create_engine, desc, func, or_, select, update
@@ -36,6 +36,8 @@ from apps.mail_organizer.database.models import (
     EmailRecord,
     MailRule,
     PMActionQueue,
+    UserPollerConfig,
+    WorkspacePollerConfig,
 )
 from core_platform.app.middleware.tenant_context import get_current_tenant_id, get_current_user_context
 from core_platform.app.security.user_cipher import UserPayloadCipher
@@ -709,3 +711,167 @@ class MailDatabaseService:
     def get_triage_metrics(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
         """Alias for get_dashboard_metrics."""
         return self.get_dashboard_metrics(tenant_id=tenant_id)
+
+    def get_email(self, gmail_id: str, tenant_id: Optional[str] = None) -> Optional[EmailRecord]:
+        """Retrieve an email record by gmail_id with tenant filtering."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "public"
+
+        with self.get_session() as session:
+            stmt = select(EmailRecord).where(EmailRecord.gmail_id == gmail_id)
+            stmt = _apply_tenant_filter_stmt(stmt, EmailRecord.tenant_id, effective_tenant)
+            email_rec = session.scalar(stmt)
+            if email_rec is None:
+                return None
+            return cast(Optional[EmailRecord], email_rec)
+
+    def get_workspace_poller_config(self, tenant_id: Optional[str] = None) -> WorkspacePollerConfig:
+        """Get or initialize workspace-level poller configuration for a tenant."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "default"
+
+        with self.get_session() as session:
+            stmt = select(WorkspacePollerConfig).where(WorkspacePollerConfig.tenant_id == effective_tenant)
+            config = session.scalar(stmt)
+            if config is None:
+                config = WorkspacePollerConfig(
+                    tenant_id=effective_tenant,
+                    is_master_enabled=True,
+                    default_poll_interval_seconds=300,
+                )
+                session.add(config)
+                session.commit()
+                session.refresh(config)
+            session.expunge(config)
+            return config
+
+    def set_workspace_poller_status(self, is_enabled: bool, tenant_id: Optional[str] = None) -> WorkspacePollerConfig:
+        """Toggle or set the master poller status for a tenant workspace."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "default"
+
+        with self.get_session() as session:
+            stmt = select(WorkspacePollerConfig).where(WorkspacePollerConfig.tenant_id == effective_tenant)
+            config = session.scalar(stmt)
+            if config is None:
+                config = WorkspacePollerConfig(
+                    tenant_id=effective_tenant,
+                    is_master_enabled=is_enabled,
+                    default_poll_interval_seconds=300,
+                )
+                session.add(config)
+            else:
+                config.is_master_enabled = is_enabled
+                config.updated_at = datetime.now(timezone.utc)
+            session.commit()
+            session.refresh(config)
+            session.expunge(config)
+            return config
+
+    def get_user_poller_config(self, user_id: int, tenant_id: Optional[str] = None) -> Optional[UserPollerConfig]:
+        """Retrieve poller configuration for an individual user."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "default"
+
+        with self.get_session() as session:
+            stmt = select(UserPollerConfig).where(
+                UserPollerConfig.user_id == user_id,
+                UserPollerConfig.tenant_id == effective_tenant,
+            )
+            config = session.scalar(stmt)
+            if config is not None:
+                session.expunge(config)
+            return config
+
+    def list_user_poller_configs(self, tenant_id: Optional[str] = None) -> List[UserPollerConfig]:
+        """List all user poller configurations registered for a tenant."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "default"
+
+        with self.get_session() as session:
+            stmt = select(UserPollerConfig)
+            stmt = _apply_tenant_filter_stmt(stmt, UserPollerConfig.tenant_id, effective_tenant)
+            configs = list(session.scalars(stmt).all())
+            for c in configs:
+                session.expunge(c)
+            return configs
+
+    def upsert_user_poller_config(
+        self,
+        user_id: int,
+        email: str,
+        is_enabled: bool = True,
+        poll_interval_seconds: int = 300,
+        active_window: str = "24x7",
+        tenant_id: Optional[str] = None,
+    ) -> UserPollerConfig:
+        """Create or update per-user poller configuration."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "default"
+
+        with self.get_session() as session:
+            stmt = select(UserPollerConfig).where(
+                UserPollerConfig.user_id == user_id,
+                UserPollerConfig.tenant_id == effective_tenant,
+            )
+            config = session.scalar(stmt)
+            if config is None:
+                config = UserPollerConfig(
+                    tenant_id=effective_tenant,
+                    user_id=user_id,
+                    email=email,
+                    is_poller_enabled=is_enabled,
+                    poll_interval_seconds=max(5, poll_interval_seconds),
+                    active_window=active_window,
+                )
+                session.add(config)
+            else:
+                config.email = email
+                config.is_poller_enabled = is_enabled
+                config.poll_interval_seconds = max(5, poll_interval_seconds)
+                config.active_window = active_window
+                config.updated_at = datetime.now(timezone.utc)
+            session.commit()
+            session.refresh(config)
+            session.expunge(config)
+            return config
+
+    def record_user_poll_run(
+        self,
+        user_id: int,
+        emails_fetched: int = 0,
+        error: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+    ) -> Optional[UserPollerConfig]:
+        """Record the completion of a poll cycle for a user, updating telemetry and last_polled_at."""
+        user_ctx = get_current_user_context()
+        effective_tenant = tenant_id or (user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id() or "default"
+
+        with self.get_session() as session:
+            stmt = select(UserPollerConfig).where(
+                UserPollerConfig.user_id == user_id,
+                UserPollerConfig.tenant_id == effective_tenant,
+            )
+            config = session.scalar(stmt)
+            if config is None:
+                config = UserPollerConfig(
+                    tenant_id=effective_tenant,
+                    user_id=user_id,
+                    email=f"user_{user_id}@{effective_tenant}.local",
+                    is_poller_enabled=True,
+                    poll_interval_seconds=300,
+                    active_window="24x7",
+                    total_cycles=0,
+                    total_emails_fetched=0,
+                )
+                session.add(config)
+            config.last_polled_at = datetime.now(timezone.utc)
+            config.total_cycles = (config.total_cycles or 0) + 1
+            config.total_emails_fetched = (config.total_emails_fetched or 0) + emails_fetched
+            config.last_error = error
+            config.updated_at = datetime.now(timezone.utc)
+            session.commit()
+            session.refresh(config)
+            session.expunge(config)
+            return config
+

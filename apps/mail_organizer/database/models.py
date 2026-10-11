@@ -138,3 +138,51 @@ class DraftRecord(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
     )
+
+
+class WorkspacePollerConfig(Base):
+    """Tenant-wide mail poller configuration managed by Customer (Tenant) Admin."""
+
+    __tablename__ = "mail_workspace_poller_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    is_master_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    default_poll_interval_seconds: Mapped[int] = mapped_column(Integer, default=300, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class UserPollerConfig(Base):
+    """Per-user mail poller configuration managed by Customer (Tenant) Admin."""
+
+    __tablename__ = "mail_user_poller_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
+    is_poller_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    poll_interval_seconds: Mapped[int] = mapped_column(Integer, default=300, nullable=False)
+    active_window: Mapped[str] = mapped_column(String(64), default="24x7", nullable=False)
+    last_polled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    total_cycles: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_emails_fetched: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+

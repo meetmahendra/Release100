@@ -69,6 +69,8 @@ def mail_e2e_env(tmp_path: Path) -> tuple[TestClient, MailDatabaseService, LLMCo
 
     MailDatabaseService._instance = None
     mail_db = MailDatabaseService.get_instance(engine=engine)
+    from apps.mail_organizer.ui import routes as mail_routes
+    mail_routes._db_service = mail_db
     cost_tracker = get_llm_cost_tracker()
 
     client = TestClient(app, follow_redirects=False)

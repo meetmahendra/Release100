@@ -171,52 +171,160 @@ STATUS 200
 <div aria-label="Notifications" aria-live="polite" class="px-# pt-# empty:hidden" id="ui-alerts" role="status">
 </div>
 <main class="flex-# p-#" id="main">
-<div class="max-w-#xl mx-auto">
-<div class="mb-#">
-<h1 class="text-xl font-bold text-white">
+<div class="max-w-#xl mx-auto space-y-#">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-#">
+<div>
+<h1 class="text-xl font-bold text-white flex items-center gap-#">
+<span>
+  📬
+</span>
   Google Account
 </h1>
 <p class="text-slate-# text-sm mt-#">
   OAuth# authorization status & sync settings
 </p>
 </div>
-<div class="bg-white/# border border-white/# rounded-xl p-# mb-#">
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-lg">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-#">
+<div class="flex items-center gap-#">
+<div class="w-# h-# rounded-xl flex items-center justify-center bg-emerald-#/# text-emerald-# border border-emerald-#/# text-#xl">
+  ⚡
+</div>
+<div>
+<div class="flex items-center gap-#">
+<h2 class="text-base font-bold text-white">
+  Workspace Poller Master State
+</h2>
+<span class="px-#.# py-#.# rounded-full text-xs font-semibold bg-emerald-#/# text-emerald-# border border-emerald-#/#">
+  ACTIVE
+</span>
+</div>
+<p class="text-xs text-slate-# mt-#">
+  Background ingestion worker is polling inboxes according to member schedules.
+</p>
+</div>
+</div>
+<div class="flex items-center gap-#">
+<form action="/admin/apps/mail-organizer/accounts/workspace/toggle" method="post">
+<button class="px-# py-# rounded-lg text-xs font-semibold transition-colors bg-amber-# hover:bg-amber-# text-white" id="btn-toggle-workspace" type="submit">
+  ⏸️ Pause All Polling
+</button>
+</form>
+</div>
+</div>
+<div class="grid grid-cols-# sm:grid-cols-# gap-# mt-# pt-# border-t border-slate-#/# text-xs">
+<div class="bg-slate-#/# rounded-lg p-#.#">
+<span class="text-slate-# block">
+  Total Accounts
+</span>
+<span class="text-base font-bold text-white">
+  #
+</span>
+</div>
+<div class="bg-slate-#/# rounded-lg p-#.#">
+<span class="text-slate-# block">
+  Actively Polling
+</span>
+<span class="text-base font-bold text-emerald-#">
+  #
+</span>
+</div>
+<div class="bg-slate-#/# rounded-lg p-#.#">
+<span class="text-slate-# block">
+  Paused Accounts
+</span>
+<span class="text-base font-bold text-slate-#">
+  #
+</span>
+</div>
+<div class="bg-slate-#/# rounded-lg p-#.#">
+<span class="text-slate-# block">
+  Default Cadence
+</span>
+<span class="text-base font-bold text-sky-#">
+  #s (#m)
+</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-# md:grid-cols-# gap-#">
+<div class="md:col-span-# bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-lg flex flex-col justify-between">
+<div>
 <div class="flex items-center justify-between mb-#">
-<h2 class="text-sm font-semibold text-white">
+<h2 class="text-sm font-bold text-white flex items-center gap-#">
+<span>
+  🔑
+</span>
   Connection Status
 </h2>
 <span class="px-#.# py-# rounded-full bg-amber-#/# text-amber-# text-xs font-medium border border-amber-#/#">
   ⚠️ Expired
 </span>
 </div>
-<p class="text-xs text-slate-# mb-#">
+<p class="text-xs text-slate-# leading-relaxed mb-#">
   Re-authorize your Google account to refresh the OAuth# token. This enables Gmail label application, draft creation, and Calendar free/busy lookups.
 </p>
-<a class="inline-flex items-center gap-# px-# py-# rounded-lg bg-blue-# hover:bg-blue-# text-white text-sm font-medium transition-colors" href="/admin/apps/mail-organizer/accounts/reauth">
+</div>
+<div>
+<a class="inline-flex items-center gap-# px-# py-# rounded-lg bg-blue-# hover:bg-blue-# text-white text-xs font-semibold transition-colors" href="/admin/apps/mail-organizer/accounts/reauth">
 <svg class="w-# h-#" fill="none" stroke="currentColor" viewbox="# # # #">
-<path d="M# #v#h.#m#.# #A#.# #.# # #.# #m# #H#m# #v-#h-.# m# #a#.# #.# # #-#.#-#m#.# #H#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
+<path d="M# #v#h.#m#.# #A#.# #.# # #.# #m# #H#m# #v-#h-.#m# #a#.# #.# # #-#.#-#m#.# #H#" stroke-linecap="round" stroke-linejoin="round" stroke-width="#">
 </svg>
   Re-Authorize Google Account
 </a>
 </div>
-<div class="bg-white/# border border-white/# rounded-xl p-#">
-<h2 class="text-sm font-semibold text-white mb-#">
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-lg flex flex-col justify-between">
+<div>
+<h2 class="text-sm font-bold text-white mb-# flex items-center gap-#">
+<span>
+  ⚙️
+</span>
   Sync Settings
 </h2>
-<form action="/admin/apps/mail-organizer/accounts/settings" class="space-y-#" method="post">
-<div>
-<label class="block text-sm text-slate-# mb-#">
-  Sync Interval (seconds)
-</label>
-<input class="w-# px-# py-# rounded-lg bg-white/# border border-white/# text-white text-sm focus:outline-none focus:ring-# focus:ring-emerald-#" max="#" min="#" name="sync_interval" type="number" value="#">
-<p class="text-xs text-slate-# mt-#">
+<p class="text-xs text-slate-# mb-#">
   How often to poll Gmail inbox (min: #s).
 </p>
 </div>
-<button class="px-# py-# rounded-lg bg-emerald-# hover:bg-emerald-# text-white text-sm font-medium" type="submit">
+<form action="/admin/apps/mail-organizer/accounts/settings" class="space-y-#" method="post">
+<div>
+<label class="block text-xs text-slate-# mb-# font-medium">
+  Sync Interval (seconds)
+</label>
+<input class="w-full px-# py-# rounded-lg bg-slate-# border border-slate-# text-white text-xs font-mono focus:outline-none focus:ring-# focus:ring-emerald-#" max="#" min="#" name="sync_interval" type="number" value="#">
+</div>
+<button class="w-full px-# py-# rounded-lg bg-emerald-# hover:bg-emerald-# text-white text-xs font-semibold transition-colors" type="submit">
   Save Settings
 </button>
 </form>
+</div>
+</div>
+<div class="bg-slate-#/# border border-slate-#/# rounded-xl p-# shadow-lg space-y-#">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-#">
+<div>
+<h2 class="text-base font-bold text-white flex items-center gap-#">
+<span>
+  👥
+</span>
+  Workspace Member Poller Schedules
+</h2>
+<p class="text-xs text-slate-# mt-#.#">
+  Customer Admin controls: configure polling interval, active hours window, or pause polling per user.
+</p>
+</div>
+<a class="text-xs text-sky-# hover:text-sky-# font-medium transition-colors" href="/admin/users">
+  + Invite / Manage Members in Tenant →
+</a>
+</div>
+<div class="p-# text-center text-slate-# bg-slate-#/# rounded-lg">
+<p class="text-xs">
+  No users in workspace Release# Organization have been assigned the mail_organizer cartridge yet.
+</p>
+<a class="mt-# inline-block px-# py-#.# rounded-lg bg-emerald-# hover:bg-emerald-# text-white text-xs font-semibold transition-colors" href="/admin/users">
+  Assign Users in Admin Shell →
+</a>
+</div>
 </div>
 </div>
 </main>

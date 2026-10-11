@@ -196,3 +196,11 @@ class MailPollerManager:
             "emails_processed": self._worker.emails_processed if self._worker else 0,
             "sentinel_active": self.sentinel_path.exists(),
         }
+
+    async def poll_user_now(self, user_id: int, tenant_id: str) -> Dict[str, Any]:
+        """Trigger an immediate on-demand inbox poll for a specific user."""
+        worker = self._worker
+        if worker is None:
+            worker = MailPollWorker(root_dir=self.root_dir)
+        return await worker.poll_user_now(user_id=user_id, tenant_id=tenant_id)
+

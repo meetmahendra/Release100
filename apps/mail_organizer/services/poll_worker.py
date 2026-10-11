@@ -24,7 +24,7 @@ Resolves legacy ISSUE-005 (Poller Deselection Termination Failure) by enforcing:
 """
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, tzinfo
 import logging
 import os
 from pathlib import Path
@@ -152,8 +152,34 @@ class MailPollWorker:
         except Exception as err:
             logger.warning("[PollWorker] Failed to clean up sentinel: %s", err)
 
+    def _is_within_active_window(self, active_window: str, tz_name: Optional[str] = None) -> bool:
+        """Evaluate if the current time falls within configured active window (e.g. '24x7', '09:00-18:00')."""
+        if not active_window or active_window.strip().lower() in ("24x7", "24/7", "all", "continuous"):
+            return True
+
+        tz: tzinfo
+        try:
+            from zoneinfo import ZoneInfo
+            tz = ZoneInfo(tz_name or "Asia/Kolkata")
+        except Exception:
+            tz = timezone.utc
+
+        now = datetime.now(tz)
+        current_time_str = now.strftime("%H:%M")
+
+        if "-" in active_window:
+            parts = active_window.split("-")
+            if len(parts) == 2:
+                start_str, end_str = parts[0].strip(), parts[1].strip()
+                if start_str <= end_str:
+                    return start_str <= current_time_str <= end_str
+                else:
+                    return current_time_str >= start_str or current_time_str <= end_str
+
+        return True
+
     async def poll_once(self) -> int:
-        """Execute a single cycle: poll unread threads across all active entitled users or default connector."""
+        """Execute a single cycle: poll unread threads across active entitled users adhering to admin schedule."""
         logger.debug("[PollWorker] Checking inbox for unread email threads...")
 
         from apps.mail_organizer.connectors.auth_manager import get_user_access_token
@@ -180,13 +206,64 @@ class MailPollWorker:
             )
 
         total_processed = 0
+        now = datetime.now(timezone.utc)
+
         for user in entitled_users:
             if self.stop_event.is_set() or self.sentinel_path.exists():
                 logger.info("[PollWorker] Stop detected mid-cycle. Halting user polling.")
                 break
+
+            tenant_id = getattr(user, "tenant_id", "default")
+
+            # 1. Master Workspace Poller Gate
+            ws_cfg = self.db_service.get_workspace_poller_config(tenant_id=tenant_id)
+            if not ws_cfg.is_master_enabled:
+                logger.debug("[PollWorker] Workspace poller paused for tenant %s. Skipping user %s.", tenant_id, user.id)
+                continue
+
+            # 2. User Poller Config Gate
+            u_cfg = self.db_service.get_user_poller_config(user_id=user.id, tenant_id=tenant_id)
+            if u_cfg is None:
+                user_email = getattr(user, "email", None) or getattr(user, "google_email", None) or f"user_{user.id}@tenant.local"
+                u_cfg = self.db_service.upsert_user_poller_config(
+                    user_id=user.id,
+                    email=user_email,
+                    is_enabled=True,
+                    poll_interval_seconds=ws_cfg.default_poll_interval_seconds,
+                    active_window="24x7",
+                    tenant_id=tenant_id,
+                )
+
+            if not u_cfg.is_poller_enabled:
+                logger.debug("[PollWorker] Poller paused for user %s (%s). Skipping.", user.id, u_cfg.email)
+                continue
+
+            # 3. Active Time Window Gate
+            user_tz = getattr(user, "timezone", "Asia/Kolkata")
+            if not self._is_within_active_window(u_cfg.active_window, tz_name=user_tz):
+                logger.debug("[PollWorker] User %s outside active window (%s). Skipping.", user.id, u_cfg.active_window)
+                continue
+
+            # 4. Cadence Interval Gate
+            if u_cfg.last_polled_at is not None:
+                last_polled = u_cfg.last_polled_at
+                if last_polled.tzinfo is None:
+                    last_polled = last_polled.replace(tzinfo=timezone.utc)
+                elapsed = (now - last_polled).total_seconds()
+                if elapsed < u_cfg.poll_interval_seconds:
+                    logger.debug(
+                        "[PollWorker] User %s not due yet (elapsed: %.1fs < interval: %ds). Skipping.",
+                        user.id,
+                        elapsed,
+                        u_cfg.poll_interval_seconds,
+                    )
+                    continue
+
+            # 5. Ingestion Execution
             try:
                 user_token = get_user_access_token(user)
                 if not user_token:
+                    logger.warning("[PollWorker] No valid OAuth token for user %s. Skipping.", user.id)
                     continue
                 user_connector = GmailConnector(access_token_override=user_token)
                 count = await self._poll_for_target(
@@ -194,11 +271,70 @@ class MailPollWorker:
                     user=user,
                     user_salt=user.user_secret_salt,
                 )
+                self.db_service.record_user_poll_run(
+                    user_id=user.id,
+                    emails_fetched=count,
+                    tenant_id=tenant_id,
+                )
                 total_processed += count
             except Exception as user_poll_err:
                 logger.error("[PollWorker] Error polling inbox for user %s: %s", user.id, user_poll_err)
+                self.db_service.record_user_poll_run(
+                    user_id=user.id,
+                    emails_fetched=0,
+                    error=str(user_poll_err),
+                    tenant_id=tenant_id,
+                )
 
         return total_processed
+
+    async def poll_user_now(self, user_id: int, tenant_id: str) -> Dict[str, Any]:
+        """Trigger an immediate on-demand inbox poll for a specific user, bypassing interval check."""
+        from apps.mail_organizer.connectors.auth_manager import get_user_access_token
+        from core_platform.app.identity.service import get_user_identity_service
+
+        user_service = get_user_identity_service()
+        user = user_service.get_user_by_id(user_id)
+        if not user or user.tenant_id != tenant_id:
+            return {"success": False, "message": f"User {user_id} not found in tenant {tenant_id}."}
+
+        if user.status.lower() != "active":
+            return {"success": False, "message": f"User {user.full_name} is not active."}
+
+        if "mail_organizer" not in user.allowed_cartridges:
+            return {"success": False, "message": f"User {user.full_name} is not entitled to Mail Organizer."}
+
+        user_token = get_user_access_token(user)
+        if not user_token:
+            return {"success": False, "message": f"User {user.full_name} has not linked a Google account."}
+
+        user_connector = GmailConnector(access_token_override=user_token)
+        try:
+            count = await self._poll_for_target(
+                connector=user_connector,
+                user=user,
+                user_salt=user.user_secret_salt,
+            )
+            self.db_service.record_user_poll_run(
+                user_id=user.id,
+                emails_fetched=count,
+                tenant_id=tenant_id,
+            )
+            return {
+                "success": True,
+                "user_id": user_id,
+                "emails_processed": count,
+                "message": f"Polled inbox for {user.full_name}: {count} new email(s) processed.",
+            }
+        except Exception as exc:
+            logger.error("[PollWorker] Manual poll failed for user %s: %s", user_id, exc)
+            self.db_service.record_user_poll_run(
+                user_id=user.id,
+                emails_fetched=0,
+                error=str(exc),
+                tenant_id=tenant_id,
+            )
+            return {"success": False, "message": f"Polling failed: {exc}"}
 
     async def _poll_for_target(
         self,
@@ -206,7 +342,7 @@ class MailPollWorker:
         user: Optional[Any] = None,
         user_salt: Optional[str] = None,
     ) -> int:
-        """Process email threads for a specific user or default connector."""
+        """Process email threads for a specific user or default connector with deduplication."""
         from core_platform.app.middleware.tenant_context import UserContext, async_user_scope
 
         threads: List[Dict[str, Any]] = await connector.fetch_unread_threads(max_results=20)
@@ -220,6 +356,18 @@ class MailPollWorker:
                 break
 
             gmail_id = str(thread.get("gmail_id", f"MOCK-{time.time()}"))
+
+            # Deduplication: check if already processed
+            effective_tenant = user.tenant_id if user else "public"
+            existing_email = self.db_service.get_email(gmail_id, tenant_id=effective_tenant)
+            if existing_email and existing_email.status in ("PROCESSED", "ARCHIVED"):
+                logger.debug(
+                    "[PollWorker] Deduplication: Gmail ID %s already processed for user %s (tenant: %s). Skipping.",
+                    gmail_id,
+                    user.id if user else "default",
+                    effective_tenant,
+                )
+                continue
             initial_state: MailOrganizerState = {
                 "correlation_id": f"POLL-{int(time.time()*1000)}",
                 "gmail_id": gmail_id,
