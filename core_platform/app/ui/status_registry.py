@@ -29,7 +29,7 @@ from core_platform.app.ui.contracts import StatusInfo
 
 __all__ = ["StatusInfo", "StatusRegistry", "get_status_registry", "reset_status_registry"]
 
-_CODE_RE = re.compile(r"[a-z0-9_]+")
+_CODE_RE = re.compile(r"[a-zA-Z0-9_]+")
 _UNKNOWN_LABEL_KEY = "core.status.unknown"
 
 _GENERIC: Mapping[str, StatusInfo] = {
@@ -72,11 +72,13 @@ class StatusRegistry:
         prefix = f"apps.{app_id}.status."
         validated: Dict[str, StatusInfo] = {}
         for code, info in statuses.items():
-            if _CODE_RE.fullmatch(code) is None or info.code != code:
+            norm_code = normalize_code(code)
+            norm_info_code = normalize_code(info.code)
+            if _CODE_RE.fullmatch(code) is None or norm_info_code != norm_code:
                 raise ValueError(f"invalid status code '{code}' for app '{app_id}'")
             if not info.label_key.startswith(prefix):
                 raise ValueError(f"status label key '{info.label_key}' must start with '{prefix}'")
-            validated[code] = info
+            validated[norm_code] = info
         with self._lock:
             self._apps.setdefault(app_id, {}).update(validated)
 

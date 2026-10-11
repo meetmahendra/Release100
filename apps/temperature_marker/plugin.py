@@ -128,9 +128,9 @@ class TemperatureMarkerApplication(BaseApplication):
     def get_ui_statuses(self) -> Dict[str, StatusInfo]:
         """Return status display mappings for Temperature Marker."""
         return {
-            "TEMP_NORMAL": StatusInfo(code="TEMP_NORMAL", tone="success", icon="check", label_key="apps.temperature_marker.status.normal"),
-            "TEMP_WARNING": StatusInfo(code="TEMP_WARNING", tone="warning", icon="alert", label_key="apps.temperature_marker.status.warning"),
-            "TEMP_CRITICAL": StatusInfo(code="TEMP_CRITICAL", tone="danger", icon="alert", label_key="apps.temperature_marker.status.critical"),
+            "temp_normal": StatusInfo(code="temp_normal", tone="success", icon="check", label_key="apps.temperature_marker.status.normal"),
+            "temp_warning": StatusInfo(code="temp_warning", tone="warning", icon="alert", label_key="apps.temperature_marker.status.warning"),
+            "temp_critical": StatusInfo(code="temp_critical", tone="danger", icon="alert", label_key="apps.temperature_marker.status.critical"),
         }
 
     def get_mcp_tools(self) -> List[Dict[str, Any]]:

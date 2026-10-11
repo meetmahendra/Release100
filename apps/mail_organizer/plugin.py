@@ -135,13 +135,13 @@ class MailOrganizerApplication(BaseApplication):
     def get_ui_statuses(self) -> Dict[str, StatusInfo]:
         """Return status display mappings for Mail Organizer."""
         return {
-            "MAIL_PENDING": StatusInfo(code="MAIL_PENDING", tone="warning", icon="clock", label_key="apps.mail_organizer.status.pending"),
-            "MAIL_SYNCED": StatusInfo(code="MAIL_SYNCED", tone="success", icon="check", label_key="apps.mail_organizer.status.synced"),
-            "MAIL_APPROVED": StatusInfo(code="MAIL_APPROVED", tone="success", icon="check", label_key="apps.mail_organizer.status.approved"),
-            "MAIL_REJECTED": StatusInfo(code="MAIL_REJECTED", tone="danger", icon="alert", label_key="apps.mail_organizer.status.rejected"),
-            "MAIL_ACTIVE": StatusInfo(code="MAIL_ACTIVE", tone="success", icon="check", label_key="apps.mail_organizer.status.active"),
-            "MAIL_CONNECTED": StatusInfo(code="MAIL_CONNECTED", tone="success", icon="check", label_key="apps.mail_organizer.status.connected"),
-            "MAIL_DISCONNECTED": StatusInfo(code="MAIL_DISCONNECTED", tone="danger", icon="alert", label_key="apps.mail_organizer.status.disconnected"),
+            "mail_pending": StatusInfo(code="mail_pending", tone="warning", icon="clock", label_key="apps.mail_organizer.status.pending"),
+            "mail_synced": StatusInfo(code="mail_synced", tone="success", icon="check", label_key="apps.mail_organizer.status.synced"),
+            "mail_approved": StatusInfo(code="mail_approved", tone="success", icon="check", label_key="apps.mail_organizer.status.approved"),
+            "mail_rejected": StatusInfo(code="mail_rejected", tone="danger", icon="alert", label_key="apps.mail_organizer.status.rejected"),
+            "mail_active": StatusInfo(code="mail_active", tone="success", icon="check", label_key="apps.mail_organizer.status.active"),
+            "mail_connected": StatusInfo(code="mail_connected", tone="success", icon="check", label_key="apps.mail_organizer.status.connected"),
+            "mail_disconnected": StatusInfo(code="mail_disconnected", tone="danger", icon="alert", label_key="apps.mail_organizer.status.disconnected"),
         }
 
     def get_mcp_tools(self) -> List[Dict[str, Any]]:
