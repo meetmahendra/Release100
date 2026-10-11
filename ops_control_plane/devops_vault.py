@@ -20,6 +20,8 @@ Manages Platform-Managed vs. Customer-Dedicated (BYOK) credentials per tenant.
 Enforces zero accidental fallback leakage and complete invisibility to customer admins.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 import json
 import logging
@@ -49,10 +51,22 @@ class TenantRuntimeCredentials:
     waba_phone_number_id: Optional[str]
     brand_name: Optional[str]
     default_timezone: str
+    google_client_id: Optional[str] = None
+    google_client_secret: Optional[str] = None
+    has_google_byok: bool = False
 
 
 class DevOpsKeyVault:
     """DevOps-exclusive manager for tenant API keys, WABA secrets, and BYOK configurations."""
+
+    _instance: Optional[DevOpsKeyVault] = None
+
+    @classmethod
+    def get_instance(cls, db_url: Optional[str] = None) -> DevOpsKeyVault:
+        """Singleton or convenience getter for DevOpsKeyVault."""
+        if cls._instance is None or db_url is not None:
+            cls._instance = cls(db_url=db_url)
+        return cls._instance
 
     def __init__(self, db_url: Optional[str] = None) -> None:
         """Initialize vault with underlying platform database session."""
@@ -75,6 +89,8 @@ class DevOpsKeyVault:
         waba_token: Optional[str] = None,
         waba_access_token: Optional[str] = None,
         waba_phone_number_id: Optional[str] = None,
+        google_client_id: Optional[str] = None,
+        google_client_secret: Optional[str] = None,
         brand_name: Optional[str] = None,
         default_timezone: str = "Asia/Kolkata",
         metadata: Optional[Dict[str, Any]] = None,
@@ -89,6 +105,8 @@ class DevOpsKeyVault:
             openai_api_key: Customer OpenAI API key (encrypted at rest if BYOK).
             waba_token: Customer WhatsApp Business token (encrypted at rest if BYOK).
             waba_phone_number_id: Customer WhatsApp phone ID.
+            google_client_id: Customer Google OAuth Client ID (encrypted at rest if BYOK).
+            google_client_secret: Customer Google OAuth Client Secret (encrypted at rest if BYOK).
             brand_name: Custom company branding display name.
             default_timezone: Primary operational timezone.
             metadata: Arbitrary operational metadata.
@@ -119,6 +137,16 @@ class DevOpsKeyVault:
             if raw_waba
             else None
         )
+        enc_google_id = (
+            UserPayloadCipher.encrypt_payload(google_client_id.strip(), tenant_salt)
+            if google_client_id and google_client_id.strip()
+            else None
+        )
+        enc_google_secret = (
+            UserPayloadCipher.encrypt_payload(google_client_secret.strip(), tenant_salt)
+            if google_client_secret and google_client_secret.strip()
+            else None
+        )
 
         with self.session_factory() as session:
             stmt = select(TenantConfig).where(TenantConfig.tenant_id == tenant_id)
@@ -132,6 +160,8 @@ class DevOpsKeyVault:
                     encrypted_openai_api_key=enc_openai,
                     encrypted_waba_token=enc_waba,
                     waba_phone_number_id=waba_phone_number_id.strip() if waba_phone_number_id else None,
+                    encrypted_google_client_id=enc_google_id,
+                    encrypted_google_client_secret=enc_google_secret,
                     brand_name=brand_name.strip() if brand_name else None,
                     default_timezone=default_timezone.strip() if default_timezone else "Asia/Kolkata",
                     metadata_json=json.dumps(metadata or {}),
@@ -150,6 +180,10 @@ class DevOpsKeyVault:
                     config.encrypted_waba_token = enc_waba
                 if waba_phone_number_id is not None and waba_phone_number_id.strip():
                     config.waba_phone_number_id = waba_phone_number_id.strip()
+                if google_client_id is not None and google_client_id.strip():
+                    config.encrypted_google_client_id = enc_google_id
+                if google_client_secret is not None and google_client_secret.strip():
+                    config.encrypted_google_client_secret = enc_google_secret
                 if brand_name is not None and brand_name.strip():
                     config.brand_name = brand_name.strip()
                 if default_timezone is not None and default_timezone.strip():
@@ -183,6 +217,9 @@ class DevOpsKeyVault:
                     waba_phone_number_id=getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", None),
                     brand_name=config.brand_name if config else None,
                     default_timezone=config.default_timezone if config else "Asia/Kolkata",
+                    google_client_id=getattr(settings, "GOOGLE_CLIENT_ID", None),
+                    google_client_secret=getattr(settings, "GOOGLE_CLIENT_SECRET", None),
+                    has_google_byok=False,
                 )
 
             # Customer BYOK mode: Decrypt customer-provided keys
@@ -202,6 +239,17 @@ class DevOpsKeyVault:
                 if config.encrypted_waba_token
                 else None
             )
+            dec_google_id = (
+                UserPayloadCipher.decrypt_payload(config.encrypted_google_client_id, tenant_salt)
+                if config.encrypted_google_client_id
+                else None
+            )
+            dec_google_secret = (
+                UserPayloadCipher.decrypt_payload(config.encrypted_google_client_secret, tenant_salt)
+                if config.encrypted_google_client_secret
+                else None
+            )
+            has_google_byok = bool(dec_google_id and dec_google_secret)
 
             return TenantRuntimeCredentials(
                 tenant_id=tenant_id,
@@ -213,6 +261,9 @@ class DevOpsKeyVault:
                 waba_phone_number_id=config.waba_phone_number_id or getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", None),
                 brand_name=config.brand_name,
                 default_timezone=config.default_timezone,
+                google_client_id=dec_google_id or getattr(settings, "GOOGLE_CLIENT_ID", None),
+                google_client_secret=dec_google_secret or getattr(settings, "GOOGLE_CLIENT_SECRET", None),
+                has_google_byok=has_google_byok,
             )
 
 

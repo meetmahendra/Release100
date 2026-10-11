@@ -188,6 +188,14 @@ class PlatformSettings(BaseSettings):
         default="credentials.json",
         description="Path to Google OAuth client credentials JSON file",
     )
+    GOOGLE_CLIENT_ID: Optional[str] = Field(
+        default=None,
+        description="Default platform-level Google OAuth Client ID",
+    )
+    GOOGLE_CLIENT_SECRET: Optional[str] = Field(
+        default=None,
+        description="Default platform-level Google OAuth Client Secret",
+    )
 
     # Decentralized Entitlement Architecture (Plan 10)
     ENTITLEMENT_ENFORCEMENT_MODE: Literal["off", "shadow", "enforce"] = Field(

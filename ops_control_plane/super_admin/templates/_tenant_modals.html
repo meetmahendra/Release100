@@ -53,6 +53,18 @@
                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
       </div>
 
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_google_client_id') }}</label>
+        <input type="text" name="google_client_id" placeholder="{{ t('core.ops_tenants.ph_google_client_id') }}"
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.ops_tenants.lbl_google_client_secret') }}</label>
+        <input type="password" name="google_client_secret" placeholder="{{ t('core.ops_tenants.ph_google_client_secret') }}"
+               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono outline-none" />
+      </div>
+
       <div class="flex justify-end gap-2 pt-2">
         <button type="button" onclick="closeVaultModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs">{{ t('core.ops_tenants.btn_cancel') }}</button>
         <button type="submit" class="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 font-semibold text-white text-xs">{{ t('core.ops_tenants.btn_save_vault') }}</button>

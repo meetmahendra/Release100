@@ -975,9 +975,15 @@ async def view_tenants(
 
     has_platform_gemini = bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip())
     has_platform_whatsapp = bool(settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_ACCESS_TOKEN.strip())
+    from core_platform.app.identity.oauth_utils import find_client_credentials
+    has_platform_google = bool(
+        (settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET) or
+        find_client_credentials(tenant_id=None)
+    )
     has_byok_gemini = bool(config and config.encrypted_gemini_api_key)
     has_byok_openai = bool(config and config.encrypted_openai_api_key)
     has_byok_whatsapp = bool(config and config.encrypted_waba_token)
+    has_byok_google = bool(config and config.encrypted_google_client_id and config.encrypted_google_client_secret)
 
     return templates.TemplateResponse(
         request=request,
@@ -996,9 +1002,11 @@ async def view_tenants(
             "total_users": total_users,
             "has_platform_gemini": has_platform_gemini,
             "has_platform_whatsapp": has_platform_whatsapp,
+            "has_platform_google": has_platform_google,
             "has_byok_gemini": has_byok_gemini,
             "has_byok_openai": has_byok_openai,
             "has_byok_whatsapp": has_byok_whatsapp,
+            "has_byok_google": has_byok_google,
             "section": "tenants",
             "csrf_token": csrf_token,
             "message": message,
@@ -1020,6 +1028,8 @@ async def save_customer_byok_keys(
     openai_api_key: Optional[str] = Form(None),
     waba_token: Optional[str] = Form(None),
     waba_phone_number_id: Optional[str] = Form(None),
+    google_client_id: Optional[str] = Form(None),
+    google_client_secret: Optional[str] = Form(None),
     csrf_token: Optional[str] = Form(None),
 ) -> Any:
     """Save customer-provided BYOK keys and company profile securely into AES-256-GCM vault."""
@@ -1044,6 +1054,8 @@ async def save_customer_byok_keys(
             openai_api_key=openai_api_key,
             waba_token=waba_token,
             waba_phone_number_id=waba_phone_number_id,
+            google_client_id=google_client_id,
+            google_client_secret=google_client_secret,
             brand_name=brand_name,
             default_timezone=default_timezone or "Asia/Kolkata",
         )

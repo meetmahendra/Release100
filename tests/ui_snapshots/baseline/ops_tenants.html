@@ -407,6 +407,18 @@ STATUS 200
 </label>
 <input class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# font-mono outline-none" name="waba_phone_number_id" placeholder="#..." type="text">
 </div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Google OAuth Client ID (Optional BYOK)
+</label>
+<input class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# font-mono outline-none" name="google_client_id" placeholder="e.g. #-abc.apps.googleusercontent.com" type="text">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
+  Google OAuth Client Secret (AES-#-GCM Encrypted)
+</label>
+<input class="w-full bg-slate-# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# font-mono outline-none" name="google_client_secret" placeholder="GOCSPX-..." type="password">
+</div>
 <div class="flex justify-end gap-# pt-#">
 <button class="px-# py-#.# rounded-lg bg-slate-# text-slate-# text-xs" onclick="closeVaultModal()" type="button">
   Cancel

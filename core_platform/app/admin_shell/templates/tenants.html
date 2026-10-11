@@ -213,7 +213,7 @@
             <p class="text-xs text-slate-400">{{ t('core.tenants.platform_plan_desc') }}</p>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 text-xs">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-xs">
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
             <span class="text-slate-400">
               {% if assigned_provider == 'openai' %}{{ t('core.tenants.platform_openai_label') }}{% else %}{{ t('core.tenants.platform_gemini_label') }}{% endif %}
@@ -227,6 +227,14 @@
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
             <span class="text-slate-400">{{ t('core.tenants.platform_wa_label') }}</span>
             {% if has_platform_whatsapp %}
+            <span class="text-emerald-400 font-semibold">✓ {{ t('core.tenants.active_configured') }}</span>
+            {% else %}
+            <span class="text-amber-400 font-semibold">⚠ {{ t('core.tenants.not_configured') }}</span>
+            {% endif %}
+          </div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400">{{ t('core.tenants.platform_google_label') }}</span>
+            {% if has_platform_google %}
             <span class="text-emerald-400 font-semibold">✓ {{ t('core.tenants.active_configured') }}</span>
             {% else %}
             <span class="text-amber-400 font-semibold">⚠ {{ t('core.tenants.not_configured') }}</span>
@@ -300,6 +308,26 @@
                    placeholder="{{ t('core.tenants.ph_waba_phone_id') }}"
                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
             <p class="text-[11px] text-slate-400 mt-1">{{ t('core.tenants.status_prefix') }}{% if config and config.waba_phone_number_id %}<span class="text-emerald-400 font-semibold">✓ {{ config.waba_phone_number_id }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</p>
+          </div>
+
+          <!-- Google OAuth Client ID -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold text-slate-300">{{ t('core.tenants.field_google_client_id') }}</label>
+            <input type="text" name="google_client_id" placeholder="{{ t('core.tenants.ph_google_client_id') }}" autocomplete="off"
+                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span>{{ t('core.tenants.status_prefix') }}{% if has_byok_google %}<span class="text-emerald-400 font-semibold">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</span>
+            </div>
+          </div>
+
+          <!-- Google OAuth Client Secret -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold text-slate-300">{{ t('core.tenants.field_google_client_secret') }}</label>
+            <input type="password" name="google_client_secret" placeholder="{{ t('core.tenants.ph_google_client_secret') }}" autocomplete="new-password"
+                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-amber-500 outline-none font-mono" />
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span>{{ t('core.tenants.status_prefix') }}{% if has_byok_google %}<span class="text-emerald-400 font-semibold">{{ t('core.tenants.status_configured') }}</span>{% else %}<span class="text-slate-500">{{ t('core.tenants.status_not_set') }}</span>{% endif %}</span>
+            </div>
           </div>
         </div>
       </div>

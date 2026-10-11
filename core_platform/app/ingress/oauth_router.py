@@ -39,6 +39,8 @@ from core_platform.app.identity.oauth_utils import (
     find_client_credentials,
 )
 from core_platform.app.identity.service import get_user_identity_service
+from core_platform.app.ingress.whatsapp_router import extract_public_base_url
+from ops_control_plane.devops_vault import DevOpsKeyVault
 
 logger = logging.getLogger("core_platform.ingress.oauth")
 
@@ -97,12 +99,25 @@ async def connect_google_oauth(
             is_success=False,
         )
 
-    creds = find_client_credentials()
+    tenant_id = payload.get("tenant_id") or getattr(user, "tenant_id", None) or "default_tenant"
+    creds = find_client_credentials(tenant_id=tenant_id)
     if not creds:
+        vault = DevOpsKeyVault.get_instance()
+        tenant_creds = vault.get_tenant_runtime_credentials(tenant_id)
+        if tenant_creds.is_byok:
+            error_body = (
+                f"Google OAuth client credentials are not configured for your organization ({tenant_id}). "
+                "Please ask your organization administrator to configure Google OAuth Client ID and Secret in Company Profile & Key Vault."
+            )
+        else:
+            error_body = (
+                "Google OAuth client credentials are not configured on this server node. "
+                "Please contact your system administrator."
+            )
         return _render_html_page(
             title="Configuration Error",
             heading="Google Credentials Missing",
-            body_text="Google OAuth client credentials are not configured on this server node. Please contact your system administrator.",
+            body_text=error_body,
             is_success=False,
         )
 
@@ -115,11 +130,7 @@ async def connect_google_oauth(
             is_success=False,
         )
 
-    base_url = (
-        settings.ORCHESTRATOR_BASE_URL.rstrip("/")
-        if settings.ORCHESTRATOR_BASE_URL
-        else str(request.base_url).rstrip("/")
-    )
+    base_url = extract_public_base_url(request)
     redirect_uri = f"{base_url}/auth/google/callback"
 
     scopes = [
@@ -189,22 +200,19 @@ async def google_oauth_callback(
             is_success=False,
         )
 
-    creds = find_client_credentials()
+    tenant_id = payload.get("tenant_id") or getattr(user, "tenant_id", None) or "default_tenant"
+    creds = find_client_credentials(tenant_id=tenant_id)
     if not creds:
         return _render_html_page(
             title="Configuration Error",
             heading="Credentials Not Found",
-            body_text="Google OAuth credentials are not found on this server node.",
+            body_text=f"Google OAuth credentials are not found for tenant '{tenant_id}'.",
             is_success=False,
         )
 
     client_id = creds.get("client_id")
     client_secret = creds.get("client_secret")
-    base_url = (
-        settings.ORCHESTRATOR_BASE_URL.rstrip("/")
-        if settings.ORCHESTRATOR_BASE_URL
-        else str(request.base_url).rstrip("/")
-    )
+    base_url = extract_public_base_url(request)
     redirect_uri = f"{base_url}/auth/google/callback"
 
     try:

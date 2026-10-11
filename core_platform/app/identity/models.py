@@ -232,6 +232,8 @@ class TenantConfig(Base, TimestampMixin):
     encrypted_openai_api_key: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     encrypted_waba_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     waba_phone_number_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    encrypted_google_client_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    encrypted_google_client_secret: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     default_timezone: Mapped[str] = mapped_column(String(64), default="Asia/Kolkata", nullable=False)
     brand_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     metadata_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
@@ -246,6 +248,7 @@ class TenantConfig(Base, TimestampMixin):
             "has_openai_byok": bool(self.encrypted_openai_api_key),
             "has_waba_byok": bool(self.encrypted_waba_token),
             "waba_phone_number_id": self.waba_phone_number_id,
+            "has_google_byok": bool(self.encrypted_google_client_id and self.encrypted_google_client_secret),
             "default_timezone": self.default_timezone,
             "brand_name": self.brand_name,
         }

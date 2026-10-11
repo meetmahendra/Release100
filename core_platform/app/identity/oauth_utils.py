@@ -26,8 +26,49 @@ from core_platform.app.config import settings
 from core_platform.app.security.user_cipher import UserPayloadCipher
 
 
-def find_client_credentials() -> Optional[Dict[str, Any]]:
-    """Locate client credentials from standard candidate paths."""
+import logging
+
+logger = logging.getLogger("core_platform.identity.oauth")
+
+
+def find_client_credentials(tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Locate client credentials using hierarchical resolution:
+    1. Tenant-specific Customer BYOK credentials (if tenant_id provided and configured).
+    2. Platform-level environment variables (GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET).
+    3. Host-level credentials.json (GOOGLE_CREDENTIALS_PATH or candidate paths).
+    """
+    # 1. Tenant BYOK Check
+    if tenant_id:
+        try:
+            from ops_control_plane.devops_vault import DevOpsKeyVault
+            vault = DevOpsKeyVault()
+            tenant_creds = vault.get_tenant_runtime_credentials(tenant_id)
+            if tenant_creds and tenant_creds.is_byok and tenant_creds.google_client_id and tenant_creds.google_client_secret:
+                return {
+                    "client_id": tenant_creds.google_client_id,
+                    "client_secret": tenant_creds.google_client_secret,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "is_byok": True,
+                    "tenant_id": tenant_id,
+                }
+        except Exception as exc:
+            logger.debug("[OAuthUtils] Could not resolve tenant BYOK credentials: %s", exc)
+
+    # 2. Platform Environment Variables Check
+    env_client_id = getattr(settings, "GOOGLE_CLIENT_ID", None)
+    env_client_secret = getattr(settings, "GOOGLE_CLIENT_SECRET", None)
+    if env_client_id and env_client_secret and env_client_id.strip() and env_client_secret.strip():
+        return {
+            "client_id": env_client_id.strip(),
+            "client_secret": env_client_secret.strip(),
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "is_byok": False,
+            "source": "environment",
+        }
+
+    # 3. Host Credentials JSON Disk Check
     candidates = []
     if settings.GOOGLE_CREDENTIALS_PATH:
         candidates.append(Path(settings.GOOGLE_CREDENTIALS_PATH))

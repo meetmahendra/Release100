@@ -109,6 +109,8 @@ def test_devops_vault_customer_byok_mode(test_db_url: str) -> None:
 
     synthetic_gemini_key = "mock_gemini_api_key_byok_998877"
     synthetic_waba_token = "mock_waba_access_token_customer_5544"
+    synthetic_google_id = "mock_google_client_id_byok_123.apps.googleusercontent.com"
+    synthetic_google_secret = "mock_google_client_secret_byok_xyz"
 
     config = vault.configure_tenant_credentials(
         tenant_id="tenant_enterprise_byok",
@@ -116,6 +118,8 @@ def test_devops_vault_customer_byok_mode(test_db_url: str) -> None:
         gemini_api_key=synthetic_gemini_key,
         waba_token=synthetic_waba_token,
         waba_phone_number_id="WABA-PHONE-998877",
+        google_client_id=synthetic_google_id,
+        google_client_secret=synthetic_google_secret,
         brand_name="Enterprise BYOK Corp",
         default_timezone="America/New_York",
     )
@@ -124,12 +128,21 @@ def test_devops_vault_customer_byok_mode(test_db_url: str) -> None:
     assert config.encrypted_gemini_api_key is not None
     assert synthetic_gemini_key not in config.encrypted_gemini_api_key
     assert config.encrypted_gemini_api_key.startswith("ENC:v1:")
+    assert config.encrypted_google_client_id is not None
+    assert synthetic_google_id not in config.encrypted_google_client_id
+    assert config.encrypted_google_client_id.startswith("ENC:v1:")
+    assert config.encrypted_google_client_secret is not None
+    assert synthetic_google_secret not in config.encrypted_google_client_secret
+    assert config.encrypted_google_client_secret.startswith("ENC:v1:")
 
     # Verify runtime resolution
     creds = vault.get_tenant_runtime_credentials("tenant_enterprise_byok")
     assert creds.credential_mode == "CUSTOMER_BYOK"
     assert creds.is_byok is True
+    assert creds.has_google_byok is True
     assert creds.gemini_api_key == synthetic_gemini_key
     assert creds.waba_token == synthetic_waba_token
     assert creds.waba_phone_number_id == "WABA-PHONE-998877"
+    assert creds.google_client_id == synthetic_google_id
+    assert creds.google_client_secret == synthetic_google_secret
     assert creds.default_timezone == "America/New_York"

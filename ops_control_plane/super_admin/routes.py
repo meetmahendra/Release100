@@ -461,6 +461,8 @@ async def configure_vault_action(
     openai_api_key: Optional[str] = Form(None),
     waba_access_token: Optional[str] = Form(None),
     waba_phone_number_id: Optional[str] = Form(None),
+    google_client_id: Optional[str] = Form(None),
+    google_client_secret: Optional[str] = Form(None),
     csrf_token: Optional[str] = Form(None),
 ) -> Any:
     """DevOps Action: Configure tenant BYOK keys with AES-256-GCM encryption."""
@@ -478,6 +480,8 @@ async def configure_vault_action(
             openai_api_key=openai_api_key.strip() if openai_api_key and openai_api_key.strip() else None,
             waba_access_token=waba_access_token.strip() if waba_access_token and waba_access_token.strip() else None,
             waba_phone_number_id=waba_phone_number_id.strip() if waba_phone_number_id and waba_phone_number_id.strip() else None,
+            google_client_id=google_client_id.strip() if google_client_id and google_client_id.strip() else None,
+            google_client_secret=google_client_secret.strip() if google_client_secret and google_client_secret.strip() else None,
         )
         msg = f"Vault credentials updated for '{slug}'"
         return RedirectResponse(
