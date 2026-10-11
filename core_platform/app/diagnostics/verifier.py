@@ -366,6 +366,7 @@ def verify_cloud_relay(relay_url: Optional[str] = None) -> Dict[str, Any]:
                 pass
             return {
                 "status": "ok",
+                "success": True,
                 "message": f"Cloud Relay is online and reachable{service_desc} [{latency}ms]. Effective WebSocket: {effective_ws_url}",
                 "latency_ms": latency,
                 "relay_url": effective_ws_url,

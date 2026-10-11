@@ -152,7 +152,14 @@ async def api_diagnostics_save(
     try:
         from core_platform.app.ingress.relay_client import CloudRelayClient
         relay = CloudRelayClient.get_instance()
-        asyncio.create_task(relay.reconfigure_and_restart())
+        new_relay_url = req.settings.get("RELAY_WS_URL")
+        new_kiosk_id = req.settings.get("KIOSK_ID")
+        asyncio.create_task(
+            relay.reconfigure_and_restart(
+                relay_url=new_relay_url,
+                kiosk_id=new_kiosk_id,
+            )
+        )
     except Exception as exc:
         logger.warning("[Diagnostics] Failed to trigger live relay reconnect: %s", exc)
 

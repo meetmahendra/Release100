@@ -425,7 +425,7 @@ async function postJSON(url, data) {
 function showResult(elId, res) {
   const el = document.getElementById(elId);
   if (!el) return;
-  const isPass = res.status === 'PASS' || res.success === true;
+  const isPass = res.status === 'PASS' || res.status === 'ok' || res.success === true;
   el.className = 'mt-3 p-3 rounded-lg border text-xs font-mono ' + (isPass ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300' : 'bg-red-950/40 border-red-500/50 text-red-300');
   el.innerText = '[' + (isPass ? 'PASS' : 'FAIL') + '] ' + (res.message || JSON.stringify(res));
   el.classList.remove('empty:hidden');
