@@ -236,10 +236,13 @@ class LLMCostTracker:
 
         return record
 
-    def get_summary(self) -> Dict[str, Any]:
-        """Return high-level summary metrics with financial liability and mode breakdown."""
+    def get_summary(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+        """Return high-level summary metrics with financial liability and mode breakdown, optionally filtered by tenant."""
         with self._lock:
             records = list(self._records)
+
+        if tenant_id is not None:
+            records = [r for r in records if r.tenant_id == tenant_id]
 
         total_interactions = len(records)
         total_tokens = sum(r.total_tokens for r in records)
@@ -248,6 +251,11 @@ class LLMCostTracker:
         total_byok_value = sum(r.estimated_cost_usd for r in records if not r.is_platform_liability)
         total_internal_jev_cost = sum(r.estimated_cost_usd for r in records if r.credential_mode == "CORE_INTERNAL_JEV")
         operations_count = len({r.operation_id for r in records})
+
+        tenant_cred_mode = "PLATFORM_MANAGED"
+        if tenant_id and records:
+            modes = {r.credential_mode for r in records}
+            tenant_cred_mode = list(modes)[0] if len(modes) == 1 else "MIXED"
 
         by_provider: Dict[str, Dict[str, Any]] = {}
         for r in records:
@@ -304,16 +312,20 @@ class LLMCostTracker:
             "total_byok_value_usd": round(total_byok_value, 4),
             "total_internal_jev_cost_usd": round(total_internal_jev_cost, 8) if 0 < total_internal_jev_cost < 0.0001 else round(total_internal_jev_cost, 6),
             "operations_count": operations_count,
+            "tenant_credential_mode": tenant_cred_mode,
             "by_provider": by_provider,
             "by_credential_mode": by_credential_mode,
             "by_cartridge": by_cartridge,
             "by_tenant": by_tenant,
         }
 
-    def get_tenant_breakdown(self) -> List[Dict[str, Any]]:
+    def get_tenant_breakdown(self, tenant_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Return aggregated cost and token usage breakdown grouped per customer / tenant."""
         with self._lock:
             records = list(self._records)
+
+        if tenant_id is not None:
+            records = [r for r in records if r.tenant_id == tenant_id]
 
         grouped: Dict[str, List[LLMInteractionRecord]] = collections.defaultdict(list)
         for r in records:
@@ -348,10 +360,13 @@ class LLMCostTracker:
 
         return result
 
-    def get_cartridge_breakdown(self) -> List[Dict[str, Any]]:
+    def get_cartridge_breakdown(self, tenant_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Return aggregated usage and latency metrics grouped per application cartridge."""
         with self._lock:
             records = list(self._records)
+
+        if tenant_id is not None:
+            records = [r for r in records if r.tenant_id == tenant_id]
 
         grouped: Dict[str, List[LLMInteractionRecord]] = collections.defaultdict(list)
         for r in records:
@@ -377,10 +392,13 @@ class LLMCostTracker:
 
         return result
 
-    def get_product_optimization_insights(self) -> List[Dict[str, Any]]:
+    def get_product_optimization_insights(self, tenant_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Analyze workload hotspots to identify optimization and cost-saving opportunities."""
         with self._lock:
             records = list(self._records)
+
+        if tenant_id is not None:
+            records = [r for r in records if r.tenant_id == tenant_id]
 
         grouped: Dict[tuple[str, str, str], List[LLMInteractionRecord]] = collections.defaultdict(list)
         for r in records:
@@ -439,10 +457,13 @@ class LLMCostTracker:
         insights.sort(key=lambda x: x["total_cost_usd"], reverse=True)
         return insights
 
-    def get_operations_report(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_operations_report(self, limit: int = 100, tenant_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Return grouped operations with hierarchical list of interactions."""
         with self._lock:
             records = list(self._records)
+
+        if tenant_id is not None:
+            records = [r for r in records if r.tenant_id == tenant_id]
 
         grouped: Dict[str, List[LLMInteractionRecord]] = collections.defaultdict(list)
         for r in records:

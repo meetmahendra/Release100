@@ -46,7 +46,7 @@ from core_platform.app.auth.strategies import AuthResolver
 from core_platform.app.config import settings
 from core_platform.app.ingress.rate_limiter import get_platform_rate_limiter
 from core_platform.app.llm.gateway import get_platform_llm_gateway
-from core_platform.app.rbac.permissions import (get_web_security_context, is_devops_context, require_devops)
+from core_platform.app.rbac.permissions import (get_web_security_context, is_devops_context, require_admin, require_devops)
 from core_platform.app.ui.templating import build_templates
 from core_platform.app.ui.ui_context import Breadcrumb, build_ui_context
 
@@ -1301,16 +1301,22 @@ async def download_logs(
 @router.get("/llm-costs", response_class=HTMLResponse)
 async def llm_costs_page(
     request: Request,
-    ctx: SecurityContext = Depends(require_devops),
+    ctx: SecurityContext = Depends(require_admin),
 ) -> HTMLResponse:
     """Render the LLM Token Consumption and Cost Monitoring console."""
     from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
     tracker = get_llm_cost_tracker()
-    summary = tracker.get_summary()
-    tenant_breakdown = tracker.get_tenant_breakdown()
-    cartridge_breakdown = tracker.get_cartridge_breakdown()
-    product_insights = tracker.get_product_optimization_insights()
-    operations = tracker.get_operations_report(limit=100)
+
+    # Enforce strict Data Sovereignty: Scoped Customer Admins see only their tenant metrics.
+    # DevOps Super-Admins see global platform-wide metrics.
+    is_devops = is_devops_context(ctx)
+    scoped_tenant_id = None if is_devops else ctx.tenant_id
+
+    summary = tracker.get_summary(tenant_id=scoped_tenant_id)
+    tenant_breakdown = tracker.get_tenant_breakdown(tenant_id=scoped_tenant_id)
+    cartridge_breakdown = tracker.get_cartridge_breakdown(tenant_id=scoped_tenant_id)
+    product_insights = tracker.get_product_optimization_insights(tenant_id=scoped_tenant_id)
+    operations = tracker.get_operations_report(tenant_id=scoped_tenant_id, limit=100)
 
     # Determine nav_apps for the sidebar
     nav_apps = _build_nav_apps(ctx)
@@ -1332,6 +1338,10 @@ async def llm_costs_page(
             "title": "LLM Token & Cost Consumption",
             "principal": ctx.principal_id,
             "is_admin": ctx.is_admin,
+            "is_devops": is_devops,
+            "is_tenant_admin": not is_devops,
+            "tenant_id": ctx.tenant_id,
+            "credential_mode": summary.get("tenant_credential_mode", "PLATFORM_MANAGED"),
             "nav_apps": nav_apps,
             "organization": settings.ORGANIZATION_NAME,
             "kiosk_id": settings.KIOSK_ID,
@@ -1348,18 +1358,19 @@ async def llm_costs_page(
 
 @router.get("/api/llm-costs", response_class=JSONResponse)
 async def get_llm_costs_api(
-    ctx: SecurityContext = Depends(require_devops),
+    ctx: SecurityContext = Depends(require_admin),
 ) -> JSONResponse:
     """Return JSON payload of aggregated LLM costs and operations breakdown."""
     from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
     tracker = get_llm_cost_tracker()
+    scoped_tenant_id = None if is_devops_context(ctx) else ctx.tenant_id
     return JSONResponse(
         content={
-            "summary": tracker.get_summary(),
-            "tenant_breakdown": tracker.get_tenant_breakdown(),
-            "cartridge_breakdown": tracker.get_cartridge_breakdown(),
-            "product_insights": tracker.get_product_optimization_insights(),
-            "operations": tracker.get_operations_report(limit=100),
+            "summary": tracker.get_summary(tenant_id=scoped_tenant_id),
+            "tenant_breakdown": tracker.get_tenant_breakdown(tenant_id=scoped_tenant_id),
+            "cartridge_breakdown": tracker.get_cartridge_breakdown(tenant_id=scoped_tenant_id),
+            "product_insights": tracker.get_product_optimization_insights(tenant_id=scoped_tenant_id),
+            "operations": tracker.get_operations_report(tenant_id=scoped_tenant_id, limit=100),
         }
     )
 

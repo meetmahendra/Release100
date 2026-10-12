@@ -44,6 +44,7 @@ def test_devops_nav_segregation() -> None:
     # DevOps MUST see platform ops and diagnostics
     assert "/ops/tenants" in devops_paths
     assert "/ops/daemons" in devops_paths
+    assert "/ops/llm-costs" in devops_paths
     assert "/settings" in devops_paths
     assert "/admin/llm-costs" in devops_paths
     assert "/admin/logs" in devops_paths
@@ -60,12 +61,14 @@ def test_devops_nav_segregation() -> None:
 
     assert "/admin/users" in customer_paths
     assert "/admin/tenants" in customer_paths
+    assert "/admin/llm-costs" in customer_paths
     assert "/admin/api-keys" in customer_paths
     assert any("/admin/apps/" in p for p in customer_paths)
 
     # Customer Admin MUST NOT see platform ops
     assert "/ops/tenants" not in customer_paths
     assert "/ops/daemons" not in customer_paths
+    assert "/ops/llm-costs" not in customer_paths
 
 
 def test_devops_forbidden_on_plane4_cartridges() -> None:

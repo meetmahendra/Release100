@@ -22,6 +22,28 @@
   </div>
 
   <!-- Summary KPI Cards -->
+  {% if is_tenant_admin %}
+  <!-- Tenant Workspace Credential Routing Banner -->
+  <div class="p-4 rounded-xl {% if credential_mode == 'CUSTOMER_BYOK' %}bg-sky-950/60 border border-sky-600/60 text-sky-200{% else %}bg-slate-800/80 border border-slate-700/60 text-slate-300{% endif %} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">{% if credential_mode == 'CUSTOMER_BYOK' %}🔑{% else %}💳{% endif %}</span>
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ t('core.llm_costs.workspace_routing_title') }}</p>
+        <p class="text-sm font-medium mt-0.5">
+          {% if credential_mode == 'CUSTOMER_BYOK' %}
+          {{ t('core.llm_costs.workspace_byok_desc', tenant_id=tenant_id) }}
+          {% else %}
+          {{ t('core.llm_costs.workspace_platform_desc', tenant_id=tenant_id) }}
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <span class="px-2.5 py-1 rounded-full text-xs font-mono font-semibold {% if credential_mode == 'CUSTOMER_BYOK' %}bg-sky-900/80 text-sky-300 border border-sky-700{% else %}bg-amber-900/80 text-amber-300 border border-amber-700{% endif %}">
+      {{ credential_mode }}
+    </span>
+  </div>
+  {% endif %}
+
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
     <!-- Total Calls & Ops -->
     <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 flex flex-col justify-between">
@@ -83,7 +105,7 @@
   <!-- Interactive Navigation Tabs -->
   <div class="border-b border-slate-700/60 flex items-center gap-4 text-sm font-medium">
     <button id="tabBtnTenants" onclick="switchTab('tenants')" class="pb-3 border-b-2 border-emerald-400 text-emerald-400 flex items-center gap-2 transition">
-      <span>🏢</span> {{ t('core.llm_costs.tab_tenants') }}
+      <span>🏢</span> {% if is_tenant_admin %}{{ t('core.llm_costs.tab_workspace') }}{% else %}{{ t('core.llm_costs.tab_tenants') }}{% endif %}
       <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">{{ tenant_breakdown|length }}</span>
     </button>
     <button id="tabBtnOptimization" onclick="switchTab('optimization')" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition">
@@ -104,9 +126,11 @@
       <div class="px-5 py-4 border-b border-slate-700/60 flex items-center justify-between">
         <div>
           <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-            <span>🏢</span> {{ t('core.llm_costs.tenant_table_title') }}
+            <span>🏢</span> {% if is_tenant_admin %}{{ t('core.llm_costs.workspace_table_title') }}{% else %}{{ t('core.llm_costs.tenant_table_title') }}{% endif %}
           </h3>
-          <p class="text-xs text-slate-400 mt-0.5">{{ t('core.llm_costs.tenant_table_hint') }}</p>
+          <p class="text-xs text-slate-400 mt-0.5">
+            {% if is_tenant_admin %}{{ t('core.llm_costs.workspace_table_hint', tenant_id=tenant_id) }}{% else %}{{ t('core.llm_costs.tenant_table_hint') }}{% endif %}
+          </p>
         </div>
       </div>
 

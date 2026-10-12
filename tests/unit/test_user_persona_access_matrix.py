@@ -106,6 +106,7 @@ def test_devops_persona_access_matrix(matrix_app: FastAPI) -> None:
 
     # Allowed routes for DevOps
     assert client.get("/ops/tenants").status_code == 200
+    assert client.get("/ops/llm-costs").status_code == 200
     assert client.get("/admin/logs").status_code == 200
     assert client.get("/admin/llm-costs").status_code == 200
     assert client.get("/settings").status_code == 200
@@ -116,7 +117,7 @@ def test_devops_persona_access_matrix(matrix_app: FastAPI) -> None:
 
 
 def test_admin_persona_forbidden_from_devops_plane(matrix_app: FastAPI) -> None:
-    """Verify Workspace Admin is STRICTLY FORBIDDEN from DevOps control plane and host diagnostics."""
+    """Verify Workspace Admin can access tenant-scoped LLM costs but is STRICTLY FORBIDDEN from DevOps control plane and host diagnostics."""
     token = create_jwt_token(
         principal_id="admin",
         roles=["admin"],
@@ -126,16 +127,17 @@ def test_admin_persona_forbidden_from_devops_plane(matrix_app: FastAPI) -> None:
     client = TestClient(matrix_app)
     client.cookies.set("admin_token", token)
 
-    # 1. Allowed Workspace routes
+    # 1. Allowed Workspace routes (including tenant-scoped LLM expenditure)
     assert client.get("/admin/").status_code == 200
     assert client.get("/admin/users").status_code == 200
     assert client.get("/admin/tenants").status_code == 200
     assert client.get("/admin/api-keys").status_code == 200
+    assert client.get("/admin/llm-costs").status_code == 200
 
     # 2. STRICTLY FORBIDDEN DevOps routes
     assert client.get("/ops/tenants").status_code == 403
+    assert client.get("/ops/llm-costs").status_code == 403
     assert client.get("/admin/logs").status_code == 403
-    assert client.get("/admin/llm-costs").status_code == 403
     assert client.get("/settings").status_code == 403
 
 
@@ -160,6 +162,7 @@ def test_operator_persona_forbidden_from_admin_and_devops(matrix_app: FastAPI) -
 
     # 3. STRICTLY FORBIDDEN DevOps routes
     assert client.get("/ops/tenants").status_code == 403
+    assert client.get("/ops/llm-costs").status_code == 403
     assert client.get("/admin/logs").status_code == 403
     assert client.get("/admin/llm-costs").status_code == 403
     assert client.get("/settings").status_code == 403

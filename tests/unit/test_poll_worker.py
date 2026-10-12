@@ -18,7 +18,7 @@ import os
 from pathlib import Path
 import threading
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from apps.mail_organizer.connectors.gmail_connector import GmailConnector
@@ -97,6 +97,50 @@ async def test_mail_poll_worker_poll_once(tmp_path: Path) -> None:
         count = await worker.poll_once()
         assert count == 1
         assert worker.emails_processed == 1
+
+
+@pytest.mark.asyncio
+async def test_mail_poll_worker_skips_when_no_active_connected_accounts_in_live_mode(tmp_path: Path) -> None:
+    """In live mode, PollWorker must NEVER poll or call fetch_unread_threads when no accounts are active and connected."""
+    db_file = tmp_path / "test_live_poller.db"
+    db_service = MailDatabaseService(db_url=f"sqlite:///{db_file}")
+    live_gmail = GmailConnector(mock_mode=False)
+
+    worker = MailPollWorker(
+        poll_interval_seconds=2,
+        root_dir=tmp_path,
+        db_service=db_service,
+        gmail_connector=live_gmail,
+    )
+
+    # 1. Zero registered users -> must skip cleanly
+    mock_identity = MagicMock()
+    mock_identity.list_users.return_value = []
+
+    with patch("core_platform.app.identity.service.get_user_identity_service", return_value=mock_identity), \
+         patch.object(live_gmail, "fetch_unread_threads", AsyncMock()) as mock_fetch:
+        count = await worker.poll_once()
+        assert count == 0
+        mock_fetch.assert_not_called()
+
+    # 2. Registered users exist, but none are active or connected to mail -> must skip cleanly
+    user_inactive = MagicMock()
+    user_inactive.status = "suspended"
+    user_inactive.allowed_cartridges = ["mail_organizer"]
+    user_inactive.encrypted_oauth_tokens = "some_token"
+
+    user_no_oauth = MagicMock()
+    user_no_oauth.status = "active"
+    user_no_oauth.allowed_cartridges = ["mail_organizer"]
+    user_no_oauth.encrypted_oauth_tokens = None
+
+    mock_identity.list_users.return_value = [user_inactive, user_no_oauth]
+
+    with patch("core_platform.app.identity.service.get_user_identity_service", return_value=mock_identity), \
+         patch.object(live_gmail, "fetch_unread_threads", AsyncMock()) as mock_fetch:
+        count = await worker.poll_once()
+        assert count == 0
+        mock_fetch.assert_not_called()
 
 
 def test_mail_poller_manager_lifecycle(tmp_path: Path) -> None:

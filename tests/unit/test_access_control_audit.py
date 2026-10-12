@@ -114,10 +114,10 @@ def test_tenant_admin_blocked_from_settings_and_diagnostics() -> None:
     assert resp.status_code == 403, f"Expected 403 for /api/diagnostics/poller/toggle, got {resp.status_code}"
 
 
-# ── 2. Tenant Admin Blocked from Host Logs & Telemetry ───────────────────────
+# ── 2. Tenant Admin Accesses Own LLM Costs & Blocked from Host Logs / DevOps ──
 
-def test_tenant_admin_blocked_from_host_logs_and_llm_costs() -> None:
-    """Customer Tenant Admin cannot view physical host logs or global LLM costs."""
+def test_tenant_admin_accesses_own_llm_costs_and_blocked_from_host_logs() -> None:
+    """Customer Tenant Admin can view their own tenant LLM costs, but is blocked from host logs and DevOps plane."""
     client = _get_cookie_client(
         principal_id="+919800000001",
         roles=["admin"],
@@ -125,25 +125,49 @@ def test_tenant_admin_blocked_from_host_logs_and_llm_costs() -> None:
         tenant_id="tenant_temp_only",
     )
 
-    # GET /admin/logs -> 403 Forbidden
+    # 1. GET /admin/logs -> 403 Forbidden (Host diagnostic logs reserved for DevOps)
     resp = client.get("/admin/logs", headers={"Accept": "application/json"})
     assert resp.status_code == 403, f"Expected 403 for /admin/logs, got {resp.status_code}"
 
-    # GET /admin/api/logs/tail -> 403 Forbidden
+    # 2. GET /admin/api/logs/tail -> 403 Forbidden
     resp = client.get("/admin/api/logs/tail")
     assert resp.status_code == 403, f"Expected 403 for /admin/api/logs/tail, got {resp.status_code}"
 
-    # GET /admin/api/logs/download -> 403 Forbidden
+    # 3. GET /admin/api/logs/download -> 403 Forbidden
     resp = client.get("/admin/api/logs/download")
     assert resp.status_code == 403, f"Expected 403 for /admin/api/logs/download, got {resp.status_code}"
 
-    # GET /admin/llm-costs -> 403 Forbidden
-    resp = client.get("/admin/llm-costs", headers={"Accept": "application/json"})
-    assert resp.status_code == 403, f"Expected 403 for /admin/llm-costs, got {resp.status_code}"
+    # 4. GET /ops/llm-costs -> 403 Forbidden (DevOps Super-Admin operational route)
+    resp = client.get("/ops/llm-costs")
+    assert resp.status_code == 403, f"Expected 403 for /ops/llm-costs, got {resp.status_code}"
 
-    # GET /admin/api/llm-costs -> 403 Forbidden
+    # 5. GET /ops/api/llm-costs -> 403 Forbidden
+    resp = client.get("/ops/api/llm-costs")
+    assert resp.status_code == 403, f"Expected 403 for /ops/api/llm-costs, got {resp.status_code}"
+
+    # 6. GET /admin/llm-costs -> 200 OK (Tenant Admin sees their own workspace telemetry)
+    resp = client.get("/admin/llm-costs")
+    assert resp.status_code == 200, f"Expected 200 for /admin/llm-costs, got {resp.status_code}"
+    assert "Workspace Overview" in resp.text or "Workspace LLM Consumption" in resp.text
+
+    # 7. GET /admin/api/llm-costs -> 200 OK
     resp = client.get("/admin/api/llm-costs")
-    assert resp.status_code == 403, f"Expected 403 for /admin/api/llm-costs, got {resp.status_code}"
+    assert resp.status_code == 200, f"Expected 200 for /admin/api/llm-costs, got {resp.status_code}"
+    data = resp.json()
+    assert "summary" in data
+
+
+def test_operator_blocked_from_llm_costs() -> None:
+    """Field Operator is strictly forbidden from viewing LLM costs."""
+    client = _get_cookie_client(
+        principal_id="+919800000002",
+        roles=["operator"],
+        permitted_apps=["temperature_marker"],
+        tenant_id="tenant_temp_only",
+    )
+    assert client.get("/admin/llm-costs").status_code == 403
+    assert client.get("/admin/api/llm-costs").status_code == 403
+    assert client.get("/ops/llm-costs").status_code == 403
 
 
 # ── 3. Tenant Admin Blocked from DevOps Control Plane ─────────────────────────

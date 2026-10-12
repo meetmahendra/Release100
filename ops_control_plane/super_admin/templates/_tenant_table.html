@@ -16,6 +16,7 @@
           <th class="px-4 py-3">{{ t('core.ops_tenants.col_cartridges') }}</th>
           <th class="px-4 py-3">{{ t('core.ops_tenants.col_domains') }}</th>
           <th class="px-4 py-3">{{ t('core.ops_tenants.col_vault') }}</th>
+          <th class="px-4 py-3">{{ t('core.ops_tenants.col_llm_usage') }}</th>
           <th class="px-4 py-3">{{ t('core.ops_tenants.col_region_db') }}</th>
           <th class="px-4 py-3 text-right">{{ t('core.ops_tenants.col_actions') }}</th>
         </tr>
@@ -83,6 +84,17 @@
             {% else %}
             <span class="px-2 py-0.5 rounded bg-sky-950 border border-sky-600 text-sky-300 font-semibold">{{ t('core.ops_tenants.badge_platform_managed') }}</span>
             {% endif %}
+          </td>
+          <td class="px-4 py-3 font-mono text-[11px]">
+            <div class="space-y-0.5">
+              <p class="text-purple-300 font-semibold">{{ "{:,}".format(item.llm_tokens | default(0)) }} {{ t('core.ops_tenants.unit_tokens') }}</p>
+              {% if item.credential_mode == 'CUSTOMER_BYOK' %}
+              <p class="text-sky-300 flex items-center gap-1"><span class="text-[10px]">🔑</span> $0.00 <span class="text-[9px] text-slate-500">{{ t('core.ops_tenants.badge_byok_zero') }}</span></p>
+              {% else %}
+              <p class="text-emerald-400 font-semibold">${{ "%.4f"|format(item.llm_cost_usd | default(0.0)) }}</p>
+              {% endif %}
+              <a href="/ops/llm-costs" class="text-indigo-400 hover:text-indigo-300 text-[10px] underline block mt-0.5">{{ t('core.ops_tenants.link_telemetry') }}</a>
+            </div>
           </td>
           <td class="px-4 py-3 font-mono text-[11px] text-slate-400">
             <p>{{ t_item.storage_region }}</p>

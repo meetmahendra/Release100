@@ -198,12 +198,15 @@ class MailPollWorker:
         ]
 
         if not entitled_users:
-            # Fallback to single/mock connector if no multi-tenant credentials registered
-            return await self._poll_for_target(
-                connector=self.gmail,
-                user=None,
-                user_salt=None,
-            )
+            if self.gmail.mock_mode:
+                # Fallback to mock connector only for synthetic test environments
+                return await self._poll_for_target(
+                    connector=self.gmail,
+                    user=None,
+                    user_salt=None,
+                )
+            logger.debug("[PollWorker] No active users with connected Google OAuth credentials found. Skipping cycle.")
+            return 0
 
         total_processed = 0
         now = datetime.now(timezone.utc)
@@ -263,7 +266,13 @@ class MailPollWorker:
             try:
                 user_token = get_user_access_token(user)
                 if not user_token:
-                    logger.warning("[PollWorker] No valid OAuth token for user %s. Skipping.", user.id)
+                    logger.warning("[PollWorker] User %s (%s) has no valid/active OAuth token. Skipping.", user.id, getattr(user, "email", ""))
+                    self.db_service.record_user_poll_run(
+                        user_id=user.id,
+                        emails_fetched=0,
+                        error="Google OAuth credentials not connected or expired",
+                        tenant_id=tenant_id,
+                    )
                     continue
                 user_connector = GmailConnector(access_token_override=user_token)
                 count = await self._poll_for_target(

@@ -111,7 +111,8 @@ def mock_users() -> List[PlatformUser]:
 @pytest.mark.asyncio
 async def test_poller_multi_user_entitlement_filtering(mock_users: List[PlatformUser], tmp_path: Path) -> None:
     """Verify that poll_once iterates over only active entitled users with valid credentials."""
-    worker = MailPollWorker(poll_interval_seconds=10, root_dir=tmp_path)
+    db_service = MailDatabaseService(db_url=f"sqlite:///{tmp_path}/poller_test.db")
+    worker = MailPollWorker(poll_interval_seconds=10, root_dir=tmp_path, db_service=db_service)
     
     mock_identity_service = MagicMock()
     mock_identity_service.list_users.return_value = mock_users

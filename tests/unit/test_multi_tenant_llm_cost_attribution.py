@@ -119,6 +119,68 @@ def test_cost_tracker_multi_tenant_financial_isolation(tmp_path: Path) -> None:
     assert alpha_report["cartridges_used"] == ["mail_organizer"]
 
 
+def test_cost_tracker_tenant_sovereignty_scoping(tmp_path: Path) -> None:
+    """Verify that tenant_id filtering enforces strict Data Sovereignty for Tenant Admins."""
+    log_file = tmp_path / "test_sovereignty_costs.jsonl"
+    tracker = LLMCostTracker(max_records=100, jsonl_log_path=log_file)
+
+    # Tenant 1: BYOK tenant
+    tracker.record_interaction(
+        interaction_id="ix_byok_01",
+        operation_id="op_byok_1",
+        task="text_generation",
+        provider="gemini",
+        model="gemini-2.5-flash",
+        prompt_tokens=1500,
+        completion_tokens=500,
+        latency_ms=300.0,
+        tenant_id="acme_byok",
+        cartridge_id="mail_organizer",
+        credential_mode="CUSTOMER_BYOK",
+    )
+
+    # Tenant 2: Platform managed tenant
+    tracker.record_interaction(
+        interaction_id="ix_plat_01",
+        operation_id="op_plat_1",
+        task="vision_ocr",
+        provider="gemini",
+        model="gemini-2.5-flash",
+        prompt_tokens=800,
+        completion_tokens=200,
+        latency_ms=250.0,
+        tenant_id="beta_platform",
+        cartridge_id="temperature_marker",
+        credential_mode="PLATFORM_MANAGED",
+    )
+
+    # 1. Scoped summary for BYOK tenant
+    byok_summary = tracker.get_summary(tenant_id="acme_byok")
+    assert byok_summary["total_interactions"] == 1
+    assert byok_summary["total_tokens"] == 2000
+    assert byok_summary["total_platform_liability_usd"] == 0.0
+    assert byok_summary["total_byok_value_usd"] > 0.0
+    assert byok_summary["tenant_credential_mode"] == "CUSTOMER_BYOK"
+    assert "acme_byok" in byok_summary["by_tenant"]
+    assert "beta_platform" not in byok_summary["by_tenant"]
+
+    # 2. Scoped summary for Platform-managed tenant
+    plat_summary = tracker.get_summary(tenant_id="beta_platform")
+    assert plat_summary["total_interactions"] == 1
+    assert plat_summary["total_tokens"] == 1000
+    assert plat_summary["total_platform_liability_usd"] > 0.0
+    assert plat_summary["total_byok_value_usd"] == 0.0
+    assert plat_summary["tenant_credential_mode"] == "PLATFORM_MANAGED"
+    assert "beta_platform" in plat_summary["by_tenant"]
+    assert "acme_byok" not in plat_summary["by_tenant"]
+
+    # 3. Scoped operations report
+    byok_ops = tracker.get_operations_report(tenant_id="acme_byok")
+    assert len(byok_ops) == 1
+    assert byok_ops[0]["tenant_id"] == "acme_byok"
+    assert byok_ops[0]["operation_id"] == "op_byok_1"
+
+
 def test_product_optimization_insights(tmp_path: Path) -> None:
     """Verify workload hotspot detection and architectural recommendation generation."""
     tracker = LLMCostTracker(max_records=50, jsonl_log_path=tmp_path / "opt_test.jsonl")

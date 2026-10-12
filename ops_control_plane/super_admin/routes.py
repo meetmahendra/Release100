@@ -112,11 +112,22 @@ async def super_admin_tenants_dashboard(
             admin_map[a.tenant_id.replace("_", "-")] = a
             admin_map[a.tenant_id.replace("-", "_")] = a
 
+        try:
+            from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
+            cost_tracker = get_llm_cost_tracker()
+            llm_tenant_summary = {
+                t_data["tenant_id"]: t_data
+                for t_data in cost_tracker.get_tenant_breakdown()
+            }
+        except Exception:
+            llm_tenant_summary = {}
+
         tenant_cards: List[Dict[str, Any]] = []
         for t in tenants:
             t_domains = domain_map.get(t.id, [])
             t_cfg = config_map.get(t.id)
             t_admin = admin_map.get(t.id) or admin_map.get(t.id.replace("_", "-")) or admin_map.get(t.id.replace("-", "_"))
+            t_llm = llm_tenant_summary.get(t.id, {})
             tenant_cards.append({
                 "tenant": t,
                 "domains": t_domains,
@@ -127,6 +138,10 @@ async def super_admin_tenants_dashboard(
                 "has_custom_gemini": bool(t_cfg and t_cfg.encrypted_gemini_api_key),
                 "has_custom_openai": bool(t_cfg and t_cfg.encrypted_openai_api_key),
                 "has_custom_waba": bool(t_cfg and t_cfg.encrypted_waba_token),
+                "llm_tokens": t_llm.get("total_tokens", 0),
+                "llm_cost_usd": t_llm.get("platform_liability_usd", 0.0),
+                "llm_customer_value": t_llm.get("total_cost_usd", 0.0),
+                "llm_calls": t_llm.get("total_interactions", 0),
             })
 
     try:
@@ -717,3 +732,70 @@ async def toggle_email_poller(
             url=f"/ops/daemons?error={quote_plus(f'Failed to toggle poller: {exc}')}",
             status_code=status.HTTP_303_SEE_OTHER,
         )
+
+
+# ── DevOps Platform LLM Telemetry & Invoicing Routes ────────────────────────
+
+@router.get("/llm-costs", response_class=HTMLResponse)
+async def super_admin_llm_costs_page(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> HTMLResponse:
+    """Super-Admin operational view of platform-wide LLM token consumption and costs."""
+    _verify_devops_privilege(ctx, request)
+    from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
+    tracker = get_llm_cost_tracker()
+    summary = tracker.get_summary()
+    tenant_breakdown = tracker.get_tenant_breakdown()
+    cartridge_breakdown = tracker.get_cartridge_breakdown()
+    product_insights = tracker.get_product_optimization_insights()
+    operations = tracker.get_operations_report(limit=100)
+
+    ui_ctx = build_ui_context(
+        locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
+        ctx=ctx,
+        allowed_apps=[],
+        tenant_name=settings.ORGANIZATION_NAME or "",
+        breadcrumbs=[
+            Breadcrumb(label_key="core.nav.devops_plane", path="/ops/tenants"),
+            Breadcrumb(label_key="core.nav.llm_costs"),
+        ],
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="super_admin_llm_costs.html",
+        context={
+            "title": "DevOps Platform LLM Telemetry & Invoicing",
+            "principal": ctx.principal_id,
+            "is_admin": ctx.is_admin,
+            "is_devops": True,
+            "is_tenant_admin": False,
+            "organization": settings.ORGANIZATION_NAME,
+            "summary": summary,
+            "tenant_breakdown": tenant_breakdown,
+            "cartridge_breakdown": cartridge_breakdown,
+            "product_insights": product_insights,
+            "operations": operations,
+            "ui": ui_ctx,
+        },
+    )
+
+
+@router.get("/api/llm-costs", response_class=JSONResponse)
+async def super_admin_llm_costs_api(
+    request: Request,
+    ctx: SecurityContext = Depends(get_web_security_context),
+) -> JSONResponse:
+    """DevOps API returning global multi-tenant LLM metrics."""
+    _verify_devops_privilege(ctx, request)
+    from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
+    tracker = get_llm_cost_tracker()
+    return JSONResponse(
+        content={
+            "summary": tracker.get_summary(),
+            "tenant_breakdown": tracker.get_tenant_breakdown(),
+            "cartridge_breakdown": tracker.get_cartridge_breakdown(),
+            "product_insights": tracker.get_product_optimization_insights(),
+            "operations": tracker.get_operations_report(limit=100),
+        }
+    )

@@ -518,7 +518,13 @@
       "mode_microkernel": "Microkernel (Jev / Core)",
       "mode_platform": "Platform-Managed Keys",
       "label_tenant": "Tenant: ",
-      "label_mode": "Mode: "
+      "label_mode": "Mode: ",
+      "workspace_routing_title": "Workspace Credential Routing",
+      "workspace_byok_desc": "Bring-Your-Own-Key (BYOK) active for {tenant_id}. All cartridge model calls execute directly via your tenant's encrypted API credentials. Platform liability is $0.00.",
+      "workspace_platform_desc": "Platform-Managed routing active for {tenant_id}. Consumption is recorded against platform credit allocations.",
+      "tab_workspace": "Workspace Overview",
+      "workspace_table_title": "Workspace LLM Consumption",
+      "workspace_table_hint": "Real-time token and cost ledger scoped strictly to your workspace ({tenant_id})"
     },
     "settings": {
       "title_tag": "Master Settings & Keys \u2014 Release100",
@@ -629,6 +635,7 @@
       "col_cartridges": "Cartridges",
       "col_domains": "Domains & Routing",
       "col_vault": "Credential Vault",
+      "col_llm_usage": "LLM Usage & Liability",
       "col_region_db": "Region & DB",
       "col_actions": "Lifecycle Actions",
       "no_admin": "No admin user",
@@ -637,6 +644,9 @@
       "badge_suspended": "SUSPENDED",
       "badge_byok": "CUSTOMER_BYOK",
       "badge_platform_managed": "PLATFORM_MANAGED",
+      "unit_tokens": "tok",
+      "badge_byok_zero": "(BYOK)",
+      "link_telemetry": "Telemetry \u2192",
       "btn_inspect": "\ud83d\udd0d Inspect",
       "btn_edit": "\u270f\ufe0f Edit",
       "btn_byok": "\ud83d\udd11 BYOK",

@@ -114,6 +114,7 @@ def compose_nav(
         ops_grp = "core.nav.group_platform"
         items.append(_core("core.nav.devops_plane", "/ops/tenants", ops_grp))
         items.append(_core("core.nav.daemons", "/ops/daemons", ops_grp))
+        items.append(_core("core.nav.llm_costs", "/ops/llm-costs", ops_grp))
 
         # Diagnostics & Host Configuration (DevOps only)
         dg = "core.nav.group_diagnostics"
@@ -134,6 +135,7 @@ def compose_nav(
         ws = "core.nav.group_workspace"
         items.append(_core("core.nav.users", "/admin/users", ws))
         items.append(_core("core.nav.tenants", "/admin/tenants", ws))
+        items.append(_core("core.nav.llm_costs", "/admin/llm-costs", ws))
         items.append(_core("core.nav.api_keys", "/admin/api-keys", ws))
 
     return items

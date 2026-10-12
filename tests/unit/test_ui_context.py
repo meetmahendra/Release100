@@ -143,7 +143,7 @@ def test_nav_survives_missing_plugin_loader(monkeypatch: pytest.MonkeyPatch) -> 
 def test_authenticated_context_builds_nav() -> None:
     ui = build_ui_context("en_US", _ctx(["admin"]), allowed_apps=[])
     assert isinstance(ui, UiContext)
-    assert [i.path for i in ui.nav] == ["/admin/", "/admin/users", "/admin/tenants", "/admin/api-keys"]
+    assert [i.path for i in ui.nav] == ["/admin/", "/admin/users", "/admin/tenants", "/admin/llm-costs", "/admin/api-keys"]
 
 
 class _Plain:
@@ -163,6 +163,7 @@ def test_compose_nav_devops_has_all_core_sections_and_app_fallback() -> None:
     assert paths[0] == "/admin/"
     assert "/ops/tenants" in paths
     assert "/ops/daemons" in paths
+    assert "/ops/llm-costs" in paths
     assert "/admin/llm-costs" in paths
     assert "/settings" in paths
     assert "/admin/logs" in paths
@@ -183,6 +184,7 @@ def test_compose_nav_customer_admin_has_cartridges_and_workspace() -> None:
     assert "/admin/apps/sample-app/" in paths
     assert "/admin/users" in paths
     assert "/admin/tenants" in paths
+    assert "/admin/llm-costs" in paths
     assert "/admin/api-keys" in paths
     app_item = next(i for i in items if i.path == "/admin/apps/sample-app/")
     assert app_item.label_text == "Sample App" and app_item.group_key == "core.nav.group_apps"
