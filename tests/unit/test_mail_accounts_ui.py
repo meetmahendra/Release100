@@ -263,3 +263,37 @@ def test_user_reauth_redirects_to_google_connect(client: TestClient) -> None:
         assert res.status_code == 302
         assert "/auth/google/connect?token=" in res.headers["location"]
 
+
+def test_cross_tenant_account_access_rejected_with_403(client: TestClient) -> None:
+    """Attempting account operations on a user from another tenant must fail closed with 403 Forbidden."""
+    mock_victim = MagicMock()
+    mock_victim.id = 555
+    mock_victim.phone_number = "+919999988888"
+    mock_victim.tenant_id = "tenant_foreign_victim"
+    mock_victim.encrypted_oauth_tokens = "valid_tokens"
+
+    with patch("core_platform.app.identity.service.get_user_identity_service") as mock_uis:
+        mock_inst = MagicMock()
+        mock_inst.get_user_by_id.return_value = mock_victim
+        mock_uis.return_value = mock_inst
+
+        # 1. Toggle
+        res_toggle = client.post("/admin/apps/mail-organizer/accounts/users/555/toggle")
+        assert res_toggle.status_code == 403
+
+        # 2. Config
+        res_cfg = client.post("/admin/apps/mail-organizer/accounts/users/555/config", data={"poll_interval_seconds": 60})
+        assert res_cfg.status_code == 403
+
+        # 3. Poll-now
+        res_poll = client.post("/admin/apps/mail-organizer/accounts/users/555/poll-now")
+        assert res_poll.status_code == 403
+
+        # 4. Magic-link
+        res_link = client.get("/admin/apps/mail-organizer/accounts/users/555/magic-link")
+        assert res_link.status_code == 403
+
+        # 5. Reauth
+        res_reauth = client.get("/admin/apps/mail-organizer/accounts/reauth?user_id=555", follow_redirects=False)
+        assert res_reauth.status_code == 403
+

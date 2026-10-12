@@ -581,6 +581,7 @@ class UserIdentityService:
         timezone_str: Optional[str] = None,
         email: Optional[str] = None,
         status: Optional[str] = None,
+        password: Optional[str] = None,
     ) -> Optional[PlatformUser]:
         """Update profile, role, tenant, and entitlements for an existing user.
 
@@ -593,6 +594,7 @@ class UserIdentityService:
             timezone_str: Local timezone identifier.
             email: Updated email address.
             status: Account status ('active', 'suspended', etc.).
+            password: Optional password to set or reset for local credential login.
 
         Returns:
             Updated PlatformUser entity, or None if user not found.
@@ -623,6 +625,10 @@ class UserIdentityService:
                 user.email = email.strip() if email.strip() else None
             if status is not None and status.strip():
                 user.status = status.strip().lower()
+            if password is not None and password.strip():
+                from core_platform.app.auth.strategies import hash_password
+                user.hashed_password = hash_password(password.strip())
+
 
             user.updated_at = datetime.now(dt_timezone.utc)
             session.commit()

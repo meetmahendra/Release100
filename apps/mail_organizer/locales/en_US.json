@@ -192,6 +192,12 @@
         "th_subject": "Subject",
         "th_status": "Status",
         "th_created_utc": "Created (UTC)",
+        "th_action": "Action",
+        "btn_inspect": "Inspect / Preview",
+        "drawer_title": "Draft Preview",
+        "drawer_zk_badge": "Zero-Knowledge Decryption via Session Secret Salt",
+        "drawer_loading": "Loading draft payload...",
+        "drawer_close": "Close",
         "val_recent": "Recent",
         "empty_state": "No drafts staged. Use Triage Simulator with a meeting or action request."
       },

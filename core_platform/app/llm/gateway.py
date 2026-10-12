@@ -94,6 +94,7 @@ class LLMGateway:
         """
         self._providers = providers
         self._task_map: Dict[str, str] = dict(_DEFAULT_TASK_PROVIDER)
+        self._tenant_provider_cache: Dict[str, Dict[str, BaseLLMProvider]] = {}
 
     def configure_task(self, task: str, provider_name: str) -> None:
         """Override the provider assigned to a specific task.
@@ -124,6 +125,70 @@ class LLMGateway:
                 return provider
 
         return None
+
+    def _resolve_provider_for_tenant(
+        self,
+        task: str,
+        tenant_id: str,
+        explicit_mode: Optional[str] = None,
+    ) -> tuple[Optional[BaseLLMProvider], str]:
+        """Resolve a tenant-isolated provider, enforcing fail-closed zero-fallback BYOK isolation."""
+        if not tenant_id or tenant_id in ("system", "default", "default_tenant", "platform"):
+            provider = self._get_provider(task)
+            return provider, explicit_mode or "PLATFORM_MANAGED"
+
+        try:
+            from ops_control_plane.devops_vault import get_devops_key_vault
+            vault = get_devops_key_vault()
+            creds = vault.get_tenant_runtime_credentials(tenant_id)
+        except Exception as exc:
+            logger.debug("[LLMGateway] Could not lookup vault credentials for %s: %s", tenant_id, exc)
+            provider = self._get_provider(task)
+            return provider, explicit_mode or "PLATFORM_MANAGED"
+
+        if creds.credential_mode == "CUSTOMER_BYOK":
+            preferred_name = self._task_map.get(task, "gemini")
+            if preferred_name == "gemini":
+                if not creds.gemini_api_key:
+                    logger.error(
+                        "[LLMGateway] Security violation: Tenant '%s' is in CUSTOMER_BYOK mode but has no Gemini key in vault.",
+                        tenant_id,
+                    )
+                    raise PermissionError(
+                        f"Security violation: Tenant '{tenant_id}' is configured for CUSTOMER_BYOK mode "
+                        f"but has not registered a valid Gemini API key in the Vault. Zero fallback permitted."
+                    )
+                t_cache = self._tenant_provider_cache.setdefault(tenant_id, {})
+                cached = t_cache.get("gemini")
+                if cached is None or getattr(cached, "_api_key", None) != creds.gemini_api_key:
+                    from core_platform.app.config import settings
+                    from core_platform.app.llm.gemini_provider import GeminiProvider
+                    t_cache["gemini"] = GeminiProvider(
+                        api_key=creds.gemini_api_key,
+                        default_model=settings.GEMINI_MODEL,
+                    )
+                return t_cache["gemini"], "CUSTOMER_BYOK"
+
+            elif preferred_name == "openai":
+                if not creds.openai_api_key:
+                    logger.error(
+                        "[LLMGateway] Security violation: Tenant '%s' is in CUSTOMER_BYOK mode but has no OpenAI key in vault.",
+                        tenant_id,
+                    )
+                    raise PermissionError(
+                        f"Security violation: Tenant '{tenant_id}' is configured for CUSTOMER_BYOK mode "
+                        f"but has not registered a valid OpenAI API key in the Vault. Zero fallback permitted."
+                    )
+                t_cache = self._tenant_provider_cache.setdefault(tenant_id, {})
+                cached = t_cache.get("openai")
+                if cached is None or getattr(cached, "_api_key", None) != creds.openai_api_key:
+                    from core_platform.app.llm.openai_provider import OpenAIProvider
+                    t_cache["openai"] = OpenAIProvider(
+                        api_key=creds.openai_api_key,
+                    )
+                return t_cache["openai"], "CUSTOMER_BYOK"
+
+        return self._get_provider(task), creds.credential_mode
 
     async def generate(
         self,
@@ -157,17 +222,19 @@ class LLMGateway:
             Parsed JSON dict, or None when all providers fail (caller should
             use its own deterministic fallback).
         """
-        provider = self._get_provider(task)
+        eff_tenant = _resolve_context_tenant(tenant_id)
+        eff_cartridge = _resolve_context_cartridge(cartridge_id)
+        provider, resolved_mode = self._resolve_provider_for_tenant(task, eff_tenant, credential_mode)
+        eff_cred_mode = resolved_mode
+
         if provider is None:
-            logger.debug("[LLMGateway] No available provider for task=%s", task)
+            logger.debug("[LLMGateway] No available provider for task=%s (tenant=%s)", task, eff_tenant)
             return None
 
         actual_model = str(model or getattr(provider, "_default_model", "default"))
         op_id = operation_id or f"op_{uuid.uuid4().hex[:10]}"
         interaction_id = f"ix_{uuid.uuid4().hex[:10]}"
-        eff_tenant = _resolve_context_tenant(tenant_id)
-        eff_cartridge = _resolve_context_cartridge(cartridge_id)
-        eff_cred_mode = credential_mode or "PLATFORM_MANAGED"
+
 
         logger.debug(
             "[LLMGateway] task=%s → provider=%s model=%s (op=%s, tenant=%s, cartridge=%s)",
@@ -258,17 +325,19 @@ class LLMGateway:
         Returns:
             Parsed JSON dict, or None when all providers fail.
         """
-        provider = self._get_provider(task)
+        eff_tenant = _resolve_context_tenant(tenant_id)
+        eff_cartridge = _resolve_context_cartridge(cartridge_id)
+        provider, resolved_mode = self._resolve_provider_for_tenant(task, eff_tenant, credential_mode)
+        eff_cred_mode = resolved_mode
+
         if provider is None:
-            logger.debug("[LLMGateway] No available provider for multimodal task=%s", task)
+            logger.debug("[LLMGateway] No available provider for multimodal task=%s (tenant=%s)", task, eff_tenant)
             return None
 
         actual_model = str(model or getattr(provider, "_default_model", "default"))
         op_id = operation_id or f"op_{uuid.uuid4().hex[:10]}"
         interaction_id = f"ix_{uuid.uuid4().hex[:10]}"
-        eff_tenant = _resolve_context_tenant(tenant_id)
-        eff_cartridge = _resolve_context_cartridge(cartridge_id)
-        eff_cred_mode = credential_mode or "PLATFORM_MANAGED"
+
 
         logger.debug(
             "[LLMGateway] multimodal task=%s → provider=%s (op=%s, tenant=%s, cartridge=%s)",

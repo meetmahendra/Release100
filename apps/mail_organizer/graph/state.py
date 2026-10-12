@@ -76,3 +76,9 @@ class MailOrganizerState(TypedDict, total=False):
     correlation_id: str
     audit_record_hash: Optional[str]
     vip_senders: List[str]
+
+    # Tenant & User Identity Context
+    tenant_id: Optional[str]
+    user_id: Optional[int]
+    user_name: Optional[str]
+    user_email: Optional[str]

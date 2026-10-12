@@ -387,6 +387,10 @@ class MailPollWorker:
                 "subject": str(thread.get("subject", "No Subject")),
                 "body": str(thread.get("body", "")),
                 "snippet": str(thread.get("snippet", "")),
+                "tenant_id": user.tenant_id if user else "public",
+                "user_id": getattr(user, "id", None),
+                "user_name": getattr(user, "full_name", None),
+                "user_email": getattr(user, "email", None) or getattr(user, "google_email", None),
             }
 
             try:
@@ -394,17 +398,31 @@ class MailPollWorker:
                 self.workflow.gmail_connector = connector
                 try:
                     if user is not None:
-                        u_ctx = UserContext(
-                            user_id=user.id,
-                            phone_number=user.phone_number,
-                            tenant_id=user.tenant_id,
-                            full_name=user.full_name,
-                            role=user.role,
-                            user_secret_salt=user_salt or "",
-                            allowed_cartridges=tuple(user.allowed_cartridges),
+                        from core_platform.app.auth.token_exchange import get_token_exchange_service, assumed_identity
+                        service = get_token_exchange_service()
+                        user_auth_time = (
+                            int(user.created_at.timestamp())
+                            if hasattr(user, "created_at") and user.created_at
+                            else int(time.time())
                         )
-                        async with async_user_scope(u_ctx):
-                            final_state = await self.workflow.execute(initial_state)
+                        ticket = service.exchange_worker_ticket(
+                            user_id=str(user.id),
+                            tenant_id=str(user.tenant_id),
+                            actor="worker:mail_poll_worker",
+                            auth_time=user_auth_time,
+                        )
+                        async with assumed_identity(ticket):
+                            u_ctx = UserContext(
+                                user_id=user.id,
+                                phone_number=user.phone_number,
+                                tenant_id=user.tenant_id,
+                                full_name=user.full_name,
+                                role=user.role,
+                                user_secret_salt=user_salt or "",
+                                allowed_cartridges=tuple(user.allowed_cartridges),
+                            )
+                            async with async_user_scope(u_ctx):
+                                final_state = await self.workflow.execute(initial_state)
                     else:
                         final_state = await self.workflow.execute(initial_state)
                 finally:

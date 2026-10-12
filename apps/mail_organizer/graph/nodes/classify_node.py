@@ -134,12 +134,16 @@ async def classify_node(state: MailOrganizerState) -> MailOrganizerState:
             ]
 
             # Fast System 1 Classification Path (TypeSafe / Jev)
+            raw_tid = state.get("tenant_id")
+            eff_tenant: Optional[str] = str(raw_tid) if raw_tid else None
             decision = await gateway.classify(
                 text=f"Subject: {subject}\nBody: {body[:500]}",
                 choices=valid_categories,
                 task="fast_classification",
                 context=f"Executive email triage. Sender: {sender}",
                 operation_id=f"classify_s1_{state.get('gmail_id', 'unknown')}",
+                tenant_id=eff_tenant,
+                cartridge_id="mail_organizer",
             )
             if decision and decision.selected_choice in valid_categories:
                 urgency = 9 if decision.selected_choice == "@Urgent" else (8 if decision.selected_choice == "@Action" else 5)
@@ -182,6 +186,8 @@ async def classify_node(state: MailOrganizerState) -> MailOrganizerState:
                     temperature=0.0,
                     response_mime_type="application/json",
                     operation_id=f"classify_{state.get('gmail_id', 'unknown')}",
+                    tenant_id=eff_tenant,
+                    cartridge_id="mail_organizer",
                 )
                 if parsed and isinstance(parsed, dict) and "category" in parsed:
                     llm_result = EmailClassificationOutput(**parsed)

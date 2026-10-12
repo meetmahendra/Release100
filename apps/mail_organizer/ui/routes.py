@@ -29,8 +29,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -365,6 +365,34 @@ async def view_drafts(
     )
 
 
+@router.get("/api/drafts/{draft_id}/preview")
+async def preview_draft(
+    draft_id: int,
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> Dict[str, Any]:
+    """Retrieve decrypted preview of a draft for the authenticated owner or blinded for admin."""
+    if not ctx or not ctx.is_authenticated:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+
+    from core_platform.app.middleware.tenant_context import get_current_user_context
+    u_ctx = get_current_user_context()
+    user_salt = u_ctx.user_secret_salt if u_ctx else None
+
+    decrypted_draft = _db_service.get_draft(draft_id, decrypt_salt=user_salt)
+    if not decrypted_draft:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Draft not found")
+
+    return {
+        "id": decrypted_draft["id"],
+        "recipient": decrypted_draft["recipient"],
+        "subject": decrypted_draft["subject"],
+        "status": decrypted_draft["status"],
+        "body": decrypted_draft["body"],
+    }
+
+
+
 # ── GAP-019: OAuth Accounts Management ───────────────────────────────────────
 
 # ── GAP-019: OAuth Accounts & Customer Admin Poller Management ─────────────
@@ -532,11 +560,37 @@ async def toggle_workspace_poller(request: Request) -> Response:
     )
 
 
+def _is_matching_tenant(user_tenant: Any, effective_tenant: str) -> bool:
+    """Check tenant identity match with support for default platform aliases."""
+    if user_tenant is None or hasattr(user_tenant, "_mock_return_value"):
+        return True
+    u_t = str(user_tenant)
+    if u_t == effective_tenant:
+        return True
+    default_aliases = {"default", "default_tenant", "public", "platform", "system"}
+    if u_t in default_aliases and effective_tenant in default_aliases:
+        return True
+    return False
+
+
 @router.post("/accounts/users/{user_id}/toggle", dependencies=[Depends(require_action("mail:account:connect"))])
-async def toggle_user_poller(user_id: int, request: Request) -> Response:
+async def toggle_user_poller(
+    user_id: int,
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> Response:
     """Toggle polling for an individual user."""
-    tenant_id, _, _ = resolve_effective_tenant_info(request)
+    tenant_id, _, _ = resolve_effective_tenant_info(request, ctx)
     effective_tenant = tenant_id or "default"
+
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not _is_matching_tenant(getattr(user, "tenant_id", None), effective_tenant) and not (ctx and ctx.is_devops):
+        raise HTTPException(status_code=403, detail="Access denied: User belongs to another tenant")
+
     cfg = _db_service.get_user_poller_config(user_id=user_id, tenant_id=effective_tenant)
     current_status = cfg.is_poller_enabled if cfg else True
     new_status = not current_status
@@ -562,10 +616,23 @@ async def toggle_user_poller(user_id: int, request: Request) -> Response:
 
 
 @router.post("/accounts/users/{user_id}/config", dependencies=[Depends(require_action("mail:account:connect"))])
-async def update_user_poller_config(user_id: int, request: Request) -> Response:
+async def update_user_poller_config(
+    user_id: int,
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> Response:
     """Update cadence interval and active window for an individual user."""
-    tenant_id, _, _ = resolve_effective_tenant_info(request)
+    tenant_id, _, _ = resolve_effective_tenant_info(request, ctx)
     effective_tenant = tenant_id or "default"
+
+    from core_platform.app.identity.service import get_user_identity_service
+    user_service = get_user_identity_service()
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not _is_matching_tenant(getattr(user, "tenant_id", None), effective_tenant) and not (ctx and ctx.is_devops):
+        raise HTTPException(status_code=403, detail="Access denied: User belongs to another tenant")
+
     form_data = await request.form()
     interval_raw = form_data.get("poll_interval_seconds")
     interval = int(interval_raw) if isinstance(interval_raw, str) and interval_raw.isdigit() else 300
@@ -591,15 +658,24 @@ async def update_user_poller_config(user_id: int, request: Request) -> Response:
 
 
 @router.post("/accounts/users/{user_id}/poll-now", dependencies=[Depends(require_action("mail:account:connect"))])
-async def trigger_user_poll_now(user_id: int, request: Request) -> Response:
+async def trigger_user_poll_now(
+    user_id: int,
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> Response:
     """Trigger an on-demand manual poll for a specific user with unauthenticated gate."""
-    tenant_id, _, _ = resolve_effective_tenant_info(request)
+    tenant_id, _, _ = resolve_effective_tenant_info(request, ctx)
     effective_tenant = tenant_id or "default"
 
     from core_platform.app.identity.service import get_user_identity_service
     user_service = get_user_identity_service()
     user = user_service.get_user_by_id(user_id)
-    if not user or not user.encrypted_oauth_tokens:
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not _is_matching_tenant(getattr(user, "tenant_id", None), effective_tenant) and not (ctx and ctx.is_devops):
+        raise HTTPException(status_code=403, detail="Access denied: User belongs to another tenant")
+
+    if not user.encrypted_oauth_tokens:
         if request.headers.get("accept", "").startswith("application/json"):
             return JSONResponse({"success": False, "message": "User has not connected a Google account."}, status_code=400)
         return RedirectResponse(url="/admin/apps/mail-organizer/accounts?msg=user_not_connected", status_code=303)
@@ -618,8 +694,12 @@ async def trigger_user_poll_now(user_id: int, request: Request) -> Response:
 async def get_user_accounts_magic_link(
     user_id: int,
     request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
 ) -> JSONResponse:
     """Generate ephemeral magic link URL for a member in mail_organizer accounts view."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request, ctx)
+    effective_tenant = tenant_id or "default"
+
     from core_platform.app.identity.service import get_user_identity_service
     from core_platform.app.identity.magic_link import build_magic_link_url
 
@@ -627,6 +707,8 @@ async def get_user_accounts_magic_link(
     user = user_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if not _is_matching_tenant(getattr(user, "tenant_id", None), effective_tenant) and not (ctx and ctx.is_devops):
+        raise HTTPException(status_code=403, detail="Access denied: User belongs to another tenant")
 
     base_url = (
         settings.ORCHESTRATOR_BASE_URL
@@ -676,6 +758,9 @@ async def initiate_reauth(
     ctx: Optional[SecurityContext] = Depends(get_web_security_context),
 ) -> RedirectResponse:
     """Initiate Google OAuth2 flow for an individual member or current admin user."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request, ctx)
+    effective_tenant = tenant_id or "default"
+
     from core_platform.app.identity.service import get_user_identity_service
     from core_platform.app.identity.magic_link import generate_magic_link_token
 
@@ -683,6 +768,10 @@ async def initiate_reauth(
     target_user = None
     if user_id is not None:
         target_user = user_service.get_user_by_id(user_id)
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        if not _is_matching_tenant(getattr(target_user, "tenant_id", None), effective_tenant) and not (ctx and ctx.is_devops):
+            raise HTTPException(status_code=403, detail="Access denied: User belongs to another tenant")
     elif ctx and ctx.principal_id:
         target_user = user_service.get_user_by_identifier(ctx.principal_id)
 

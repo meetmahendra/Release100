@@ -61,6 +61,7 @@ PROVIDER_PRICING_PER_1M: Dict[str, tuple[float, float]] = {
     # TypeSafe / Jev System 1 (Internal Core Microkernel)
     "typesafe": (0.001, 0.002),
     "jev-1": (0.001, 0.002),
+    "jev-latest": (0.001, 0.002),
     # Ollama / Local
     "ollama": (0.0, 0.0),
     "deepseek-r1:14b": (0.0, 0.0),

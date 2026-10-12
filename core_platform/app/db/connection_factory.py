@@ -58,6 +58,9 @@ class DatabaseConnectionFactory:
             autocommit=False,
             autoflush=False,
         )
+        from core_platform.app.db.gatekeeper import attach_gatekeeper_listeners
+        attach_gatekeeper_listeners(self.session_factory)
+
 
     def _resolve_dialect(self, url: str) -> str:
         """Extract dialect identifier from database URL."""

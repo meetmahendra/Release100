@@ -103,27 +103,65 @@
           <td class="px-4 py-3 text-right">
             <div class="flex items-center justify-end gap-1.5">
               <!-- Primary Inspect & Manage Trigger -->
-              <button type="button" onclick="openInspectModal('{{ t_item.id }}', '{{ t_item.name }}', '{{ t_item.status }}', '{{ t_item.license_tier }}', '{{ t_item.storage_region }}', '{{ t_item.db_mode }}', '{{ item.credential_mode }}', '{% if item.domains %}{{ item.domains[0].domain_name }}{% else %}{{ t_item.id }}.release100.com{% endif %}', '{% for c in t_item.allowed_cartridges %}{{ c }}{% if not loop.last %},{% endif %}{% endfor %}', '{% if item.admin %}{{ item.admin.phone_number }}{% endif %}', '{% if item.admin %}{{ item.admin.full_name }}{% endif %}', '{% if item.admin %}{{ item.admin.email or '' }}{% endif %}', '{{ item.llm_provider }}')" class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm transition-colors flex items-center gap-1">
+              <button type="button"
+                      data-tenant-id="{{ t_item.id }}"
+                      data-tenant-name="{{ t_item.name|e }}"
+                      data-tenant-status="{{ t_item.status|e }}"
+                      data-tenant-tier="{{ t_item.license_tier|e }}"
+                      data-storage-region="{{ t_item.storage_region|e }}"
+                      data-db-mode="{{ t_item.db_mode|e }}"
+                      data-credential-mode="{{ item.credential_mode|e }}"
+                      data-domain="{% if item.domains %}{{ item.domains[0].domain_name|e }}{% else %}{{ t_item.id }}.release100.com{% endif %}"
+                      data-cartridges="{% for c in t_item.allowed_cartridges %}{{ c }}{% if not loop.last %},{% endif %}{% endfor %}"
+                      data-admin-phone="{% if item.admin %}{{ item.admin.phone_number|e }}{% endif %}"
+                      data-admin-name="{% if item.admin %}{{ item.admin.full_name|e }}{% endif %}"
+                      data-admin-email="{% if item.admin %}{{ item.admin.email or ''|e }}{% endif %}"
+                      data-llm-provider="{{ item.llm_provider|e }}"
+                      onclick="handleInspectClick(this)"
+                      class="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm transition-colors flex items-center gap-1 inspect-tenant-btn">
                 <span>🔍</span> {{ t('core.ops_tenants.btn_inspect') }}
               </button>
 
               <!-- Edit Tenant Trigger -->
-              <button type="button" onclick="openEditModal('{{ t_item.id }}', '{{ t_item.name }}', '{{ t_item.license_tier }}', '{{ t_item.status }}', '{{ t_item.max_users }}', '{% if item.admin %}{{ item.admin.phone_number }}{% endif %}', '{% if item.admin %}{{ item.admin.full_name }}{% endif %}', '{% if item.admin %}{{ item.admin.email or '' }}{% endif %}')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100 font-medium transition-colors">
+              <button type="button"
+                      data-tenant-id="{{ t_item.id }}"
+                      data-tenant-name="{{ t_item.name|e }}"
+                      data-tenant-tier="{{ t_item.license_tier|e }}"
+                      data-tenant-status="{{ t_item.status|e }}"
+                      data-tenant-max-users="{{ t_item.max_users|default(10) }}"
+                      data-admin-phone="{% if item.admin %}{{ item.admin.phone_number|e }}{% endif %}"
+                      data-admin-name="{% if item.admin %}{{ item.admin.full_name|e }}{% endif %}"
+                      data-admin-email="{% if item.admin %}{{ item.admin.email or ''|e }}{% endif %}"
+                      onclick="handleEditTenantClick(this)"
+                      class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100 font-medium transition-colors edit-tenant-btn">
                 {{ t('core.ops_tenants.btn_edit') }}
               </button>
 
               <!-- BYOK Modal Trigger -->
-              <button type="button" onclick="openVaultModal('{{ t_item.id }}', '{{ item.credential_mode }}', '{{ item.llm_provider }}')" class="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-700 font-medium transition-colors">
+              <button type="button"
+                      data-tenant-id="{{ t_item.id }}"
+                      data-credential-mode="{{ item.credential_mode|e }}"
+                      data-llm-provider="{{ item.llm_provider|e }}"
+                      onclick="handleVaultClick(this)"
+                      class="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-700 font-medium transition-colors byok-tenant-btn">
                 {{ t('core.ops_tenants.btn_byok') }}
               </button>
 
               <!-- Clone Trigger -->
-              <button type="button" onclick="openCloneModal('{{ t_item.id }}', '{{ t_item.name }}')" class="px-2 py-1 rounded bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 font-medium transition-colors">
+              <button type="button"
+                      data-tenant-id="{{ t_item.id }}"
+                      data-tenant-name="{{ t_item.name|e }}"
+                      onclick="handleCloneClick(this)"
+                      class="px-2 py-1 rounded bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 font-medium transition-colors clone-tenant-btn">
                 {{ t('core.ops_tenants.btn_clone') }}
               </button>
 
               <!-- Transfer Trigger -->
-              <button type="button" onclick="openTransferModal('{{ t_item.id }}', '{{ t_item.storage_region }}')" class="px-2 py-1 rounded bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-700 font-medium transition-colors">
+              <button type="button"
+                      data-tenant-id="{{ t_item.id }}"
+                      data-storage-region="{{ t_item.storage_region|e }}"
+                      onclick="handleTransferClick(this)"
+                      class="px-2 py-1 rounded bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-700 font-medium transition-colors transfer-tenant-btn">
                 {{ t('core.ops_tenants.btn_transfer') }}
               </button>
 

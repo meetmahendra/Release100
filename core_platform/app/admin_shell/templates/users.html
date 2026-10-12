@@ -292,11 +292,20 @@
                   {{ t('core.users.btn_link') }}
                 </button>
                 <!-- Edit User Button -->
-                <button type="button" onclick="openEditModal('{{ u.id }}', '{{ u.full_name|replace('\'', '\\\'') }}', '{{ u.phone_number }}', '{{ u.role }}', '{{ u.tenant_id }}', '{{ u.timezone }}', {{ u.allowed_cartridges|tojson }})"
+                <button type="button"
+                        data-user-id="{{ u.id }}"
+                        data-full-name="{{ u.full_name|e }}"
+                        data-phone="{{ u.phone_number|e }}"
+                        data-role="{{ u.role|e }}"
+                        data-tenant-id="{{ u.tenant_id|e }}"
+                        data-timezone="{{ u.timezone|e }}"
+                        data-cartridges='{{ u.allowed_cartridges|tojson }}'
+                        onclick="handleEditUserClick(this)"
                         title="{{ t('core.users.btn_edit') }}"
-                        class="px-2 py-1 rounded bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-semibold transition-colors">
+                        class="px-2 py-1 rounded bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-semibold transition-colors edit-user-btn">
                   <span>✏️</span> {{ t('core.users.btn_edit') }}
                 </button>
+
                 <!-- Toggle Status -->
                 <form action="/admin/users/{{ u.id }}/status" method="POST" class="inline">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
@@ -409,6 +418,14 @@
       </div>
 
       <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.edit_password') }}</label>
+        <input type="password" id="editPassword" name="password" autocomplete="new-password" placeholder="••••••••"
+               class="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 outline-none" />
+        <p class="text-[10px] text-slate-500 mt-1">{{ t('core.users.edit_password_hint') }}</p>
+      </div>
+
+
+      <div>
         <label class="block text-xs font-medium text-slate-400 mb-1">{{ t('core.users.edit_cartridges') }}</label>
         <div class="flex flex-wrap items-center gap-4 mt-2">
           {% for app in available_cartridges %}
@@ -486,6 +503,15 @@
     }
   }
 
+  function handleEditUserClick(btn) {
+    const ds = btn.dataset;
+    let cartridges = [];
+    try {
+      cartridges = JSON.parse(ds.cartridges || '[]');
+    } catch(e) { cartridges = []; }
+    openEditModal(ds.userId, ds.fullName, ds.phone, ds.role, ds.tenantId, ds.timezone, cartridges);
+  }
+
   function openEditModal(userId, fullName, phone, role, tenantId, timezone, allowedCartridges) {
     const form = document.getElementById('editUserForm');
     form.action = `/admin/users/${userId}/update`;
@@ -493,6 +519,10 @@
     document.getElementById('editFullName').value = fullName || '';
     document.getElementById('editRole').value = role || 'user';
     document.getElementById('editTimezone').value = timezone || 'UTC';
+    const pwdInput = document.getElementById('editPassword');
+    if (pwdInput) {
+      pwdInput.value = '';
+    }
 
     const tenantSelect = document.getElementById('editTenantSelect');
     if (tenantSelect) {

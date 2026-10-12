@@ -57,88 +57,65 @@ async def draft_node(state: MailOrganizerState) -> MailOrganizerState:
         state["pipeline_trace"] = trace
         return state
 
-    # Synthesize context-aware draft
-    if category == "@Meeting" and calendar_slots:
-        draft = (
-            f"Hi {sender_name},\n\n"
-            f"Thank you for reaching out regarding '{subject}'.\n\n"
-            f"{calendar_slots}\n\n"
-            "Looking forward to connecting.\n\n"
-            "Best regards,\nMahendra Gurav"
-        )
-    elif category == "@Urgent":
-        draft = (
-            f"Hi {sender_name},\n\n"
-            f"Acknowledging receipt of this urgent escalation regarding '{subject}'.\n\n"
-            "I have prioritized this with the on-duty fleet operations team and will provide an updated status within the hour.\n\n"
-            "Best regards,\nMahendra Gurav"
-        )
-    elif category == "@Financial":
-        draft = (
-            f"Hi {sender_name},\n\n"
-            f"Thank you for transmitting the documentation regarding '{subject}'.\n\n"
-            "I have forwarded this to our finance desk for verification and remittance processing.\n\n"
-            "Best regards,\nMahendra Gurav"
-        )
-    else:
-        draft = (
-            f"Hi {sender_name},\n\n"
-            f"Thank you for your note regarding '{subject}'.\n\n"
-            "I am reviewing the deliverables requested and will follow up shortly with details.\n\n"
-            "Best regards,\nMahendra Gurav"
-        )
-
     body = state.get("body") or ""
-    # If live Gemini API key is configured, enhance draft with LLM generation
-    from core_platform.app.config import settings
-    if settings.GEMINI_API_KEY and not settings.GEMINI_API_KEY.startswith("your_"):
-        try:
-            import json
-            from apps.mail_organizer.services.history_context_service import format_history_for_prompt
-            from apps.mail_organizer.services.org_context_service import build_org_context_block
+    account_holder = state.get("user_name") or state.get("user_email") or "Account Lead"
+    draft: Optional[str] = None
+    suppression_reason: Optional[str] = None
 
-            thread_hist = cast(List[Dict[str, Any]], state.get("thread_history") or [])
-            topic_hist = cast(List[Dict[str, Any]], state.get("topic_history") or [])
-            history_block = format_history_for_prompt(thread_hist, topic_hist) if (thread_hist or topic_hist) else ""
-            org_block = build_org_context_block(sender, subject, body)
+    try:
+        from apps.mail_organizer.services.history_context_service import format_history_for_prompt
+        from apps.mail_organizer.services.org_context_service import build_org_context_block
+        from core_platform.app.llm.gateway import get_platform_llm_gateway
 
-            history_sec = f"{history_block}\n\n" if history_block else ""
-            org_sec = f"{org_block}\n\n" if org_block else ""
-            cal_ctx = f"Availability to include: {calendar_slots}\n" if calendar_slots else ""
+        thread_hist = cast(List[Dict[str, Any]], state.get("thread_history") or [])
+        topic_hist = cast(List[Dict[str, Any]], state.get("topic_history") or [])
+        history_block = format_history_for_prompt(thread_hist, topic_hist) if (thread_hist or topic_hist) else ""
+        org_block = build_org_context_block(sender, subject, body)
 
-            prompt = (
-                "You are drafting an email reply on behalf of Mahendra Gurav (VP Operations & Executive Lead).\n"
-                "Synthesize a polite, concise, fact-grounded, professional response addressing the sender's points.\n\n"
-                f"{org_sec}"
-                f"{history_sec}"
-                f"Sender: {sender}\n"
-                f"Subject: {subject}\n"
-                f"Category: {category}\n"
-                f"Email Body:\n{body[:2000]}\n\n"
-                f"{cal_ctx}"
-                "Return a JSON object conforming strictly to this format:\n"
-                "{\n"
-                '  "draft": "concise, professional plain-text response body without markdown or subject lines"\n'
-                "}"
-            )
-            from core_platform.app.llm.gateway import get_platform_llm_gateway
+        history_sec = f"{history_block}\n\n" if history_block else ""
+        org_sec = f"{org_block}\n\n" if org_block else ""
+        cal_ctx = f"Availability to include: {calendar_slots}\n" if calendar_slots else ""
 
-            gateway = get_platform_llm_gateway()
-            res = await gateway.generate(
-                task="text_generation",
-                prompt=prompt,
-                temperature=0.2,
-                response_mime_type="application/json",
-                operation_id=f"draft_{state.get('gmail_id', 'unknown')}",
-            )
-            if res and isinstance(res, dict):
-                gen_text = res.get("draft")
-                if not gen_text and "raw_text" in res:
-                    gen_text = res["raw_text"].strip()
-                if gen_text:
-                    draft = gen_text
-        except Exception as exc:
-            logger.debug("[DraftNode] LLM gateway failed: %s", exc)
+        prompt = (
+            f"You are drafting an email reply on behalf of {account_holder}.\n"
+            "Synthesize a polite, concise, fact-grounded, professional response addressing the sender's points.\n\n"
+            f"{org_sec}"
+            f"{history_sec}"
+            f"Sender: {sender}\n"
+            f"Subject: {subject}\n"
+            f"Category: {category}\n"
+            f"Email Body:\n{body[:2000]}\n\n"
+            f"{cal_ctx}"
+            f"Sign off with: Best regards,\n{account_holder}\n\n"
+            "Return a JSON object conforming strictly to this format:\n"
+            "{\n"
+            '  "draft": "concise, professional plain-text response body without markdown or subject lines"\n'
+            "}"
+        )
+
+        gateway = get_platform_llm_gateway()
+        raw_tid = state.get("tenant_id")
+        eff_tenant: Optional[str] = str(raw_tid) if raw_tid else None
+        res = await gateway.generate(
+            task="text_generation",
+            prompt=prompt,
+            temperature=0.2,
+            response_mime_type="application/json",
+            operation_id=f"draft_{state.get('gmail_id', 'unknown')}",
+            tenant_id=eff_tenant,
+            cartridge_id="mail_organizer",
+        )
+        if res and isinstance(res, dict):
+            gen_text = res.get("draft")
+            if not gen_text and "raw_text" in res:
+                gen_text = res["raw_text"].strip()
+            if gen_text:
+                draft = gen_text
+        if not draft:
+            suppression_reason = "LLM returned empty draft payload"
+    except Exception as exc:
+        logger.warning("[DraftNode] LLM draft generation skipped/failed: %s", exc)
+        suppression_reason = f"LLM generation unavailable: {exc}"
 
     state["suggested_reply"] = draft
 
@@ -147,9 +124,11 @@ async def draft_node(state: MailOrganizerState) -> MailOrganizerState:
     trace.append({
         "node": "generate_draft",
         "duration_ms": duration_ms,
-        "draft_generated": True,
+        "draft_generated": bool(draft),
+        "suppression_reason": suppression_reason,
         "category": category,
     })
     state["pipeline_trace"] = trace
 
     return state
+

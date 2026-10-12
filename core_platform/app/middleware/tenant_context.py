@@ -73,6 +73,28 @@ _current_cartridge_ctx: ContextVar[str] = ContextVar(
     default="core_platform",
 )
 
+# Asynchronous context variable tracking the active IETF SecurityTicket
+_current_security_ticket: ContextVar[Optional[Any]] = ContextVar(
+    "current_security_ticket",
+    default=None,
+)
+
+
+def get_current_security_ticket() -> Optional[Any]:
+    """Return active SecurityTicket or None if ambient."""
+    return _current_security_ticket.get()
+
+
+def set_current_security_ticket(ticket: Any) -> Token[Optional[Any]]:
+    """Set active SecurityTicket for the current async task / thread."""
+    return _current_security_ticket.set(ticket)
+
+
+def reset_security_ticket(token: Token[Optional[Any]]) -> None:
+    """Reset the security ticket context variable."""
+    _current_security_ticket.reset(token)
+
+
 
 def get_current_user_context() -> Optional[UserContext]:
     """Return the active UserContext or None if not set."""
@@ -384,7 +406,95 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: Callable[[Request], Any],
     ) -> Response:
-        tenant_id: str = self._resolve_tenant_id(request)
+        # 1. Check for authenticated credentials (Anti-Spoofing & RFC 9068)
+        auth_cookie = request.cookies.get("admin_token")
+        auth_header = request.headers.get("Authorization")
+        raw_jwt: Optional[str] = None
+        if auth_cookie and auth_cookie.strip():
+            raw_jwt = auth_cookie.strip()
+        elif auth_header and auth_header.startswith("Bearer "):
+            raw_jwt = auth_header[7:].strip()
+
+        authenticated_ctx: Optional[Any] = None
+        ticket: Optional[Any] = None
+        if raw_jwt:
+            try:
+                from core_platform.app.auth.jwt_utils import verify_jwt_token
+                authenticated_ctx = verify_jwt_token(raw_jwt)
+                if authenticated_ctx:
+                    try:
+                        from core_platform.app.auth.session_vault import get_session_vault
+                        parts = raw_jwt.split(".")
+                        if len(parts) == 3:
+                            import json
+                            from core_platform.app.auth.jwt_utils import _b64url_decode
+                            payload = json.loads(_b64url_decode(parts[1]).decode("utf-8"))
+                            jti = payload.get("jti")
+                            if jti:
+                                ticket = get_session_vault().get_ticket(str(jti))
+                    except Exception:
+                        pass
+            except Exception:
+                authenticated_ctx = None
+
+        is_devops = False
+        if authenticated_ctx:
+            is_devops = (
+                getattr(authenticated_ctx, "is_devops", False)
+                or getattr(authenticated_ctx, "principal_id", "") in ("devops_admin", "master_admin", "system")
+                or "super_admin" in getattr(authenticated_ctx, "user_roles", [])
+                or "devops_admin" in getattr(authenticated_ctx, "user_roles", [])
+            )
+
+        header_tenant = request.headers.get("X-Tenant-ID") or request.headers.get("X-Tenant")
+        query_tenant = request.query_params.get("tenant_id")
+
+        if authenticated_ctx and not is_devops:
+            auth_tenant = authenticated_ctx.tenant_id
+            # Anti-spoofing enforcement: Fail-closed if authenticated user attempts cross-tenant override
+            if (header_tenant and header_tenant.strip() and header_tenant.strip() != auth_tenant) or \
+               (query_tenant and query_tenant.strip() and query_tenant.strip() != auth_tenant):
+                logger.warning(
+                    "[TenantMiddleware] Cross-tenant spoofing attempt blocked: user=%s tid=%s requested_hdr=%s requested_query=%s",
+                    authenticated_ctx.principal_id,
+                    auth_tenant,
+                    header_tenant,
+                    query_tenant,
+                )
+                from fastapi.responses import HTMLResponse, JSONResponse
+                accept = request.headers.get("accept", "")
+                if "text/html" in accept or not ("application/json" in accept):
+                    html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>403 Forbidden — Release100</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { background: #1e293b; border: 1px solid #e11d48; border-radius: 12px; padding: 2.5rem; max-width: 500px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { font-size: 1.5rem; margin-bottom: 0.75rem; color: #f43f5e; }
+        p { color: #94a3b8; line-height: 1.6; margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>403 Forbidden</h1>
+        <p>Cross-tenant impersonation forbidden. Your authenticated identity cannot access or switch to other tenant partitions.</p>
+    </div>
+</body>
+</html>"""
+                    return HTMLResponse(content=html_content, status_code=403)
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "Cross-tenant impersonation forbidden"},
+                )
+            tenant_id = auth_tenant
+        elif authenticated_ctx and is_devops:
+            tenant_id = self._resolve_unauthenticated_tenant_id(request)
+            if tenant_id in ("public", "default", "default_tenant") and authenticated_ctx.tenant_id:
+                tenant_id = authenticated_ctx.tenant_id
+        else:
+            tenant_id = self._resolve_unauthenticated_tenant_id(request)
 
         # Attach tenant ID to request state for downstream handlers
         request.state.tenant_id = tenant_id
@@ -430,6 +540,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
 
         # Bind context variable for downstream async execution
         token = set_current_tenant_id(tenant_id)
+        ticket_token = set_current_security_ticket(ticket) if ticket else None
         try:
             response: Response = await call_next(request)
             # Inject response header for telemetry and verification
@@ -437,9 +548,11 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
             return response
         finally:
             reset_tenant_context(token)
+            if ticket_token:
+                reset_security_ticket(ticket_token)
 
-    def _resolve_tenant_id(self, request: Request) -> str:
-        """Extract tenant ID from request attributes in priority order."""
+    def _resolve_unauthenticated_tenant_id(self, request: Request) -> str:
+        """Extract tenant ID from request attributes in priority order for unauthenticated requests."""
         # 1. Custom HTTP Headers
         header_tenant = request.headers.get("X-Tenant-ID") or request.headers.get("X-Tenant")
         if header_tenant and header_tenant.strip():
@@ -495,6 +608,10 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         # 6. Fallback Default to 'public'
         return self.default_tenant
 
+    def _resolve_tenant_id(self, request: Request) -> str:
+        """Alias for backward compatibility."""
+        return self._resolve_unauthenticated_tenant_id(request)
+
 
 def resolve_effective_tenant_info(
     request: Request,
@@ -519,6 +636,15 @@ def resolve_effective_tenant_info(
             or "super_admin" in getattr(ctx, "user_roles", [])
             or "devops_admin" in getattr(ctx, "user_roles", [])
         )
+
+    # Anti-spoofing defense-in-depth:
+    if not is_devops and user_tenant:
+        header_tenant = request.headers.get("X-Tenant-ID") or request.headers.get("X-Tenant")
+        query_tenant = request.query_params.get("tenant_id")
+        if (header_tenant and header_tenant.strip() and header_tenant.strip() != user_tenant) or \
+           (query_tenant and query_tenant.strip() and query_tenant.strip() != user_tenant):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=403, detail="Cross-tenant impersonation forbidden")
 
     # Scoping logic
     if not is_devops and user_tenant:

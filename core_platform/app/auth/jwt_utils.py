@@ -133,8 +133,19 @@ def get_token_blacklist() -> TokenBlacklistRegistry:
 
 
 def revoke_jwt_token(token: str) -> bool:
-    """Helper to blacklist an active JWT."""
-    return get_token_blacklist().revoke_token(token)
+    """Helper to blacklist an active JWT and invalidate its SessionVault ticket."""
+    success = get_token_blacklist().revoke_token(token)
+    try:
+        parts = token.strip().split(".")
+        if len(parts) == 3:
+            payload = json.loads(_b64url_decode(parts[1]).decode("utf-8"))
+            jti = payload.get("jti")
+            if jti:
+                from core_platform.app.auth.session_vault import get_session_vault
+                get_session_vault().revoke_ticket(str(jti))
+    except Exception:
+        pass
+    return success
 
 
 def create_jwt_token(
@@ -177,6 +188,20 @@ def create_jwt_token(
         "exp": now_ts + expiry_seconds,
         "jti": token_jti,
     }
+
+    # Register session ticket in NIST SP 800-63B SessionVault
+    try:
+        from core_platform.app.auth.session_vault import get_session_vault
+        get_session_vault().create_ticket(
+            sub=principal_id,
+            tid=tenant_id,
+            scope=permitted_apps,
+            now_ts=now_ts,
+            auth_time=now_ts,
+            jti=token_jti,
+        )
+    except Exception as exc:
+        logger.debug("[create_jwt_token] Session vault ticket registration error: %s", exc)
 
     header_b64 = _b64url_encode(json.dumps(header, separators=(",", ":")).encode())
     payload_b64 = _b64url_encode(json.dumps(payload, separators=(",", ":")).encode())
@@ -244,6 +269,21 @@ def verify_jwt_token(token: str, secret_key: str = "") -> Optional[SecurityConte
         if jti and get_token_blacklist().is_revoked(jti):
             logger.warning("[JWTUtils] Revoked token presented (jti=%s) — access denied", jti)
             return None
+
+        # NIST SP 800-63B Session Vault & Sliding Idle Check
+        if jti:
+            try:
+                from core_platform.app.auth.session_vault import get_session_vault, SessionExpiredError
+                vault = get_session_vault()
+                existing_ticket = vault.get_ticket(str(jti))
+                if existing_ticket:
+                    try:
+                        vault.validate_and_renew_ticket(str(jti), now_ts=now_ts)
+                    except SessionExpiredError as exp_err:
+                        logger.warning("[JWTUtils] NIST SP 800-63B session expired for jti=%s: %s", jti, exp_err)
+                        return None
+            except Exception as e:
+                logger.debug("[JWTUtils] Session vault check error: %s", e)
 
         return SecurityContext(
             principal_id=str(payload.get("sub", "unknown")),

@@ -329,6 +329,8 @@
       "edit_role": "Role",
       "edit_tenant": "Assigned Workspace",
       "edit_timezone": "Timezone",
+      "edit_password": "Set Password (leave blank to keep current)",
+      "edit_password_hint": "Allows users created via OAuth or rosters to log in directly with username and password.",
       "edit_cartridges": "Entitled Applications",
       "submit_update": "Save Changes",
       "btn_cancel": "Cancel",

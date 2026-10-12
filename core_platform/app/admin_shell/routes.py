@@ -745,9 +745,10 @@ async def update_user_action(
     cartridges: Optional[List[str]] = Form(None),
     cartridge_mail: Optional[str] = Form(None),
     cartridge_temp: Optional[str] = Form(None),
+    password: Optional[str] = Form(None),
     csrf_token: Optional[str] = Form(None),
 ) -> Any:
-    """Update profile, role, cartridges, and tenant for an existing user."""
+    """Update profile, role, cartridges, password, and tenant for an existing user."""
     if not ctx.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required.")
     if not verify_csrf_token(request, submitted_token=csrf_token):
@@ -790,6 +791,7 @@ async def update_user_action(
         tenant_id=target_tenant,
         allowed_cartridges=allowed,
         timezone_str=timezone,
+        password=password,
     )
     return RedirectResponse(url="/admin/users?message=User+updated+successfully", status_code=status.HTTP_303_SEE_OTHER)
 
