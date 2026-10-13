@@ -72,7 +72,7 @@ def test_settings_html_dashboard_endpoint(client: TestClient) -> None:
     assert "Active Applications" in text
     assert "Live Testing" in text
     assert "System Configuration Editor" in text
-    assert "TypeSafe AI / Jev System 1 Decision Engine" in text
+    assert "Jev (TypeSafe) System 1 Decision Engine" in text
 
 
 def test_diagnostics_status_api(client: TestClient) -> None:

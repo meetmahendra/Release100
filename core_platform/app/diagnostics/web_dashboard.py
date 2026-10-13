@@ -255,7 +255,7 @@ async def view_settings_dashboard(
     env_data = read_env_dict()
     typesafe_key = env_data.get("TYPESAFE_API_KEY") or getattr(settings, "TYPESAFE_API_KEY", "") or ""
     typesafe_url = env_data.get("TYPESAFE_BASE_URL") or getattr(settings, "TYPESAFE_BASE_URL", "https://api.typesafe.ai/v1") or "https://api.typesafe.ai/v1"
-    typesafe_model = env_data.get("TYPESAFE_MODEL") or getattr(settings, "TYPESAFE_MODEL", "jev-1") or "jev-1"
+    typesafe_model = env_data.get("TYPESAFE_MODEL") or getattr(settings, "TYPESAFE_MODEL", "jev-latest") or "jev-latest"
     default_decision = env_data.get("DEFAULT_DECISION_PROVIDER") or getattr(settings, "DEFAULT_DECISION_PROVIDER", "typesafe") or "typesafe"
     gemini_key = env_data.get("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", "") or ""
     gemini_model = env_data.get("GEMINI_MODEL") or getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash") or "gemini-2.0-flash"

@@ -1107,6 +1107,9 @@ async def validate_tenant_api_key(
             api_key = runtime_creds.openai_api_key or ""
         elif provider in ("whatsapp", "waba"):
             api_key = runtime_creds.waba_token or ""
+        elif provider in ("typesafe", "jev"):
+            from core_platform.app.config import settings
+            api_key = getattr(settings, "TYPESAFE_API_KEY", "") or ""
 
     if not api_key:
         return JSONResponse(

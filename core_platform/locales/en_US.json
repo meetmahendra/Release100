@@ -569,8 +569,8 @@
       "wa_send_card_desc": "Sends a verified test message to an external phone to validate end-to-end egress.",
       "ports_card_title": "Local Port Bindings & Readiness",
       "ports_card_desc": "Checks whether internal ports {port} (Orchestrator) and {mcp_port} (MCP) are active.",
-      "typesafe_card_title": "TypeSafe AI / Jev System 1 Decision Engine",
-      "typesafe_card_desc": "Validates sub-millisecond System 1 heuristic classifier and routing models."
+      "typesafe_card_title": "Jev (TypeSafe) System 1 Decision Engine",
+      "typesafe_card_desc": "Validates sub-millisecond System 1 heuristic classifier and intent routing model with live probe test."
     },
     "ops_audit": {
       "title_tag": "SHA-256 Audit Trail \u2014 {name}",

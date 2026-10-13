@@ -120,4 +120,16 @@ def validate_provider_api_key(
             return True, "WhatsApp Business token format validated successfully."
         return False, "WhatsApp token appears malformed or too short."
 
+    # 5. TypeSafe / Jev Decision Engine
+    if clean_provider in ("typesafe", "jev"):
+        try:
+            from core_platform.app.diagnostics.verifier import verify_typesafe
+            res = verify_typesafe(api_key=clean_key)
+            if res.get("status") == "ok":
+                return True, str(res.get("message", "TypeSafe / Jev API key is active and verified."))
+            return False, str(res.get("message", "TypeSafe / Jev validation probe failed."))
+        except Exception as exc:
+            logger.warning("[KeyValidator] TypeSafe / Jev probe error: %s", exc)
+            return False, f"TypeSafe / Jev probe failed: {exc}"
+
     return False, f"Unsupported provider '{provider}'."

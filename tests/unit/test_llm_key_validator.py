@@ -108,6 +108,16 @@ def test_whatsapp_token_validation() -> None:
     assert "too short" in bad_msg
 
 
+def test_typesafe_and_jev_validation() -> None:
+    valid, msg = validate_provider_api_key("typesafe", "mock_typesafe_key_123")
+    assert valid is True
+    assert "Synthetic" in msg
+
+    valid_j, msg_j = validate_provider_api_key("jev", "mock_jev_key_456")
+    assert valid_j is True
+    assert "Synthetic" in msg_j
+
+
 def test_unsupported_provider() -> None:
     valid, msg = validate_provider_api_key("unsupported_provider_xyz", "some_key_12345")
     assert valid is False
