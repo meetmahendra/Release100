@@ -136,6 +136,12 @@ async def classify_node(state: MailOrganizerState) -> MailOrganizerState:
             # Fast System 1 Classification Path (TypeSafe / Jev)
             raw_tid = state.get("tenant_id")
             eff_tenant: Optional[str] = str(raw_tid) if raw_tid else None
+            if not eff_tenant:
+                try:
+                    from core_platform.app.middleware.tenant_context import get_current_tenant_id
+                    eff_tenant = get_current_tenant_id()
+                except Exception:
+                    eff_tenant = None
             decision = await gateway.classify(
                 text=f"Subject: {subject}\nBody: {body[:500]}",
                 choices=valid_categories,

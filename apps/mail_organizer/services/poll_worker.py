@@ -198,14 +198,14 @@ class MailPollWorker:
         ]
 
         if not entitled_users:
-            if self.gmail.mock_mode:
-                # Fallback to mock connector only for synthetic test environments
+            if self.gmail.mock_mode and hasattr(self.gmail, "_mock_threads") and len(self.gmail._mock_threads) > 0:
+                # Fallback to mock connector only for synthetic test environments with pre-seeded mock threads
                 return await self._poll_for_target(
                     connector=self.gmail,
                     user=None,
                     user_salt=None,
                 )
-            logger.debug("[PollWorker] No active users with connected Google OAuth credentials found. Skipping cycle.")
+            logger.info("[PollWorker] No active users with connected Google OAuth credentials found. Skipping cycle.")
             return 0
 
         total_processed = 0
@@ -388,6 +388,7 @@ class MailPollWorker:
                 "body": str(thread.get("body", "")),
                 "snippet": str(thread.get("snippet", "")),
                 "tenant_id": user.tenant_id if user else "public",
+                "cartridge_id": "mail_organizer",
                 "user_id": getattr(user, "id", None),
                 "user_name": getattr(user, "full_name", None),
                 "user_email": getattr(user, "email", None) or getattr(user, "google_email", None),

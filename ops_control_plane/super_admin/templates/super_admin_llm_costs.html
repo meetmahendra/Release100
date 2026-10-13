@@ -49,7 +49,7 @@
           <p class="text-xs font-medium text-emerald-400 uppercase tracking-wider">Platform Liability</p>
           <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">BILLED TO US</span>
         </div>
-        <p id="platformLiability" class="text-2xl font-bold text-emerald-400 mt-1">${{ "%.4f"|format(summary.total_platform_liability_usd) }}</p>
+        <p id="platformLiability" class="text-2xl font-bold text-emerald-400 mt-1">${{ summary.total_platform_liability_usd | format_llm_cost }}</p>
       </div>
       <p class="text-xs text-slate-500 mt-2">Real dollar cost to platform owner</p>
     </div>
@@ -62,7 +62,7 @@
           <p class="text-xs font-medium text-sky-400 uppercase tracking-wider">Customer BYOK Value</p>
           <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-950 text-sky-300 border border-sky-800">ZERO PLATFORM COST</span>
         </div>
-        <p id="byokValue" class="text-2xl font-bold text-sky-300 mt-1">${{ "%.4f"|format(summary.total_byok_value_usd) }}</p>
+        <p id="byokValue" class="text-2xl font-bold text-sky-300 mt-1">${{ summary.total_byok_value_usd | format_llm_cost }}</p>
       </div>
       <p class="text-xs text-slate-500 mt-2">Absorbed by customer API keys</p>
     </div>
@@ -74,7 +74,7 @@
           <p class="text-xs font-medium text-purple-400 uppercase tracking-wider">Microkernel Routing</p>
           <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-950 text-purple-300 border border-purple-800">SYSTEM 1</span>
         </div>
-        <p id="jevCost" class="text-2xl font-bold text-purple-300 mt-1">${{ "%.6f"|format(summary.total_internal_jev_cost_usd) }}</p>
+        <p id="jevCost" class="text-2xl font-bold text-purple-300 mt-1">${{ summary.total_internal_jev_cost_usd | format_llm_cost }}</p>
       </div>
       <p class="text-xs text-slate-500 mt-2">Internal fast routing overhead</p>
     </div>
@@ -161,10 +161,10 @@
                 {{ "{:,}".format(t_data.total_tokens) }}
               </td>
               <td class="py-3 px-4 text-right font-mono font-bold text-emerald-400">
-                ${{ "%.6f"|format(t_data.platform_liability_usd) }}
+                ${{ t_data.platform_liability_usd | format_llm_cost }}
               </td>
               <td class="py-3 px-4 text-right font-mono text-slate-300">
-                ${{ "%.6f"|format(t_data.total_cost_usd) }}
+                ${{ t_data.total_cost_usd | format_llm_cost }}
               </td>
               <td class="py-3 px-4 text-right text-slate-400 font-mono">
                 {{ t_data.last_seen[:19].replace('T', ' ') }}
@@ -281,7 +281,7 @@
               </td>
               <td class="py-3 px-4 text-right font-mono text-purple-300">{{ "{:,}".format(op.total_tokens) }}</td>
               <td class="py-3 px-4 text-right font-mono text-slate-300">{{ "%.0f"|format(op.total_latency_ms) }} ms</td>
-              <td class="py-3 px-4 text-right font-mono font-bold text-emerald-400">${{ "%.6f"|format(op.total_cost_usd) }}</td>
+              <td class="py-3 px-4 text-right font-mono font-bold text-emerald-400">${{ op.total_cost_usd | format_llm_cost }}</td>
               <td class="py-3 px-4 text-center text-sky-400 hover:text-sky-300">
                 <span id="expandIcon-{{ loop.index }}">▼ Expand</span>
               </td>
@@ -321,7 +321,7 @@
                         <td class="py-1.5 text-right text-slate-300">{{ ix.prompt_tokens }}</td>
                         <td class="py-1.5 text-right text-slate-300">{{ ix.completion_tokens }}</td>
                         <td class="py-1.5 text-right text-slate-400">{{ "%.0f"|format(ix.latency_ms) }} ms</td>
-                        <td class="py-1.5 text-right text-emerald-400 font-bold">${{ "%.6f"|format(ix.estimated_cost_usd) }}</td>
+                        <td class="py-1.5 text-right text-emerald-400 font-bold">${{ ix.estimated_cost_usd | format_llm_cost }}</td>
                         <td class="py-1.5 text-center">
                           {% if ix.success %}
                           <span class="text-emerald-400 font-bold">200 OK</span>

@@ -67,7 +67,16 @@ class MailOrganizerApplication(BaseApplication):
     version: str = __version__
     description: str = "Email triage, meeting scheduling, and PM task extraction for executives."
     config_schema = MailOrganizerConfig
-    required_roles: List[str] = ["manager", "executive", "admin"]
+    required_roles: List[str] = [
+        "user",
+        "operator",
+        "member",
+        "employee",
+        "supervisor",
+        "manager",
+        "executive",
+        "admin",
+    ]
     supported_channels: List[str] = ["email", "whatsapp", "web_kiosk", "mcp_agent"]
     dashboard_url: str = "/admin/apps/mail-organizer/dashboard"
     has_poller: bool = True

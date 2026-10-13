@@ -134,15 +134,20 @@ class LLMCostTracker:
             logger.warning("[LLMCostTracker] Failed to load existing audit records: %s", err)
 
     @staticmethod
-    def calculate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
+    def _round_cost(val: float) -> float:
+        """Round cost preserving high precision for micro-costs (e.g. System 1 Jev)."""
+        if 0.0 < val < 0.0001:
+            return round(val, 8)
+        return round(val, 6)
+
+    @classmethod
+    def calculate_cost(cls, model: str, prompt_tokens: int, completion_tokens: int) -> float:
         """Calculate estimated cost in USD based on model pricing."""
         rates = PROVIDER_PRICING_PER_1M.get(model, DEFAULT_FALLBACK_PRICE)
         cost_prompt = (prompt_tokens / 1_000_000.0) * rates[0]
         cost_completion = (completion_tokens / 1_000_000.0) * rates[1]
         raw_cost = cost_prompt + cost_completion
-        if raw_cost > 0.0 and round(raw_cost, 6) == 0.0:
-            return round(raw_cost, 8)
-        return round(raw_cost, 6)
+        return cls._round_cost(raw_cost)
 
     def record_interaction(
         self,
@@ -264,7 +269,7 @@ class LLMCostTracker:
                 by_provider[r.provider] = {"calls": 0, "tokens": 0, "cost_usd": 0.0}
             by_provider[r.provider]["calls"] += 1
             by_provider[r.provider]["tokens"] += r.total_tokens
-            by_provider[r.provider]["cost_usd"] = round(by_provider[r.provider]["cost_usd"] + r.estimated_cost_usd, 6)
+            by_provider[r.provider]["cost_usd"] = self._round_cost(by_provider[r.provider]["cost_usd"] + r.estimated_cost_usd)
 
         by_credential_mode: Dict[str, Dict[str, Any]] = {}
         for r in records:
@@ -273,10 +278,10 @@ class LLMCostTracker:
                 by_credential_mode[cm] = {"calls": 0, "tokens": 0, "cost_usd": 0.0, "platform_liability_usd": 0.0}
             by_credential_mode[cm]["calls"] += 1
             by_credential_mode[cm]["tokens"] += r.total_tokens
-            by_credential_mode[cm]["cost_usd"] = round(by_credential_mode[cm]["cost_usd"] + r.estimated_cost_usd, 6)
+            by_credential_mode[cm]["cost_usd"] = self._round_cost(by_credential_mode[cm]["cost_usd"] + r.estimated_cost_usd)
             if r.is_platform_liability:
-                by_credential_mode[cm]["platform_liability_usd"] = round(
-                    by_credential_mode[cm]["platform_liability_usd"] + r.estimated_cost_usd, 6
+                by_credential_mode[cm]["platform_liability_usd"] = self._round_cost(
+                    by_credential_mode[cm]["platform_liability_usd"] + r.estimated_cost_usd
                 )
 
         by_cartridge: Dict[str, Dict[str, Any]] = {}
@@ -286,10 +291,10 @@ class LLMCostTracker:
                 by_cartridge[c] = {"calls": 0, "tokens": 0, "cost_usd": 0.0, "platform_liability_usd": 0.0}
             by_cartridge[c]["calls"] += 1
             by_cartridge[c]["tokens"] += r.total_tokens
-            by_cartridge[c]["cost_usd"] = round(by_cartridge[c]["cost_usd"] + r.estimated_cost_usd, 6)
+            by_cartridge[c]["cost_usd"] = self._round_cost(by_cartridge[c]["cost_usd"] + r.estimated_cost_usd)
             if r.is_platform_liability:
-                by_cartridge[c]["platform_liability_usd"] = round(
-                    by_cartridge[c]["platform_liability_usd"] + r.estimated_cost_usd, 6
+                by_cartridge[c]["platform_liability_usd"] = self._round_cost(
+                    by_cartridge[c]["platform_liability_usd"] + r.estimated_cost_usd
                 )
 
         by_tenant: Dict[str, Dict[str, Any]] = {}
@@ -299,19 +304,19 @@ class LLMCostTracker:
                 by_tenant[t] = {"calls": 0, "tokens": 0, "cost_usd": 0.0, "platform_liability_usd": 0.0}
             by_tenant[t]["calls"] += 1
             by_tenant[t]["tokens"] += r.total_tokens
-            by_tenant[t]["cost_usd"] = round(by_tenant[t]["cost_usd"] + r.estimated_cost_usd, 6)
+            by_tenant[t]["cost_usd"] = self._round_cost(by_tenant[t]["cost_usd"] + r.estimated_cost_usd)
             if r.is_platform_liability:
-                by_tenant[t]["platform_liability_usd"] = round(
-                    by_tenant[t]["platform_liability_usd"] + r.estimated_cost_usd, 6
+                by_tenant[t]["platform_liability_usd"] = self._round_cost(
+                    by_tenant[t]["platform_liability_usd"] + r.estimated_cost_usd
                 )
 
         return {
             "total_interactions": total_interactions,
             "total_tokens": total_tokens,
-            "total_cost_usd": round(total_cost, 4),
-            "total_platform_liability_usd": round(total_platform_liability, 4),
-            "total_byok_value_usd": round(total_byok_value, 4),
-            "total_internal_jev_cost_usd": round(total_internal_jev_cost, 8) if 0 < total_internal_jev_cost < 0.0001 else round(total_internal_jev_cost, 6),
+            "total_cost_usd": self._round_cost(total_cost),
+            "total_platform_liability_usd": self._round_cost(total_platform_liability),
+            "total_byok_value_usd": self._round_cost(total_byok_value),
+            "total_internal_jev_cost_usd": self._round_cost(total_internal_jev_cost),
             "operations_count": operations_count,
             "tenant_credential_mode": tenant_cred_mode,
             "by_provider": by_provider,
@@ -351,9 +356,9 @@ class LLMCostTracker:
                 "prompt_tokens": tot_p,
                 "completion_tokens": tot_c,
                 "total_tokens": tot_tokens,
-                "total_cost_usd": round(tot_cost, 6),
-                "platform_liability_usd": round(plat_cost, 6),
-                "byok_value_usd": round(byok_cost, 6),
+                "total_cost_usd": self._round_cost(tot_cost),
+                "platform_liability_usd": self._round_cost(plat_cost),
+                "byok_value_usd": self._round_cost(byok_cost),
                 "cartridges_used": cartridges,
                 "first_seen": recs[0].timestamp if recs else "",
                 "last_seen": recs[-1].timestamp if recs else "",
@@ -385,8 +390,8 @@ class LLMCostTracker:
                 "cartridge_id": cid,
                 "total_interactions": len(recs),
                 "total_tokens": tot_toks,
-                "total_cost_usd": round(tot_cost, 6),
-                "platform_liability_usd": round(plat_cost, 6),
+                "total_cost_usd": self._round_cost(tot_cost),
+                "platform_liability_usd": self._round_cost(plat_cost),
                 "avg_latency_ms": round(avg_lat, 1),
                 "tasks_used": tasks,
             })
@@ -447,8 +452,8 @@ class LLMCostTracker:
                 "avg_prompt_tokens": round(avg_prompt, 1),
                 "avg_completion_tokens": round(avg_comp, 1),
                 "avg_latency_ms": round(avg_lat, 1),
-                "total_cost_usd": round(tot_cost, 6),
-                "platform_liability_usd": round(plat_cost, 6),
+                "total_cost_usd": self._round_cost(tot_cost),
+                "platform_liability_usd": self._round_cost(plat_cost),
                 "error_count": errors,
                 "error_rate_pct": round(err_rate, 1),
                 "recommendation": rec_text,
@@ -495,8 +500,8 @@ class LLMCostTracker:
                 "total_prompt_tokens": tot_p,
                 "total_completion_tokens": tot_c,
                 "total_tokens": tot_p + tot_c,
-                "total_cost_usd": round(tot_cost, 6),
-                "platform_liability_usd": round(tot_plat_cost, 6),
+                "total_cost_usd": self._round_cost(tot_cost),
+                "platform_liability_usd": self._round_cost(tot_plat_cost),
                 "total_latency_ms": round(tot_latency, 2),
                 "interactions": [x.to_dict() for x in op_records],
             }

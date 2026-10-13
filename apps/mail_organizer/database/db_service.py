@@ -380,6 +380,7 @@ class MailDatabaseService:
         limit: int = 50,
         decrypt_salt: Optional[str] = None,
         tenant_id: Optional[str] = None,
+        user_email: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Retrieve recent processed emails with full deep trace, tags, drafts, and PM tasks."""
         user_ctx = get_current_user_context()
@@ -389,6 +390,16 @@ class MailDatabaseService:
         with self.get_session() as session:
             emails_stmt = select(EmailRecord)
             emails_stmt = _apply_tenant_filter_stmt(emails_stmt, EmailRecord.tenant_id, effective_tenant)
+            if user_email and user_email.strip():
+                from sqlalchemy import or_
+                clean_email = f"%{user_email.strip().lower()}%"
+                emails_stmt = emails_stmt.where(
+                    or_(
+                        EmailRecord.to_recipients.ilike(clean_email),
+                        EmailRecord.cc_recipients.ilike(clean_email),
+                        EmailRecord.sender.ilike(clean_email),
+                    )
+                )
             emails_stmt = emails_stmt.order_by(desc(EmailRecord.received_at), desc(EmailRecord.id)).limit(limit)
             emails = list(session.scalars(emails_stmt).all())
             results: List[Dict[str, Any]] = []
@@ -563,15 +574,25 @@ class MailDatabaseService:
         """Convenience alias for get_all_rules."""
         return self.get_all_rules(rule_type=rule_type)
 
-    def get_all_drafts(self, tenant_id: Optional[str] = None) -> List[DraftRecord]:
+    def get_all_drafts(
+        self,
+        tenant_id: Optional[str] = None,
+        decrypt_salt: Optional[str] = None,
+    ) -> List[DraftRecord]:
         """Retrieve all staged drafts for the specified or active tenant."""
         user_ctx = get_current_user_context()
+        effective_salt = decrypt_salt or (user_ctx.user_secret_salt if user_ctx else None)
         effective_tenant = tenant_id if tenant_id is not None else ((user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id())
         with self.get_session() as session:
             stmt = select(DraftRecord)
             stmt = _apply_tenant_filter_stmt(stmt, DraftRecord.tenant_id, effective_tenant)
             stmt = stmt.order_by(desc(DraftRecord.created_at))
-            return list(session.scalars(stmt).all())
+            drafts = list(session.scalars(stmt).all())
+            if effective_salt:
+                for d in drafts:
+                    if d.body and UserPayloadCipher.is_encrypted(d.body):
+                        d.body = UserPayloadCipher.decrypt_payload(d.body, effective_salt)
+            return drafts
 
     def get_draft(
         self,
@@ -664,7 +685,7 @@ class MailDatabaseService:
             session.commit()
             return True
 
-    def get_dashboard_metrics(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_dashboard_metrics(self, tenant_id: Optional[str] = None, user_email: Optional[str] = None) -> Dict[str, Any]:
         """Aggregate triage statistics and queue counts for the specified or active tenant."""
         user_ctx = get_current_user_context()
         effective_tenant = tenant_id if tenant_id is not None else ((user_ctx.tenant_id if user_ctx else None) or get_current_tenant_id())
@@ -672,6 +693,16 @@ class MailDatabaseService:
             # 1. Total emails
             email_stmt = select(func.count(EmailRecord.id))
             email_stmt = _apply_tenant_filter_stmt(email_stmt, EmailRecord.tenant_id, effective_tenant)
+            if user_email and user_email.strip():
+                from sqlalchemy import or_
+                clean_email = f"%{user_email.strip().lower()}%"
+                email_stmt = email_stmt.where(
+                    or_(
+                        EmailRecord.to_recipients.ilike(clean_email),
+                        EmailRecord.cc_recipients.ilike(clean_email),
+                        EmailRecord.sender.ilike(clean_email),
+                    )
+                )
             total_emails = session.scalar(email_stmt) or 0
 
             # 2. Pending PM tasks
@@ -708,9 +739,9 @@ class MailDatabaseService:
                 "category_breakdown": cat_counts,
             }
 
-    def get_triage_metrics(self, tenant_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_triage_metrics(self, tenant_id: Optional[str] = None, user_email: Optional[str] = None) -> Dict[str, Any]:
         """Alias for get_dashboard_metrics."""
-        return self.get_dashboard_metrics(tenant_id=tenant_id)
+        return self.get_dashboard_metrics(tenant_id=tenant_id, user_email=user_email)
 
     def get_email(self, gmail_id: str, tenant_id: Optional[str] = None) -> Optional[EmailRecord]:
         """Retrieve an email record by gmail_id with tenant filtering."""

@@ -79,6 +79,7 @@ class MailOrganizerState(TypedDict, total=False):
 
     # Tenant & User Identity Context
     tenant_id: Optional[str]
+    cartridge_id: Optional[str]
     user_id: Optional[int]
     user_name: Optional[str]
     user_email: Optional[str]

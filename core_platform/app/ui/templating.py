@@ -95,6 +95,19 @@ def ui_locales() -> List[str]:
     return list(settings.UI_SUPPORTED_LOCALES)
 
 
+def format_llm_cost(val: Any) -> str:
+    """Format an LLM cost float to display micro-costs accurately without truncation."""
+    try:
+        f = float(val)
+        if f == 0.0:
+            return "0.0000"
+        if f < 0.0001:
+            return f"{f:.8f}"
+        return f"{f:.6f}"
+    except (ValueError, TypeError):
+        return "0.0000"
+
+
 def build_templates(
     own_dirs: Sequence[Path],
     extra_filters: Optional[Mapping[str, Callable[..., Any]]] = None,
@@ -120,6 +133,8 @@ def build_templates(
     env.globals["status_badge"] = status_badge
     env.globals["ui_locales"] = ui_locales
     env.globals["i18n_bundle"] = i18n_bundle
+    env.globals["format_llm_cost"] = format_llm_cost
+    env.filters["format_llm_cost"] = format_llm_cost
     for name, func in (extra_filters or {}).items():
         env.filters[name] = func
     for name, value in (extra_globals or {}).items():

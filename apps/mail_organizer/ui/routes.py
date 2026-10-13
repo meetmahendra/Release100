@@ -102,10 +102,23 @@ async def view_dashboard(
 ) -> HTMLResponse:
     """Render interactive Mail Organizer Dashboard."""
     tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
-    metrics = _db_service.get_triage_metrics(tenant_id=tenant_id)
+    user_salt: Optional[str] = None
+    user_email: Optional[str] = None
+    if ctx and ctx.is_authenticated:
+        try:
+            from core_platform.app.identity.service import get_user_identity_service
+            u = get_user_identity_service().find_user_for_auth(ctx.principal_id, tenant_id=tenant_id)
+            if u:
+                user_salt = u.user_secret_salt
+                if not ctx.is_admin:
+                    user_email = (u.google_email or u.email or "").strip().lower() or None
+        except Exception:
+            pass
+
+    metrics = _db_service.get_triage_metrics(tenant_id=tenant_id, user_email=user_email)
     pending_tasks = _db_service.get_pending_pm_tasks(tenant_id=tenant_id)
-    drafts = _db_service.get_all_drafts(tenant_id=tenant_id)
-    recent_emails = _db_service.get_recent_emails(limit=50, tenant_id=tenant_id)
+    drafts = _db_service.get_all_drafts(tenant_id=tenant_id, decrypt_salt=user_salt)
+    recent_emails = _db_service.get_recent_emails(limit=50, tenant_id=tenant_id, decrypt_salt=user_salt, user_email=user_email)
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
@@ -147,7 +160,20 @@ async def view_triage(
 ) -> HTMLResponse:
     """Render Triage Simulator."""
     tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
-    emails = _db_service.get_recent_emails(limit=25, tenant_id=tenant_id)
+    user_salt: Optional[str] = None
+    user_email: Optional[str] = None
+    if ctx and ctx.is_authenticated:
+        try:
+            from core_platform.app.identity.service import get_user_identity_service
+            u = get_user_identity_service().find_user_for_auth(ctx.principal_id, tenant_id=tenant_id)
+            if u:
+                user_salt = u.user_secret_salt
+                if not ctx.is_admin:
+                    user_email = (u.google_email or u.email or "").strip().lower() or None
+        except Exception:
+            pass
+
+    emails = _db_service.get_recent_emails(limit=25, tenant_id=tenant_id, decrypt_salt=user_salt, user_email=user_email)
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
@@ -177,8 +203,13 @@ async def view_triage(
 
 
 @router.post("/api/simulate", dependencies=[Depends(require_action("mail:inbox:triage"))])
-async def run_email_simulation(req: EmailSimulationRequest) -> Dict[str, Any]:
+async def run_email_simulation(
+    req: EmailSimulationRequest,
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> Dict[str, Any]:
     """Execute email processing through the complete LangGraph workflow."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request, ctx)
     thread_id = req.thread_id or f"thread_{uuid.uuid4().hex[:8]}"
     email_id = f"msg_{uuid.uuid4().hex[:10]}"
 
@@ -215,6 +246,8 @@ async def run_email_simulation(req: EmailSimulationRequest) -> Dict[str, Any]:
         "error_message": None,
         "pipeline_trace": [],
         "correlation_id": email_id,
+        "tenant_id": tenant_id or "default",
+        "cartridge_id": "mail_organizer",
     }
 
     final_state = await _workflow.execute(initial_state)
@@ -336,7 +369,16 @@ async def view_drafts(
 ) -> HTMLResponse:
     """Render Contextual Draft Replies."""
     tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
-    drafts = _db_service.get_all_drafts(tenant_id=tenant_id)
+    user_salt: Optional[str] = None
+    if ctx and ctx.is_authenticated:
+        try:
+            from core_platform.app.identity.service import get_user_identity_service
+            u = get_user_identity_service().find_user_for_auth(ctx.principal_id, tenant_id=tenant_id)
+            if u:
+                user_salt = u.user_secret_salt
+        except Exception:
+            pass
+    drafts = _db_service.get_all_drafts(tenant_id=tenant_id, decrypt_salt=user_salt)
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),

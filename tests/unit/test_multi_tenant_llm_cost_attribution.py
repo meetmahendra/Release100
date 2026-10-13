@@ -100,7 +100,7 @@ def test_cost_tracker_multi_tenant_financial_isolation(tmp_path: Path) -> None:
     assert summary["total_platform_liability_usd"] > 0.0
     assert summary["total_byok_value_usd"] > 0.0
     assert summary["total_internal_jev_cost_usd"] > 0.0
-    assert round(summary["total_platform_liability_usd"] + summary["total_byok_value_usd"], 4) == summary["total_cost_usd"]
+    assert round(summary["total_platform_liability_usd"] + summary["total_byok_value_usd"], 6) == summary["total_cost_usd"]
 
     # Verify Tenant Breakdown
     tenant_report = tracker.get_tenant_breakdown()
