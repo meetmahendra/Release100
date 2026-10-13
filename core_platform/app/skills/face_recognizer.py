@@ -276,7 +276,7 @@ class FaceRecognizerSkill(BaseSkill):
             try:
                 b64_ref = base64.b64encode(reference_image).decode("utf-8")
                 b64_cand = base64.b64encode(candidate_image).decode("utf-8")
-                model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
+                model_name = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
                 prompt = (
                     "You are an AI biometric face verification system for enterprise personnel.\n"

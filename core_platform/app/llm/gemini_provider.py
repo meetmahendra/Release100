@@ -44,7 +44,7 @@ class GeminiProvider(BaseLLMProvider):
     def __init__(
         self,
         api_key: str = "",
-        default_model: str = "gemini-2.5-flash",
+        default_model: str = "gemini-2.0-flash",
         timeout_seconds: float = 12.0,
     ) -> None:
         """Initialise Gemini provider.

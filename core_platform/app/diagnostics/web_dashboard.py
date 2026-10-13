@@ -258,7 +258,7 @@ async def view_settings_dashboard(
     typesafe_model = env_data.get("TYPESAFE_MODEL") or getattr(settings, "TYPESAFE_MODEL", "jev-1") or "jev-1"
     default_decision = env_data.get("DEFAULT_DECISION_PROVIDER") or getattr(settings, "DEFAULT_DECISION_PROVIDER", "typesafe") or "typesafe"
     gemini_key = env_data.get("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", "") or ""
-    gemini_model = env_data.get("GEMINI_MODEL") or getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash") or "gemini-2.5-flash"
+    gemini_model = env_data.get("GEMINI_MODEL") or getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash") or "gemini-2.0-flash"
     wa_phone = env_data.get("WHATSAPP_PHONE_NUMBER_ID") or getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", "") or ""
     wa_token = env_data.get("WHATSAPP_ACCESS_TOKEN") or getattr(settings, "WHATSAPP_ACCESS_TOKEN", "") or ""
     wa_secret = env_data.get("WHATSAPP_APP_SECRET") or getattr(settings, "WHATSAPP_APP_SECRET", "") or ""

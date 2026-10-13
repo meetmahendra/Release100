@@ -53,9 +53,9 @@ class PlatformSettings(BaseSettings):
     DEFAULT_LLM_PROVIDER: str = Field(default="gemini", description="Default provider: gemini | claude | openai | ollama")
     DEFAULT_DECISION_PROVIDER: str = Field(default="typesafe", description="Default System 1 decision provider: typesafe | gemini | heuristic")
     GEMINI_API_KEY: str = Field(default="", description="Google Gemini API Key")
-    GEMINI_MODEL: str = Field(default="gemini-2.5-flash", description="Default Gemini model")
-    GEMINI_ROUTING_MODEL: str = Field(default="gemini-2.5-flash", description="Configurable routing model")
-    GEMINI_VISION_MODEL: str = Field(default="gemini-2.5-flash", description="Configurable vision OCR model")
+    GEMINI_MODEL: str = Field(default="gemini-2.0-flash", description="Default Gemini model")
+    GEMINI_ROUTING_MODEL: str = Field(default="gemini-2.0-flash", description="Configurable routing model")
+    GEMINI_VISION_MODEL: str = Field(default="gemini-2.0-flash", description="Configurable vision OCR model")
 
     # TypeSafe AI / Jev System 1 Decision Engine Settings
     TYPESAFE_API_KEY: str = Field(default="", description="TypeSafe AI API key for fast decision & routing models")

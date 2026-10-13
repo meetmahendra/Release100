@@ -1026,6 +1026,7 @@ async def save_customer_byok_keys(
     credential_mode: Optional[str] = Form(None),
     brand_name: Optional[str] = Form(None),
     default_timezone: Optional[str] = Form("Asia/Kolkata"),
+    llm_model: Optional[str] = Form(None),
     gemini_api_key: Optional[str] = Form(None),
     openai_api_key: Optional[str] = Form(None),
     waba_token: Optional[str] = Form(None),
@@ -1060,6 +1061,7 @@ async def save_customer_byok_keys(
             google_client_secret=google_client_secret,
             brand_name=brand_name,
             default_timezone=default_timezone or "Asia/Kolkata",
+            llm_model=llm_model.strip() if llm_model and llm_model.strip() else None,
         )
         return RedirectResponse(
             url="/admin/tenants?message=Company+Profile+and+Vault+saved+successfully",

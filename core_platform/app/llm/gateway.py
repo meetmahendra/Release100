@@ -160,12 +160,17 @@ class LLMGateway:
                     )
                 t_cache = self._tenant_provider_cache.setdefault(tenant_id, {})
                 cached = t_cache.get("gemini")
-                if cached is None or getattr(cached, "_api_key", None) != creds.gemini_api_key:
-                    from core_platform.app.config import settings
+                from core_platform.app.config import settings
+                target_gemini_model: str = str(creds.llm_model or settings.GEMINI_MODEL)
+                if (
+                    cached is None
+                    or getattr(cached, "_api_key", None) != creds.gemini_api_key
+                    or getattr(cached, "_default_model", None) != target_gemini_model
+                ):
                     from core_platform.app.llm.gemini_provider import GeminiProvider
                     t_cache["gemini"] = GeminiProvider(
                         api_key=creds.gemini_api_key,
-                        default_model=settings.GEMINI_MODEL,
+                        default_model=target_gemini_model,
                     )
                 return t_cache["gemini"], "CUSTOMER_BYOK"
 
@@ -181,10 +186,17 @@ class LLMGateway:
                     )
                 t_cache = self._tenant_provider_cache.setdefault(tenant_id, {})
                 cached = t_cache.get("openai")
-                if cached is None or getattr(cached, "_api_key", None) != creds.openai_api_key:
+                from core_platform.app.config import settings
+                target_openai_model: str = str(creds.llm_model or getattr(settings, "OPENAI_MODEL", "gpt-4o"))
+                if (
+                    cached is None
+                    or getattr(cached, "_api_key", None) != creds.openai_api_key
+                    or getattr(cached, "_default_model", None) != target_openai_model
+                ):
                     from core_platform.app.llm.openai_provider import OpenAIProvider
                     t_cache["openai"] = OpenAIProvider(
                         api_key=creds.openai_api_key,
+                        default_model=target_openai_model,
                     )
                 return t_cache["openai"], "CUSTOMER_BYOK"
 

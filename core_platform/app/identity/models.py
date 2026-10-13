@@ -236,6 +236,7 @@ class TenantConfig(Base, TimestampMixin):
     encrypted_google_client_secret: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     default_timezone: Mapped[str] = mapped_column(String(64), default="Asia/Kolkata", nullable=False)
     brand_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    llm_model: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     metadata_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
 
     def to_dict(self, mask_secrets: bool = True) -> Dict[str, Any]:
@@ -244,6 +245,7 @@ class TenantConfig(Base, TimestampMixin):
             "tenant_id": self.tenant_id,
             "credential_mode": self.credential_mode,
             "llm_provider": self.llm_provider or "gemini",
+            "llm_model": self.llm_model,
             "has_gemini_byok": bool(self.encrypted_gemini_api_key),
             "has_openai_byok": bool(self.encrypted_openai_api_key),
             "has_waba_byok": bool(self.encrypted_waba_token),

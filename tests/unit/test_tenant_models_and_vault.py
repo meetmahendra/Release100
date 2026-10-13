@@ -122,6 +122,7 @@ def test_devops_vault_customer_byok_mode(test_db_url: str) -> None:
         google_client_secret=synthetic_google_secret,
         brand_name="Enterprise BYOK Corp",
         default_timezone="America/New_York",
+        llm_model="gemini-2.0-flash",
     )
 
     # Verify encrypted at rest (not stored as raw plaintext)
@@ -134,6 +135,7 @@ def test_devops_vault_customer_byok_mode(test_db_url: str) -> None:
     assert config.encrypted_google_client_secret is not None
     assert synthetic_google_secret not in config.encrypted_google_client_secret
     assert config.encrypted_google_client_secret.startswith("ENC:v1:")
+    assert config.llm_model == "gemini-2.0-flash"
 
     # Verify runtime resolution
     creds = vault.get_tenant_runtime_credentials("tenant_enterprise_byok")
@@ -146,3 +148,26 @@ def test_devops_vault_customer_byok_mode(test_db_url: str) -> None:
     assert creds.google_client_id == synthetic_google_id
     assert creds.google_client_secret == synthetic_google_secret
     assert creds.default_timezone == "America/New_York"
+    assert creds.llm_model == "gemini-2.0-flash"
+
+
+def test_gateway_tenant_custom_model_routing(test_db_url: str) -> None:
+    """Verify that LLM gateway instantiates provider with the tenant's specified custom model."""
+    vault = DevOpsKeyVault(db_url=test_db_url)
+    vault.configure_tenant_credentials(
+        tenant_id="tenant_model_override",
+        credential_mode="CUSTOMER_BYOK",
+        gemini_api_key="mock_gemini_api_key_override_1122",
+        llm_model="gemini-1.5-pro",
+    )
+
+    from core_platform.app.llm.gateway import LLMGateway
+    from unittest.mock import MagicMock, patch
+
+    gateway = LLMGateway(providers={})
+    with patch("ops_control_plane.devops_vault.get_devops_key_vault", return_value=vault):
+        provider, mode = gateway._resolve_provider_for_tenant("text_generation", "tenant_model_override")
+        assert mode == "CUSTOMER_BYOK"
+        assert provider is not None
+        assert getattr(provider, "_default_model", None) == "gemini-1.5-pro"
+        assert getattr(provider, "_api_key", None) == "mock_gemini_api_key_override_1122"

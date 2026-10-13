@@ -51,6 +51,7 @@ class TenantRuntimeCredentials:
     waba_phone_number_id: Optional[str]
     brand_name: Optional[str]
     default_timezone: str
+    llm_model: Optional[str] = None
     google_client_id: Optional[str] = None
     google_client_secret: Optional[str] = None
     has_google_byok: bool = False
@@ -93,6 +94,7 @@ class DevOpsKeyVault:
         google_client_secret: Optional[str] = None,
         brand_name: Optional[str] = None,
         default_timezone: str = "Asia/Kolkata",
+        llm_model: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> TenantConfig:
         """Configure or update tenant credentials with AES-256-GCM envelope encryption.
@@ -109,6 +111,7 @@ class DevOpsKeyVault:
             google_client_secret: Customer Google OAuth Client Secret (encrypted at rest if BYOK).
             brand_name: Custom company branding display name.
             default_timezone: Primary operational timezone.
+            llm_model: Target LLM model identifier override (e.g. 'gemini-2.0-flash', 'gpt-4o').
             metadata: Arbitrary operational metadata.
 
         Returns:
@@ -164,6 +167,7 @@ class DevOpsKeyVault:
                     encrypted_google_client_secret=enc_google_secret,
                     brand_name=brand_name.strip() if brand_name else None,
                     default_timezone=default_timezone.strip() if default_timezone else "Asia/Kolkata",
+                    llm_model=llm_model.strip() if llm_model and llm_model.strip() else None,
                     metadata_json=json.dumps(metadata or {}),
                 )
                 session.add(config)
@@ -188,6 +192,8 @@ class DevOpsKeyVault:
                     config.brand_name = brand_name.strip()
                 if default_timezone is not None and default_timezone.strip():
                     config.default_timezone = default_timezone.strip()
+                if llm_model is not None:
+                    config.llm_model = llm_model.strip() if llm_model.strip() else None
                 if metadata is not None:
                     config.metadata_json = json.dumps(metadata)
 
@@ -217,6 +223,7 @@ class DevOpsKeyVault:
                     waba_phone_number_id=getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", None),
                     brand_name=config.brand_name if config else None,
                     default_timezone=config.default_timezone if config else "Asia/Kolkata",
+                    llm_model=config.llm_model if config else None,
                     google_client_id=getattr(settings, "GOOGLE_CLIENT_ID", None),
                     google_client_secret=getattr(settings, "GOOGLE_CLIENT_SECRET", None),
                     has_google_byok=False,
@@ -261,6 +268,7 @@ class DevOpsKeyVault:
                 waba_phone_number_id=config.waba_phone_number_id,
                 brand_name=config.brand_name,
                 default_timezone=config.default_timezone,
+                llm_model=config.llm_model,
                 google_client_id=dec_google_id,
                 google_client_secret=dec_google_secret,
                 has_google_byok=has_google_byok,
