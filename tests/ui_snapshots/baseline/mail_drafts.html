@@ -304,6 +304,9 @@ STATUS 200
 <th>
   Created (UTC)
 </th>
+<th style="text-align: right;">
+  Action
+</th>
 </tr>
 </thead>
 <tbody>
@@ -311,6 +314,67 @@ STATUS 200
 </tbody>
 </table>
 </div>
+<div class="hidden fixed inset-# bg-black/# backdrop-blur-sm flex items-center justify-end z-#" id="draftDrawer">
+<div class="bg-slate-# border-l border-slate-# w-full max-w-xl h-full p-# space-y-# shadow-#xl flex flex-col">
+<div class="flex items-center justify-between pb-# border-b border-slate-#">
+<div>
+<h3 class="text-base font-bold text-white" id="drawerSubject">
+  Draft Preview
+</h3>
+<p class="text-xs text-slate-# mt-#.#" id="drawerRecipient">
+</p>
+</div>
+<button class="text-slate-# hover:text-white text-lg" onclick="closeDraftDrawer()">
+  ✕
+</button>
+</div>
+<div class="flex items-center gap-#">
+<span class="badge badge-success" id="drawerStatus">
+</span>
+<span class="text-xs text-slate-#">
+  Zero-Knowledge Decryption via Session Secret Salt
+</span>
+</div>
+<div class="flex-# bg-slate-#/# border border-slate-# rounded-lg p-# overflow-y-auto">
+<pre class="text-sm text-slate-# font-sans whitespace-pre-wrap leading-relaxed" id="drawerBody">
+  Loading draft payload...
+</pre>
+</div>
+<div class="flex justify-end gap-# pt-# border-t border-slate-#">
+<button class="px-# py-# rounded-lg bg-slate-# hover:bg-slate-# text-slate-# text-sm" onclick="closeDraftDrawer()" type="button">
+  Close
+</button>
+</div>
+</div>
+</div>
+<script>
+  function handleDraftPreviewClick(btn) {
+  const d = btn.dataset;
+  openDraftDrawer(d.draftId, d.recipient, d.subject, d.status);
+  }
+  async function openDraftDrawer(draftId, recipient, subject, status) {
+  document.getElementById('drawerSubject').textContent = subject || 'Draft Preview';
+  document.getElementById('drawerRecipient').textContent = 'To: ' + (recipient || '');
+  document.getElementById('drawerStatus').textContent = status || 'STAGED';
+  document.getElementById('drawerBody').textContent = 'Decrypting draft payload...';
+  document.getElementById('draftDrawer').classList.remove('hidden');
+  try {
+  const res = await fetch(`/admin/apps/mail-organizer/api/drafts/${draftId}/preview`);
+  if (res.ok) {
+  const data = await res.json();
+  document.getElementById('drawerBody').textContent = data.body || '(Empty body)';
+  } else {
+  const err = await res.json().catch(() => ({}));
+  document.getElementById('drawerBody').textContent = err.detail || 'Could not decrypt draft payload.';
+  }
+  } catch (e) {
+  document.getElementById('drawerBody').textContent = 'Error loading draft preview: ' + e;
+  }
+  }
+  function closeDraftDrawer() {
+  document.getElementById('draftDrawer').classList.add('hidden');
+  }
+</script>
 </main>
 </div>
 </div>

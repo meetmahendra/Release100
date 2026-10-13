@@ -964,8 +964,25 @@ STATUS 200
   document.getElementById('transferRegion').value = currentRegion;
   document.getElementById('transferModal').classList.remove('hidden');
   }
-  function closeTransferModal() {
-  document.getElementById('transferModal').classList.add('hidden');
+  function handleInspectClick(btn) {
+  var d = btn.dataset;
+  openInspectModal(d.tenantId, d.tenantName, d.tenantStatus, d.tenantTier, d.storageRegion, d.dbMode, d.credentialMode, d.domain, d.cartridges, d.adminPhone, d.adminName, d.adminEmail, d.llmProvider);
+  }
+  function handleEditTenantClick(btn) {
+  var d = btn.dataset;
+  openEditModal(d.tenantId, d.tenantName, d.tenantTier, d.tenantStatus, d.tenantMaxUsers, d.adminPhone, d.adminName, d.adminEmail);
+  }
+  function handleVaultClick(btn) {
+  var d = btn.dataset;
+  openVaultModal(d.tenantId, d.credentialMode, d.llmProvider);
+  }
+  function handleCloneClick(btn) {
+  var d = btn.dataset;
+  openCloneModal(d.tenantId, d.tenantName);
+  }
+  function handleTransferClick(btn) {
+  var d = btn.dataset;
+  openTransferModal(d.tenantId, d.storageRegion);
   }
 </script>
 </body>

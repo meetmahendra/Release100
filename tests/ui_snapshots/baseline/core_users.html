@@ -574,6 +574,15 @@ STATUS 200
 </div>
 <div>
 <label class="block text-xs font-medium text-slate-# mb-#">
+  Set Password (leave blank to keep current)
+</label>
+<input autocomplete="new-password" class="w-full bg-slate-#/# border border-slate-# rounded-lg px-# py-# text-sm text-slate-# focus:border-emerald-# outline-none" id="editPassword" name="password" placeholder="••••••••" type="password">
+<p class="text-[#px] text-slate-# mt-#">
+  Allows users created via OAuth or rosters to log in directly with username and password.
+</p>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-# mb-#">
   Entitled Applications
 </label>
 <div class="flex flex-wrap items-center gap-# mt-#">
@@ -651,6 +660,14 @@ STATUS 200
   alert('Error: ' + err);
   }
   }
+  function handleEditUserClick(btn) {
+  const ds = btn.dataset;
+  let cartridges = [];
+  try {
+  cartridges = JSON.parse(ds.cartridges || '[]');
+  } catch(e) { cartridges = []; }
+  openEditModal(ds.userId, ds.fullName, ds.phone, ds.role, ds.tenantId, ds.timezone, cartridges);
+  }
   function openEditModal(userId, fullName, phone, role, tenantId, timezone, allowedCartridges) {
   const form = document.getElementById('editUserForm');
   form.action = `/admin/users/${userId}/update`;
@@ -658,6 +675,10 @@ STATUS 200
   document.getElementById('editFullName').value = fullName || '';
   document.getElementById('editRole').value = role || 'user';
   document.getElementById('editTimezone').value = timezone || 'UTC';
+  const pwdInput = document.getElementById('editPassword');
+  if (pwdInput) {
+  pwdInput.value = '';
+  }
   const tenantSelect = document.getElementById('editTenantSelect');
   if (tenantSelect) {
   tenantSelect.value = tenantId;

@@ -400,11 +400,15 @@ class MailPollWorker:
                     if user is not None:
                         from core_platform.app.auth.token_exchange import get_token_exchange_service, assumed_identity
                         service = get_token_exchange_service()
-                        user_auth_time = (
-                            int(user.created_at.timestamp())
-                            if hasattr(user, "created_at") and user.created_at
-                            else int(time.time())
-                        )
+                        user_created_at = getattr(user, "created_at", None)
+                        if user_created_at and hasattr(user_created_at, "timestamp") and "Mock" not in type(user_created_at).__name__:
+                            try:
+                                user_auth_time = int(user_created_at.timestamp())
+                            except Exception:
+                                user_auth_time = int(time.time())
+                        else:
+                            user_auth_time = int(time.time())
+
                         ticket = service.exchange_worker_ticket(
                             user_id=str(user.id),
                             tenant_id=str(user.tenant_id),

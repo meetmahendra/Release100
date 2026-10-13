@@ -34,6 +34,7 @@ from core_platform.app.db.base import Base, TenantIsolationMixin, TimestampMixin
 from core_platform.app.db.config import DatabaseConfig
 from core_platform.app.db.connection_factory import DatabaseConnectionFactory
 from core_platform.app.db.manager import DatabaseManager, get_db_manager
+from core_platform.app.middleware.tenant_context import sync_tenant_scope
 
 
 @pytest.fixture(autouse=True)
@@ -208,14 +209,15 @@ def test_universal_entity_mixins() -> None:
     factory = DatabaseConnectionFactory("sqlite:///:memory:")
     TestDeclarativeBase.metadata.create_all(bind=factory.engine)
 
-    with factory.session_scope() as session:
-        item = SampleEntity(title="Sensor Calibration", tenant_id="tenant_chicago_01")
-        session.add(item)
+    with sync_tenant_scope("tenant_chicago_01"):
+        with factory.session_scope() as session:
+            item = SampleEntity(title="Sensor Calibration", tenant_id="tenant_chicago_01")
+            session.add(item)
 
-    with factory.session_scope() as session:
-        stmt = select(SampleEntity).where(SampleEntity.title == "Sensor Calibration")
-        saved = session.scalars(stmt).one()
-        assert len(saved.id) == 36  # UUID length
-        assert saved.tenant_id == "tenant_chicago_01"
-        assert saved.created_at is not None
-        assert saved.updated_at is not None
+        with factory.session_scope() as session:
+            stmt = select(SampleEntity).where(SampleEntity.title == "Sensor Calibration")
+            saved = session.scalars(stmt).one()
+            assert len(saved.id) == 36  # UUID length
+            assert saved.tenant_id == "tenant_chicago_01"
+            assert saved.created_at is not None
+            assert saved.updated_at is not None

@@ -61,7 +61,8 @@ def run_gate(gate: GateSpec) -> tuple[bool, float, str]:
             if line:
                 output_chunks.append(line)
                 if is_long_gate:
-                    sys.stdout.write(f"   | {line}")
+                    safe_line = line.encode("ascii", errors="replace").decode("ascii")
+                    sys.stdout.write(f"   | {safe_line}")
                     sys.stdout.flush()
 
         proc.wait(timeout=gate.timeout_sec)
