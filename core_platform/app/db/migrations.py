@@ -133,6 +133,13 @@ class DatabaseMigrationHelper:
                             logger.info("[DB Migration] Added missing column platform_tenant_configs.encrypted_google_client_secret")
                         except Exception as e:
                             logger.debug("[DB Migration] Column add skipped: %s", e)
+                    if "llm_model" not in cols:
+                        try:
+                            conn.execute(text("ALTER TABLE platform_tenant_configs ADD COLUMN llm_model VARCHAR(64);"))
+                            conn.commit()
+                            logger.info("[DB Migration] Added missing column platform_tenant_configs.llm_model")
+                        except Exception as e:
+                            logger.debug("[DB Migration] Column add skipped: %s", e)
 
                 # 3. Domain Cartridge multi-tenant isolation columns (mail_emails, mail_drafts, mail_pm_queue, mail_rules, employees, attendance_records, outbox_queue, internal_message_queue, kiosk_monitoring_configs)
                 cartridge_tables = [

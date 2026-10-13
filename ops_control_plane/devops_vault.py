@@ -78,6 +78,8 @@ class DevOpsKeyVault:
             self.engine = get_db_manager().get_engine()
 
         Base.metadata.create_all(bind=self.engine)
+        from core_platform.app.db.migrations import DatabaseMigrationHelper
+        DatabaseMigrationHelper.auto_migrate_columns(self.engine)
         self.session_factory = sessionmaker(bind=self.engine)
 
     def configure_tenant_credentials(
