@@ -21,7 +21,7 @@ variables with safe defaults. Adheres to GEES v1.0 fail-safe defaults (DRY_RUN=T
 
 import os
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 import re
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -71,6 +71,23 @@ class PlatformSettings(BaseSettings):
         default="sqlite:///logs/platform_data.db",
         description="Universal database connection URL (sqlite, postgresql, mysql, timescaledb, etc.)",
     )
+    # [CODE-MARKER: TN-CFG-01] Per-Role & Per-Cartridge Database URL Overrides (Domain-Agnostic)
+    CONTAINER_ROLE: str = Field(
+        default="unified",
+        description="Container role: unified | core | ops_control | cartridge",
+    )
+    CORE_DATABASE_URL: Optional[str] = Field(
+        default=None,
+        description="Optional dedicated database URL for Core Platform (falls back to DATABASE_URL)",
+    )
+    OPS_DATABASE_URL: Optional[str] = Field(
+        default=None,
+        description="Optional dedicated database URL for Ops Control Plane (falls back to DATABASE_URL)",
+    )
+    CARTRIDGE_DATABASE_URLS: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Optional mapping of app_id -> dedicated database connection URL",
+    )
     DB_POOL_SIZE: int = Field(default=20, description="Connection pool size for client-server SQL engines")
     DB_MAX_OVERFLOW: int = Field(default=10, description="Max overflow connections beyond pool size")
 
@@ -79,6 +96,23 @@ class PlatformSettings(BaseSettings):
         default=None,
         description="Optional list of active application cartridges. If None, all discovered cartridges are loaded.",
     )
+
+    def resolve_primary_db_url(self) -> str:
+        """Resolve the primary database URL for the active container role."""
+        if self.CONTAINER_ROLE == "ops_control" and self.OPS_DATABASE_URL:
+            return self.OPS_DATABASE_URL
+        if self.CORE_DATABASE_URL:
+            return self.CORE_DATABASE_URL
+        return self.DATABASE_URL
+
+    def resolve_cartridge_db_url(self, app_id: str) -> Optional[str]:
+        """Resolve an optional dedicated database URL for a given cartridge app_id without domain hardcoding."""
+        normalized_id = app_id.strip().lower().replace("-", "_")
+        if normalized_id in self.CARTRIDGE_DATABASE_URLS and self.CARTRIDGE_DATABASE_URLS[normalized_id]:
+            return self.CARTRIDGE_DATABASE_URLS[normalized_id]
+        env_key_prefixed = f"CARTRIDGE_DB_URL_{normalized_id.upper()}"
+        env_key_direct = f"{normalized_id.upper()}_DATABASE_URL"
+        return os.environ.get(env_key_prefixed) or os.environ.get(env_key_direct) or None
 
     # Audit & Telemetry Directories
     BASE_DIR: Path = Field(

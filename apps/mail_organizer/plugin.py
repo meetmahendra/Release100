@@ -109,8 +109,9 @@ class MailOrganizerApplication(BaseApplication):
         except Exception as purge_err:
             logger.debug("[MailOrganizer] Synthetic purge skipped during init: %s", purge_err)
 
+    # [CODE-MARKER: TN-MAIL-DB-01] Bind Core-Facilitated (Paradigm A) or Dedicated (Paradigm C) Engine
     def on_bind_engine(self, engine: Any) -> None:
-        """Dynamically bind or update the database engine (Paradigm A)."""
+        """Dynamically bind or update the database engine (Paradigm A / Paradigm C)."""
         if engine is not None and hasattr(self, "db_service") and self.db_service is not None:
             self.db_service.bind_engine(engine)
             try:

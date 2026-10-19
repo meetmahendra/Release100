@@ -171,15 +171,23 @@ class PluginLoader:
 
                     # ── Pluggable Polyglot Database Management Integration (GEES v2.0) ──
                     try:
+                        from core_platform.app.config import settings
                         from core_platform.app.db.manager import get_db_manager
                         db_mgr = get_db_manager()
 
-                        custom_url: Optional[str] = getattr(instance, "custom_database_url", None)
+                        # [CODE-MARKER: TN-LDR-01] Resolve dedicated cartridge DB URL from instance or PlatformSettings
+                        custom_url: Optional[str] = (
+                            getattr(instance, "custom_database_url", None)
+                            or settings.resolve_cartridge_db_url(app_id)
+                        )
                         meta = instance.get_metadata()
                         if custom_url:
                             # Paradigm C: Dedicated Custom SQL Database via Core Factory
                             custom_factory = db_mgr.create_custom_factory(app_id, custom_url)
-                            instance.on_bind_engine(custom_factory.get_engine())
+                            custom_engine = custom_factory.get_engine()
+                            if meta is not None:
+                                meta.create_all(bind=custom_engine)
+                            instance.on_bind_engine(custom_engine)
                             logger.info("[PluginLoader] Paradigm C (Dedicated DB): Registered factory for '%s'", app_id)
                         elif meta is not None:
                             # Paradigm A: Core-Facilitated Shared Platform Database

@@ -157,11 +157,13 @@ class MailDatabaseService:
             except Exception:
                 pass
 
+    # [CODE-MARKER: TN-MAIL-DB-01] Dynamic Engine Binding for Shared or Dedicated Cartridge DB
     def bind_engine(self, engine: Engine) -> None:
         """Bind or reconfigure database engine."""
         self.engine = engine
-        self.SessionFactory.configure(bind=engine)
+        self.SessionFactory = sessionmaker(bind=engine)
         self._init_neuro_symbolic_schema()
+        MailDatabaseService._instance = self
 
     def create_tables(self) -> None:
         """Create domain database tables (utility helper for test fixtures)."""

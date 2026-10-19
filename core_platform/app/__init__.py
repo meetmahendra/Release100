@@ -15,5 +15,5 @@
 """Release100 Core Platform Package."""
 
 # [CODE-MARKER: PKG-VER-01]
-__version__ = "3.0.30"
+__version__ = "3.0.31"
 

@@ -1,0 +1,217 @@
+# =============================================================================
+# Release100 TrueNAS SCALE (ElectricEel-24.10.0.2) Multi-Container Compose Stack
+# Copyright 2026 Mahendra GURAV | Apache License 2.0
+# [CODE-MARKER: TN-COMPOSE-01]
+#
+# Usage on TrueNAS SCALE Web UI:
+#   Apps -> Discover Apps -> Upper-Right Menu (⋮) -> Install via YAML
+#   Application Name: release100-stack
+#   Paste this YAML and set environment variables (or load from ZFS dataset).
+# =============================================================================
+
+name: release100-stack
+
+networks:
+  release100-internal:
+    driver: bridge
+
+services:
+  # ── 1. Shared Platform PostgreSQL 16 (Default Shared RDBMS) ────────────────
+  postgres-shared:
+    image: postgres:16-alpine
+    container_name: release100-postgres-shared
+    restart: unless-stopped
+    user: "568:568"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-release100}
+      POSTGRES_USER: ${POSTGRES_USER:-release100}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_truenas_env}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/postgres-shared:/var/lib/postgresql/data
+    networks:
+      - release100-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-release100} -d ${POSTGRES_DB:-release100}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── 2. Core Platform & Ingress Container (release100-core) ─────────────────
+  release100-core:
+    image: ${GHCR_REGISTRY:-ghcr.io/meetmahendra}/release100-core:${IMAGE_TAG:-latest}
+    container_name: release100-core
+    restart: unless-stopped
+    user: "568:568"
+    depends_on:
+      postgres-shared:
+        condition: service_healthy
+    ports:
+      - "${CORE_HOST_PORT:-8000}:8000"
+    environment:
+      CONTAINER_ROLE: "core"
+      PORT: "8000"
+      ORCHESTRATOR_PORT: "8000"
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://release100:change_me_in_truenas_env@postgres-shared:5432/release100}
+      CORE_DATABASE_URL: ${CORE_DATABASE_URL:-}
+      CARTRIDGE_DB_URL_MAIL_ORGANIZER: ${CARTRIDGE_DB_URL_MAIL_ORGANIZER:-}
+      CARTRIDGE_DB_URL_TEMPERATURE_MARKER: ${CARTRIDGE_DB_URL_TEMPERATURE_MARKER:-}
+      DRY_RUN: ${DRY_RUN:-true}
+      EXECUTION_MODE: ${EXECUTION_MODE:-shadow}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_me_jwt_secret}
+      BIOMETRIC_ENCRYPTION_KEY: ${BIOMETRIC_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-apex_verify_token_2026}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+    volumes:
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/core/data:/opt/release100/data
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/core/logs:/opt/release100/logs
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/core/credentials:/opt/release100/.local_credentials
+    networks:
+      - release100-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── 3. Ops Control Plane Container (release100-ops) ────────────────────────
+  release100-ops:
+    image: ${GHCR_REGISTRY:-ghcr.io/meetmahendra}/release100-ops:${IMAGE_TAG:-latest}
+    container_name: release100-ops
+    restart: unless-stopped
+    user: "568:568"
+    depends_on:
+      postgres-shared:
+        condition: service_healthy
+    ports:
+      - "${OPS_HOST_PORT:-8010}:8010"
+    environment:
+      CONTAINER_ROLE: "ops_control"
+      PORT: "8010"
+      ORCHESTRATOR_PORT: "8010"
+      ENABLED_APPLICATIONS: "[]"
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://release100:change_me_in_truenas_env@postgres-shared:5432/release100}
+      OPS_DATABASE_URL: ${OPS_DATABASE_URL:-}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_me_jwt_secret}
+    volumes:
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/ops/data:/opt/release100/data
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/ops/logs:/opt/release100/logs
+    networks:
+      - release100-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── 4. Mail Organizer Cartridge Container (app-mail-organizer) ─────────────
+  app-mail-organizer:
+    image: ${GHCR_REGISTRY:-ghcr.io/meetmahendra}/release100-mail-organizer:${IMAGE_TAG:-latest}
+    container_name: release100-mail-organizer
+    restart: unless-stopped
+    user: "568:568"
+    depends_on:
+      postgres-shared:
+        condition: service_healthy
+    ports:
+      - "${MAIL_HOST_PORT:-8001}:8001"
+    environment:
+      CONTAINER_ROLE: "cartridge_mail_organizer"
+      PORT: "8001"
+      ORCHESTRATOR_PORT: "8001"
+      ENABLED_APPLICATIONS: '["mail_organizer"]'
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://release100:change_me_in_truenas_env@postgres-shared:5432/release100}
+      CARTRIDGE_DB_URL_MAIL_ORGANIZER: ${CARTRIDGE_DB_URL_MAIL_ORGANIZER:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_me_jwt_secret}
+    volumes:
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/mail_organizer/data:/opt/release100/data
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/mail_organizer/logs:/opt/release100/logs
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/mail_organizer/credentials:/opt/release100/.local_credentials
+    networks:
+      - release100-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── 5. Temperature Marker Cartridge Container (app-temperature-marker) ─────
+  app-temperature-marker:
+    image: ${GHCR_REGISTRY:-ghcr.io/meetmahendra}/release100-temperature-marker:${IMAGE_TAG:-latest}
+    container_name: release100-temperature-marker
+    restart: unless-stopped
+    user: "568:568"
+    depends_on:
+      postgres-shared:
+        condition: service_healthy
+    ports:
+      - "${TEMP_HOST_PORT:-8002}:8002"
+    environment:
+      CONTAINER_ROLE: "cartridge_temperature_marker"
+      PORT: "8002"
+      ORCHESTRATOR_PORT: "8002"
+      ENABLED_APPLICATIONS: '["temperature_marker"]'
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://release100:change_me_in_truenas_env@postgres-shared:5432/release100}
+      CARTRIDGE_DB_URL_TEMPERATURE_MARKER: ${CARTRIDGE_DB_URL_TEMPERATURE_MARKER:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      BIOMETRIC_ENCRYPTION_KEY: ${BIOMETRIC_ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change_me_jwt_secret}
+    volumes:
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/temperature_marker/data:/opt/release100/data
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/temperature_marker/logs:/opt/release100/logs
+    networks:
+      - release100-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── 6. Outbound Cloudflare Zero-Trust Tunnel (Zero Inbound Port Forwarding) ──
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: release100-cloudflared
+    restart: unless-stopped
+    depends_on:
+      - release100-core
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    networks:
+      - release100-internal
+
+  # ── 7. Optional Dedicated DB for Mail Organizer (Profile: per-cartridge-db) ──
+  postgres-mail:
+    image: postgres:16-alpine
+    container_name: release100-postgres-mail
+    profiles: ["per-cartridge-db"]
+    restart: unless-stopped
+    user: "568:568"
+    environment:
+      POSTGRES_DB: ${MAIL_POSTGRES_DB:-release100_mail}
+      POSTGRES_USER: ${MAIL_POSTGRES_USER:-release100_mail}
+      POSTGRES_PASSWORD: ${MAIL_POSTGRES_PASSWORD:-change_me_mail_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/postgres-mail:/var/lib/postgresql/data
+    networks:
+      - release100-internal
+
+  # ── 8. Optional Dedicated DB for Temperature Marker (Profile: per-cartridge-db) ──
+  postgres-temp:
+    image: postgres:16-alpine
+    container_name: release100-postgres-temp
+    profiles: ["per-cartridge-db"]
+    restart: unless-stopped
+    user: "568:568"
+    environment:
+      POSTGRES_DB: ${TEMP_POSTGRES_DB:-release100_temp}
+      POSTGRES_USER: ${TEMP_POSTGRES_USER:-release100_temp}
+      POSTGRES_PASSWORD: ${TEMP_POSTGRES_PASSWORD:-change_me_temp_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ${TRUENAS_APPDATA_ROOT:-/mnt/tank/apps/release100}/postgres-temp:/var/lib/postgresql/data
+    networks:
+      - release100-internal

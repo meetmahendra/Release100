@@ -41,7 +41,7 @@ class DatabaseManager:
     def get_instance(cls, database_url: Optional[str] = None) -> "DatabaseManager":
         """Retrieve or initialize singleton instance of DatabaseManager."""
         if cls._instance is None:
-            resolved_url = database_url or settings.DATABASE_URL
+            resolved_url = database_url or settings.resolve_primary_db_url()
             cls._instance = cls(db_url=resolved_url)
         return cls._instance
 
@@ -56,9 +56,9 @@ class DatabaseManager:
         """Initialize DatabaseManager with primary platform connection factory.
 
         Args:
-            db_url: Primary database connection string. If omitted, resolved from settings.DATABASE_URL.
+            db_url: Primary database connection string. If omitted, resolved from settings.resolve_primary_db_url().
         """
-        resolved_url = db_url or settings.DATABASE_URL
+        resolved_url = db_url or settings.resolve_primary_db_url()
         self.config = DatabaseConfig(
             database_url=resolved_url,
             pool_size=getattr(settings, "DB_POOL_SIZE", 20),

@@ -21,5 +21,5 @@ Google Calendar free/busy scheduling injection, and human-in-the-loop PM task ex
 """
 
 # [CODE-MARKER: PKG-VER-01]
-__version__ = "1.0.17"
+__version__ = "1.0.18"
 
