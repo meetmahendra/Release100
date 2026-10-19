@@ -38,7 +38,7 @@ RUN python -m venv /venv && \
 FROM python:3.12-slim AS base-runtime
 
 LABEL maintainer="Mahendra GURAV" \
-      version="3.0.31" \
+      version="3.0.32" \
       description="Release100 Multi-Container Platform — TrueNAS SCALE ElectricEel Runtime"
 
 # Runtime system libraries (OpenCV, face recognition, libpq5, curl)
@@ -57,6 +57,9 @@ COPY --from=builder /venv /venv
 # Copy application source
 WORKDIR /opt/release100
 COPY . .
+
+# Install package in editable mode without reinstalling dependencies
+RUN /venv/bin/pip install --no-cache-dir --no-deps -e .
 
 # Remove development artifacts
 RUN find . -name "*.pyc" -delete && \
