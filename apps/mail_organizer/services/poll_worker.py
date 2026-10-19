@@ -129,6 +129,15 @@ class MailPollWorker:
         self._is_running = False
         self.cycles_completed = 0
         self.emails_processed = 0
+        self._user_locks: Dict[int, asyncio.Lock] = {}
+
+    def _get_user_lock(self, user_id: int) -> asyncio.Lock:
+        """Return or initialize the per-user asyncio Lock preventing overlapping poll cycles."""
+        lock = self._user_locks.get(user_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._user_locks[user_id] = lock
+        return lock
 
     @property
     def is_running(self) -> bool:
@@ -189,11 +198,11 @@ class MailPollWorker:
         user_service = get_user_identity_service()
         registered_users = user_service.list_users()
 
-        # Filter active users with mail_organizer cartridge and OAuth credentials
+        # Filter active users with mail_organizer cartridge (or wildcard) and OAuth credentials
         entitled_users = [
             u for u in registered_users
             if u.status.lower() == "active"
-            and "mail_organizer" in u.allowed_cartridges
+            and any(c in ("mail_organizer", "*", "all") for c in (u.allowed_cartridges or []))
             and bool(u.encrypted_oauth_tokens)
         ]
 
@@ -209,6 +218,7 @@ class MailPollWorker:
             return 0
 
         total_processed = 0
+        skipped_cadence_count = 0
         now = datetime.now(timezone.utc)
 
         for user in entitled_users:
@@ -254,6 +264,7 @@ class MailPollWorker:
                     last_polled = last_polled.replace(tzinfo=timezone.utc)
                 elapsed = (now - last_polled).total_seconds()
                 if elapsed < u_cfg.poll_interval_seconds:
+                    skipped_cadence_count += 1
                     logger.debug(
                         "[PollWorker] User %s not due yet (elapsed: %.1fs < interval: %ds). Skipping.",
                         user.id,
@@ -262,39 +273,56 @@ class MailPollWorker:
                     )
                     continue
 
-            # 5. Ingestion Execution
-            try:
-                user_token = get_user_access_token(user)
-                if not user_token:
-                    logger.warning("[PollWorker] User %s (%s) has no valid/active OAuth token. Skipping.", user.id, getattr(user, "email", ""))
+            # 5. Per-User Concurrency Lock & Ingestion Execution
+            user_lock = self._get_user_lock(user.id)
+            if user_lock.locked():
+                logger.info(
+                    "[PollWorker] Poll already in-flight for user %s. Skipping overlapping cycle.",
+                    user.id,
+                )
+                continue
+
+            async with user_lock:
+                try:
+                    user_token = get_user_access_token(user)
+                    if not user_token:
+                        logger.warning("[PollWorker] User %s (%s) has no valid/active OAuth token. Skipping.", user.id, getattr(user, "email", ""))
+                        self.db_service.record_user_poll_run(
+                            user_id=user.id,
+                            emails_fetched=0,
+                            error="Google OAuth credentials not connected or expired",
+                            tenant_id=tenant_id,
+                        )
+                        continue
+                    user_connector = GmailConnector(access_token_override=user_token, user_id=user.id)
+                    count = await self._poll_for_target(
+                        connector=user_connector,
+                        user=user,
+                        user_salt=user.user_secret_salt,
+                    )
+                    self.db_service.record_user_poll_run(
+                        user_id=user.id,
+                        emails_fetched=count,
+                        tenant_id=tenant_id,
+                    )
+                    total_processed += count
+                except Exception as user_poll_err:
+                    logger.error("[PollWorker] Error polling inbox for user %s: %s", user.id, user_poll_err)
                     self.db_service.record_user_poll_run(
                         user_id=user.id,
                         emails_fetched=0,
-                        error="Google OAuth credentials not connected or expired",
+                        error=str(user_poll_err),
                         tenant_id=tenant_id,
                     )
-                    continue
-                user_connector = GmailConnector(access_token_override=user_token)
-                count = await self._poll_for_target(
-                    connector=user_connector,
-                    user=user,
-                    user_salt=user.user_secret_salt,
-                )
-                self.db_service.record_user_poll_run(
-                    user_id=user.id,
-                    emails_fetched=count,
-                    tenant_id=tenant_id,
-                )
-                total_processed += count
-            except Exception as user_poll_err:
-                logger.error("[PollWorker] Error polling inbox for user %s: %s", user.id, user_poll_err)
-                self.db_service.record_user_poll_run(
-                    user_id=user.id,
-                    emails_fetched=0,
-                    error=str(user_poll_err),
-                    tenant_id=tenant_id,
-                )
 
+        if skipped_cadence_count > 0:
+            # [CODE-MARKER: FIX-OBS-TELEMETRY-15] Explicit cadence-skip telemetry for live log visibility
+            logger.info(
+                "[PollWorker] Cycle complete: processed=%d, skipped_by_cadence=%d/%d entitled user(s).",
+                total_processed,
+                skipped_cadence_count,
+                len(entitled_users),
+            )
         return total_processed
 
     async def poll_user_now(self, user_id: int, tenant_id: str) -> Dict[str, Any]:
@@ -310,40 +338,42 @@ class MailPollWorker:
         if user.status.lower() != "active":
             return {"success": False, "message": f"User {user.full_name} is not active."}
 
-        if "mail_organizer" not in user.allowed_cartridges:
+        if not any(c in ("mail_organizer", "*", "all") for c in (user.allowed_cartridges or [])):
             return {"success": False, "message": f"User {user.full_name} is not entitled to Mail Organizer."}
 
         user_token = get_user_access_token(user)
         if not user_token:
             return {"success": False, "message": f"User {user.full_name} has not linked a Google account."}
 
-        user_connector = GmailConnector(access_token_override=user_token)
-        try:
-            count = await self._poll_for_target(
-                connector=user_connector,
-                user=user,
-                user_salt=user.user_secret_salt,
-            )
-            self.db_service.record_user_poll_run(
-                user_id=user.id,
-                emails_fetched=count,
-                tenant_id=tenant_id,
-            )
-            return {
-                "success": True,
-                "user_id": user_id,
-                "emails_processed": count,
-                "message": f"Polled inbox for {user.full_name}: {count} new email(s) processed.",
-            }
-        except Exception as exc:
-            logger.error("[PollWorker] Manual poll failed for user %s: %s", user_id, exc)
-            self.db_service.record_user_poll_run(
-                user_id=user.id,
-                emails_fetched=0,
-                error=str(exc),
-                tenant_id=tenant_id,
-            )
-            return {"success": False, "message": f"Polling failed: {exc}"}
+        user_connector = GmailConnector(access_token_override=user_token, user_id=user.id)
+        user_lock = self._get_user_lock(user.id)
+        async with user_lock:
+            try:
+                count = await self._poll_for_target(
+                    connector=user_connector,
+                    user=user,
+                    user_salt=user.user_secret_salt,
+                )
+                self.db_service.record_user_poll_run(
+                    user_id=user.id,
+                    emails_fetched=count,
+                    tenant_id=tenant_id,
+                )
+                return {
+                    "success": True,
+                    "user_id": user_id,
+                    "emails_processed": count,
+                    "message": f"Polled inbox for {user.full_name}: {count} new email(s) processed.",
+                }
+            except Exception as exc:
+                logger.error("[PollWorker] Manual poll failed for user %s: %s", user_id, exc)
+                self.db_service.record_user_poll_run(
+                    user_id=user.id,
+                    emails_fetched=0,
+                    error=str(exc),
+                    tenant_id=tenant_id,
+                )
+                return {"success": False, "message": f"Polling failed: {exc}"}
 
     async def _poll_for_target(
         self,
@@ -366,13 +396,21 @@ class MailPollWorker:
 
             gmail_id = str(thread.get("gmail_id", f"MOCK-{time.time()}"))
 
-            # Deduplication: check if already processed
+            # Deduplication: check if already processed or triaged ([CODE-MARKER: FIX-WA-LIFECYCLE-STATE-25])
             effective_tenant = user.tenant_id if user else "public"
             existing_email = self.db_service.get_email(gmail_id, tenant_id=effective_tenant)
-            if existing_email and existing_email.status in ("PROCESSED", "ARCHIVED"):
+            if existing_email and existing_email.status in (
+                "PROCESSED",
+                "ARCHIVED",
+                "SNOOZED",
+                "REVIEWED",
+                "ACTIONED",
+                "DISCARDED",
+            ):
                 logger.debug(
-                    "[PollWorker] Deduplication: Gmail ID %s already processed for user %s (tenant: %s). Skipping.",
+                    "[PollWorker] Deduplication: Gmail ID %s already processed/triaged (%s) for user %s (tenant: %s). Skipping.",
                     gmail_id,
+                    existing_email.status,
                     user.id if user else "default",
                     effective_tenant,
                 )
@@ -392,6 +430,9 @@ class MailPollWorker:
                 "user_id": getattr(user, "id", None),
                 "user_name": getattr(user, "full_name", None),
                 "user_email": getattr(user, "email", None) or getattr(user, "google_email", None),
+                "priority_lane": "LOW",
+                "rfc_headers": thread.get("rfc_headers") or thread.get("headers") or {},
+                "attachments_present": thread.get("attachments") or [],
             }
 
             try:
@@ -454,55 +495,87 @@ class MailPollWorker:
 
         return count
 
-    async def _dispatch_urgent_whatsapp_push(self, user: Any, state: Union[Dict[str, Any], MailOrganizerState]) -> None:
-        """Dispatch proactive WhatsApp alert adhering strictly to Meta 24-hour customer care window."""
-        phone = user.phone_number
-        is_allowed = user.is_within_24h_window() if hasattr(user, "is_within_24h_window") else False
-
-        if not is_allowed:
-            logger.warning(
-                "[PollWorker] Proactive WhatsApp push suppressed for user %s (%s): outside Meta 24h customer care window",
-                user.id,
-                phone,
-            )
-            return
-
-        subject = state.get("subject", "No Subject")
-        sender = state.get("sender", "Unknown")
-        reason = state.get("reasoning", "High priority email requires your attention.")
-
-        alert_body = (
-            f"🚨 *URGENT EMAIL ALERT*\n\n"
-            f"• *From:* {sender}\n"
-            f"• *Subject:* {subject}\n"
-            f"• *Reason:* {reason}\n\n"
-            f"Reply with *drafts* to view staged response, or *summary* for full inbox overview."
+    # [CODE-MARKER: MO-WA-01] Meta 24-Hour Window Gate & Stage 1 Interactive List Drawer
+    async def _dispatch_urgent_whatsapp_push(
+        self,
+        user: Any,
+        state: Union[Dict[str, Any], MailOrganizerState],
+        batch_items: Optional[List[Dict[str, Any]]] = None,
+    ) -> bool:
+        """Dispatch proactive WhatsApp alert adhering strictly to Meta 24-hour customer care window (REV-10 & REV-11)."""
+        from core_platform.app.ingress.whatsapp_outbound import (
+            send_whatsapp_interactive_list,
+            send_whatsapp_template,
         )
 
-        clean_to = phone.lstrip("+")
-        if settings.WHATSAPP_ACCESS_TOKEN and settings.WHATSAPP_PHONE_NUMBER_ID:
-            try:
-                import httpx
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    url = f"https://graph.facebook.com/v21.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
-                    headers = {
-                        "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
-                        "Content-Type": "application/json",
-                    }
-                    payload = {
-                        "messaging_product": "whatsapp",
-                        "recipient_type": "individual",
-                        "to": clean_to,
-                        "type": "text",
-                        "text": {"body": alert_body},
-                    }
-                    resp = await client.post(url, headers=headers, json=payload)
-                    if resp.is_success:
-                        logger.info("[PollWorker] Proactive WhatsApp alert sent to %s for email %s", phone, state.get("gmail_id"))
-                    else:
-                        logger.warning("[PollWorker] WhatsApp push failed with status %d: %s", resp.status_code, resp.text)
-            except Exception as push_err:
-                logger.error("[PollWorker] Failed to dispatch WhatsApp push: %s", push_err)
+        phone = str(getattr(user, "phone_number", "") or "")
+        if not phone:
+            return False
+
+        is_allowed = user.is_within_24h_window() if hasattr(user, "is_within_24h_window") else False
+        subject = str(state.get("subject", "No Subject"))
+        sender = str(state.get("sender", "Unknown"))
+        gmail_id = str(state.get("gmail_id", "unknown"))
+        cat = str(state.get("category", "@Urgent"))
+        urgency = int(state.get("urgency_score", 9))
+
+        if not is_allowed:
+            logger.info(
+                "[PollWorker] User %s (%s) outside Meta 24h window — dispatching Utility Template re-opener.",
+                getattr(user, "id", "unknown"),
+                phone,
+            )
+            tpl_res = await send_whatsapp_template(
+                to_phone=phone,
+                template_name="executive_urgent_mail_alert_v1",
+                language_code="en_US",
+                body_parameters=[
+                    str(getattr(user, "full_name", None) or "Executive"),
+                    subject[:60],
+                    sender[:40],
+                ],
+                quick_reply_payloads=[f"inspect_mail:{gmail_id}"],
+            )
+            return bool(tpl_res)
+
+        items = batch_items or [
+            {
+                "gmail_id": gmail_id,
+                "category": cat,
+                "urgency_score": urgency,
+                "subject": subject,
+                "sender": sender,
+            }
+        ]
+        rows: List[Dict[str, str]] = []
+        for item in items[:10]:
+            gid = str(item.get("gmail_id") or "unknown")
+            icat = str(item.get("category") or "@Action")
+            isubj = str(item.get("subject") or "No Subject")
+            isend = str(item.get("sender") or "Sender")
+            rows.append({
+                "id": f"inspect_mail:{gid}",
+                "title": f"{icat} {isubj}"[:24],
+                "description": f"From: {isend} — {isubj}"[:72],
+            })
+
+        # [CODE-MARKER: FIX-WA-LIST-01] Meta v21.0 requires section title <= 24 chars
+        # [CODE-MARKER: FIX-WA-STAGE1-BRIEF-14] Crisp 1-Line Brief + Native Bottom-Sheet List Drawer
+        sections = [{"title": "Actionable Mail", "rows": rows}]
+        body_text = (
+            f"📬 *Executive Brief: {len(rows)} Decision(s) Ready*\n"
+            f"Latest: _{subject[:64]}_ ({sender[:32]})"
+        )
+        sent = await send_whatsapp_interactive_list(
+            to_phone=phone,
+            body_text=body_text,
+            button_label="Open Decisions",
+            sections=sections,
+            header_text="Executive Mail Triage",
+            footer_text="Tap below to open decision drawer",
+        )
+        return bool(sent)
+
 
 
     async def run_async(self) -> None:

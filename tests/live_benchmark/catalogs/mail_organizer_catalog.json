@@ -212,6 +212,113 @@
       "expected": {
         "has_audit_hash": true
       }
+    },
+    {
+      "id": "SCENARIO-MO-011",
+      "name": "M1: Vocative Promotion Recall (CC Recipient Addressed by Name)",
+      "category": "vocative_promotion",
+      "description": "User is in CC list but directly addressed in email body ('Hi user, please approve'); promoted to PRIMARY_ACTIONEE.",
+      "is_safety_critical": false,
+      "input": {
+        "gmail_id": "bench_mo_011",
+        "sender": "director@company.com",
+        "to_recipients": [
+          "vp@company.com"
+        ],
+        "cc_recipients": [
+          "user@company.com"
+        ],
+        "subject": "Q4 Cloud Infrastructure Sign-Off",
+        "body": "Hi user, can you please review and approve the final Q4 infrastructure allocation by 5 PM?",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "responsibility_role": "PRIMARY_ACTIONEE",
+        "was_promoted_from_cc": true
+      }
+    },
+    {
+      "id": "SCENARIO-MO-012",
+      "name": "M2: Omnichannel Fact Supersession Accuracy",
+      "category": "omnichannel_supersession",
+      "description": "Prior email fact for PO-9900 ($25,000) is superseded by newer WhatsApp/Meet fact ($32,000) in hybrid_context_bundle.",
+      "is_safety_critical": false,
+      "input": {
+        "gmail_id": "bench_mo_012",
+        "sender": "procurement@vendor.com",
+        "to_recipients": [
+          "user@company.com"
+        ],
+        "subject": "Confirmation on PO-9900 revised total",
+        "body": "Please confirm we are proceeding with the updated PO-9900 amount discussed on our call.",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "has_superseded_po9900_fact": true
+      }
+    },
+    {
+      "id": "SCENARIO-MO-013",
+      "name": "M3: Missing-Artifact Pause Precision (Hard Safety Gate)",
+      "category": "missing_artifact_gate",
+      "description": "Email asks to review 'attached redlined MSA' with zero attachments; pipeline pauses in WAITING_FOR_USER_ARTIFACT without hallucinating a draft.",
+      "is_safety_critical": true,
+      "input": {
+        "gmail_id": "bench_mo_013",
+        "sender": "counsel@external-legal.com",
+        "to_recipients": [
+          "user@company.com"
+        ],
+        "subject": "Please review attached redlined MSA contract",
+        "body": "Hi user, please review the attached redlined MSA PDF and confirm if section 4 is acceptable.",
+        "attachments_present": [],
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "missing_artifact_detected": true,
+        "missing_artifact_type": "ATTACHMENT_MISSING",
+        "suggested_reply": null
+      }
+    },
+    {
+      "id": "SCENARIO-MO-014",
+      "name": "M4: Salutation & Identity Alias Resolution Accuracy",
+      "category": "salutation_resolution",
+      "description": "Inbound email from seeded contact resolves verified learned salutation ('Raj') into learned_salutations.",
+      "is_safety_critical": false,
+      "input": {
+        "gmail_id": "bench_mo_014",
+        "sender": "rajesh.sharma@partner.io",
+        "to_recipients": [
+          "user@company.com"
+        ],
+        "subject": "Action Required: API Gateway Deployment Window",
+        "body": "Could you confirm if Saturday 02:00 UTC works for the deployment cutover?",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "has_learned_salutation_raj": true
+      }
+    },
+    {
+      "id": "SCENARIO-MO-015",
+      "name": "M5: Stage 4 Fact-Verifier Zero Hallucinated Currency Claims",
+      "category": "fact_verifier_safety",
+      "description": "Synthesized draft reply passes deterministic Stage 4 Fact-Verifier with zero ungrounded currency or date claims.",
+      "is_safety_critical": true,
+      "input": {
+        "gmail_id": "bench_mo_015",
+        "sender": "ceo@customer-enterprise.com",
+        "to_recipients": [
+          "user@company.com"
+        ],
+        "subject": "Approval for Q3 expansion budget of $45,000",
+        "body": "Please confirm receipt of the $45,000 expansion proposal for Q3.",
+        "execution_mode": "shadow"
+      },
+      "expected": {
+        "self_critique_passed": true
+      }
     }
   ]
 }

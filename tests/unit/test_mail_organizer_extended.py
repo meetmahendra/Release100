@@ -151,8 +151,8 @@ async def test_pm_task_manager_lifecycle(test_db):
 
 
 @pytest.mark.asyncio
-async def test_mcp_tools():
-    tools = MailOrganizerMCPTools()
+async def test_mcp_tools(test_db):
+    tools = MailOrganizerMCPTools(db_service=test_db)
     search_res = await tools.mail_search_threads("urgent contract")
     assert isinstance(search_res, list)
 
@@ -172,7 +172,7 @@ async def test_mcp_tools():
     assert appr_tool["success"] is False
 
     manifests = get_mail_organizer_mcp_tools()
-    assert len(manifests) == 6
+    assert len(manifests) == 8
 
 
 def test_plugin_manifest():
@@ -183,4 +183,4 @@ def test_plugin_manifest():
     wf = plugin.get_workflow()
     assert wf is not None
     tools = plugin.get_mcp_tools()
-    assert len(tools) == 6
+    assert len(tools) == 8

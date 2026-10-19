@@ -324,16 +324,40 @@ async def reject_task_api(task_id: int) -> Dict[str, Any]:
     return {"success": True, "task_id": task_id, "status": "rejected"}
 
 
+# [CODE-MARKER: MO-UI-01] Role-Adaptive Taxonomy, Alias Quarantine & Commitment Ledger UI Endpoints
 @router.get("/rules", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:rules:view"))])
 async def view_rules(
     request: Request,
     ctx: Optional[SecurityContext] = Depends(get_web_security_context),
 ) -> HTMLResponse:
-    """Render VIP and Whitelist Rules Management."""
+    """Render VIP Rules, Role-Adaptive Taxonomy Pack Selector, Alias Quarantine, and Commitment Ledger."""
     tenant_id, org_name, active_tenant = resolve_effective_tenant_info(request, ctx)
+    eff_tenant = tenant_id or "default"
     rules = _db_service.get_all_rules(rule_type=None)
     if tenant_id and tenant_id not in ("platform", "*"):
         rules = [r for r in rules if getattr(r, "tenant_id", "public") == tenant_id]
+
+    role_templates = _db_service.seed_default_role_taxonomies(tenant_id=eff_tenant)
+    active_taxonomy = _db_service.get_active_user_taxonomy(tenant_id=eff_tenant)
+    quarantined_aliases = _db_service.get_quarantined_aliases(tenant_id=eff_tenant)
+    open_commitments = _db_service.list_commitments(tenant_id=eff_tenant, active_only=True)
+
+    ui_labels = {
+        "taxonomy_heading": "Role-Adaptive Triage Taxonomy (5 Canonical Role Packs)",
+        "taxonomy_sub": "Select a role pack or add custom triage categories (Coarse-to-Fine Jev routing).",
+        "btn_apply_role": "Apply Role Pack",
+        "th_category": "Category",
+        "th_domain": "Parent Domain",
+        "th_urgency": "Default Urgency",
+        "th_desc": "Description",
+        "quarantine_heading": "3-Layer Alias Resolution Quarantine Queue",
+        "btn_approve_alias": "Approve Merge",
+        "btn_reject_alias": "Reject",
+        "quarantine_empty": "No quarantined aliases awaiting confirmation.",
+        "commitments_heading": "Bidirectional Commitment Ledger (OWED_BY_ME & OWED_TO_ME)",
+        "btn_mark_fulfilled": "Mark Fulfilled",
+        "commitments_empty": "No active commitments in ledger.",
+    }
 
     ui_ctx = build_ui_context(
         locale=str(getattr(request.state, "locale", settings.UI_DEFAULT_LOCALE)),
@@ -357,9 +381,112 @@ async def view_rules(
             "tenant_name": org_name,
             "active_tenant": active_tenant,
             "rules": rules,
+            "role_templates": role_templates,
+            "active_taxonomy": active_taxonomy,
+            "quarantined_aliases": quarantined_aliases,
+            "open_commitments": open_commitments,
+            "ui_labels": ui_labels,
             "ui": ui_ctx,
         },
     )
+
+
+@router.post("/taxonomy/select", dependencies=[Depends(require_action("mail:rules:view"))])
+async def select_taxonomy_pack(
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> Response:
+    """Apply a role taxonomy pack or custom category for the active tenant."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request, ctx)
+    eff_tenant = tenant_id or "default"
+
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        body = await request.json()
+    else:
+        form = await request.form()
+        body = dict(form)
+
+    role_key = str(body.get("role_key") or "EXECUTIVE_FOUNDER").strip()
+    custom_cat_name = str(body.get("custom_category_name") or "").strip()
+    custom_cat: Optional[Dict[str, Any]] = None
+    if custom_cat_name:
+        custom_cat = {
+            "category_name": custom_cat_name,
+            "parent_domain": str(body.get("custom_parent_domain") or "WORK_DELIVERABLE"),
+            "description": str(body.get("custom_description") or "Custom user category"),
+            "default_urgency": int(body.get("custom_urgency") or 6),
+        }
+
+    applied = _db_service.select_user_role_taxonomy(
+        role_key=role_key,
+        tenant_id=eff_tenant,
+        custom_category=custom_cat,
+    )
+    if "application/json" in content_type:
+        return JSONResponse({"success": True, "role_key": role_key, "categories": applied})
+    return RedirectResponse(url="/admin/apps/mail-organizer/rules", status_code=303)
+
+
+@router.post("/aliases/{alias_id}/resolve", dependencies=[Depends(require_action("mail:rules:view"))])
+async def resolve_alias_quarantine(
+    alias_id: int,
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> Response:
+    """Confirm or reject a quarantined cross-channel alias."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request, ctx)
+    eff_tenant = tenant_id or "default"
+
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        body = await request.json()
+    else:
+        form = await request.form()
+        body = dict(form)
+
+    approve = str(body.get("approve", "true")).lower() in ("true", "1", "yes", "approve")
+    target_cid_raw = body.get("target_contact_id")
+    target_cid = int(str(target_cid_raw)) if target_cid_raw and str(target_cid_raw).isdigit() else None
+
+    ok = _db_service.resolve_quarantined_alias(
+        alias_id=alias_id,
+        approve=approve,
+        target_contact_id=target_cid,
+        tenant_id=eff_tenant,
+    )
+    if "application/json" in content_type:
+        return JSONResponse({"success": ok, "alias_id": alias_id, "approved": approve})
+    return RedirectResponse(url="/admin/apps/mail-organizer/rules", status_code=303)
+
+
+@router.post("/commitments/{commitment_uid}/status", dependencies=[Depends(require_action("mail:inbox:view"))])
+async def update_commitment_ledger_status(
+    commitment_uid: str,
+    request: Request,
+    ctx: Optional[SecurityContext] = Depends(get_web_security_context),
+) -> Response:
+    """Transition a CommitmentLedger item to FULFILLED, OVERDUE, or CANCELLED."""
+    tenant_id, _, _ = resolve_effective_tenant_info(request, ctx)
+    eff_tenant = tenant_id or "default"
+
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        body = await request.json()
+    else:
+        form = await request.form()
+        body = dict(form)
+
+    new_status = str(body.get("status") or "FULFILLED").upper()
+    ok = _db_service.update_commitment_status(
+        commitment_uid=commitment_uid,
+        status=new_status,
+        tenant_id=eff_tenant,
+    )
+    if "application/json" in content_type:
+        return JSONResponse({"success": ok, "commitment_uid": commitment_uid, "status": new_status})
+    return RedirectResponse(url="/admin/apps/mail-organizer/rules", status_code=303)
+
 
 
 @router.get("/drafts", response_class=HTMLResponse, dependencies=[Depends(require_action("mail:inbox:view"))])
@@ -464,7 +591,7 @@ async def view_accounts(
 
         tenant_users = [
             u for u in all_users
-            if "mail_organizer" in getattr(u, "allowed_cartridges", [])
+            if any(c in ("mail_organizer", "*", "all") for c in (getattr(u, "allowed_cartridges", None) or []))
         ]
 
         user_configs_list = _db_service.list_user_poller_configs(tenant_id=effective_tenant)

@@ -3,8 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
+# [CODE-MARKER: PKG-VER-01]
 name = "release100-core"
-version = "3.0.26"
+version = "3.0.30"
 description = "Release100 Enterprise Multi-Kiosk Platform Microkernel (GEES v3.0)"
 authors = [{ name = "Mahendra GURAV" }]
 readme = "README.md"

@@ -234,9 +234,15 @@ async def google_oauth_callback(
         with urllib.request.urlopen(req, timeout=15.0) as resp:
             token_response = json.loads(resp.read().decode("utf-8"))
 
-        # Add client credentials into token data for auto-refresh
+        # Add client credentials and computed ISO expiry into token data for auto-refresh
         token_response["client_id"] = client_id
         token_response["client_secret"] = client_secret
+        if "expires_in" in token_response and "expiry" not in token_response:
+            from datetime import datetime, timedelta, timezone
+            exp_dt = datetime.now(timezone.utc) + timedelta(
+                seconds=max(60, int(token_response["expires_in"]) - 60)
+            )
+            token_response["expiry"] = exp_dt.isoformat()
 
         # Fetch user's Google Email address
         google_email = ""

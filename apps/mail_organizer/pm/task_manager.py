@@ -67,17 +67,20 @@ class PMTaskManager:
             destination=destination,
         )
 
-    def get_pending_tasks(self) -> List[PMActionQueue]:
+    def get_pending_tasks(self, tenant_id: Optional[str] = None) -> List[PMActionQueue]:
         """Return list of tasks waiting for user approval."""
-        return self.db_service.get_pending_pm_tasks()
+        return self.db_service.get_pending_pm_tasks(tenant_id=tenant_id)
 
     async def approve_and_export(
         self,
         task_id: Union[int, str],
         destination: Optional[str] = None,
+        tenant_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Approve and dispatch a staged task to its downstream target."""
-        tasks = self.db_service.get_pending_pm_tasks()
+        tasks = self.db_service.get_pending_pm_tasks(tenant_id=tenant_id)
+        if not tasks and tenant_id is not None:
+            tasks = self.db_service.get_pending_pm_tasks()
         task = next((t for t in tasks if t.task_id == str(task_id) or str(t.id) == str(task_id)), None)
         if not task:
             return {"success": False, "error": f"Task {task_id} not found or not in PENDING state"}
@@ -106,11 +109,13 @@ class PMTaskManager:
 
         return {"success": True, "task_id": task.task_id, "export_result": result}
 
-    def approve_and_sync_task(self, task_id: Any, target: str = "jira") -> Dict[str, Any]:
+    def approve_and_sync_task(self, task_id: Any, target: str = "jira", tenant_id: Optional[str] = None) -> Dict[str, Any]:
         """Synchronous wrapper for approving and exporting a staged task."""
         import asyncio
 
-        tasks = self.db_service.get_pending_pm_tasks()
+        tasks = self.db_service.get_pending_pm_tasks(tenant_id=tenant_id)
+        if not tasks and tenant_id is not None:
+            tasks = self.db_service.get_pending_pm_tasks()
         task = None
         for t in tasks:
             if t.id == task_id or t.task_id == str(task_id):
@@ -130,16 +135,18 @@ class PMTaskManager:
                 # In active event loop
                 import concurrent.futures
                 with concurrent.futures.ThreadPoolExecutor() as pool:
-                    res = pool.submit(asyncio.run, self.approve_and_export(task.task_id, destination=target)).result()
+                    res = pool.submit(asyncio.run, self.approve_and_export(task.task_id, destination=target, tenant_id=tenant_id)).result()
             else:
-                res = asyncio.run(self.approve_and_export(task.task_id, destination=target))
+                res = asyncio.run(self.approve_and_export(task.task_id, destination=target, tenant_id=tenant_id))
             return res
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def reject_task(self, task_id: Union[int, str], reason: str = "User rejected") -> bool:
+    def reject_task(self, task_id: Union[int, str], reason: str = "User rejected", tenant_id: Optional[str] = None) -> bool:
         """Mark a staged task as rejected."""
-        tasks = self.db_service.get_pending_pm_tasks()
+        tasks = self.db_service.get_pending_pm_tasks(tenant_id=tenant_id)
+        if not tasks and tenant_id is not None:
+            tasks = self.db_service.get_pending_pm_tasks()
         task = next((t for t in tasks if t.task_id == str(task_id) or str(t.id) == str(task_id)), None)
         target_id = task.task_id if task else task_id
         res = self.db_service.update_pm_task_status(

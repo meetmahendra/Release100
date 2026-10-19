@@ -32,9 +32,11 @@ from apps.mail_organizer.database.db_service import MailDatabaseService
 from apps.mail_organizer.graph.nodes.action_planner_node import action_planner_node
 from apps.mail_organizer.graph.nodes.calendar_node import calendar_node
 from apps.mail_organizer.graph.nodes.classify_node import classify_node
+from apps.mail_organizer.graph.nodes.context_assembler_node import context_assembler_node
 from apps.mail_organizer.graph.nodes.draft_node import draft_node
 from apps.mail_organizer.graph.nodes.execution_node import execution_node
 from apps.mail_organizer.graph.nodes.guardrail_node import guardrail_node
+from apps.mail_organizer.graph.nodes.missing_ref_gate_node import missing_ref_gate_node
 from apps.mail_organizer.graph.nodes.ownership_node import ownership_node
 from apps.mail_organizer.graph.nodes.pm_extract_node import pm_extract_node
 from apps.mail_organizer.graph.nodes.pre_check_node import pre_check_node
@@ -55,10 +57,15 @@ def _route_after_guardrail(state: MailOrganizerState) -> str:
     if cat == "@Promotions" or role == "OBSERVER_ONLY":
         return "action_planner"
 
-    # Route meeting requests to calendar enrichment
+    # Route actionable/waiting emails through Stage A Context Assembler first
+    return "context_assembler"
+
+
+def _route_after_missing_ref(state: MailOrganizerState) -> str:
+    """Route after Stage B Missing-Reference & Attachment Detector Gate."""
+    cat = state.get("category", "")
     if state.get("is_scheduling_request", False) or cat == "@Meeting":
         return "calendar"
-
     return "draft"
 
 
@@ -83,6 +90,7 @@ class MailOrganizerWorkflow:
         self.graph = self._build_graph()
         self.compiled_app = self.graph.compile(checkpointer=self.checkpointer)
 
+    # [CODE-MARKER: MO-GRAPH-01] Full 11-Node Neuro-Symbolic & 4-Stage Tier 2 StateGraph
     def _build_graph(self) -> Any:
         """Assemble StateGraph with discrete nodes and conditional branches."""
         workflow: Any = StateGraph(MailOrganizerState)
@@ -92,12 +100,17 @@ class MailOrganizerWorkflow:
             db_vips = [r.pattern for r in self.db_service.get_rules(rule_type="vip")] if self.db_service else []
             custom_vips = list(s.get("vip_senders") or [])
             all_vips = list(set(db_vips + custom_vips))
-            return await pre_check_node(s, vip_senders=all_vips)
+            return await pre_check_node(s, vip_senders=all_vips, db_service=self.db_service)
 
-        workflow.add_node("pre_check", _pre_check_step)
-        workflow.add_node("ownership", ownership_node)
-        workflow.add_node("classify", classify_node)
-        workflow.add_node("guardrail", guardrail_node)
+        async def _classify_step(s: MailOrganizerState) -> MailOrganizerState:
+            return await classify_node(s, db_service=self.db_service)
+
+        async def _context_assembler_step(s: MailOrganizerState) -> MailOrganizerState:
+            return await context_assembler_node(s, db_service=self.db_service)
+
+        async def _missing_ref_step(s: MailOrganizerState) -> MailOrganizerState:
+            return await missing_ref_gate_node(s, db_service=self.db_service)
+
         async def _calendar_step(s: MailOrganizerState) -> MailOrganizerState:
             return await calendar_node(s, calendar_connector=self.calendar_connector)
 
@@ -109,6 +122,12 @@ class MailOrganizerWorkflow:
                 audit_engine=self.audit_engine,
             )
 
+        workflow.add_node("pre_check", _pre_check_step)
+        workflow.add_node("ownership", ownership_node)
+        workflow.add_node("classify", _classify_step)
+        workflow.add_node("guardrail", guardrail_node)
+        workflow.add_node("context_assembler", _context_assembler_step)
+        workflow.add_node("missing_ref_gate", _missing_ref_step)
         workflow.add_node("calendar", _calendar_step)
         workflow.add_node("draft", draft_node)
         workflow.add_node("pm_extract", pm_extract_node)
@@ -126,9 +145,18 @@ class MailOrganizerWorkflow:
             "guardrail",
             _route_after_guardrail,
             {
+                "context_assembler": "context_assembler",
+                "action_planner": "action_planner",
+            },
+        )
+
+        workflow.add_edge("context_assembler", "missing_ref_gate")
+        workflow.add_conditional_edges(
+            "missing_ref_gate",
+            _route_after_missing_ref,
+            {
                 "calendar": "calendar",
                 "draft": "draft",
-                "action_planner": "action_planner",
             },
         )
 
@@ -139,6 +167,7 @@ class MailOrganizerWorkflow:
         workflow.add_edge("execution", END)
 
         return workflow
+
 
     async def execute(
         self,

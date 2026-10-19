@@ -175,7 +175,7 @@ async def test_urgent_email_triggers_whatsapp_push_within_24h(mock_users: List[P
 
 @pytest.mark.asyncio
 async def test_urgent_push_suppressed_outside_24h_window(mock_users: List[PlatformUser], tmp_path: Path) -> None:
-    """Verify that proactive WhatsApp push is suppressed if user is outside Meta 24-hour window."""
+    """Verify that outside Meta 24-hour window, free-form text/interactive push is suppressed in favor of Utility Template re-opener."""
     worker = MailPollWorker(poll_interval_seconds=10, root_dir=tmp_path)
     user2 = mock_users[1]  # Bob: outside 24h window (30h ago)
 
@@ -188,10 +188,19 @@ async def test_urgent_push_suppressed_outside_24h_window(mock_users: List[Platfo
         "reasoning": "High priority alert",
     }
 
-    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+    mock_resp = MagicMock()
+    mock_resp.is_success = True
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {"messages": [{"id": "wamid.tpl123"}]}
+
+    with patch("core_platform.app.config.settings.WHATSAPP_ACCESS_TOKEN", "mock_wa_access_token_123"), \
+         patch("core_platform.app.config.settings.WHATSAPP_PHONE_NUMBER_ID", "1234567890"), \
+         patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
         await worker._dispatch_urgent_whatsapp_push(user2, state)
-        # Should be suppressed; no HTTP call made to WhatsApp Graph API
-        mock_post.assert_not_called()
+        assert mock_post.await_count == 1
+        _, kwargs = mock_post.call_args
+        assert kwargs["json"]["type"] == "template"
+        assert kwargs["json"]["template"]["name"] == "executive_urgent_mail_alert_v1"
 
 
 @pytest.mark.asyncio
@@ -212,18 +221,21 @@ async def test_urgent_push_dispatches_http_when_allowed(mock_users: List[Platfor
     mock_resp = MagicMock()
     mock_resp.is_success = True
     mock_resp.status_code = 200
+    mock_resp.json.return_value = {"messages": [{"id": "wamid.list123"}]}
 
     with patch("core_platform.app.config.settings.WHATSAPP_ACCESS_TOKEN", "mock_wa_access_token_123"), \
          patch("core_platform.app.config.settings.WHATSAPP_PHONE_NUMBER_ID", "1234567890"), \
          patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_resp) as mock_post:
-        
+
         await worker._dispatch_urgent_whatsapp_push(user1, state)
         assert mock_post.await_count == 1
         args, kwargs = mock_post.call_args
         assert "1234567890/messages" in args[0]
         assert kwargs["json"]["to"] == "15551234567"
-        assert "URGENT EMAIL ALERT" in kwargs["json"]["text"]["body"]
-        assert "Urgent Contract Approval" in kwargs["json"]["text"]["body"]
+        assert kwargs["json"]["type"] == "interactive"
+        body_text = kwargs["json"]["interactive"]["body"]["text"]
+        assert "URGENT EMAIL ALERT" in body_text
+        assert "Urgent Contract Approval" in body_text
 
 
 def test_cooperative_shutdown_sentinel(tmp_path: Path) -> None:

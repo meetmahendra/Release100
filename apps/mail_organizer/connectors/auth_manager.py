@@ -269,8 +269,9 @@ def get_user_access_token(user_or_id: Any, force_refresh: bool = False) -> Optio
     client_id = token_data.get("client_id")
     client_secret = token_data.get("client_secret")
 
-    # Check expiry
+    # Check expiry (treat missing expiry on refreshable tokens as needing refresh to populate expiry)
     is_expired = False
+    needs_expiry_backfill = False
     expiry_val = token_data.get("expiry")
     if expiry_val:
         try:
@@ -284,8 +285,10 @@ def get_user_access_token(user_or_id: Any, force_refresh: bool = False) -> Optio
                     is_expired = True
         except Exception:
             pass
+    elif refresh_token and client_id and client_secret:
+        needs_expiry_backfill = True
 
-    if refresh_token and client_id and client_secret and (not access_token or is_expired or force_refresh):
+    if refresh_token and client_id and client_secret and (not access_token or is_expired or needs_expiry_backfill or force_refresh):
         try:
             import urllib.parse
             import urllib.request
@@ -312,6 +315,12 @@ def get_user_access_token(user_or_id: Any, force_refresh: bool = False) -> Optio
                             from datetime import datetime, timedelta, timezone
                             new_exp = datetime.now(timezone.utc) + timedelta(seconds=int(new_tok["expires_in"]))
                             token_data["expiry"] = new_exp.isoformat()
+                        if not token_data.get("email"):
+                            g_mail = getattr(user, "google_email", None)
+                            u_mail = getattr(user, "email", None)
+                            fallback_email = g_mail if isinstance(g_mail, str) and g_mail else (u_mail if isinstance(u_mail, str) and u_mail else None)
+                            if fallback_email:
+                                token_data["email"] = fallback_email
                         enc = encrypt_user_tokens(token_data, user.user_secret_salt)
                         user_service.update_user_tokens(user.id, enc)
                         return str(fresh_access)

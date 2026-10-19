@@ -115,10 +115,12 @@ class GmailConnector:
         auth_manager: Optional[GoogleAuthManager] = None,
         mock_mode: Optional[bool] = None,
         access_token_override: Optional[str] = None,
+        user_id: Optional[int] = None,
     ) -> None:
         """Initialize Gmail connector with automatic live/mock determination."""
         self.auth_manager = auth_manager or GoogleAuthManager()
         self.access_token_override = access_token_override
+        self.user_id = user_id
         if mock_mode is not None:
             self.mock_mode = mock_mode
         else:
@@ -210,7 +212,14 @@ class GmailConnector:
                 return json.loads(content) if content else {}
         except urllib.error.HTTPError as err:
             if err.code == 401 and not token:
-                fresh_token = self.auth_manager.get_valid_access_token(force_refresh=True)
+                fresh_token: Optional[str] = None
+                if self.user_id is not None:
+                    from apps.mail_organizer.connectors.auth_manager import get_user_access_token
+                    fresh_token = get_user_access_token(self.user_id, force_refresh=True)
+                    if fresh_token:
+                        self.access_token_override = fresh_token
+                if not fresh_token:
+                    fresh_token = self.auth_manager.get_valid_access_token(force_refresh=True)
                 if fresh_token and fresh_token != auth_token:
                     headers["Authorization"] = f"Bearer {fresh_token}"
                     req2 = urllib.request.Request(url, data=encoded_data, headers=headers, method=method)
@@ -266,6 +275,7 @@ class GmailConnector:
                     "to_recipients": _parse_email_addrs(lower_headers.get("to", "")),
                     "cc_recipients": _parse_email_addrs(lower_headers.get("cc", "")),
                     "labels": raw.get("labelIds", ["INBOX", "UNREAD"]),
+                    "rfc_headers": lower_headers,
                 })
             except Exception as exc:
                 logger.warning("[GmailConnector] Failed fetching full message %s: %s", msg_id, exc)

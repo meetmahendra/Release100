@@ -52,6 +52,8 @@ class EmailRecord(Base):
     )
     labels_applied: Mapped[str] = mapped_column(String(255), default="")
     status: Mapped[str] = mapped_column(String(64), default="PROCESSED")
+    rfc_headers_json: Mapped[str] = mapped_column(Text, default="{}")
+    resolved_contact_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
 
 
 class EmailClassification(Base):
@@ -71,6 +73,9 @@ class EmailClassification(Base):
     reply_necessity_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     responsibility_role: Mapped[str] = mapped_column(String(64), default="PRIMARY_ACTIONEE")
     suggested_reply: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    speech_act: Mapped[str] = mapped_column(String(64), default="INFORM")
+    salutation_extracted: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    was_promoted_from_cc: Mapped[bool] = mapped_column(Boolean, default=False)
     classified_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -185,4 +190,192 @@ class UserPollerConfig(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+
+class ContactEntity(Base):
+    """Canonical unified contact identity across Email, WhatsApp, and Meeting transcripts (v1.3.0 Section 5.1)."""
+
+    __tablename__ = "mail_contact_entities"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    canonical_name: Mapped[str] = mapped_column(String(255), index=True)
+    organization: Mapped[str] = mapped_column(String(255), default="")
+    org_relationship: Mapped[str] = mapped_column(String(64), default="UNKNOWN", index=True)
+    vip_override: Mapped[bool] = mapped_column(Boolean, default=False)
+    learned_salutations_json: Mapped[str] = mapped_column(Text, default="[]")
+    provisional_salutations_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class ContactChannelAlias(Base):
+    """Channel-specific handle mapped to a ContactEntity with 3-Layer confidence & quarantine status."""
+
+    __tablename__ = "mail_contact_channel_aliases"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
+    contact_id: Mapped[int] = mapped_column(Integer, ForeignKey("mail_contact_entities.id"), index=True)
+    channel_type: Mapped[str] = mapped_column(String(32), default="EMAIL", index=True)
+    raw_identifier: Mapped[str] = mapped_column(String(255), index=True)
+    display_name_seen: Mapped[str] = mapped_column(String(255), default="")
+    resolution_confidence: Mapped[float] = mapped_column(Float, default=1.0)
+    resolution_status: Mapped[str] = mapped_column(String(32), default="VERIFIED", index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class RoleTaxonomyTemplate(Base):
+    """Pre-configured role taxonomy templates (SWE_IC, ENG_MANAGER, PROCUREMENT_FINANCE, EXECUTIVE_FOUNDER, SALES_ACCOUNT)."""
+
+    __tablename__ = "mail_role_taxonomy_templates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
+    role_key: Mapped[str] = mapped_column(String(64), index=True)
+    role_display_name: Mapped[str] = mapped_column(String(128))
+    categories_json: Mapped[str] = mapped_column(Text, default="[]")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class UserActiveCategory(Base):
+    """Per-user active triage categories with parent domain mapping for coarse-to-fine Jev routing."""
+
+    __tablename__ = "mail_user_active_categories"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    role_key: Mapped[str] = mapped_column(String(64), default="EXECUTIVE_FOUNDER")
+    category_name: Mapped[str] = mapped_column(String(64), index=True)
+    parent_domain: Mapped[str] = mapped_column(String(64), default="WORK_DELIVERABLE", index=True)
+    description: Mapped[str] = mapped_column(String(512), default="")
+    default_urgency: Mapped[int] = mapped_column(Integer, default=6)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+# [CODE-MARKER: MO-DB-01] Hybrid Neuro-Symbolic Data Layer ORM Models
+class CommitmentLedger(Base):
+    """Language-Action (Winograd/Flores) bidirectional commitment ledger (OWED_BY_ME vs OWED_TO_ME)."""
+
+    __tablename__ = "mail_commitment_ledger"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    commitment_uid: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    source_channel: Mapped[str] = mapped_column(String(32), default="EMAIL", index=True)
+    source_msg_id: Mapped[str] = mapped_column(String(128), index=True)
+    thread_id: Mapped[str] = mapped_column(String(128), default="", index=True)
+    direction: Mapped[str] = mapped_column(String(32), default="OWED_BY_ME", index=True)
+    speech_act: Mapped[str] = mapped_column(String(32), default="REQUEST")
+    counterparty_contact_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    counterparty_handle: Mapped[str] = mapped_column(String(255), default="")
+    deliverable_summary: Mapped[str] = mapped_column(String(512))
+    raw_deadline_text: Mapped[str] = mapped_column(String(128), default="Next Business Day")
+    resolved_due_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="OPEN", index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class EntityFactGraph(Base):
+    """Symbolic temporal fact triples (Subject, Predicate, Object) with supersession tracking."""
+
+    __tablename__ = "mail_entity_fact_graph"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    subject_entity: Mapped[str] = mapped_column(String(255), index=True)
+    predicate: Mapped[str] = mapped_column(String(128), index=True)
+    object_value: Mapped[str] = mapped_column(Text)
+    source_channel: Mapped[str] = mapped_column(String(32), default="EMAIL")
+    source_msg_id: Mapped[str] = mapped_column(String(128), index=True)
+    is_superseded: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    superseded_by_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class MissingArtifactRequest(Base):
+    """Tracks emails paused in WAITING_FOR_USER_ARTIFACT due to missing attachments or unresolved facts."""
+
+    __tablename__ = "mail_missing_artifact_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    gmail_id: Mapped[str] = mapped_column(String(128), index=True)
+    thread_id: Mapped[str] = mapped_column(String(128), default="", index=True)
+    artifact_type: Mapped[str] = mapped_column(String(64), default="MISSING_ATTACHMENT")
+    artifact_description: Mapped[str] = mapped_column(String(512))
+    status: Mapped[str] = mapped_column(String(64), default="WAITING_FOR_USER_ARTIFACT", index=True)
+    resolved_content_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class ConsentAuditLog(Base):
+    """Cryptographic CIPA / GDPR / India DPDP multi-party recording & transcript consent ledger."""
+
+    __tablename__ = "mail_consent_audit_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    session_id: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    channel_type: Mapped[str] = mapped_column(String(32), default="MEETING_TRANSCRIPT")
+    jurisdiction_policy: Mapped[str] = mapped_column(String(64), default="ALL_PARTY_CIPA")
+    participants_json: Mapped[str] = mapped_column(Text, default="[]")
+    all_parties_consented: Mapped[bool] = mapped_column(Boolean, default=False)
+    consent_proof_hash: Mapped[str] = mapped_column(String(128))
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class SemanticChunkRecord(Base):
+    """Cross-channel semantic chunk store for hybrid neuro-symbolic retrieval."""
+
+    __tablename__ = "mail_semantic_chunks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), default="public", server_default="public", index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    source_channel: Mapped[str] = mapped_column(String(32), default="EMAIL", index=True)
+    msg_id: Mapped[str] = mapped_column(String(128), index=True)
+    entity_tags: Mapped[str] = mapped_column(String(512), default="")
+    chunk_text: Mapped[str] = mapped_column(Text)
+    token_vector_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
 

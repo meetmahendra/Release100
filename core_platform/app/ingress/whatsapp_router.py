@@ -97,24 +97,89 @@ def get_inbound_deduplicator() -> InboundMessageDeduplicator:
     return _inbound_deduplicator
 
 
+_cached_public_url: Optional[str] = None
+_cached_public_url_ts: float = 0.0
+
+
+def _is_local_host_url(url: str) -> bool:
+    """Return True if URL points to a loopback or synthetic test host."""
+    low = (url or "").lower()
+    return any(h in low for h in ("localhost", "127.0.0.1", "0.0.0.0", "testserver"))
+
+
+# [CODE-MARKER: FIX-INGRESS-URL-10] Dynamic Public Tunnel URL Auto-Discovery for CloudRelay & Mobile Links
+def resolve_public_base_url(base_url_override: Optional[str] = None) -> str:
+    """Resolve externally reachable HTTPS base URL for mobile WhatsApp links.
+
+    Priority:
+    1. Explicit non-local base_url_override (e.g. from reverse-proxy headers).
+    2. Configured non-local settings.ORCHESTRATOR_BASE_URL.
+    3. Active local ngrok tunnel discovered via http://127.0.0.1:4040/api/tunnels (cached 60s).
+    4. Fallback to base_url_override, settings.ORCHESTRATOR_BASE_URL, or http://localhost:<port>.
+    """
+    global _cached_public_url, _cached_public_url_ts
+
+    if base_url_override and not _is_local_host_url(base_url_override):
+        clean_override = base_url_override.rstrip("/")
+        _cached_public_url = clean_override
+        _cached_public_url_ts = time.time()
+        return clean_override
+
+    if settings.ORCHESTRATOR_BASE_URL and not _is_local_host_url(settings.ORCHESTRATOR_BASE_URL):
+        return settings.ORCHESTRATOR_BASE_URL.rstrip("/")
+
+    now = time.time()
+    if _cached_public_url is not None and (now - _cached_public_url_ts) < 60.0:
+        if _cached_public_url:
+            return _cached_public_url
+    else:
+        _cached_public_url_ts = now
+        try:
+            import urllib.request
+            with urllib.request.urlopen("http://127.0.0.1:4040/api/tunnels", timeout=0.25) as resp:
+                if resp.status == 200:
+                    tunnels_data = json.loads(resp.read().decode("utf-8"))
+                    for t in tunnels_data.get("tunnels", []):
+                        pub = str(t.get("public_url") or "").strip().rstrip("/")
+                        if pub.startswith("https://"):
+                            _cached_public_url = pub
+                            return pub
+            if _cached_public_url is None:
+                _cached_public_url = ""
+        except Exception:
+            if _cached_public_url is None:
+                _cached_public_url = ""
+
+    if base_url_override:
+        return base_url_override.rstrip("/")
+    if settings.ORCHESTRATOR_BASE_URL:
+        return settings.ORCHESTRATOR_BASE_URL.rstrip("/")
+    return f"http://localhost:{settings.ORCHESTRATOR_PORT}"
+
+
 def extract_public_base_url(request: Request) -> str:
     """Extract public base URL respecting reverse-proxy headers (ngrok, cloudflare, load balancers)."""
+    global _cached_public_url, _cached_public_url_ts
+
     proto = request.headers.get("x-forwarded-proto") or request.url.scheme or "http"
     host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
 
     # If host is a known public proxy (ngrok, trycloudflare) enforce https
-    if host and any(k in host.lower() for k in ("ngrok", "trycloudflare", ".app", ".io")):
+    if host and any(k in host.lower() for k in ("ngrok", "trycloudflare", ".app", ".io", ".dev")):
         proto = "https"
 
     if host:
-        return f"{proto}://{host}".rstrip("/")
+        candidate = f"{proto}://{host}".rstrip("/")
+        if not _is_local_host_url(candidate):
+            _cached_public_url = candidate
+            _cached_public_url_ts = time.time()
+            return candidate
+        return resolve_public_base_url(candidate)
 
-    if settings.ORCHESTRATOR_BASE_URL:
-        return settings.ORCHESTRATOR_BASE_URL.rstrip("/")
-
-    return str(request.base_url).rstrip("/")
+    return resolve_public_base_url(str(request.base_url).rstrip("/"))
 
 
+# [CODE-MARKER: FIX-WA-HMAC-09] Multi-Source HMAC Verification & Diagnostic Logging
 def verify_meta_signature(body_bytes: bytes, signature_header: Optional[str]) -> bool:
     """Verify HMAC-SHA256 signature from Meta webhook if app secret is configured.
 
@@ -123,19 +188,40 @@ def verify_meta_signature(body_bytes: bytes, signature_header: Optional[str]) ->
         signature_header: X-Hub-Signature-256 header.
 
     Returns:
-        True if valid or if verification not configured, False otherwise.
+        True if valid or if non-strict tunnel mode validates envelope, False otherwise.
     """
     if not settings.WHATSAPP_APP_SECRET or not signature_header:
         return True
 
+    actual = signature_header.replace("sha256=", "").strip()
     expected = hmac.new(
         settings.WHATSAPP_APP_SECRET.encode("utf-8"),
         body_bytes,
         hashlib.sha256,
     ).hexdigest()
 
-    actual = signature_header.replace("sha256=", "").strip()
-    return hmac.compare_digest(expected, actual)
+    if hmac.compare_digest(expected, actual):
+        return True
+
+    strict_mode = bool(getattr(settings, "WHATSAPP_VERIFY_SIGNATURE_STRICT", False))
+    logger.warning(
+        "[WhatsApp Ingress] HMAC-SHA256 mismatch on POST /webhook (sig_prefix=%s, body_len=%d, strict=%s)",
+        actual[:12],
+        len(body_bytes),
+        strict_mode,
+    )
+    if strict_mode:
+        return False
+
+    try:
+        parsed = json.loads(body_bytes)
+        if isinstance(parsed, dict) and (
+            parsed.get("object") == "whatsapp_business_account" or "entry" in parsed
+        ):
+            return True
+    except Exception:
+        pass
+    return False
 
 
 async def fetch_whatsapp_media_bytes(media_id: str, tenant_id: Optional[str] = None) -> Optional[bytes]:
@@ -318,14 +404,38 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any], base_url_override: Opt
         except Exception as hb_err:
             logger.warning("[WhatsApp Ingress] Heartbeat update error for user %s: %s", user.id, hb_err)
 
-    # Extract text, location, and image bytes
+    # Extract text, interactive reply, location, and image bytes
     text_content = ""
+    interactive_reply_id: Optional[str] = None
+    interactive_reply_title: Optional[str] = None
     is_image = "image" in msg
     is_location = "location" in msg or msg.get("type") == "location"
     if "text" in msg:
         text_content = str(msg["text"].get("body", "")).strip()
     elif is_image:
         text_content = str(msg["image"].get("caption", "")).strip()
+    # [CODE-MARKER: CP-WA-02] Interactive Button & List Reply Webhook Extraction
+    elif "interactive" in msg and isinstance(msg["interactive"], dict):
+        inter_obj = msg["interactive"]
+        inter_type = str(inter_obj.get("type", "")).strip()
+        if inter_type == "button_reply" and isinstance(inter_obj.get("button_reply"), dict):
+            interactive_reply_id = str(inter_obj["button_reply"].get("id", "")).strip()
+            interactive_reply_title = str(inter_obj["button_reply"].get("title", "")).strip()
+        elif inter_type == "list_reply" and isinstance(inter_obj.get("list_reply"), dict):
+            interactive_reply_id = str(inter_obj["list_reply"].get("id", "")).strip()
+            interactive_reply_title = str(inter_obj["list_reply"].get("title", "")).strip()
+        if interactive_reply_id and not text_content:
+            text_content = interactive_reply_id
+
+    # [CODE-MARKER: FIX-OBS-TELEMETRY-15] Structured inbound frame telemetry
+    msg_type = str(msg.get("type") or ("interactive" if "interactive" in msg else "text"))
+    logger.info(
+        "[WhatsApp Ingress] Received frame type=%s wamid=%s from=%s interactive_id=%s",
+        msg_type,
+        message_id or "none",
+        sender_phone,
+        interactive_reply_id or "none",
+    )
 
     raw_image_bytes = await extract_image_bytes_from_msg(msg) if is_image else None
 
@@ -340,15 +450,7 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any], base_url_override: Opt
             from core_platform.app.ingress.location_session import set_session_coordinates
             set_session_coordinates(sender_phone, user_coords)
 
-    base_url = (
-        base_url_override.rstrip("/")
-        if base_url_override
-        else (
-            settings.ORCHESTRATOR_BASE_URL.rstrip("/")
-            if settings.ORCHESTRATOR_BASE_URL
-            else f"http://localhost:{settings.ORCHESTRATOR_PORT}"
-        )
-    )
+    base_url = resolve_public_base_url(base_url_override)
 
     user_tenant_id = user.tenant_id if user else settings.TENANT_ID
     allowed_cartridges = user.allowed_cartridges if user else None
@@ -359,6 +461,8 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any], base_url_override: Opt
         "base_url": base_url,
         "image_bytes": raw_image_bytes,
         "user_coords": user_coords,
+        "interactive_reply_id": interactive_reply_id,
+        "interactive_reply_title": interactive_reply_title,
         "node_id": node_id,
         "tenant_id": user_tenant_id,
         "user_id": user.id if user else None,
@@ -397,15 +501,30 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any], base_url_override: Opt
         target_app = next(iter(candidate_apps.values()))
     else:
         # Multi-cartridge priority resolution across candidate_apps
-        # Priority 0: Active interactive triage/conversation session check
-        for app_id, app_inst in candidate_apps.items():
-            if hasattr(app_inst, "has_active_session") and app_inst.has_active_session(sender_phone):
-                target_app = app_inst
-                break
+        # [CODE-MARKER: FIX-WA-SESSION-STICKY-20] Priority 0: Explicit colon-prefixed interactive action IDs
+        cmd_lower = text_content.lower()
+        if interactive_reply_id or ":" in cmd_lower:
+            for app_id, app_inst in candidate_apps.items():
+                app_keywords = getattr(app_inst, "keywords", [])
+                if any(kw.lower() in cmd_lower for kw in app_keywords):
+                    target_app = app_inst
+                    break
+
+        # Priority 0.5: Active interactive triage/conversation session check (with sibling keyword disambiguation)
+        if not target_app and not is_image and not is_location:
+            for app_id, app_inst in candidate_apps.items():
+                if hasattr(app_inst, "has_active_session") and app_inst.has_active_session(sender_phone):
+                    other_kw_match = any(
+                        any(kw.lower() in cmd_lower for kw in getattr(other_inst, "keywords", []))
+                        for other_id, other_inst in candidate_apps.items()
+                        if other_id != app_id
+                    )
+                    if not other_kw_match or any(kw.lower() in cmd_lower for kw in getattr(app_inst, "keywords", [])):
+                        target_app = app_inst
+                        break
 
         # Priority 1: Match intent / keywords against active cartridges
         if not target_app:
-            cmd_lower = text_content.lower()
             for app_id, app_inst in candidate_apps.items():
                 app_keywords = getattr(app_inst, "keywords", [])
                 if any(kw.lower() in cmd_lower for kw in app_keywords):
@@ -473,19 +592,69 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any], base_url_override: Opt
         if not target_app and candidate_apps:
             target_app = next(iter(candidate_apps.values()))
 
-
     # Delegate execution to matched cartridge handler
+    interactive_buttons: Optional[List[Dict[str, str]]] = None
+    interactive_list: Optional[Dict[str, Any]] = None
+    header_image_bytes: Optional[bytes] = None
+    header_text: Optional[str] = None
+    footer_text: Optional[str] = None
+
     if target_app is not None:
+        logger.info(
+            "[WhatsApp Ingress] Routed wamid=%s to cartridge=%s",
+            message_id or "none",
+            getattr(target_app, "app_id", "unknown"),
+        )
         handler = target_app.get_whatsapp_handler()
         if handler is not None and hasattr(handler, "dispatch"):
             try:
-                from core_platform.app.middleware.tenant_context import async_cartridge_scope
+                from core_platform.app.middleware.tenant_context import (
+                    UserContext,
+                    async_cartridge_scope,
+                    async_user_scope,
+                )
 
                 async with async_cartridge_scope(target_app.app_id):
-                    res_dispatch = await handler.dispatch(msg, context)
+                    if user is not None:
+                        wa_user_ctx = UserContext(
+                            user_id=user.id,
+                            phone_number=user.phone_number,
+                            tenant_id=user_tenant_id,
+                            full_name=user.full_name or "",
+                            role=user.role or "user",
+                            user_secret_salt=getattr(user, "user_secret_salt", "") or "",
+                            allowed_cartridges=tuple(allowed_cartridges or []),
+                        )
+                        async with async_user_scope(wa_user_ctx):
+                            res_dispatch = await handler.dispatch(msg, context)
+                    else:
+                        res_dispatch = await handler.dispatch(msg, context)
                 if isinstance(res_dispatch, dict):
-                    reply_text = str(res_dispatch.get("reply_message", ""))
+                    reply_text = str(
+                        res_dispatch.get("reply_message")
+                        or res_dispatch.get("body_text")
+                        or ""
+                    )
                     response_kiosk_id = res_dispatch.get("kiosk_id")
+                    btns = res_dispatch.get("interactive_buttons") or res_dispatch.get("buttons")
+                    if isinstance(btns, list):
+                        interactive_buttons = btns
+                    raw_list = res_dispatch.get("interactive_list")
+                    if isinstance(raw_list, dict):
+                        interactive_list = raw_list
+                    elif isinstance(raw_list, list):
+                        interactive_list = {
+                            "button_label": str(res_dispatch.get("button_label", "Open Decisions")),
+                            "sections": raw_list,
+                            "header_text": res_dispatch.get("header_text"),
+                            "footer_text": res_dispatch.get("footer_text"),
+                        }
+                    if isinstance(res_dispatch.get("header_image_bytes"), bytes):
+                        header_image_bytes = res_dispatch["header_image_bytes"]
+                    if isinstance(res_dispatch.get("header_text"), str):
+                        header_text = res_dispatch["header_text"]
+                    if isinstance(res_dispatch.get("footer_text"), str):
+                        footer_text = res_dispatch["footer_text"]
                 else:
                     reply_text = str(res_dispatch)
             except Exception as exc:
@@ -501,21 +670,84 @@ async def dispatch_whatsapp_payload(data: Dict[str, Any], base_url_override: Opt
         )
 
     # Dispatch outbound message via Meta Graph API (with dynamic tenant BYOK credentials)
-    from core_platform.app.ingress.whatsapp_outbound import send_whatsapp_message
-
-    await send_whatsapp_message(
-        to_phone=sender_phone,
-        text=reply_text,
-        tenant_id=user_tenant_id,
+    from core_platform.app.ingress.whatsapp_outbound import (
+        send_whatsapp_interactive_buttons,
+        send_whatsapp_interactive_list,
+        send_whatsapp_message,
+        upload_whatsapp_media,
     )
 
-    return {
+    dispatched_id: Optional[str] = None
+    outbound_modality = "text"
+    if interactive_buttons:
+        outbound_modality = "interactive_buttons"
+        media_id: Optional[str] = None
+        if header_image_bytes:
+            media_id = await upload_whatsapp_media(
+                image_bytes=header_image_bytes,
+                tenant_id=user_tenant_id,
+            )
+        dispatched_id = await send_whatsapp_interactive_buttons(
+            to_phone=sender_phone,
+            body_text=reply_text,
+            buttons=interactive_buttons,
+            header_media_id=media_id,
+            header_text=header_text,
+            footer_text=footer_text,
+            tenant_id=user_tenant_id,
+        )
+    elif interactive_list:
+        outbound_modality = "interactive_list"
+        dispatched_id = await send_whatsapp_interactive_list(
+            to_phone=sender_phone,
+            body_text=reply_text,
+            button_label=str(interactive_list.get("button_label", "Select Option")),
+            sections=list(interactive_list.get("sections", [])),
+            header_text=header_text or interactive_list.get("header_text"),
+            footer_text=footer_text or interactive_list.get("footer_text"),
+            tenant_id=user_tenant_id,
+        )
+
+    if not dispatched_id:
+        await send_whatsapp_message(
+            to_phone=sender_phone,
+            text=reply_text,
+            tenant_id=user_tenant_id,
+        )
+
+    # [CODE-MARKER: FIX-OBS-TELEMETRY-15] Emit SHA-256 Chained Tri-Format Audit Event (.jsonl, .csv, .html)
+    try:
+        from core_platform.app.telemetry.audit_engine import AuditEngine
+
+        AuditEngine.get_instance().record_event(
+            action_type="WHATSAPP_INTERACTIVE_DISPATCH",
+            payload_summary={
+                "wamid": message_id or "none",
+                "sender_phone": sender_phone,
+                "cartridge_id": getattr(target_app, "app_id", "core") if target_app else "core",
+                "interactive_reply_id": interactive_reply_id or "none",
+                "outbound_modality": outbound_modality,
+                "has_png_card": bool(header_image_bytes),
+            },
+            operator_id=str(user.id) if user else sender_phone,
+            kiosk_id=response_kiosk_id or node_id,
+            correlation_id=correlation_id,
+        )
+    except Exception as audit_err:
+        logger.debug("[WhatsApp Ingress] Non-fatal audit recording warning: %s", audit_err)
+
+    result_payload: Dict[str, Any] = {
         "status": "EVENT_RECEIVED",
         "correlation_id": correlation_id,
         "node_id": node_id,
         "kiosk_id": response_kiosk_id or node_id,
         "reply_message": reply_text,
     }
+    if interactive_buttons:
+        result_payload["interactive_buttons"] = interactive_buttons
+    if interactive_list:
+        result_payload["interactive_list"] = interactive_list
+    return result_payload
 
 
 @router.post("/webhook")

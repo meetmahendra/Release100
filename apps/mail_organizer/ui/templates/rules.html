@@ -40,4 +40,91 @@
         </tbody>
     </table>
 </div>
+
+{% if ui_labels %}
+<div class="card" style="margin-top: 1.5rem;">
+    <h2 style="font-size: 1.15rem; font-weight: 700;">{{ ui_labels.taxonomy_heading }}</h2>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">{{ ui_labels.taxonomy_sub }}</p>
+    <form action="/admin/apps/mail-organizer/taxonomy/select" method="post" style="display: flex; gap: 0.75rem; align-items: center; margin: 1rem 0;">
+        <select name="role_key" class="form-control" style="max-width: 320px;">
+            {% for tpl in role_templates %}
+            <option value="{{ tpl.role_key }}">{{ tpl.role_display_name }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="custom_category_name" placeholder="@CustomCategory" class="form-control" style="max-width: 200px;" />
+        <button type="submit" class="btn btn-primary">{{ ui_labels.btn_apply_role }}</button>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>{{ ui_labels.th_category }}</th>
+                <th>{{ ui_labels.th_domain }}</th>
+                <th>{{ ui_labels.th_urgency }}</th>
+                <th>{{ ui_labels.th_desc }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cat in active_taxonomy %}
+            <tr>
+                <td><span class="badge badge-action">{{ cat.category_name }}</span></td>
+                <td><code>{{ cat.parent_domain }}</code></td>
+                <td>{{ cat.default_urgency }}</td>
+                <td>{{ cat.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2 style="font-size: 1.15rem; font-weight: 700;">{{ ui_labels.quarantine_heading }}</h2>
+    <table>
+        <tbody>
+            {% for qa in quarantined_aliases %}
+            <tr>
+                <td><code>{{ qa.channel_type }}</code></td>
+                <td>{{ qa.raw_identifier }}</td>
+                <td>{{ qa.display_name_seen }}</td>
+                <td>
+                    <form action="/admin/apps/mail-organizer/aliases/{{ qa.id }}/resolve" method="post" style="display: inline;">
+                        <input type="hidden" name="approve" value="true" />
+                        <button type="submit" class="btn btn-primary">{{ ui_labels.btn_approve_alias }}</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 1rem;">{{ ui_labels.quarantine_empty }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2 style="font-size: 1.15rem; font-weight: 700;">{{ ui_labels.commitments_heading }}</h2>
+    <table>
+        <tbody>
+            {% for c in open_commitments %}
+            <tr>
+                <td><span class="badge badge-urgent">{{ c.direction }}</span></td>
+                <td>{{ c.deliverable_summary }}</td>
+                <td>{{ c.raw_deadline_text }}</td>
+                <td>
+                    <form action="/admin/apps/mail-organizer/commitments/{{ c.commitment_uid }}/status" method="post" style="display: inline;">
+                        <input type="hidden" name="status" value="FULFILLED" />
+                        <button type="submit" class="btn btn-primary">{{ ui_labels.btn_mark_fulfilled }}</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 1rem;">{{ ui_labels.commitments_empty }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 {% endblock %}
+

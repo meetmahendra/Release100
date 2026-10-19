@@ -83,3 +83,34 @@ class MailOrganizerState(TypedDict, total=False):
     user_id: Optional[int]
     user_name: Optional[str]
     user_email: Optional[str]
+
+    # [CODE-MARKER: MO-STATE-01] v1.3.0 Neuro-Symbolic & Multi-Head Triage State
+    priority_lane: str                 # "HIGH" (Interactive) | "LOW" (Background Poller)
+    rfc_headers: Dict[str, str]
+    has_list_unsubscribe: bool
+    attachments_present: List[str]
+
+    # Contact & Identity Resolution (REV-03)
+    resolved_contact_id: Optional[int]
+    contact_resolution_layer: str
+    contact_resolution_status: str
+    learned_salutations: List[str]
+    salutation_extracted: str
+
+    # Dynamic Vocative Ownership & Speech-Act (REV-02 & REV-05)
+    header_recipient_role: str         # "PRIMARY_ACTIONEE" | "CO_ACTIONEE" | "OBSERVER_CC" | "MAILING_LIST"
+    was_promoted_from_cc: bool
+    speech_act: str                    # "REQUEST" | "COMMIT" | "PROPOSE" | "INFORM" | "DECLINE"
+    extracted_commitments: List[Dict[str, Any]]
+    extracted_entity_facts: List[Dict[str, Any]]
+
+    # Tier 2 Hybrid Context, Missing Reference Gate & Grounded Synthesis (REV-01, REV-12, REV-13)
+    hybrid_context_bundle: Dict[str, Any]
+    missing_artifact_detected: bool
+    missing_artifact_type: Optional[str]
+    missing_artifact_description: Optional[str]
+    self_critique_passed: bool
+    self_critique_notes: Optional[str]
+    citation_ids: List[str]
+    infographic_card_spec: Optional[Dict[str, Any]]
+

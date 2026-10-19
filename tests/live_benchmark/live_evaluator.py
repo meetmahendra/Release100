@@ -66,6 +66,7 @@ class LiveBenchmarkEvaluator:
             self.tm_db_service = None
             self.tm_workflow = None
         elif self.domain == "mail_organizer":
+            # [CODE-MARKER: QA-E2E-01]
             db_file = self.temp_dir / "live_mail.db"
             self.mail_db_service = MailDatabaseService(db_url=f"sqlite:///{db_file}")
             # Seed VIP rules
@@ -73,6 +74,36 @@ class LiveBenchmarkEvaluator:
                 rule_type="vip",
                 pattern="ceo@customer-enterprise.com",
                 action="tag_vip",
+            )
+            # Seed M2 Omnichannel Fact Supersession (PO-9900: $25,000 superseded by $32,000)
+            self.mail_db_service.upsert_entity_fact(
+                subject_entity="PO-9900",
+                predicate="AMOUNT",
+                object_value="$25,000",
+                source_msg_id="msg_old_po9900",
+                source_channel="EMAIL",
+            )
+            self.mail_db_service.upsert_entity_fact(
+                subject_entity="PO-9900",
+                predicate="AMOUNT",
+                object_value="$32,000",
+                source_msg_id="meet_new_po9900",
+                source_channel="MEETING_TRANSCRIPT",
+            )
+            # Seed M4 Contact Salutation ('Raj' for rajesh.sharma@partner.io)
+            contact_res = self.mail_db_service.resolve_contact_alias_3layer(
+                tenant_id="public",
+                user_id=None,
+                channel_type="EMAIL",
+                raw_identifier="rajesh.sharma@partner.io",
+                display_name="Rajesh Sharma",
+                organization="Partner",
+            )
+            self.mail_db_service.record_observed_salutation(
+                tenant_id="public",
+                contact_id=int(contact_res["contact_id"]),
+                salutation="Hi Raj,",
+                is_outbound_from_user=True,
             )
             self.mail_workflow = MailOrganizerWorkflow(
                 db_service=self.mail_db_service,
@@ -176,6 +207,7 @@ class LiveBenchmarkEvaluator:
                 "subject": inp.get("subject", ""),
                 "body": inp.get("body", ""),
                 "snippet": inp.get("body", "")[:120],
+                "attachments_present": inp.get("attachments_present", []),
                 "auto_reply_headers": {},
                 "is_vip": False,
                 "is_no_reply": False,
@@ -248,6 +280,22 @@ class LiveBenchmarkEvaluator:
                 if not final_state.get("audit_sequence_number"):
                     passed = False
                     failure_reasons.append("Expected audit_sequence_number but found none")
+            elif key == "has_superseded_po9900_fact":
+                ctx_pack = final_state.get("hybrid_context_bundle") or {}
+                facts = ctx_pack.get("entity_facts") or []
+                matched_32k = any(
+                    f.get("subject_entity") == "PO-9900" and f.get("object_value") == "$32,000"
+                    for f in facts
+                )
+                if matched_32k != exp_val:
+                    passed = False
+                    failure_reasons.append(f"Expected PO-9900 superseded fact ($32,000), got facts={facts}")
+            elif key == "has_learned_salutation_raj":
+                sals = final_state.get("learned_salutations") or []
+                has_raj = "Raj" in sals
+                if has_raj != exp_val:
+                    passed = False
+                    failure_reasons.append(f"Expected learned salutation 'Raj', got {sals}")
             else:
                 actual_val = final_state.get(key)
                 if actual_val != exp_val:

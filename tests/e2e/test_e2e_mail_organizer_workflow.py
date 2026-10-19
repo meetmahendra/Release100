@@ -219,3 +219,80 @@ def test_e2e_mail_organizer_full_lifecycle(mail_e2e_env: tuple[TestClient, MailD
     assert acme_breakdown["completion_tokens"] >= 120
     assert acme_breakdown["credential_mode"] == "CUSTOMER_BYOK"
     assert acme_breakdown["platform_liability_usd"] == 0.0  # BYOK isolation invariant
+
+
+# [CODE-MARKER: QA-E2E-01] v1.3.0 E2E Omnichannel Context, Missing-Reference Gate & Two-Stage WhatsApp UX
+@pytest.mark.asyncio
+async def test_e2e_mail_organizer_v13_omnichannel_and_whatsapp_ux(
+    mail_e2e_env: tuple[TestClient, MailDatabaseService, LLMCostTracker],
+) -> None:
+    """Exercise the v1.3.0 Neuro-Symbolic Omnichannel & Two-Stage WhatsApp Executive Brief E2E journey."""
+    _, mail_db, _ = mail_e2e_env
+    from apps.mail_organizer.graph.state_graph import MailOrganizerWorkflow
+    from apps.mail_organizer.pm.task_manager import PMTaskManager
+    from apps.mail_organizer.services.omnichannel_ingestor import OmnichannelContextIngestor
+    from apps.mail_organizer.services.whatsapp_handler import MailOrganizerWhatsAppHandler
+
+    ingestor = OmnichannelContextIngestor(db_service=mail_db)
+
+    # 1. Seed initial email fact ($20,000 for PO-7788) and supersede via consented Google Meet transcript ($28,500)
+    mail_db.upsert_entity_fact(
+        subject_entity="PO-7788",
+        predicate="AMOUNT",
+        object_value="$20,000",
+        source_msg_id="msg_old_7788",
+        source_channel="EMAIL",
+        tenant_id="acme_v13_tenant",
+    )
+    ingest_res = ingestor.ingest_omnichannel_event(
+        session_id="meet_e2e_7788",
+        channel_type="MEETING_TRANSCRIPT",
+        subject="PO-7788 Final Budget Alignment",
+        transcript_or_text="We agreed on the call that PO-7788 budget is $28,500 and I will send the signed PO tomorrow.",
+        participants=["vp@partner-corp.com", "user@company.com"],
+        jurisdiction_policy="ALL_PARTY",
+        all_parties_consented=True,
+        tenant_id="acme_v13_tenant",
+        entity_tags="PO-7788",
+    )
+    assert ingest_res["success"] is True
+
+    # 2. Execute full 11-node StateGraph on an email where user is in CC but vocatively addressed
+    workflow = MailOrganizerWorkflow(db_service=mail_db)
+    final_state = await workflow.execute(
+        {
+            "gmail_id": "msg_e2e_v13_01",
+            "thread_id": "th_e2e_v13_01",
+            "sender": "vp@partner-corp.com",
+            "to_recipients": ["director@acme.intentrouter.io"],
+            "cc_recipients": ["user@company.com"],
+            "subject": "PO-7788 Confirmation Required",
+            "body": "Hi user, please confirm the revised PO-7788 amount we agreed on.",
+            "snippet": "Hi user, please confirm the revised PO-7788 amount",
+            "execution_mode": "shadow",
+            "tenant_id": "acme_v13_tenant",
+        }
+    )
+    assert final_state["was_promoted_from_cc"] is True
+    assert final_state["responsibility_role"] == "PRIMARY_ACTIONEE"
+    assert final_state["self_critique_passed"] is True
+    facts = (final_state.get("hybrid_context_bundle") or {}).get("entity_facts") or []
+    assert any(f.get("subject_entity") == "PO-7788" and f.get("object_value") == "$28,500" for f in facts)
+
+    # 3. Verify Stage 2 WhatsApp Infographic Card renders valid 800x418 PNG and interactive handler dispatches
+    spec = final_state.get("infographic_card_spec")
+    assert spec is not None
+
+    pm_mgr = PMTaskManager(db_service=mail_db)
+    wa_handler = MailOrganizerWhatsAppHandler(db_service=mail_db, pm_manager=pm_mgr)
+    card_resp = await wa_handler.dispatch(
+        msg={"type": "interactive", "interactive": {"list_reply": {"id": "inspect_mail:msg_e2e_v13_01", "title": "PO-7788"}}},
+        context={"tenant_id": "acme_v13_tenant", "user_id": 1, "sender_phone": "+919800000001"},
+    )
+    assert isinstance(card_resp, dict)
+    assert card_resp["response_type"] == "interactive_buttons"
+    assert card_resp["header_image_bytes"].startswith(b"\x89PNG\r\n\x1a\n")
+
+
+
+

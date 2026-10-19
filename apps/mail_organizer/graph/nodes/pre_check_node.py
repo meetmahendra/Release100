@@ -27,66 +27,84 @@ from typing import Any, Dict, List, Optional
 from apps.mail_organizer.graph.state import MailOrganizerState
 
 
+# [CODE-MARKER: MO-TIER0-01] Tier 0 Deterministic RFC Header & ContactEntity Gate
 async def pre_check_node(
     state: MailOrganizerState,
     vip_senders: Optional[List[str]] = None,
     critical_keywords: Optional[List[str]] = None,
+    db_service: Optional[Any] = None,
 ) -> MailOrganizerState:
-    """Evaluate deterministic pre-execution rules in pure Python (< 2ms)."""
+    """Evaluate deterministic RFC 5322/3834 headers and ContactEntity VIP status (< 2ms)."""
     t0 = time.perf_counter()
 
-    state_vips = state.get("vip_senders") or []
-    vips = [v.lower().strip() for v in (vip_senders or state_vips)]
-    keywords = [k.lower().strip() for k in (critical_keywords or ["urgent", "escalation", "critical", "sev1", "outage", "hazard"])]
+    sender = (state.get("sender") or "").strip()
+    sender_lower = sender.lower()
+    subject_lower = (state.get("subject") or "").lower()
+    raw_headers = {
+        str(k).lower(): str(v).lower()
+        for k, v in {**(state.get("auto_reply_headers") or {}), **(state.get("rfc_headers") or {})}.items()
+    }
 
-    sender = (state.get("sender") or "").lower()
-    subject = (state.get("subject") or "").lower()
-    headers = state.get("auto_reply_headers") or {}
+    body_lower = (state.get("body") or "").lower()
+    has_list_unsub = "list-unsubscribe" in raw_headers or "list-id" in raw_headers
+    auto_submitted = raw_headers.get("auto-submitted", "no")
+    precedence = raw_headers.get("precedence", "")
+    is_auto_reply = (
+        (auto_submitted != "no" and bool(auto_submitted))
+        or precedence in ("bulk", "junk", "auto_reply")
+        or "x-auto-response-suppress" in raw_headers
+        or raw_headers.get("return-path") == "<>"
+        or subject_lower.startswith(("automatic reply:", "out of office:", "autoreply:", "ooo:", "auto-reply:"))
+        or any(
+            phrase in body_lower
+            for phrase in (
+                "i am currently out of the office",
+                "i am on annual leave",
+                "i am out of office until",
+                "i am away from the office",
+                "i will have limited access to email",
+            )
+        )
+    )
+    is_no_reply = (
+        has_list_unsub
+        or is_auto_reply
+        or any(tok in sender_lower for tok in ("noreply", "no-reply", "mailer-daemon", "notifications@", "donotreply@"))
+    )
 
-    # 1. No-reply detection
-    is_no_reply = False
-    no_reply_indicators = ["noreply", "no-reply", "mailer-daemon", "notifications@", "donotreply@"]
-    if any(ind in sender for ind in no_reply_indicators):
-        is_no_reply = True
-    elif "auto-submitted" in headers or "list-unsubscribe" in headers:
-        is_no_reply = True
+    state_vips = [v.lower().strip() for v in (vip_senders or state.get("vip_senders") or [])]
+    is_vip = any(v in sender_lower for v in state_vips if v)
 
-    # 1.5 Auto-Reply / Out of Office (OOO) detection
-    is_auto_reply = False
-    auto_reply_subjects = ["automatic reply:", "out of office:", "autoreply:", "ooo:", "auto-reply:"]
-    if any(subject.startswith(prefix) for prefix in auto_reply_subjects):
-        is_auto_reply = True
-    elif "auto-submitted" in headers and headers.get("auto-submitted") == "auto-replied":
-        is_auto_reply = True
-    elif any(phrase in (state.get("body") or "").lower() for phrase in [
-        "i am currently out of the office",
-        "i am on annual leave",
-        "i am out of office until",
-        "i am away from the office",
-        "i will have limited access to email",
-    ]):
-        is_auto_reply = True
+    if db_service is not None and sender:
+        resolved = db_service.resolve_contact_alias_3layer(
+            tenant_id=str(state.get("tenant_id") or "public"),
+            user_id=state.get("user_id"),
+            channel_type="EMAIL",
+            raw_identifier=sender,
+            is_vip=is_vip,
+        )
+        state["resolved_contact_id"] = resolved.get("contact_id")
+        state["contact_resolution_layer"] = str(resolved.get("resolution_layer", "LAYER_1_EXACT"))
+        state["contact_resolution_status"] = str(resolved.get("resolution_status", "VERIFIED"))
+        state["learned_salutations"] = list(resolved.get("learned_salutations") or [])
+        is_vip = is_vip or bool(resolved.get("is_vip"))
 
-    # 2. VIP match
-    is_vip = any(vip in sender for vip in vips)
-
-    # 3. Critical subject keyword scan
-    has_critical_subject = any(kw in subject for kw in keywords)
-
+    kw_list = [k.lower().strip() for k in (critical_keywords or ["urgent", "escalation", "critical", "sev1", "outage", "hazard"])]
+    state["has_list_unsubscribe"] = has_list_unsub
     state["is_no_reply"] = is_no_reply
     state["is_auto_reply"] = is_auto_reply
     state["is_vip"] = is_vip
-    state["has_critical_subject"] = has_critical_subject
+    state["has_critical_subject"] = any(kw in subject_lower for kw in kw_list)
 
-    duration_ms = round((time.perf_counter() - t0) * 1000, 2)
     trace = list(state.get("pipeline_trace") or [])
     trace.append({
         "node": "pre_check",
-        "duration_ms": duration_ms,
+        "duration_ms": round((time.perf_counter() - t0) * 1000, 2),
         "is_vip": is_vip,
         "is_no_reply": is_no_reply,
-        "has_critical_subject": has_critical_subject,
+        "has_list_unsubscribe": has_list_unsub,
+        "has_critical_subject": state["has_critical_subject"],
     })
     state["pipeline_trace"] = trace
-
     return state
+

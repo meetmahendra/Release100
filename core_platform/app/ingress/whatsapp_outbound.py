@@ -20,7 +20,7 @@ v21.0 Graph API message delivery with robust logging and causal error propagatio
 """
 
 import logging
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from core_platform.app.config import settings
 
 logger = logging.getLogger("core_platform.ingress.whatsapp_outbound")
@@ -140,4 +140,325 @@ async def send_whatsapp_message(
                 return None
     except Exception as exc:
         logger.error("[WhatsApp Outbound] Dispatch exception for +%s: %s", clean_to, exc)
+        return None
+
+
+# [CODE-MARKER: CP-WA-01] Meta Cloud API v21.0 Media Upload, Interactive Buttons, List Drawer & Templates
+async def upload_whatsapp_media(
+    image_bytes: bytes,
+    mime_type: str = "image/png",
+    filename: str = "executive_card.png",
+    tenant_id: Optional[str] = None,
+    access_token: Optional[str] = None,
+    phone_number_id: Optional[str] = None,
+) -> Optional[str]:
+    """Upload binary image bytes to Meta Graph API v21.0 and return the media_id."""
+    if not image_bytes:
+        return None
+
+    waba_token, waba_phone_id = resolve_whatsapp_credentials(
+        tenant_id=tenant_id,
+        access_token=access_token,
+        phone_number_id=phone_number_id,
+    )
+    if not (waba_token and waba_phone_id) or not _HAS_HTTPX or httpx is None:
+        return None
+
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            url = f"https://graph.facebook.com/v21.0/{waba_phone_id}/media"
+            headers = {"Authorization": f"Bearer {waba_token}"}
+            files = {"file": (filename, image_bytes, mime_type)}
+            data = {"messaging_product": "whatsapp", "type": mime_type}
+            logger.info(
+                "[WhatsApp Outbound] Uploading media (%s, %d bytes) via phone_id %s",
+                filename,
+                len(image_bytes),
+                waba_phone_id,
+            )
+            resp = await client.post(url, headers=headers, data=data, files=files)
+            if resp.is_success:
+                media_id = resp.json().get("id")
+                logger.info("[WhatsApp Outbound] Uploaded media_id=%s (%d bytes)", media_id, len(image_bytes))
+                return str(media_id) if media_id else None
+            logger.warning("[WhatsApp Outbound] Media upload returned %d: %s", resp.status_code, resp.text)
+            return None
+    except Exception as exc:
+        logger.warning("[WhatsApp Outbound] Media upload exception: %s", exc)
+        return None
+
+
+async def send_whatsapp_interactive_buttons(
+    to_phone: str,
+    body_text: str,
+    buttons: List[Dict[str, str]],
+    *,
+    header_media_id: Optional[str] = None,
+    header_text: Optional[str] = None,
+    footer_text: Optional[str] = None,
+    tenant_id: Optional[str] = None,
+    access_token: Optional[str] = None,
+    phone_number_id: Optional[str] = None,
+) -> Optional[str]:
+    """Send an interactive button message (up to 3 reply buttons + optional image header) via Meta API v21.0."""
+    from core_platform.app.common.phone_validator import normalize_phone_number
+
+    try:
+        norm_phone = normalize_phone_number(to_phone)
+        clean_to = norm_phone.lstrip("+")
+    except Exception as exc:
+        logger.error("[WhatsApp Outbound] Invalid destination phone '%s': %s", to_phone, exc)
+        return None
+
+    waba_token, waba_phone_id = resolve_whatsapp_credentials(
+        tenant_id=tenant_id,
+        access_token=access_token,
+        phone_number_id=phone_number_id,
+    )
+    if not (waba_token and waba_phone_id) or not _HAS_HTTPX or httpx is None:
+        return None
+
+    action_buttons: List[Dict[str, Any]] = []
+    for btn in buttons[:3]:
+        btn_id = str(btn.get("id", "act")).strip()[:256]
+        btn_title = str(btn.get("title", "Select")).strip()[:20]
+        action_buttons.append({
+            "type": "reply",
+            "reply": {"id": btn_id, "title": btn_title},
+        })
+
+    if not action_buttons:
+        return await send_whatsapp_message(
+            to_phone=to_phone,
+            text=body_text,
+            tenant_id=tenant_id,
+            access_token=access_token,
+            phone_number_id=phone_number_id,
+        )
+
+    interactive_obj: Dict[str, Any] = {
+        "type": "button",
+        "body": {"text": body_text[:1024]},
+        "action": {"buttons": action_buttons},
+    }
+    if header_media_id:
+        interactive_obj["header"] = {"type": "image", "image": {"id": header_media_id}}
+    elif header_text:
+        interactive_obj["header"] = {"type": "text", "text": header_text[:60]}
+    if footer_text:
+        interactive_obj["footer"] = {"text": footer_text[:60]}
+
+    payload: Dict[str, Any] = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": clean_to,
+        "type": "interactive",
+        "interactive": interactive_obj,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = f"https://graph.facebook.com/v21.0/{waba_phone_id}/messages"
+            headers = {
+                "Authorization": f"Bearer {waba_token}",
+                "Content-Type": "application/json",
+            }
+            # [CODE-MARKER: FIX-OBS-TELEMETRY-15] Structured outbound interactive_buttons telemetry
+            logger.info(
+                "[WhatsApp Outbound] Dispatching interactive_buttons (%d buttons, media_id=%s) to +%s",
+                len(action_buttons),
+                header_media_id or "none",
+                clean_to,
+            )
+            resp = await client.post(url, headers=headers, json=payload)
+            if resp.is_success:
+                resp_data = resp.json()
+                outbound_id = str(resp_data.get("messages", [{}])[0].get("id", "SENT"))
+                logger.info(
+                    "[WhatsApp Outbound] Delivered interactive_buttons to +%s (ID: %s)",
+                    clean_to,
+                    outbound_id,
+                )
+                return outbound_id
+            logger.error("[WhatsApp Outbound] Interactive buttons returned %d: %s", resp.status_code, resp.text)
+            return None
+    except Exception as exc:
+        logger.error("[WhatsApp Outbound] Interactive buttons exception: %s", exc)
+        return None
+
+
+async def send_whatsapp_interactive_list(
+    to_phone: str,
+    body_text: str,
+    button_label: str,
+    sections: List[Dict[str, Any]],
+    *,
+    header_text: Optional[str] = None,
+    footer_text: Optional[str] = None,
+    tenant_id: Optional[str] = None,
+    access_token: Optional[str] = None,
+    phone_number_id: Optional[str] = None,
+) -> Optional[str]:
+    """Send a native Meta WhatsApp interactive list drawer (up to 10 rows) via Graph API v21.0."""
+    from core_platform.app.common.phone_validator import normalize_phone_number
+
+    try:
+        norm_phone = normalize_phone_number(to_phone)
+        clean_to = norm_phone.lstrip("+")
+    except Exception as exc:
+        logger.error("[WhatsApp Outbound] Invalid destination phone '%s': %s", to_phone, exc)
+        return None
+
+    waba_token, waba_phone_id = resolve_whatsapp_credentials(
+        tenant_id=tenant_id,
+        access_token=access_token,
+        phone_number_id=phone_number_id,
+    )
+    if not (waba_token and waba_phone_id) or not _HAS_HTTPX or httpx is None:
+        return None
+
+    # [CODE-MARKER: FIX-WA-LIST-01] Defensively enforce Meta v21.0 interactive list length limits
+    sanitized_sections: List[Dict[str, Any]] = []
+    total_rows = 0
+    for sec in sections[:10]:
+        sec_title = str(sec.get("title") or "Options")[:24]
+        raw_rows = sec.get("rows") or []
+        clean_rows: List[Dict[str, str]] = []
+        for r in raw_rows[:10]:
+            clean_rows.append({
+                "id": str(r.get("id") or "row_id")[:200],
+                "title": str(r.get("title") or "Item")[:24],
+                "description": str(r.get("description") or "")[:72],
+            })
+        if clean_rows:
+            total_rows += len(clean_rows)
+            sanitized_sections.append({"title": sec_title, "rows": clean_rows})
+
+    interactive_obj: Dict[str, Any] = {
+        "type": "list",
+        "body": {"text": body_text[:1024]},
+        "action": {
+            "button": button_label[:20],
+            "sections": sanitized_sections or sections,
+        },
+    }
+    if header_text:
+        interactive_obj["header"] = {"type": "text", "text": header_text[:60]}
+    if footer_text:
+        interactive_obj["footer"] = {"text": footer_text[:60]}
+
+    payload: Dict[str, Any] = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": clean_to,
+        "type": "interactive",
+        "interactive": interactive_obj,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = f"https://graph.facebook.com/v21.0/{waba_phone_id}/messages"
+            headers = {
+                "Authorization": f"Bearer {waba_token}",
+                "Content-Type": "application/json",
+            }
+            # [CODE-MARKER: FIX-OBS-TELEMETRY-15] Structured outbound interactive_list telemetry
+            logger.info(
+                "[WhatsApp Outbound] Dispatching interactive_list (button='%s', %d rows) to +%s",
+                button_label[:20],
+                total_rows,
+                clean_to,
+            )
+            resp = await client.post(url, headers=headers, json=payload)
+            if resp.is_success:
+                resp_data = resp.json()
+                outbound_id = str(resp_data.get("messages", [{}])[0].get("id", "SENT"))
+                logger.info(
+                    "[WhatsApp Outbound] Delivered interactive_list to +%s (ID: %s)",
+                    clean_to,
+                    outbound_id,
+                )
+                return outbound_id
+            logger.error("[WhatsApp Outbound] Interactive list returned %d: %s", resp.status_code, resp.text)
+            return None
+    except Exception as exc:
+        logger.error("[WhatsApp Outbound] Interactive list exception: %s", exc)
+        return None
+
+
+async def send_whatsapp_template(
+    to_phone: str,
+    template_name: str,
+    language_code: str = "en_US",
+    components: Optional[List[Dict[str, Any]]] = None,
+    *,
+    body_parameters: Optional[List[str]] = None,
+    quick_reply_payloads: Optional[List[str]] = None,
+    tenant_id: Optional[str] = None,
+    access_token: Optional[str] = None,
+    phone_number_id: Optional[str] = None,
+) -> Optional[str]:
+    """Send a pre-approved Meta Utility Template message outside the 24-hour customer care window."""
+    from core_platform.app.common.phone_validator import normalize_phone_number
+
+    try:
+        norm_phone = normalize_phone_number(to_phone)
+        clean_to = norm_phone.lstrip("+")
+    except Exception as exc:
+        logger.error("[WhatsApp Outbound] Invalid destination phone '%s': %s", to_phone, exc)
+        return None
+
+    waba_token, waba_phone_id = resolve_whatsapp_credentials(
+        tenant_id=tenant_id,
+        access_token=access_token,
+        phone_number_id=phone_number_id,
+    )
+    if not (waba_token and waba_phone_id) or not _HAS_HTTPX or httpx is None:
+        return None
+
+    eff_components: List[Dict[str, Any]] = list(components or [])
+    if body_parameters and not eff_components:
+        eff_components.append({
+            "type": "body",
+            "parameters": [{"type": "text", "text": str(p)} for p in body_parameters],
+        })
+    if quick_reply_payloads:
+        for idx, q_payload in enumerate(quick_reply_payloads[:3]):
+            eff_components.append({
+                "type": "button",
+                "sub_type": "quick_reply",
+                "index": str(idx),
+                "parameters": [{"type": "payload", "payload": str(q_payload)}],
+            })
+
+    template_obj: Dict[str, Any] = {
+        "name": template_name,
+        "language": {"code": language_code},
+    }
+    if eff_components:
+        template_obj["components"] = eff_components
+
+    payload: Dict[str, Any] = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": clean_to,
+        "type": "template",
+        "template": template_obj,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = f"https://graph.facebook.com/v21.0/{waba_phone_id}/messages"
+            headers = {
+                "Authorization": f"Bearer {waba_token}",
+                "Content-Type": "application/json",
+            }
+            resp = await client.post(url, headers=headers, json=payload)
+            if resp.is_success:
+                resp_data = resp.json()
+                return str(resp_data.get("messages", [{}])[0].get("id", "SENT"))
+            logger.error("[WhatsApp Outbound] Template dispatch returned %d: %s", resp.status_code, resp.text)
+            return None
+    except Exception as exc:
+        logger.error("[WhatsApp Outbound] Template dispatch exception: %s", exc)
         return None

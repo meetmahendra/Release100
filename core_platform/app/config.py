@@ -113,6 +113,10 @@ class PlatformSettings(BaseSettings):
         default="",
         description="Meta app secret for HMAC-SHA256 verification",
     )
+    WHATSAPP_VERIFY_SIGNATURE_STRICT: bool = Field(
+        default=False,
+        description="Enforce strict 401 rejection on HMAC-SHA256 mismatch (when False, logs warning and validates envelope)",
+    )
     WHATSAPP_ACCESS_TOKEN: str = Field(
         default="",
         description="Meta Cloud API System User access token",

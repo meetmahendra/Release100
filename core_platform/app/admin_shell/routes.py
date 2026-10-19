@@ -604,7 +604,13 @@ async def create_user(
         allowed.append(cartridge_temp)
 
     # Scoping guard: restrict user cartridges strictly to tenant's allowed cartridges unless super-admin
-    if tenant_obj and hasattr(tenant_obj, "allowed_cartridges") and not is_super:
+    if (
+        tenant_obj
+        and hasattr(tenant_obj, "allowed_cartridges")
+        and not is_super
+        and "*" not in tenant_obj.allowed_cartridges
+        and "all" not in tenant_obj.allowed_cartridges
+    ):
         allowed = [c for c in allowed if c in tenant_obj.allowed_cartridges]
     if not allowed and tenant_obj and hasattr(tenant_obj, "allowed_cartridges"):
         allowed = list(tenant_obj.allowed_cartridges)
@@ -700,7 +706,13 @@ async def assign_user_tenant_action(
         allowed.append(cartridge_temp)
 
     # Scoping guard: restrict user cartridges strictly to tenant's allowed cartridges unless super-admin
-    if tenant_obj and hasattr(tenant_obj, "allowed_cartridges") and not is_super:
+    if (
+        tenant_obj
+        and hasattr(tenant_obj, "allowed_cartridges")
+        and not is_super
+        and "*" not in tenant_obj.allowed_cartridges
+        and "all" not in tenant_obj.allowed_cartridges
+    ):
         allowed = [c for c in allowed if c in tenant_obj.allowed_cartridges]
     if not allowed and tenant_obj and hasattr(tenant_obj, "allowed_cartridges"):
         allowed = list(tenant_obj.allowed_cartridges)
@@ -781,7 +793,13 @@ async def update_user_action(
         allowed.append(cartridge_temp)
 
     # Scoping guard: restrict user cartridges strictly to tenant's allowed cartridges unless super-admin
-    if tenant_obj and hasattr(tenant_obj, "allowed_cartridges") and not is_super:
+    if (
+        tenant_obj
+        and hasattr(tenant_obj, "allowed_cartridges")
+        and not is_super
+        and "*" not in tenant_obj.allowed_cartridges
+        and "all" not in tenant_obj.allowed_cartridges
+    ):
         allowed = [c for c in allowed if c in tenant_obj.allowed_cartridges]
 
     user_service.update_user(

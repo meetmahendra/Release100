@@ -151,13 +151,88 @@ async def pm_extract_node(state: MailOrganizerState) -> MailOrganizerState:
 
     state["pending_pm_tasks"] = extracted_tasks
 
+    # [CODE-MARKER: MO-COMMIT-01] Bidirectional Commitment Ledger & Entity Fact Extraction (REV-05 & REV-08)
+    extracted_commitments: List[Dict[str, Any]] = []
+    speech_act = state.get("speech_act") or ("COMMIT" if category == "@WaitingOn" else "REQUEST")
+    direction = "OWED_TO_ME" if speech_act == "COMMIT" or category == "@WaitingOn" else "OWED_BY_ME"
+
+    for t in extracted_tasks:
+        extracted_commitments.append({
+            "source_msg_id": gmail_id,
+            "thread_id": state.get("thread_id") or "",
+            "direction": direction,
+            "speech_act": speech_act,
+            "counterparty_handle": sender,
+            "counterparty_contact_id": state.get("resolved_contact_id"),
+            "deliverable_summary": str(t.get("summary") or subject)[:200],
+            "raw_deadline_text": str(t.get("due_date") or "Next Business Day"),
+        })
+
+    if not extracted_commitments and category not in ("@Promotions", "@FYI"):
+        commit_match = re.search(
+            r"(?:i\s+will|i'll|we\s+will|will\s+share|will\s+send|please\s+review|please\s+approve|kindly\s+review)\s+([^\.\n\?]{5,120})",
+            content,
+            re.IGNORECASE,
+        )
+        due_m = re.search(
+            r"(?:by|before|on)\s+([a-zA-Z0-9\s]+(?:friday|monday|tuesday|wednesday|thursday|eod|tomorrow|\d{1,2}(?:st|nd|rd|th)?))",
+            content,
+            re.IGNORECASE,
+        )
+        extracted_commitments.append({
+            "source_msg_id": gmail_id,
+            "thread_id": state.get("thread_id") or "",
+            "direction": direction,
+            "speech_act": speech_act,
+            "counterparty_handle": sender,
+            "counterparty_contact_id": state.get("resolved_contact_id"),
+            "deliverable_summary": (commit_match.group(0).strip() if commit_match else subject)[:200],
+            "raw_deadline_text": (due_m.group(1).strip() if due_m else "Next Business Day"),
+        })
+
+    state["extracted_commitments"] = extracted_commitments
+
+    # Deterministic Entity Fact Graph Extraction (PO#, Invoices, Budget figures, Dates)
+    extracted_facts: List[Dict[str, Any]] = []
+    entity_matches = re.findall(r"\b((?:PO|INV|PRJ|CR|INC)[-\s#]?\d{2,8})\b", content, re.IGNORECASE)
+    primary_entity = entity_matches[0].upper().replace(" ", "-") if entity_matches else (subject[:40].strip() or "THREAD")
+
+    amt_match = re.search(r"(\$\s?\d[\d,]*(?:\.\d{1,2})?(?:\s?[kKmM])?|INR\s?\d[\d,]*)", content)
+    if amt_match:
+        extracted_facts.append({
+            "subject_entity": primary_entity,
+            "predicate": "AMOUNT",
+            "object_value": amt_match.group(1).strip(),
+            "source_msg_id": gmail_id,
+            "source_channel": "EMAIL",
+        })
+
+    eta_match = re.search(
+        r"(?:delivery|eta|deadline|due|revised\s+to)\s*(?:date|is|on|by|:)?\s*(\d{4}-\d{2}-\d{2}|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}|friday|monday|tomorrow)",
+        content,
+        re.IGNORECASE,
+    )
+    if eta_match:
+        extracted_facts.append({
+            "subject_entity": primary_entity,
+            "predicate": "DEADLINE_OR_ETA",
+            "object_value": eta_match.group(1).strip(),
+            "source_msg_id": gmail_id,
+            "source_channel": "EMAIL",
+        })
+
+    state["extracted_entity_facts"] = extracted_facts
+
     duration_ms = round((time.perf_counter() - t0) * 1000, 2)
     trace = list(state.get("pipeline_trace") or [])
     trace.append({
         "node": "pm_extract",
         "duration_ms": duration_ms,
         "tasks_extracted_count": len(extracted_tasks),
+        "commitments_extracted_count": len(extracted_commitments),
+        "facts_extracted_count": len(extracted_facts),
     })
     state["pipeline_trace"] = trace
 
     return state
+

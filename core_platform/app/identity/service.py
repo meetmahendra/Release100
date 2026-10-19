@@ -258,6 +258,8 @@ class UserIdentityService:
                 existing.updated_at = datetime.now(dt_timezone.utc)
                 session.commit()
                 session.refresh(existing)
+                if phone not in ("admin", "devops"):
+                    self.ensure_entitlement_bindings(existing)
                 logger.info("[IdentityService] Updated existing user: phone=%s id=%d", phone, existing.id)
                 return existing
 
@@ -277,6 +279,8 @@ class UserIdentityService:
             session.add(new_user)
             session.commit()
             session.refresh(new_user)
+            if phone not in ("admin", "devops"):
+                self.ensure_entitlement_bindings(new_user)
             logger.info("[IdentityService] Registered new user: phone=%s id=%d tenant=%s", phone, new_user.id, tenant_id)
             return new_user
 
@@ -445,12 +449,19 @@ class UserIdentityService:
             user = session.execute(stmt).scalar_one_or_none()
             if user:
                 user.encrypted_oauth_tokens = encrypted_tokens
-                if google_email:
+                effective_email = google_email or user.google_email or user.email
+                if effective_email and not user.google_email:
+                    user.google_email = effective_email
+                elif google_email:
                     user.google_email = google_email
                 user.updated_at = datetime.now(dt_timezone.utc)
                 session.commit()
                 session.refresh(user)
-                logger.info("[IdentityService] Updated OAuth credentials for user_id=%d email=%s", clean_id, google_email)
+                logger.info(
+                    "[IdentityService] Updated OAuth credentials for user_id=%d email=%s",
+                    clean_id,
+                    effective_email or "preserved",
+                )
                 return user
         return None
 
@@ -492,6 +503,7 @@ class UserIdentityService:
                 user.updated_at = datetime.now(dt_timezone.utc)
                 session.commit()
                 session.refresh(user)
+                self.ensure_entitlement_bindings(user)
                 logger.info("[IdentityService] Updated entitlements for user_id=%d: %s", clean_id, clean)
                 return user
         return None
@@ -563,6 +575,7 @@ class UserIdentityService:
             user.updated_at = datetime.now(dt_timezone.utc)
             session.commit()
             session.refresh(user)
+            self.ensure_entitlement_bindings(user)
             logger.info(
                 "[IdentityService] Assigned user_id=%d phone=%s to tenant=%s",
                 user.id,
@@ -633,8 +646,88 @@ class UserIdentityService:
             user.updated_at = datetime.now(dt_timezone.utc)
             session.commit()
             session.refresh(user)
+            self.ensure_entitlement_bindings(user)
             logger.info("[IdentityService] Updated user profile for user_id=%d", clean_id)
             return user
+
+    def ensure_entitlement_bindings(
+        self,
+        user: PlatformUser,
+        app_id: Optional[str] = None,
+    ) -> None:
+        """Synchronize DEA group and bundle bindings for a user's entitled cartridges."""
+        if not user or not user.phone_number or user.status.lower() != "active":
+            return
+        try:
+            from core_platform.app.entitlements.dependencies import get_registry
+            from core_platform.app.entitlements.models import Scope
+            from core_platform.app.entitlements.repository import EntitlementRepository
+
+            registry = get_registry()
+            if not registry.list_apps():
+                apps_root = Path(__file__).resolve().parent.parent.parent.parent / "apps"
+                if apps_root.exists():
+                    for app_dir in sorted(apps_root.iterdir()):
+                        manifest_file = app_dir / "entitlements.json"
+                        if app_dir.is_dir() and manifest_file.exists():
+                            registry.register_raw(
+                                app_dir.name,
+                                json.loads(manifest_file.read_text(encoding="utf-8")),
+                            )
+
+            target_apps = [app_id] if app_id else registry.list_apps()
+            if not target_apps:
+                return
+
+            repo = EntitlementRepository(engine=self._engine)
+            tenant_id = user.tenant_id or "default_tenant"
+            principal = user.phone_number
+
+            existing_groups = {g.name: g for g in repo.list_groups(tenant_id)}
+            group_name = f"auto_entitled_{principal}"
+            group = existing_groups.get(group_name)
+            if group is None:
+                group = repo.create_group(
+                    tenant_id=tenant_id,
+                    name=group_name,
+                    description=f"Auto-provisioned entitlement group for {principal}",
+                    kind="USER",
+                )
+            repo.add_member(tenant_id, group.id, principal)
+            active_bindings = {
+                (b.app_id, b.bundle_id)
+                for b in repo.bindings_for_group(tenant_id, group.id)
+            }
+
+            for cid in target_apps:
+                if not cid or not user.is_entitled_to(cid):
+                    continue
+                manifest = registry.get_manifest(cid)
+                if manifest is None:
+                    continue
+                for bundle in manifest.bundles:
+                    if bundle.conflicts_with:
+                        continue
+                    if Scope.TENANT not in bundle.allowed_scopes:
+                        continue
+                    if (cid, bundle.bundle_id) in active_bindings:
+                        continue
+                    repo.create_binding(
+                        tenant_id=tenant_id,
+                        group_id=group.id,
+                        app_id=cid,
+                        bundle_id=bundle.bundle_id,
+                        scope=Scope.TENANT,
+                        scope_unit_id=None,
+                        bundle_digest=manifest.bundle_digest(bundle.bundle_id),
+                        granted_by="system_identity_sync",
+                    )
+        except Exception as exc:
+            logger.debug("[IdentityService] Entitlement binding sync skipped: %s", exc)
+
+    def ensure_mail_entitlement_bindings(self, user: PlatformUser) -> None:
+        """Synchronize DEA group and bundle bindings for a user's entitled cartridges."""
+        self.ensure_entitlement_bindings(user)
 
     def delete_user(self, user_id: Union[int, str]) -> bool:
         """Remove a registered user by ID."""

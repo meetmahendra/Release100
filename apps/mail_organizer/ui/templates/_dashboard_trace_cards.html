@@ -168,11 +168,11 @@
                 <div>
                     <span style="font-weight: 700; color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase;">{{ t('apps.mail_organizer.dashboard.lbl_pm_tasks_sync') }}</span>
                     <div style="margin-top: 0.45rem;">
-                        {% for t in em.pm_tasks %}
+                        {% for pm_task in em.pm_tasks %}
                         <div style="background: #090d16; border: 1px solid var(--border-color); border-radius: 6px; padding: 0.6rem 0.9rem; margin-bottom: 0.45rem; display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <strong style="color: #38bdf8;">{{ t.task_id }}</strong>: {{ t.summary }}
-                                <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ t('apps.mail_organizer.dashboard.lbl_task_details', destination=t.destination, priority=t.priority, status=t.status) }}</div>
+                                <strong style="color: #38bdf8;">{{ pm_task.task_id }}</strong>: {{ pm_task.summary }}
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ t('apps.mail_organizer.dashboard.lbl_task_details', destination=pm_task.destination, priority=pm_task.priority, status=pm_task.status) }}</div>
                             </div>
                             <a href="/admin/apps/mail-organizer/pm-queue" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; text-decoration: none;">{{ t('apps.mail_organizer.dashboard.btn_review_pm_queue') }}</a>
                         </div>

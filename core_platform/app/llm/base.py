@@ -37,6 +37,24 @@ class DecisionResult(BaseModel):
     )
 
 
+# [CODE-MARKER: CP-JEV-01] Multi-Question System 1 Specification & Decision Result
+class QuestionSpec(BaseModel):
+    """Specification for a single schema-constrained question in a multi-question System 1 call."""
+
+    question_id: str = Field(description="Unique key for this question (e.g. 'category', 'speech_act')")
+    instructions: str = Field(description="Evaluation instructions for this specific dimension")
+    choices: Dict[str, str] = Field(description="Mapping of choice_key -> choice_description")
+
+
+class MultiQuestionDecisionResult(BaseModel):
+    """Structured result from a multi-question System 1 (/systemone) evaluation."""
+
+    answers: Dict[str, DecisionResult] = Field(
+        default_factory=dict, description="Mapping of question_id -> DecisionResult"
+    )
+    latency_ms: float = Field(default=0.0, description="Total batch decision latency in milliseconds")
+
+
 class BaseDecisionProvider(ABC):
     """Vendor-neutral abstract interface for System 1 fast decision and classification models (e.g. TypeSafe / Jev)."""
 
@@ -50,6 +68,7 @@ class BaseDecisionProvider(ABC):
         *,
         context: Optional[str] = None,
         model: Optional[str] = None,
+        priority_lane: str = "HIGH",
     ) -> Optional[DecisionResult]:
         """Classify input text against a schema-constrained list of choices.
 
@@ -58,11 +77,48 @@ class BaseDecisionProvider(ABC):
             choices: Valid categorical target choices.
             context: Optional contextual guidance or metadata.
             model: Optional model override.
+            priority_lane: Concurrency lane ('HIGH' for real-time interactive/kiosk, 'LOW' for background pollers).
 
         Returns:
             DecisionResult with selected_choice and confidence, or None on failure.
         """
         ...
+
+    async def classify_multi(
+        self,
+        text: str,
+        questions: List[QuestionSpec],
+        *,
+        context: Optional[str] = None,
+        model: Optional[str] = None,
+        priority_lane: str = "HIGH",
+    ) -> Optional[MultiQuestionDecisionResult]:
+        """Evaluate multiple orthogonal classification questions in a single System 1 pass.
+
+        Default implementation sequentially invokes classify() per question if the provider
+        does not support native multi-question batching.
+        """
+        if not questions:
+            return None
+        answers: Dict[str, DecisionResult] = {}
+        total_latency = 0.0
+        for q in questions:
+            choice_keys = list(q.choices.keys())
+            if not choice_keys:
+                continue
+            combined_ctx = f"{context or ''}\n{q.instructions}".strip()
+            res = await self.classify(
+                text,
+                choice_keys,
+                context=combined_ctx,
+                model=model,
+                priority_lane=priority_lane,
+            )
+            if res is None:
+                return None
+            answers[q.question_id] = res
+            total_latency += res.latency_ms
+        return MultiQuestionDecisionResult(answers=answers, latency_ms=total_latency)
 
     @abstractmethod
     def is_available(self) -> bool:

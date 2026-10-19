@@ -104,16 +104,27 @@ class MailOrganizerApplication(BaseApplication):
             calendar_connector=self.calendar_connector,
             audit_engine=self.audit_engine,
         )
+        try:
+            self.db_service.purge_synthetic_test_records()
+        except Exception as purge_err:
+            logger.debug("[MailOrganizer] Synthetic purge skipped during init: %s", purge_err)
 
     def on_bind_engine(self, engine: Any) -> None:
         """Dynamically bind or update the database engine (Paradigm A)."""
         if engine is not None and hasattr(self, "db_service") and self.db_service is not None:
             self.db_service.bind_engine(engine)
+            try:
+                self.db_service.purge_synthetic_test_records()
+            except Exception as purge_err:
+                logger.debug("[MailOrganizer] Synthetic purge skipped during bind: %s", purge_err)
 
     keywords: List[str] = [
         "mail", "email", "inbox", "draft", "reply", "forward",
         "meeting", "schedule", "calendar", "task", "jira", "linear",
         "approve", "reject", "summary", "digest",
+        "inspect_mail:", "inspect_draft:", "deep_inspect:", "approve_send:", "discard_draft:", "snooze_mail:", "provide_artifact:",
+        "generate_draft:", "mark_done:", "calendar_action:", "create_task:",
+        "inspect_task:", "approve_task:", "reject_task:",
     ]
 
 
@@ -161,6 +172,15 @@ class MailOrganizerApplication(BaseApplication):
         """Return SQLAlchemy MetaData so Alembic can discover mail organizer tables dynamically."""
         from apps.mail_organizer.database.models import Base
         return Base.metadata
+
+    # [CODE-MARKER: FIX-WA-SESSION-STICKY-20] 15-Minute Active Triage Session Stickiness
+    def has_active_session(self, sender_id: str) -> bool:
+        """Return True if sender has an active Mail Organizer triage session within the last 15 minutes."""
+        try:
+            from apps.mail_organizer.services.whatsapp_handler import MailOrganizerWhatsAppHandler
+            return MailOrganizerWhatsAppHandler.has_active_session(sender_id)
+        except Exception:
+            return False
 
     def get_whatsapp_handler(self) -> Any:
         """Return the domain-specific WhatsApp message handler for Mail Organizer."""

@@ -25,6 +25,7 @@ from apps.mail_organizer.connectors.calendar_connector import GoogleCalendarConn
 from apps.mail_organizer.connectors.gmail_connector import GmailConnector
 from apps.mail_organizer.database.db_service import MailDatabaseService
 from apps.mail_organizer.pm.task_manager import PMTaskManager
+from apps.mail_organizer.services.omnichannel_ingestor import OmnichannelContextIngestor
 
 
 class MailOrganizerMCPTools:
@@ -36,12 +37,14 @@ class MailOrganizerMCPTools:
         gmail_connector: Optional[GmailConnector] = None,
         calendar_connector: Optional[GoogleCalendarConnector] = None,
         pm_manager: Optional[PMTaskManager] = None,
+        omnichannel_ingestor: Optional[OmnichannelContextIngestor] = None,
     ) -> None:
         """Initialize MCP tool handler with domain dependencies."""
         self.db_service = db_service or MailDatabaseService()
         self.gmail_connector = gmail_connector or GmailConnector()
         self.calendar_connector = calendar_connector or GoogleCalendarConnector()
         self.pm_manager = pm_manager or PMTaskManager(db_service=self.db_service)
+        self.omnichannel_ingestor = omnichannel_ingestor or OmnichannelContextIngestor(db_service=self.db_service)
 
     async def mail_search_threads(self, query: str = "", max_results: int = 10) -> List[Dict[str, Any]]:
         """Search email threads matching a query (e.g. from:rajesh, is:unread, label:@Urgent)."""
@@ -122,6 +125,51 @@ class MailOrganizerMCPTools:
         """Approve and export a pending PM task to Jira or Linear."""
         return await self.pm_manager.approve_and_export(task_id=task_id, destination=destination)
 
+    # [CODE-MARKER: MO-OMNI-01]
+    async def mail_ingest_omnichannel_context(
+        self,
+        session_id: str,
+        channel_type: str,
+        subject: str,
+        transcript_or_text: str,
+        participants: List[str],
+        jurisdiction_policy: str = "ALL_PARTY",
+        all_parties_consented: bool = True,
+        tenant_id: str = "public",
+        user_id: Optional[int] = None,
+        entity_tags: str = "",
+    ) -> Dict[str, Any]:
+        """Ingest consented omnichannel context (Meet/Teams/Zoom/WhatsApp/Voice) into the hybrid graph."""
+        return self.omnichannel_ingestor.ingest_omnichannel_event(
+            session_id=session_id,
+            channel_type=channel_type,
+            subject=subject,
+            transcript_or_text=transcript_or_text,
+            participants=participants,
+            jurisdiction_policy=jurisdiction_policy,
+            all_parties_consented=all_parties_consented,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            entity_tags=entity_tags,
+        )
+
+    async def mail_query_hybrid_context(
+        self,
+        query: str,
+        tenant_id: str = "public",
+        user_id: Optional[int] = None,
+        entities: Optional[List[str]] = None,
+        limit: int = 8,
+    ) -> Dict[str, Any]:
+        """Execute hybrid RRF search + temporal fact supersession lookup across omnichannel context."""
+        return self.omnichannel_ingestor.query_hybrid_context(
+            query=query,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            entities=entities,
+            limit=limit,
+        )
+
 
 def get_mail_organizer_mcp_tools() -> List[Dict[str, Any]]:
     """Return tool manifests for registration in core platform MCP server."""
@@ -156,5 +204,15 @@ def get_mail_organizer_mcp_tools() -> List[Dict[str, Any]]:
             "name": "mail_approve_pm_task",
             "description": "Approve and export a pending PM task to Jira/Linear",
             "handler": tools_instance.mail_approve_pm_task,
+        },
+        {
+            "name": "mail_ingest_omnichannel_context",
+            "description": "Ingest consented omnichannel session (Meet/Teams/Zoom/WhatsApp/Voice) with temporal fact supersession",
+            "handler": tools_instance.mail_ingest_omnichannel_context,
+        },
+        {
+            "name": "mail_query_hybrid_context",
+            "description": "Query hybrid BM25 + semantic RRF context and active temporal facts",
+            "handler": tools_instance.mail_query_hybrid_context,
         },
     ]

@@ -62,7 +62,7 @@ async def execution_node(
 
     actions_executed: List[Dict[str, Any]] = []
 
-    # 1. Database persistence
+    # 1. Database persistence ([CODE-MARKER: MO-GRAPH-01])
     if db_service:
         db_service.store_email(
             gmail_id=gmail_id,
@@ -84,6 +84,45 @@ async def execution_node(
             responsibility_role=responsibility_role,
             suggested_reply=suggested_reply,
         )
+        try:
+            eff_tid = str(state.get("tenant_id") or "public")
+            eff_uid = state.get("user_id")
+            db_service.index_fts_and_semantic_chunk(
+                tenant_id=eff_tid,
+                user_id=eff_uid,
+                source_channel="EMAIL",
+                msg_id=gmail_id,
+                subject=subject,
+                body_clean=body,
+                entity_tags=",".join(context_tags),
+            )
+            for c_item in list(state.get("extracted_commitments") or []):
+                db_service.upsert_commitment(
+                    source_msg_id=gmail_id,
+                    deliverable_summary=str(c_item.get("deliverable_summary") or subject),
+                    direction=str(c_item.get("direction") or "OWED_BY_ME"),
+                    speech_act=str(c_item.get("speech_act") or state.get("speech_act") or "REQUEST"),
+                    source_channel="EMAIL",
+                    thread_id=thread_id,
+                    counterparty_handle=sender,
+                    counterparty_contact_id=state.get("resolved_contact_id"),
+                    raw_deadline_text=str(c_item.get("raw_deadline_text") or "Next Business Day"),
+                    tenant_id=eff_tid,
+                    user_id=eff_uid,
+                )
+            for f_item in list(state.get("extracted_entity_facts") or []):
+                db_service.upsert_entity_fact(
+                    subject_entity=str(f_item.get("subject_entity") or subject[:40]),
+                    predicate=str(f_item.get("predicate") or "FACT"),
+                    object_value=str(f_item.get("object_value") or ""),
+                    source_msg_id=gmail_id,
+                    source_channel="EMAIL",
+                    tenant_id=eff_tid,
+                    user_id=eff_uid,
+                )
+        except Exception:
+            pass
+
 
     # 2. Execution branching
     if mode == "shadow":
@@ -133,26 +172,36 @@ async def execution_node(
                     "error": str(_gmail_exc),
                 })
 
-            # Stage draft in Gmail
+            # [CODE-MARKER: FIX-ON-DEMAND-DRAFT-19] 2-Step On-Demand Draft Generation (Master Spec §8.2)
+            # In assistive background polling, suggested_reply is preserved as a candidate on EmailClassification
+            # and only staged into mail_drafts / Gmail Drafts on-demand when the user requests it in Step 2
+            # (or when stage_draft_immediately / autonomous mode is explicitly set).
             if suggested_reply:
-                draft_res = await gmail_connector.create_draft(
-                    thread_id=thread_id,
-                    recipient=sender,
-                    subject=f"Re: {subject}",
-                    body=suggested_reply,
-                )
-                actions_executed.append({
-                    "action": "draft_created",
-                    "draft_id": draft_res.get("draft_id"),
-                })
-                if db_service:
-                    db_service.store_draft(
-                        gmail_id=gmail_id,
+                stage_now = bool(state.get("stage_draft_immediately", False)) or mode == "autonomous"
+                if stage_now:
+                    draft_res = await gmail_connector.create_draft(
                         thread_id=thread_id,
                         recipient=sender,
                         subject=f"Re: {subject}",
                         body=suggested_reply,
                     )
+                    actions_executed.append({
+                        "action": "draft_created",
+                        "draft_id": draft_res.get("draft_id"),
+                    })
+                    if db_service:
+                        db_service.store_draft(
+                            gmail_id=gmail_id,
+                            thread_id=thread_id,
+                            recipient=sender,
+                            subject=f"Re: {subject}",
+                            body=suggested_reply,
+                        )
+                else:
+                    actions_executed.append({
+                        "action": "reply_candidate_ready",
+                        "gmail_id": gmail_id,
+                    })
 
         # Stage PM tasks into approval queue
         if pm_tasks and db_service:

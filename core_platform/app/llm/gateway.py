@@ -41,7 +41,13 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from core_platform.app.llm.base import BaseDecisionProvider, BaseLLMProvider, DecisionResult
+from core_platform.app.llm.base import (
+    BaseDecisionProvider,
+    BaseLLMProvider,
+    DecisionResult,
+    MultiQuestionDecisionResult,
+    QuestionSpec,
+)
 from core_platform.app.llm.cost_tracker import get_llm_cost_tracker
 
 logger = logging.getLogger("core_platform.llm.gateway")
@@ -421,6 +427,7 @@ class LLMGateway:
         tenant_id: Optional[str] = None,
         cartridge_id: Optional[str] = None,
         credential_mode: Optional[str] = None,
+        priority_lane: str = "HIGH",
     ) -> Optional[DecisionResult]:
         """Classify input text against candidate choices using System 1 decision engine.
 
@@ -437,6 +444,7 @@ class LLMGateway:
             tenant_id: Optional tenant ID for cost attribution.
             cartridge_id: Optional cartridge ID for product optimization analytics.
             credential_mode: Optional credential mode override.
+            priority_lane: Concurrency lane ('HIGH' for interactive/kiosk, 'LOW' for background poller).
 
         Returns:
             DecisionResult with selected_choice, confidence, latency_ms, or None.
@@ -455,15 +463,25 @@ class LLMGateway:
         # ── Primary: Direct System 1 Decision Model (TypeSafe / Jev) ────────────
         if isinstance(provider, BaseDecisionProvider) and provider.is_available():
             logger.debug(
-                "[LLMGateway] System 1 classify task=%s → provider=%s choices=%s (op=%s, tenant=%s, cartridge=%s)",
+                "[LLMGateway] System 1 classify task=%s lane=%s → provider=%s choices=%s (op=%s, tenant=%s, cartridge=%s)",
                 task,
+                priority_lane,
                 provider.provider_name,
                 choices,
                 op_id,
                 eff_tenant,
                 eff_cartridge,
             )
-            result = await provider.classify(text, choices, context=context, model=model)
+            try:
+                result = await provider.classify(
+                    text,
+                    choices,
+                    context=context,
+                    model=model,
+                    priority_lane=priority_lane,
+                )
+            except TypeError:
+                result = await provider.classify(text, choices, context=context, model=model)
             if result is not None:
                 # Record System 1 metric (~5 tokens per query, internal microkernel)
                 get_llm_cost_tracker().record_interaction(
@@ -517,6 +535,121 @@ class LLMGateway:
                 reasoning=str(gen_result.get("reasoning", "System 2 generative fallback")),
                 latency_ms=latency_ms,
             )
+
+        return None
+
+    # [CODE-MARKER: CP-JEV-03] Gateway Multi-Head System 1 Dispatch & Priority Lane Routing
+    async def classify_multi(
+        self,
+        text: str,
+        questions: List[QuestionSpec],
+        *,
+        task: str = "fast_classification",
+        context: Optional[str] = None,
+        model: Optional[str] = None,
+        operation_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        cartridge_id: Optional[str] = None,
+        credential_mode: Optional[str] = None,
+        priority_lane: str = "HIGH",
+    ) -> Optional[MultiQuestionDecisionResult]:
+        """Evaluate multiple orthogonal classification questions in a single System 1 call.
+
+        Falls back to a single structured JSON System 2 call if System 1 is unavailable.
+        """
+        if not questions:
+            return None
+
+        provider = self._get_provider(task)
+        op_id = operation_id or f"op_{uuid.uuid4().hex[:10]}"
+        interaction_id = f"ix_{uuid.uuid4().hex[:10]}"
+        eff_tenant = _resolve_context_tenant(tenant_id)
+        eff_cartridge = _resolve_context_cartridge(cartridge_id)
+        eff_cred_mode = credential_mode or (
+            "CORE_INTERNAL_JEV"
+            if (task in ("intent_routing", "fast_classification") or (provider and provider.provider_name == "typesafe"))
+            else "PLATFORM_MANAGED"
+        )
+        start_time = time.perf_counter()
+
+        if isinstance(provider, BaseDecisionProvider) and provider.is_available():
+            try:
+                batch_res = await provider.classify_multi(
+                    text,
+                    questions,
+                    context=context,
+                    model=model,
+                    priority_lane=priority_lane,
+                )
+            except TypeError:
+                batch_res = await provider.classify_multi(text, questions, context=context, model=model)
+
+            if batch_res is not None and batch_res.answers:
+                get_llm_cost_tracker().record_interaction(
+                    interaction_id=interaction_id,
+                    operation_id=op_id,
+                    task=task,
+                    provider=provider.provider_name,
+                    model=model or getattr(provider, "_default_model", "jev-latest"),
+                    prompt_tokens=max(1, len(text) // 4 + sum(len(str(q.choices)) // 4 for q in questions)),
+                    completion_tokens=max(5, 5 * len(questions)),
+                    latency_ms=batch_res.latency_ms,
+                    success=True,
+                    error_message=None,
+                    tenant_id=eff_tenant,
+                    cartridge_id=eff_cartridge,
+                    credential_mode=eff_cred_mode,
+                )
+                return batch_res
+
+        # Secondary: System 2 single-shot JSON fallback for all questions
+        schema_spec = {
+            q.question_id: {
+                "instructions": q.instructions,
+                "valid_choices": list(q.choices.keys()),
+            }
+            for q in questions
+            if q.choices
+        }
+        prompt = (
+            "You are a schema-constrained multi-head decision classifier.\n"
+            f"Context: {context or 'None'}\n"
+            f"Input text:\n{text[:1000]}\n\n"
+            f"Evaluate each question in this specification:\n{json.dumps(schema_spec)}\n\n"
+            "Return a JSON object mapping each question_id to "
+            '{"selected_choice": "<one_of_valid_choices>", "confidence": <0.0-1.0>, "reasoning": "<brief>"}'
+        )
+        gen_result = await self.generate(
+            task="text_generation",
+            prompt=prompt,
+            temperature=0.0,
+            operation_id=op_id,
+            tenant_id=eff_tenant,
+            cartridge_id=eff_cartridge,
+            credential_mode=eff_cred_mode,
+        )
+        if isinstance(gen_result, dict):
+            latency_ms = (time.perf_counter() - start_time) * 1000.0
+            answers: Dict[str, DecisionResult] = {}
+            for q in questions:
+                if not q.choices:
+                    continue
+                default_c = next(iter(q.choices.keys()))
+                q_ans = gen_result.get(q.question_id)
+                if isinstance(q_ans, dict):
+                    sel = str(q_ans.get("selected_choice", default_c))
+                    if sel not in q.choices:
+                        sel = default_c
+                    conf = max(0.0, min(1.0, float(q_ans.get("confidence", 0.85))))
+                    reas = str(q_ans.get("reasoning", "System 2 multi-head fallback"))
+                    answers[q.question_id] = DecisionResult(
+                        selected_choice=sel,
+                        confidence=conf,
+                        reasoning=reas,
+                        latency_ms=latency_ms,
+                    )
+            if answers:
+                return MultiQuestionDecisionResult(answers=answers, latency_ms=latency_ms)
 
         return None
 
